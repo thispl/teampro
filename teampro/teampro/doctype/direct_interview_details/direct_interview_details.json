@@ -1,0 +1,36 @@
+{
+ "actions": [],
+ "creation": "2020-08-28 16:33:31.282254",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "location"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "label": "Location",
+   "options": "Location"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-08-28 16:33:31.282254",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Direct Interview Details",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

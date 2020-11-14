@@ -1,0 +1,110 @@
+{
+ "actions": [],
+ "creation": "2020-08-30 14:04:45.957651",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sa_id",
+  "sa_name",
+  "sa_mobile",
+  "no_candidate",
+  "fp",
+  "sl",
+  "sp",
+  "psl",
+  "idb",
+  "total_sa"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "sa_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "SA ID",
+   "options": "SAMS"
+  },
+  {
+   "columns": 1,
+   "fieldname": "sa_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "SA Name",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "sa_mobile",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "SA Mobile Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "no_candidate",
+   "fieldtype": "Data",
+   "label": "#Candidate"
+  },
+  {
+   "columns": 1,
+   "fieldname": "fp",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "#FP_SA",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "sl",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "#SL_SA",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "sp",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "#SP_SA",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "psl",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "#PSL_SA",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "idb",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "#IDB_SA",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_sa",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Total_SA",
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-08-30 14:39:03.575217",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "SA Candidate Summary",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

@@ -1,0 +1,297 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "autoname": "SA.####",
+ "creation": "2020-03-17 11:24:48.054538",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sa_is_an_organization",
+  "column_break_2",
+  "private_limited_company",
+  "column_break_4",
+  "proprietary_company",
+  "section_break_2",
+  "organization_name",
+  "person_name",
+  "contact_number",
+  "contact_number1",
+  "column_break_5",
+  "sa_owner",
+  "sa_status",
+  "email_address",
+  "email_address1",
+  "address_section",
+  "address",
+  "city",
+  "column_break_11",
+  "country",
+  "state",
+  "district",
+  "pin_code",
+  "document_attach_section",
+  "sa_photo",
+  "cin_number",
+  "cin",
+  "column_break_31",
+  "aadhar",
+  "gst_number",
+  "gst",
+  "column_break_34",
+  "if_owns_ttc_phote",
+  "company_pan",
+  "pan",
+  "project_allocated_section",
+  "project_allocation",
+  "section_break_40",
+  "project_allocated"
+ ],
+ "fields": [
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name"
+  },
+  {
+   "fieldname": "person_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "label": "Person Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "contact_number1",
+   "fieldtype": "Data",
+   "label": "Alternate Mobile Number"
+  },
+  {
+   "fieldname": "email_address",
+   "fieldtype": "Data",
+   "label": "Email ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email_address1",
+   "fieldtype": "Data",
+   "label": "Alternate Email ID"
+  },
+  {
+   "fieldname": "column_break_5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address_section",
+   "fieldtype": "Section Break",
+   "label": "SA Address Details"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address(with landmark)"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "district",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "District",
+   "options": "District"
+  },
+  {
+   "fieldname": "state",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "State",
+   "options": "State"
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City"
+  },
+  {
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "fieldname": "aadhar",
+   "fieldtype": "Attach",
+   "label": "Aadhar"
+  },
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "company_pan",
+   "fieldtype": "Data",
+   "label": "PAN Number"
+  },
+  {
+   "fieldname": "section_break_2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "sa_is_an_organization",
+   "fieldtype": "Check",
+   "label": "SA is an Organization",
+   "set_only_once": 1
+  },
+  {
+   "fieldname": "sa_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "SA Status",
+   "options": "\nLead\nContact\nResponding\nActive\nReliable\nDo Not Contact",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "User.email",
+   "fieldname": "sa_owner",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "SA Owner",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "project_allocated_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "project_allocated",
+   "fieldtype": "Table",
+   "label": "SA Performance",
+   "options": "Project Allocated"
+  },
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "gst_number",
+   "fieldtype": "Data",
+   "label": "GST Number"
+  },
+  {
+   "fieldname": "document_attach_section",
+   "fieldtype": "Section Break",
+   "label": "SA Credentials"
+  },
+  {
+   "fieldname": "column_break_31",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "gst",
+   "fieldtype": "Attach",
+   "label": "GST"
+  },
+  {
+   "fieldname": "column_break_34",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "pan",
+   "fieldtype": "Attach",
+   "label": "PAN"
+  },
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "cin",
+   "fieldtype": "Attach",
+   "label": "CIN"
+  },
+  {
+   "fieldname": "sa_photo",
+   "fieldtype": "Attach Image",
+   "label": "SA Photo"
+  },
+  {
+   "fieldname": "pin_code",
+   "fieldtype": "Data",
+   "label": "Pin Code"
+  },
+  {
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "cin_number",
+   "fieldtype": "Data",
+   "label": "CIN Number"
+  },
+  {
+   "default": "0",
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "private_limited_company",
+   "fieldtype": "Check",
+   "label": "Pvt.Ltd.Company"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "sa_is_an_organization",
+   "fieldname": "proprietary_company",
+   "fieldtype": "Check",
+   "label": "Proprietary Company"
+  },
+  {
+   "fieldname": "project_allocation",
+   "fieldtype": "Table",
+   "label": "Project Allocation",
+   "options": "Project Allocation"
+  },
+  {
+   "fieldname": "section_break_40",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "if_owns_ttc_phote",
+   "fieldtype": "Attach",
+   "label": "If Owns TTC - Phote"
+  }
+ ],
+ "image_field": "sa_photo",
+ "links": [],
+ "modified": "2020-08-30 17:11:01.458919",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "SAMS",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "person_name",
+ "track_changes": 1
+}

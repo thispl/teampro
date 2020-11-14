@@ -1,0 +1,74 @@
+{
+    "creation": "2020-04-23 15:07:34.840787",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+     "project_name",
+     "territory",
+     "project_status",
+     "tvac",
+     "sp",
+     "plan"
+    ],
+    "fields": [
+     {
+      "columns": 2,
+      "fieldname": "project_name",
+      "fieldtype": "Link",
+      "in_list_view": 1,
+      "label": "Project Name",
+      "options": "Project"
+     },
+     {
+      "columns": 2,
+      "fetch_from": "project_name.territory",
+      "fieldname": "territory",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Territory"
+     },
+     {
+      "columns": 2,
+      "fetch_from": "project_name.status",
+      "fieldname": "project_status",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Project Status"
+     },
+     {
+      "columns": 1,
+      "fetch_from": "project_name.tvac",
+      "fieldname": "tvac",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "#T_VAC"
+     },
+     {
+      "columns": 1,
+      "fetch_from": "project_name.tsp",
+      "fieldname": "sp",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "#T_SP"
+     },
+     {
+      "columns": 1,
+      "fieldname": "plan",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "#Plan"
+     }
+    ],
+    "istable": 1,
+    "modified": "2020-04-23 16:26:08.438887",
+    "modified_by": "Administrator",
+    "module": "Teampro",
+    "name": "Project Allocation",
+    "owner": "Administrator",
+    "permissions": [],
+    "quick_entry": 1,
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+   }

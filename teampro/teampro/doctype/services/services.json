@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "autoname": "field:service",
+ "creation": "2020-08-29 09:16:16.510904",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "service",
+  "service_title"
+ ],
+ "fields": [
+  {
+   "fieldname": "service",
+   "fieldtype": "Data",
+   "label": "Service",
+   "unique": 1
+  },
+  {
+   "fieldname": "service_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Service Title"
+  }
+ ],
+ "links": [],
+ "modified": "2020-08-29 09:19:24.912295",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Services",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

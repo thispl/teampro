@@ -1,0 +1,74 @@
+{
+    "creation": "2020-03-17 13:17:30.748151",
+    "doctype": "DocType",
+    "editable_grid": 1,
+    "engine": "InnoDB",
+    "field_order": [
+     "project_allocated",
+     "territory",
+     "project_status",
+     "total_sa",
+     "psl_sa",
+     "strike_rate"
+    ],
+    "fields": [
+     {
+      "columns": 2,
+      "fieldname": "project_allocated",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Project Name",
+      "read_only": 1
+     },
+     {
+      "columns": 1,
+      "fieldname": "territory",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Territory",
+      "read_only": 1
+     },
+     {
+      "columns": 2,
+      "fieldname": "project_status",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Project Status",
+      "read_only": 1
+     },
+     {
+      "columns": 1,
+      "fieldname": "total_sa",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Total_SA",
+      "read_only": 1
+     },
+     {
+      "columns": 1,
+      "fieldname": "psl_sa",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "#PSL_SA",
+      "read_only": 1
+     },
+     {
+      "fieldname": "strike_rate",
+      "fieldtype": "Data",
+      "in_list_view": 1,
+      "label": "Strike Rate",
+      "read_only": 1
+     }
+    ],
+    "istable": 1,
+    "modified": "2020-04-23 11:25:47.946269",
+    "modified_by": "Administrator",
+    "module": "Teampro",
+    "name": "Project Allocated",
+    "owner": "Administrator",
+    "permissions": [],
+    "quick_entry": 1,
+    "sort_field": "modified",
+    "sort_order": "DESC",
+    "track_changes": 1
+   }

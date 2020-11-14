@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "creation": "2020-08-30 13:59:50.597848",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "project_allocated",
+  "territory",
+  "project_status",
+  "total_sa",
+  "psl_sa",
+  "strike_rate"
+ ],
+ "fields": [
+  {
+   "fieldname": "project_allocated",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project Name",
+   "options": "Project"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Territory",
+   "options": "Territory"
+  },
+  {
+   "fieldname": "project_status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project Status"
+  },
+  {
+   "fieldname": "total_sa",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Total_SA"
+  },
+  {
+   "fieldname": "psl_sa",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "PSL_SA"
+  },
+  {
+   "fieldname": "strike_rate",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Strike Rate"
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2020-08-30 13:59:50.597848",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "SA Allocated",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}
