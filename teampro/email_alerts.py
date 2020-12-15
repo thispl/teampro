@@ -37,7 +37,7 @@ def next_contact_alert():
         if data:
             emp_name = frappe.get_value('User',c.contact_by,'full_name')
             frappe.sendmail(
-            recipients=['sarumathy.d@groupteampro.com'],
+            recipients=[c.contact_by],
             subject='Lead Next Contact Alert -'+ formatdate(today()),
             message="""
             <p>Dear %s,</p>
