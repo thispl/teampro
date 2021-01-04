@@ -1,13 +1,14 @@
 {
  "actions": [],
  "allow_import": 1,
- "autoname": "SA.####",
+ "autoname": "naming_series:",
  "creation": "2020-03-17 11:24:48.054538",
  "doctype": "DocType",
  "document_type": "Setup",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "naming_series",
   "sa_is_an_organization",
   "column_break_2",
   "private_limited_company",
@@ -267,11 +268,19 @@
    "fieldname": "if_owns_ttc_phote",
    "fieldtype": "Attach",
    "label": "If Owns TTC - Phote"
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Series",
+   "options": "SA.####"
   }
  ],
  "image_field": "sa_photo",
+ "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-08-30 17:11:01.458919",
+ "modified": "2020-12-23 12:45:44.751137",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "SAMS",
