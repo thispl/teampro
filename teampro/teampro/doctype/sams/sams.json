@@ -47,7 +47,9 @@
   "project_allocated_section",
   "project_allocation",
   "section_break_40",
-  "project_allocated"
+  "project_allocated",
+  "section_break_41",
+  "remarks"
  ],
  "fields": [
   {
@@ -275,12 +277,21 @@
    "hidden": 1,
    "label": "Series",
    "options": "SA.####"
+  },
+  {
+   "fieldname": "section_break_41",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "image_field": "sa_photo",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-12-23 12:45:44.751137",
+ "modified": "2021-02-02 19:01:12.301816",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "SAMS",

@@ -17,14 +17,14 @@ def get_data(filters):
 	data = []
 	resource = ''
 	if filters.status == 'All':
-		tasks = frappe.get_all('Task',{'service':'IT'},['*'])
+		tasks = frappe.get_all('Task',{'service':'IT-SW'},['*'])
 	else:
-		tasks = frappe.get_all('Task',{'service':'IT','status':filters.status},['*'])
+		tasks = frappe.get_all('Task',{'service':'IT-SW','status':filters.status},['*'])
 	for task in tasks:
 		awh = 0
 		project_status = frappe.get_value('Project',task.project,'status')
 		query = """select sum(hours) as hours from `tabTimesheet Detail` where task= '{task}' """.format(task=task.name)
-		ts_dates = frappe.db.sql("""select min(date(from_time)) as tsd,max(date(to_time)) as ted from `tabTimesheet Detail` where task= '{task}' """.format(task=task.name),as_dict=1)[0]
+		ts_dates = frappe.db.sql("""select min(date(from_time)) as tsd,max(date(to_time)) as ted from `tabTimesheet Detail` where task= '{task}' and date(from_time) between {from_date} and {to_date}""".format(task=task.name,from_date=filters.from_date,to_date=filters.to_date),as_dict=1)[0]
 		tsd = ts_dates.tsd
 		ted = ts_dates.ted
 		timesheet_hours = frappe.db.sql(query,as_dict=1)[0]

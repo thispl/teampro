@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "field:service",
  "creation": "2020-08-29 09:16:16.510904",
  "doctype": "DocType",
@@ -23,8 +24,9 @@
    "label": "Service Title"
   }
  ],
+ "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2020-08-29 09:19:24.912295",
+ "modified": "2021-01-06 10:15:31.603941",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Services",
