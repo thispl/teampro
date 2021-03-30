@@ -1,43 +1,102 @@
 {
  "actions": [],
- "creation": "2021-01-02 16:14:01.084842",
+ "creation": "2021-03-16 14:27:24.214813",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "monthly",
+  "employee_id",
+  "employee_name",
   "quarterly",
-  "annually"
+  "column_break_4",
+  "employee_mail",
+  "year",
+  "period",
+  "section_break_7",
+  "target",
+  "bt_section",
+  "tiips"
  ],
  "fields": [
   {
-   "fieldname": "monthly",
+   "fieldname": "employee_id",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Monthly"
+   "label": "Employee ID"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name"
+  },
+  {
+   "fieldname": "period",
+   "fieldtype": "Select",
+   "label": "Period",
+   "options": "\nMonthly\nQuarterly\nAnnually"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_7",
+   "fieldtype": "Section Break",
+   "label": "FT"
+  },
+  {
+   "fieldname": "target",
+   "fieldtype": "Table",
+   "options": "Target"
   },
   {
    "fieldname": "quarterly",
-   "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Quarterly"
+   "fieldtype": "Select",
+   "label": "Quarterly",
+   "options": "1\n2\n3\n4"
   },
   {
-   "fieldname": "annually",
+   "fieldname": "employee_mail",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Annually"
+   "label": "Employee mail"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Select",
+   "label": "Year",
+   "options": "2020\n2021\n2019"
+  },
+  {
+   "fieldname": "bt_section",
+   "fieldtype": "Section Break",
+   "label": "BT"
+  },
+  {
+   "fieldname": "tiips",
+   "fieldtype": "Table",
+   "options": "BT"
   }
  ],
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
- "istable": 1,
+ "issingle": 1,
  "links": [],
- "modified": "2021-01-02 16:15:08.660517",
+ "modified": "2021-03-26 16:30:12.179881",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "TIIP",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

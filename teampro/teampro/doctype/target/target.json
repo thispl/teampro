@@ -6,46 +6,60 @@
  "engine": "InnoDB",
  "field_order": [
   "data_1",
-  "target",
+  "goal",
+  "role",
   "achieved",
   "pending",
   "achieved_percentage"
  ],
  "fields": [
   {
+   "columns": 2,
    "fieldname": "data_1",
    "fieldtype": "Data",
-   "in_list_view": 1
-  },
-  {
-   "fieldname": "target",
-   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Target"
+   "label": "Employee Name"
   },
   {
+   "columns": 2,
    "fieldname": "achieved",
-   "fieldtype": "Data",
+   "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Achieved"
   },
   {
+   "columns": 1,
    "fieldname": "pending",
-   "fieldtype": "Data",
+   "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "Pending"
   },
   {
+   "columns": 1,
    "fieldname": "achieved_percentage",
-   "fieldtype": "Data",
+   "fieldtype": "Percent",
    "in_list_view": 1,
    "label": "Achieved Percentage"
+  },
+  {
+   "columns": 2,
+   "fieldname": "goal",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Goal"
+  },
+  {
+   "columns": 2,
+   "fieldname": "role",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Role"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-01-02 16:38:53.915164",
+ "modified": "2021-03-27 17:47:01.143712",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Target",

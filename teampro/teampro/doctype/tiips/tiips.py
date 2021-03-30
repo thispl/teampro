@@ -6,7 +6,5 @@ from __future__ import unicode_literals
 # import frappe
 from frappe.model.document import Document
 
-class EmployeeTarget(Document):
+class Tiips(Document):
 	pass
-
-

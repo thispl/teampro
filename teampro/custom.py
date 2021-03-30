@@ -3,6 +3,16 @@ from frappe.utils.csvutils import read_csv_content
 from frappe.utils import cint
 from frappe.utils.data import today
 
+def remove_private():
+    cand = frappe.db.sql("""select name,irf from `tabCandidate` where irf != '' """,as_dict=True)
+    print(len(cand))
+    for can in cand:
+        if can.irf:
+            print("----------------------")
+            print(can.irf)
+            frappe.db.set_value("Candidate",can.name,"irf",(can.irf).replace("/private",""))
+            print("------------------------")
+
 def bulk_update_from_csv(filename):
     #below is the method to get file from Frappe File manager
     from frappe.utils.file_manager import get_file
@@ -45,3 +55,9 @@ def update_lead():
         doc.save(ignore_permissions=True)
         frappe.db.commit()
         # frappe.errprint(lead.name)
+
+@frappe.whitelist()
+def add_project_id(project):
+    projects = frappe.db.sql("""select project_id from `tabProject` where project_id is not null order by creation""",as_dict=True)
+    project_id = projects[-1].project_id
+    return 'PRO' + str(int(project_id.strip('PRO'))+1)

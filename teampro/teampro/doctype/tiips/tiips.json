@@ -1,0 +1,60 @@
+{
+ "actions": [],
+ "creation": "2021-01-02 16:14:01.084842",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "quarterly",
+  "year",
+  "bt",
+  "ft_times",
+  "ft"
+ ],
+ "fields": [
+  {
+   "fieldname": "quarterly",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Quarterly",
+   "options": "\n1\n2\n3\n4"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Year"
+  },
+  {
+   "fieldname": "bt",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "BT"
+  },
+  {
+   "fieldname": "ft_times",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Ft times"
+  },
+  {
+   "fieldname": "ft",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Ft"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2021-03-26 18:12:14.605885",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Tiips",
+ "owner": "Administrator",
+ "permissions": [],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

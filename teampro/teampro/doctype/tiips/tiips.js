@@ -1,7 +1,7 @@
-// Copyright (c) 2020, TeamPRO and contributors
+// Copyright (c) 2021, TeamPRO and contributors
 // For license information, please see license.txt
 
-frappe.ui.form.on('State', {
+frappe.ui.form.on('Tiips', {
 	// refresh: function(frm) {
 
 	// }

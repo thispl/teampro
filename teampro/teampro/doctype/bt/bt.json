@@ -1,47 +1,49 @@
 {
  "actions": [],
- "creation": "2020-08-29 09:55:38.140996",
+ "creation": "2021-03-26 16:30:03.114743",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "person_name",
-  "designation",
-  "mobile",
-  "email_id"
+  "employee_name",
+  "quarterly",
+  "year",
+  "bt"
  ],
  "fields": [
   {
-   "fieldname": "person_name",
+   "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Person Name"
+   "label": "Employee Name"
   },
   {
-   "fieldname": "designation",
-   "fieldtype": "Data",
+   "fieldname": "quarterly",
+   "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Designation"
+   "label": "Quarterly",
+   "options": "\n1\n2\n3\n4"
   },
   {
-   "fieldname": "mobile",
+   "fieldname": "year",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Mobile"
+   "label": "Year"
   },
   {
-   "fieldname": "email_id",
-   "fieldtype": "Data",
+   "fieldname": "bt",
+   "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Email Id"
+   "label": "BT"
   }
  ],
+ "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2020-08-29 09:57:55.223454",
+ "modified": "2021-03-27 18:03:25.692303",
  "modified_by": "Administrator",
  "module": "Teampro",
- "name": "Lead Contacts",
+ "name": "BT",
  "owner": "Administrator",
  "permissions": [],
  "quick_entry": 1,
