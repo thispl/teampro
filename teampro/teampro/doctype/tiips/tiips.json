@@ -5,49 +5,48 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "quarterly",
   "year",
-  "bt",
-  "ft_times",
-  "ft"
+  "ft_rate",
+  "ft_value",
+  "bt_value",
+  "at_value"
  ],
  "fields": [
   {
-   "fieldname": "quarterly",
+   "fieldname": "year",
    "fieldtype": "Select",
    "in_list_view": 1,
-   "label": "Quarterly",
-   "options": "\n1\n2\n3\n4"
+   "label": "Year",
+   "options": "\n2020\n2021\n2022\n2023\n2024\n2025\n2026\n2027\n2028\n2029\n2030\n2031\n2032\n2033\n2034\n2035"
   },
   {
-   "fieldname": "year",
+   "fieldname": "ft_rate",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Year"
+   "label": "FT Rate"
   },
   {
-   "fieldname": "bt",
-   "fieldtype": "Currency",
+   "fieldname": "ft_value",
+   "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "BT"
+   "label": "FT Value"
   },
   {
-   "fieldname": "ft_times",
-   "fieldtype": "Data",
+   "fieldname": "bt_value",
+   "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Ft times"
+   "label": "BT Value"
   },
   {
-   "fieldname": "ft",
-   "fieldtype": "Currency",
-   "in_list_view": 1,
-   "label": "Ft"
+   "fieldname": "at_value",
+   "fieldtype": "Int",
+   "label": "AT Value"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2021-03-26 18:12:14.605885",
+ "modified": "2021-04-05 10:33:53.263294",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Tiips",

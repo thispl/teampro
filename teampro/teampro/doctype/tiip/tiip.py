@@ -13,10 +13,15 @@ class TIIP(Document):
         self.target =[]
         self.tiips =[]
         emp = frappe.get_all(
-            "Employee", ["employee_name", "name", "prefered_email", "tiips_role"])
+            "Employee", {"status":"Active","employment_type":"Full-time"},["employee_name", "name", "prefered_email", "tiips_role","reports_to"])
         get = []
         si =0
         closure =0
+        # node_goal =0
+        # node_si =0
+        # node_closure = 0
+        # si_amount = 0
+        # closure_amount = 0
         if self.quarterly == "1":
             start = 1 ;end =3
         elif self.quarterly == "2":
@@ -26,7 +31,10 @@ class TIIP(Document):
         elif self.quarterly == "4":
             start = 10 ;end =12
         for e in emp:
-            frappe.errprint(e.employee_name)
+            si_amount = 0
+            closure_amount = 0
+            frappe.errprint(e.name)
+            
             get_bt=frappe.get_value(
                 "Tiips", {'parent': e.name,'quarterly':self.quarterly,'year':self.year}, ['quarterly','year','bt'])
             try:
@@ -43,16 +51,51 @@ class TIIP(Document):
                         e.prefered_email, start,end,self.year),as_dict=True)
                     closure =frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE candidate_owner = '%s'  AND month(so_confirmed_date) BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND year(so_confirmed_date) ='%s'""" % (
                         e.prefered_email,start,end,self.year),as_dict=True)
-                    frappe.errprint("dev")
-                    # frappe.errprint(closure)
             except TypeError:
                 closure = 0
+            node_goal =0
+            node_si =0
+            node_closure = 0
+            emp_node = frappe.get_all(
+            "Employee", {"status":"Active","employment_type":"Full-time","reports_to":e.name},["employee_name", "name", "prefered_email", "tiips_role","reports_to"])
+            for node in emp_node:
+                get_bt=frappe.get_value(
+                        "Tiips", {'parent': node.name,'quarterly':self.quarterly,'year':self.year}, ['quarterly','year','bt'])
+                # try:
+                if node.tiips_role == "Account Manager":
+                    node_si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE account_manager = '%s'  AND month(posting_date) BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND year(posting_date) = '%s'""" % (
+                        node.prefered_email,start,end,self.year),as_dict=True)
+                    si_amount += flt(node_si[0].total)
+                    frappe.errprint(si_amount)
+                    node_closure =frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE account_manager = '%s'  AND month(so_confirmed_date) BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND year(so_confirmed_date) ='%s'""" % (
+                        node.prefered_email,start,end,self.year),as_dict=True)
+                    closure_amount += flt(node_closure[0].charges)
+                    frappe.errprint(closure_amount)
+                if node.tiips_role == "Delivery Manager":
+                    node_si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE delivery_manager = '%s'  AND month(posting_date) BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND year(posting_date) = '%s' """ % (
+                        node.prefered_email, start,end,self.year),as_dict=True)
+                    si_amount += flt(node_si[0].total)
+                    frappe.errprint(si_amount)
+                    node_closure =frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE candidate_owner = '%s'  AND month(so_confirmed_date) BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND year(so_confirmed_date) ='%s'""" % (
+                        node.prefered_email,start,end,self.year),as_dict=True)
+                    closure_amount += flt(node_closure[0].charges)
+                    frappe.errprint(closure_amount)
+                ssa = frappe.get_value("Salary Structure Assignment", {'employee': node.name}, ['base'])
+                ft_time = frappe.get_value("Tiips", {'parent': node.name,"quarterly":self.quarterly,"year":self.year}, ['ft_times'])
+                if ssa:
+                    if ft_time:
+                        quarter = int(ssa) * int(ft_time)
+                        node_goal += 0
+                        if self.period == "Quarterly":
+                            node_goal += quarter
+                        elif self.period == "Monthly":
+                            node_goal += quarter/3
+                        else:
+                            node_goal += quarter * 4
             ssa = frappe.get_value("Salary Structure Assignment", {
                 'employee': e.name}, ['base'])
-            # frappe.errprint(ssa)
-            ft_time = frappe.get_value(
-                "Tiips", {'parent': e.name,"quarterly":self.quarterly,"year":self.year}, ['ft_times'])
-            sl = si[0].total
+            ft_time = frappe.get_value("Tiips", {'parent': e.name,"quarterly":self.quarterly,"year":self.year}, ['ft_times'])
+            # sl = si[0].total
             if ssa:
                 if ft_time:
                     quarter = int(ssa) * int(ft_time)
@@ -63,14 +106,15 @@ class TIIP(Document):
                         total = quarter/3
                     else:
                         total = quarter * 4
-                    # if closure[0].charges is not None:
+                    goal_amount = total + node_goal
+                    achieved_amount = flt(si[0].total) + flt(closure[0].charges) + flt(si_amount) + flt(closure_amount)
                     self.append("target",{
                         "data_1": e.employee_name,
-                        "goal": total,
+                        "goal": flt(goal_amount),
                         "role": e.tiips_role,
-                        "achieved": flt(sl) + flt(closure[0].charges),
-                        "pending": flt(total) - flt(sl),
-                        "achieved_percentage" :(flt(sl)/flt(total))*100
+                        "achieved": flt(achieved_amount),
+                        "pending": flt(goal_amount) - flt(achieved_amount),
+                        "achieved_percentage" :(flt(achieved_amount)/flt(goal_amount))*100
                         })
                     self.append("tiips",{
                         "employee_name":e.employee_name,
@@ -78,11 +122,6 @@ class TIIP(Document):
                         "year":get_bt[1],
                         "bt":get_bt[2]
                     })
-                # frappe.errprint(flt(sl))
-                # frappe.errprint(flt(total))
-                # return goal,achieved
-
-
 # @frappe.whitelist()
 # def get_ft(employee_name, period,name):
 #     ssa = frappe.get_value("Salary Structure Assignment", {
