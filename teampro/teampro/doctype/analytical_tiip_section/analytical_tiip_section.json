@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "creation": "2021-04-17 17:43:23.481164",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "year",
+  "ft",
+  "at",
+  "bt"
+ ],
+ "fields": [
+  {
+   "fieldname": "year",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ft",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "FT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "at",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "AT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bt",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "BT",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2021-04-17 17:43:23.481164",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Analytical TIIP Section",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

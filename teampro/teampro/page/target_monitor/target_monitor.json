@@ -1,0 +1,23 @@
+{
+ "content": null,
+ "creation": "2021-05-05 16:27:53.891783",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2021-05-05 16:27:53.891783",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "target-monitor",
+ "owner": "Administrator",
+ "page_name": "Target Monitor",
+ "roles": [
+  {
+   "role": "Employee"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Target Monitor"
+}

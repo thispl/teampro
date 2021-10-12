@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils.data import today
+from frappe.utils.data import add_days, today
 from frappe.utils import  formatdate
 
 @frappe.whitelist()
@@ -42,3 +42,24 @@ def next_contact_alert():
             message="""
             <p>Dear %s,</p>
             <P> Please find the list of Leads to be contacted today - %s %s""" % (emp_name,formatdate(today()), content)) 
+
+@frappe.whitelist()
+def checkin_alert():
+    yesterday = add_days(today(),-1)
+    employees = frappe.get_all('Employee',{'status':'Active'},['name','user_id','employee_name'])
+    for emp in employees:
+        ec = frappe.db.sql("select employee from `tabEmployee Checkin` where date(time) = '%s' and employee = '%s'" %(yesterday,emp.name),as_dict=True)
+        if len(ec) < 2:
+            frappe.sendmail(
+            recipients=[emp.user_id],
+            subject='Miss Punch Alert - '+ formatdate(yesterday),
+            message="""
+            <p>Dear %s,</p>
+            <P> Please be informed that, the Bio Metric Punch of yours is missing for  - %s
+            Please initiate action for Leave / OD in ERP immediately. In any other case contact your reporting head
+            """ % (emp.employee_name,yesterday))
+
+            
+    
+
+

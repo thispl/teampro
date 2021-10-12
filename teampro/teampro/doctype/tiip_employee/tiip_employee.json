@@ -1,0 +1,152 @@
+{
+ "actions": [],
+ "autoname": "field:employee_name",
+ "creation": "2021-04-17 17:15:51.204474",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_id",
+  "employee_name",
+  "employee_email",
+  "monthly",
+  "yearly",
+  "column_break_6",
+  "from_date",
+  "to_date",
+  "quarterly",
+  "half_yearly",
+  "section_break_11",
+  "sales_invoice",
+  "section_break_13",
+  "achieved",
+  "column_break_15",
+  "outstanding",
+  "section_break_17",
+  "analytical_section"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_id",
+   "fieldtype": "Link",
+   "label": "Employee ID",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee_id.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "unique": 1
+  },
+  {
+   "fetch_from": "employee_id.prefered_email",
+   "fieldname": "employee_email",
+   "fieldtype": "Data",
+   "label": "Employee Email"
+  },
+  {
+   "fieldname": "monthly",
+   "fieldtype": "Select",
+   "label": "Monthly",
+   "options": "\nJan\nFeb\nMarch\nApril\nMay\nJune\nJuly\nAug\nSep\nOct\nNov\nDec"
+  },
+  {
+   "fieldname": "yearly",
+   "fieldtype": "Select",
+   "label": "Yearly",
+   "options": "\n2020\n2021\n2022\n2023\n2024\n2025\n2026\n2027\n2028\n2029\n2030\n2031\n2032\n2033\n2034\n2035"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "mandatory_depends_on": "eval:doc.to_date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "mandatory_depends_on": "eval:doc.from_date"
+  },
+  {
+   "fieldname": "quarterly",
+   "fieldtype": "Select",
+   "label": "Quarterly",
+   "options": "\nQ1\nQ2\nQ3\nQ4"
+  },
+  {
+   "fieldname": "half_yearly",
+   "fieldtype": "Select",
+   "label": "Half Yearly",
+   "options": "\nH1\nH2"
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Table",
+   "label": "Sales Invoice",
+   "options": "SI TIIP Employee"
+  },
+  {
+   "fieldname": "section_break_13",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "achieved",
+   "fieldtype": "Data",
+   "label": "Achieved"
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "outstanding",
+   "fieldtype": "Data",
+   "label": "Outstanding",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "analytical_section",
+   "fieldtype": "Table",
+   "label": "Analytical Section",
+   "options": "Analytical TIIP Section"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-04-17 18:34:53.766901",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "TIIP Employee",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

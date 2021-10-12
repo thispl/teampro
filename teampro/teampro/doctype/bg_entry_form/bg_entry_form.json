@@ -1,0 +1,522 @@
+{
+ "actions": [],
+ "autoname": "BGE.####",
+ "creation": "2021-07-01 16:23:16.287236",
+ "doctype": "DocType",
+ "document_type": "Setup",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "common_information_section",
+  "employee_name",
+  "gender",
+  "date_of_birth",
+  "email_id",
+  "fathers_name",
+  "column_break_6",
+  "address",
+  "client_employee_code",
+  "contact_number",
+  "document_required",
+  "education_check_section",
+  "register_no_id_no",
+  "college_name",
+  "university_name",
+  "degree",
+  "column_break_17",
+  "specialization",
+  "course_period",
+  "year_of_passed",
+  "education_document_required",
+  "section_break_22",
+  "experience",
+  "employment_check_section",
+  "employment_check",
+  "address_and_contact_details",
+  "employee_code",
+  "employment_type",
+  "period_of_employment",
+  "designation",
+  "ctc_drawn",
+  "column_break_30",
+  "documents_required",
+  "data_32",
+  "data_33",
+  "data_34",
+  "data_35",
+  "reference_name_2",
+  "contact_2",
+  "designation_2",
+  "employment_check2_section",
+  "employer_name",
+  "address_and_contact_detail",
+  "employeecode",
+  "employmenttype",
+  "period_of_employment11",
+  "designation11",
+  "ctc_drawn11",
+  "column_break_47",
+  "document_required11",
+  "reason_for_leaving",
+  "reference_name_1",
+  "data_51",
+  "data_52",
+  "data_53",
+  "data_54",
+  "designation_21",
+  "criminal_check__address_check_section",
+  "criminal_check_address",
+  "city",
+  "column_break_35",
+  "state_and_country",
+  "criminal_check_document_required",
+  "identity_check_section",
+  "select_id_proof",
+  "name_as_in_proof",
+  "valid_from",
+  "valid_to",
+  "column_break_42",
+  "date_of_birth_as_in_proof",
+  "father_name_as_in_proof",
+  "scanned_document_required",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "common_information_section",
+   "fieldtype": "Section Break",
+   "label": "Common Information"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOthers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date Of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "label": "Email id",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fathers_name",
+   "fieldtype": "Data",
+   "label": "Father's Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "client_employee_code",
+   "fieldtype": "Data",
+   "label": "Employee code"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "label": "Contact Number",
+   "length": 10,
+   "options": "Phone",
+   "reqd": 1
+  },
+  {
+   "description": "CV",
+   "fieldname": "document_required",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Document required",
+   "reqd": 1
+  },
+  {
+   "fieldname": "education_check_section",
+   "fieldtype": "Section Break",
+   "label": "Education Check"
+  },
+  {
+   "fieldname": "register_no_id_no",
+   "fieldtype": "Int",
+   "label": "Register No./ ID No.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "college_name",
+   "fieldtype": "Data",
+   "label": "College Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "university_name",
+   "fieldtype": "Data",
+   "label": "University Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "degree",
+   "fieldtype": "Data",
+   "label": "Degree",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "specialization",
+   "fieldtype": "Data",
+   "label": "Specialization",
+   "reqd": 1
+  },
+  {
+   "fieldname": "course_period",
+   "fieldtype": "Int",
+   "label": "Course Period",
+   "reqd": 1
+  },
+  {
+   "fieldname": "year_of_passed",
+   "fieldtype": "Int",
+   "label": "Year of Passed",
+   "reqd": 1
+  },
+  {
+   "description": "Degree certificate/ provisional certificate. HSC, SSLC marksheets",
+   "fieldname": "education_document_required",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Document required",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_22",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "experience",
+   "fieldtype": "Select",
+   "label": "Experience",
+   "options": "\nFresher\nExperienced",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.experience===\"Experienced\"",
+   "fieldname": "employment_check_section",
+   "fieldtype": "Section Break",
+   "label": "Employment Check1"
+  },
+  {
+   "fieldname": "employment_check",
+   "fieldtype": "Data",
+   "label": "Employer Name"
+  },
+  {
+   "fieldname": "address_and_contact_details",
+   "fieldtype": "Small Text",
+   "label": "Address and Contact Details"
+  },
+  {
+   "fieldname": "employee_code",
+   "fieldtype": "Int",
+   "label": "Employee Code"
+  },
+  {
+   "fieldname": "employment_type",
+   "fieldtype": "Data",
+   "label": "Employment Type"
+  },
+  {
+   "fieldname": "period_of_employment",
+   "fieldtype": "Int",
+   "label": "Period of Employment"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "ctc_drawn",
+   "fieldtype": "Int",
+   "label": "CTC Drawn"
+  },
+  {
+   "fieldname": "column_break_30",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Experience certificate, Appointment letter for current employer, pay slips",
+   "fieldname": "documents_required",
+   "fieldtype": "Attach",
+   "label": "Documents required"
+  },
+  {
+   "fieldname": "data_32",
+   "fieldtype": "Data",
+   "label": "Reason for Leaving"
+  },
+  {
+   "fieldname": "data_33",
+   "fieldtype": "Data",
+   "label": "Reference Name 1"
+  },
+  {
+   "fieldname": "data_34",
+   "fieldtype": "Data",
+   "label": "Contact 1",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "data_35",
+   "fieldtype": "Data",
+   "label": "Designation 1"
+  },
+  {
+   "fieldname": "reference_name_2",
+   "fieldtype": "Data",
+   "label": "Reference Name 2"
+  },
+  {
+   "fieldname": "contact_2",
+   "fieldtype": "Data",
+   "label": "Contact 2",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "designation_2",
+   "fieldtype": "Data",
+   "label": "Designation 2"
+  },
+  {
+   "depends_on": "eval:doc.experience===\"Experienced\"",
+   "fieldname": "employment_check2_section",
+   "fieldtype": "Section Break",
+   "label": "Employment Check2"
+  },
+  {
+   "fieldname": "employer_name",
+   "fieldtype": "Data",
+   "label": "Employer Name"
+  },
+  {
+   "fieldname": "address_and_contact_detail",
+   "fieldtype": "Small Text",
+   "label": "Address and Contact Detail"
+  },
+  {
+   "fieldname": "employeecode",
+   "fieldtype": "Int",
+   "label": " EmployeeCode "
+  },
+  {
+   "fieldname": "employmenttype",
+   "fieldtype": "Data",
+   "label": "EmploymentType"
+  },
+  {
+   "fieldname": "period_of_employment11",
+   "fieldtype": "Int",
+   "label": "Period of Employment"
+  },
+  {
+   "fieldname": "designation11",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "ctc_drawn11",
+   "fieldtype": "Int",
+   "label": "CTC Drawn"
+  },
+  {
+   "fieldname": "column_break_47",
+   "fieldtype": "Column Break"
+  },
+  {
+   "description": "Experience certificate, Appointment letter for current employer, pay slips",
+   "fieldname": "document_required11",
+   "fieldtype": "Attach",
+   "label": "Document required"
+  },
+  {
+   "fieldname": "reason_for_leaving",
+   "fieldtype": "Data",
+   "label": "Reason for Leaving "
+  },
+  {
+   "fieldname": "reference_name_1",
+   "fieldtype": "Data",
+   "label": "Reference Name 1"
+  },
+  {
+   "fieldname": "data_51",
+   "fieldtype": "Data",
+   "label": "Contact 1",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "data_52",
+   "fieldtype": "Data",
+   "label": "Designation 1"
+  },
+  {
+   "fieldname": "data_53",
+   "fieldtype": "Data",
+   "label": "Reference Name 2"
+  },
+  {
+   "fieldname": "data_54",
+   "fieldtype": "Data",
+   "label": "Contact 2",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "designation_21",
+   "fieldtype": "Data",
+   "label": "Designation 2"
+  },
+  {
+   "fieldname": "criminal_check__address_check_section",
+   "fieldtype": "Section Break",
+   "label": "Criminal Check , Address Check"
+  },
+  {
+   "fieldname": "criminal_check_address",
+   "fieldtype": "Small Text",
+   "label": "Criminal Check Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_35",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "state_and_country",
+   "fieldtype": "Data",
+   "label": "State and Country",
+   "reqd": 1
+  },
+  {
+   "description": "Aadhar card",
+   "fieldname": "criminal_check_document_required",
+   "fieldtype": "Attach",
+   "label": "Document required",
+   "reqd": 1
+  },
+  {
+   "fieldname": "identity_check_section",
+   "fieldtype": "Section Break",
+   "label": "Identity Check"
+  },
+  {
+   "fieldname": "select_id_proof",
+   "fieldtype": "Select",
+   "label": "Select ID Proof",
+   "options": "\nAadhar\nVoter ID\nDriving license",
+   "reqd": 1
+  },
+  {
+   "fieldname": "name_as_in_proof",
+   "fieldtype": "Data",
+   "label": "Name as in ID",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.select_id_proof==\"Driving license\"",
+   "fieldname": "valid_from",
+   "fieldtype": "Date",
+   "label": "Valid From"
+  },
+  {
+   "depends_on": "eval:doc.select_id_proof==\"Driving license\"",
+   "fieldname": "valid_to",
+   "fieldtype": "Date",
+   "label": "Valid To"
+  },
+  {
+   "fieldname": "column_break_42",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_of_birth_as_in_proof",
+   "fieldtype": "Date",
+   "label": "Date Of Birth as in ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "father_name_as_in_proof",
+   "fieldtype": "Data",
+   "label": "Father Name as in ID",
+   "reqd": 1
+  },
+  {
+   "description": "Voter ID/Aadhar/Driving licence",
+   "fieldname": "scanned_document_required",
+   "fieldtype": "Attach",
+   "label": "Document required",
+   "reqd": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "BG Entry Form",
+   "print_hide": 1,
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2021-09-08 15:36:14.129301",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "BG Entry Form",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "employee_name",
+ "track_changes": 1
+}

@@ -1,0 +1,50 @@
+/*.table table-bordered {*/
+/*    display:inline-flex;*/
+/*}*/
+.header{
+    width :"10%"
+}
+
+.table-wrapper {
+  display: flex;
+}
+
+
+* {
+  box-sizing: border-box;
+}
+
+.row {
+  margin-left:10px;
+  margin-right:10px;
+}
+.column {
+  float: left;
+  width: 25%;
+  padding: 6px;
+}
+
+/* Clearfix (clear floats) */
+/* .row::after {
+  content: "";
+  clear: both;
+  display: table;
+  border: 1px solid black;
+
+}  */
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+  border: 1px solid black;
+}
+
+th, td {
+  border: 1px solid black;
+  padding: 12px;
+}
+
+/* tr:nth-child(even) {
+  background-color: #f5f5f5;
+} */

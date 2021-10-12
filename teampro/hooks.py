@@ -83,20 +83,25 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	"Opportunity": {
+		"after_insert": "teampro.custom.opportunity_send_mail",
+		# "on_cancel": "method",
+		# "on_trash": "method"
+	}
+}
 
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
 	"daily": [
-		"teampro.email_alerts.next_contact_alert"
+		"teampro.email_alerts.next_contact_alert",
+		"teampro.email_alerts.checkin_alert",
+		"teampro.mark_attendance.mark_att"
 	],
+	"monthly": [
+		"teampro.mark_attendance.previous_mark_att"
+	]
 }
 # scheduler_events = {
 # 	"all": [
