@@ -144,4 +144,4 @@ scheduler_events = {
 #
 # auto_cancel_exempted_doctypes = ["Auto Repeat"]
 
-fixtures = ['Client Script','Custom Field','Workspace','Print Format']
+# fixtures = ['Client Script','Custom Field','Workspace','Print Format']
