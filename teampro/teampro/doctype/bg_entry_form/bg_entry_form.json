@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "common_information_section",
+  "customer",
   "employee_name",
   "gender",
   "date_of_birth",
@@ -143,14 +144,15 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "description": "CV",
    "fieldname": "document_required",
    "fieldtype": "Attach",
    "in_list_view": 1,
-   "label": "Document required",
-   "reqd": 1
+   "label": "Document required"
   },
   {
+   "depends_on": "eval:doc.customer != 'Manappuram Finance  Ltd'",
    "fieldname": "education_check_section",
    "fieldtype": "Section Break",
    "label": "Education Check"
@@ -158,26 +160,22 @@
   {
    "fieldname": "register_no_id_no",
    "fieldtype": "Int",
-   "label": "Register No./ ID No.",
-   "reqd": 1
+   "label": "Register No./ ID No."
   },
   {
    "fieldname": "college_name",
    "fieldtype": "Data",
-   "label": "College Name",
-   "reqd": 1
+   "label": "College Name"
   },
   {
    "fieldname": "university_name",
    "fieldtype": "Data",
-   "label": "University Name",
-   "reqd": 1
+   "label": "University Name"
   },
   {
    "fieldname": "degree",
    "fieldtype": "Data",
-   "label": "Degree",
-   "reqd": 1
+   "label": "Degree"
   },
   {
    "fieldname": "column_break_17",
@@ -186,28 +184,25 @@
   {
    "fieldname": "specialization",
    "fieldtype": "Data",
-   "label": "Specialization",
-   "reqd": 1
+   "label": "Specialization"
   },
   {
    "fieldname": "course_period",
    "fieldtype": "Int",
-   "label": "Course Period",
-   "reqd": 1
+   "label": "Course Period"
   },
   {
    "fieldname": "year_of_passed",
    "fieldtype": "Int",
-   "label": "Year of Passed",
-   "reqd": 1
+   "label": "Year of Passed"
   },
   {
+   "allow_on_submit": 1,
    "description": "Degree certificate/ provisional certificate. HSC, SSLC marksheets",
    "fieldname": "education_document_required",
    "fieldtype": "Attach",
    "in_list_view": 1,
-   "label": "Document required",
-   "reqd": 1
+   "label": "Document required"
   },
   {
    "fieldname": "section_break_22",
@@ -217,11 +212,11 @@
    "fieldname": "experience",
    "fieldtype": "Select",
    "label": "Experience",
-   "options": "\nFresher\nExperienced",
-   "reqd": 1
+   "mandatory_depends_on": "eval:doc.customer != 'Manappuram Finance  Ltd'",
+   "options": "\nFresher\nExperienced"
   },
   {
-   "depends_on": "eval:doc.experience===\"Experienced\"",
+   "depends_on": "eval:doc.experience===\"Experienced\"||doc.customer != 'Manappuram Finance  Ltd'",
    "fieldname": "employment_check_section",
    "fieldtype": "Section Break",
    "label": "Employment Check1"
@@ -266,6 +261,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "description": "Experience certificate, Appointment letter for current employer, pay slips",
    "fieldname": "documents_required",
    "fieldtype": "Attach",
@@ -309,7 +305,7 @@
    "label": "Designation 2"
   },
   {
-   "depends_on": "eval:doc.experience===\"Experienced\"",
+   "depends_on": "eval:doc.experience===\"Experienced\"||doc.customer != 'Manappuram Finance  Ltd'",
    "fieldname": "employment_check2_section",
    "fieldtype": "Section Break",
    "label": "Employment Check2"
@@ -397,6 +393,7 @@
    "label": "Designation 2"
   },
   {
+   "depends_on": "eval:doc.customer != 'Manappuram Finance  Ltd'",
    "fieldname": "criminal_check__address_check_section",
    "fieldtype": "Section Break",
    "label": "Criminal Check , Address Check"
@@ -404,14 +401,12 @@
   {
    "fieldname": "criminal_check_address",
    "fieldtype": "Small Text",
-   "label": "Criminal Check Address",
-   "reqd": 1
+   "label": "Criminal Check Address"
   },
   {
    "fieldname": "city",
    "fieldtype": "Data",
-   "label": "City",
-   "reqd": 1
+   "label": "City"
   },
   {
    "fieldname": "column_break_35",
@@ -420,17 +415,17 @@
   {
    "fieldname": "state_and_country",
    "fieldtype": "Data",
-   "label": "State and Country",
-   "reqd": 1
+   "label": "State and Country"
   },
   {
+   "allow_on_submit": 1,
    "description": "Aadhar card",
    "fieldname": "criminal_check_document_required",
    "fieldtype": "Attach",
-   "label": "Document required",
-   "reqd": 1
+   "label": "Document required"
   },
   {
+   "depends_on": "eval:doc.customer != 'Manappuram Finance  Ltd'",
    "fieldname": "identity_check_section",
    "fieldtype": "Section Break",
    "label": "Identity Check"
@@ -439,14 +434,12 @@
    "fieldname": "select_id_proof",
    "fieldtype": "Select",
    "label": "Select ID Proof",
-   "options": "\nAadhar\nVoter ID\nDriving license",
-   "reqd": 1
+   "options": "\nAadhar\nVoter ID\nDriving license"
   },
   {
    "fieldname": "name_as_in_proof",
    "fieldtype": "Data",
-   "label": "Name as in ID",
-   "reqd": 1
+   "label": "Name as in ID"
   },
   {
    "depends_on": "eval:doc.select_id_proof==\"Driving license\"",
@@ -467,21 +460,19 @@
   {
    "fieldname": "date_of_birth_as_in_proof",
    "fieldtype": "Date",
-   "label": "Date Of Birth as in ID",
-   "reqd": 1
+   "label": "Date Of Birth as in ID"
   },
   {
    "fieldname": "father_name_as_in_proof",
    "fieldtype": "Data",
-   "label": "Father Name as in ID",
-   "reqd": 1
+   "label": "Father Name as in ID"
   },
   {
+   "allow_on_submit": 1,
    "description": "Voter ID/Aadhar/Driving licence",
    "fieldname": "scanned_document_required",
    "fieldtype": "Attach",
-   "label": "Document required",
-   "reqd": 1
+   "label": "Document required"
   },
   {
    "fieldname": "amended_from",
@@ -491,12 +482,19 @@
    "options": "BG Entry Form",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2021-09-08 15:36:14.129301",
+ "modified": "2022-05-18 16:27:48.705982",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "BG Entry Form",

@@ -1,0 +1,317 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "IAF.####",
+ "creation": "2022-08-08 11:48:19.196744",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "candidate_id",
+  "given_name",
+  "position",
+  "territory",
+  "mobile_number",
+  "mobile",
+  "mail_id",
+  "column_break_8",
+  "passport_number",
+  "passport_expiry_date",
+  "dob",
+  "age",
+  "total_experience",
+  "overseas_experience",
+  "india_experience",
+  "section_break_16",
+  "location",
+  "qualification",
+  "specialization",
+  "year_of_passing",
+  "is_married",
+  "column_break_22",
+  "organization",
+  "current_ctc",
+  "expected_ctc",
+  "currency",
+  "section_break_27",
+  "notice_period_months",
+  "vaccination_status",
+  "vaccine_name",
+  "overall_rating",
+  "column_break_32",
+  "confidence",
+  "interest",
+  "relevance",
+  "communication_1",
+  "section_break_37",
+  "remarks_1",
+  "evaluated_by",
+  "column_break_40",
+  "remarks",
+  "final_result",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "given_name",
+   "fieldtype": "Data",
+   "label": "Given Name"
+  },
+  {
+   "fieldname": "position",
+   "fieldtype": "Data",
+   "label": "Position"
+  },
+  {
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "label": "Territory",
+   "options": "Territory"
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Data",
+   "label": "Primary Mobile Number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "mobile",
+   "fieldtype": "Data",
+   "label": "Secondary Mobile Number",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "mail_id",
+   "fieldtype": "Data",
+   "label": "Mail ID"
+  },
+  {
+   "fieldname": "passport_expiry_date",
+   "fieldtype": "Date",
+   "label": "Passport Expiry Date"
+  },
+  {
+   "fieldname": "dob",
+   "fieldtype": "Date",
+   "label": "Date of Birth"
+  },
+  {
+   "fieldname": "age",
+   "fieldtype": "Data",
+   "label": "Age"
+  },
+  {
+   "fieldname": "total_experience",
+   "fieldtype": "Int",
+   "label": "Total Experience"
+  },
+  {
+   "fieldname": "overseas_experience",
+   "fieldtype": "Int",
+   "label": "Overseas Experience"
+  },
+  {
+   "fieldname": "india_experience",
+   "fieldtype": "Int",
+   "label": "India Experience"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Link",
+   "label": "Location",
+   "options": "Districts"
+  },
+  {
+   "fieldname": "qualification",
+   "fieldtype": "Link",
+   "label": "Qualification",
+   "options": "Qualification"
+  },
+  {
+   "fieldname": "specialization",
+   "fieldtype": "Link",
+   "label": "Specialization",
+   "options": "Specialization"
+  },
+  {
+   "fieldname": "year_of_passing",
+   "fieldtype": "Select",
+   "label": "Year of Passing",
+   "options": "\n1960\n1961\n1962\n1963\n1964\n1965\n1966\n1967\n1968\n1969\n1970\n1971\n1972\n1973\n1974\n1975\n1976\n1977\n1978\n1979\n1980\n1981\n1982\n1983\n1984\n1985\n1986\n1987\n1988\n1989\n1990\n1991\n1992\n1993\n1994\n1995\n1996\n1997\n1998\n1999\n2000\n2001\n2002\n2003\n2004\n2005\n2006\n2007\n2008\n2009\n2010\n2011\n2012\n2013\n2014\n2015\n2016\n2017\n2018\n2019\n2020"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_married",
+   "fieldtype": "Check",
+   "label": "Is Married"
+  },
+  {
+   "fieldname": "organization",
+   "fieldtype": "Data",
+   "label": "Organization"
+  },
+  {
+   "fieldname": "current_ctc",
+   "fieldtype": "Currency",
+   "label": "Current CTC"
+  },
+  {
+   "fieldname": "expected_ctc",
+   "fieldtype": "Currency",
+   "label": "Expected CTC"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "notice_period_months",
+   "fieldtype": "Int",
+   "label": "Notice Period Months"
+  },
+  {
+   "fieldname": "vaccination_status",
+   "fieldtype": "Select",
+   "label": "Vaccination Status",
+   "options": "\nDose 1\nDose 2\nNo Vaccination"
+  },
+  {
+   "fieldname": "vaccine_name",
+   "fieldtype": "Link",
+   "label": "Vaccine Name",
+   "options": "Vaccine"
+  },
+  {
+   "fieldname": "confidence",
+   "fieldtype": "Select",
+   "label": "Confidence",
+   "options": "\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "interest",
+   "fieldtype": "Select",
+   "label": "Interest",
+   "options": "\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "relevance",
+   "fieldtype": "Select",
+   "label": "Relevance",
+   "options": "\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "communication_1",
+   "fieldtype": "Select",
+   "label": "Communication",
+   "options": "\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10"
+  },
+  {
+   "fieldname": "overall_rating",
+   "fieldtype": "Rating",
+   "label": "Overall Rating"
+  },
+  {
+   "fieldname": "remarks_1",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "evaluated_by",
+   "fieldtype": "Data",
+   "label": "Evaluated By"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Client Remarks"
+  },
+  {
+   "fieldname": "final_result",
+   "fieldtype": "Select",
+   "label": "Final Result",
+   "options": "\nSelected\nShortlisted\nHold\nRejected"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_16",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_22",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_27",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_37",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_40",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "passport_number",
+   "fieldtype": "Data",
+   "label": "Passport Number"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "IAF Form",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "candidate_id",
+   "fieldtype": "Link",
+   "label": "Candidate ID",
+   "options": "Candidate"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2022-08-08 17:58:06.717003",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "IAF Form",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

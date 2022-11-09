@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-05-18 13:15:28.881946",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "schooluniversity",
+  "qulaification",
+  "level",
+  "year_of_passing"
+ ],
+ "fields": [
+  {
+   "fieldname": "schooluniversity",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "School/University"
+  },
+  {
+   "fieldname": "qulaification",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Qulaification"
+  },
+  {
+   "fieldname": "level",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Level"
+  },
+  {
+   "fieldname": "year_of_passing",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Year Of Passing"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-05-18 14:41:24.711133",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Educational Qualification Table",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

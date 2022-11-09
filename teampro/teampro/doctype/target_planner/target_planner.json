@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "TA-.####",
+ "creation": "2022-02-08 17:11:08.148109",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "year",
+  "target_based_unit",
+  "column_break_3",
+  "designation",
+  "department",
+  "services",
+  "update_target",
+  "section_break_5",
+  "target_child"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "target_child",
+   "fieldtype": "Table",
+   "label": "Monthly Target Allocation",
+   "options": "Target Child"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.employee",
+   "fieldname": "year",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Year",
+   "options": "Yearly",
+   "reqd": 1
+  },
+  {
+   "fieldname": "target_based_unit",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Target Based Unit",
+   "options": "\nService Based\nAccount Based"
+  },
+  {
+   "depends_on": "eval:doc.target_based_unit == \"Service Based\"",
+   "fieldname": "services",
+   "fieldtype": "Table MultiSelect",
+   "label": "Services",
+   "options": "Employee services"
+  },
+  {
+   "depends_on": "eval:doc.target_based_unit == \"Service Based\"",
+   "fieldname": "update_target",
+   "fieldtype": "Button",
+   "label": "Update Target"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-03-19 12:50:33.015241",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Target Planner",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

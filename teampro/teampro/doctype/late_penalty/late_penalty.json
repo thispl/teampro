@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "LP.####",
+ "creation": "2022-02-04 15:39:11.243420",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "emp_name",
+  "employee_name",
+  "late_days",
+  "permissions",
+  "column_break_3",
+  "deduction_days",
+  "deduction_amount"
+ ],
+ "fields": [
+  {
+   "fieldname": "emp_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee ID",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "late_days",
+   "fieldtype": "Int",
+   "label": "Late days"
+  },
+  {
+   "fieldname": "permissions",
+   "fieldtype": "Data",
+   "label": "Permissions"
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "deduction_days",
+   "fieldtype": "Int",
+   "label": "Deduction days"
+  },
+  {
+   "fieldname": "deduction_amount",
+   "fieldtype": "Int",
+   "label": "Deduction Amount"
+  },
+  {
+   "fetch_from": "emp_name.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Read Only",
+   "in_list_view": 1,
+   "label": "Employee Name"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-03-03 12:14:23.277223",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Late Penalty",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

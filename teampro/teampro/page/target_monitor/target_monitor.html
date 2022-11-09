@@ -1,5 +1,5 @@
 <script>
-    
+
     document.getElementById("date").innerHTML = Date()
     // var month_Name = new Date().getMonthName();
     // document.getElementById("month").innerHTML = month_Name;
@@ -15,225 +15,333 @@
 <meta name="pdfkit-orientation" content="Landscape" />
 <div class="container">
     <div id="date" style="font-size:12px;text-align: right;"></div>
-     <div style="font-size:130px;align-content: center;color:red" ><center> {{total_sc}}</center></div>
-        
-    <table border="1" width = "40%" >
+    <div style="font-size:130px;align-content: center;color:red">
+        <center> {{total_yta}}</center>
+    </div>
+
+    <table border="1" width="40%">
         <tr>
-            <td align = "center"; colspan="2" style="font-size: 45px;">A :  {{ total }} / T :  {{ total_at }} / SR : {{ total_sr }} %</td>
+            <td align="center" ; colspan="2" style="font-size: 45px;">A : {{ total_achieved }} / T : {{ total_target }} / SR : {{
+                total_sr }} %</td>
         </tr>
     </table>
     <br>
 
 
-    <div style="font-size:30px;align-content: center;color:blue"><center> This is the Team Target Pending for {{month_name}} 2021 </center></div>
-    <div style="font-size:15px;color:blue">Assured Target(AT)</div>
-<div class= "row">
-    
-    <div class="column">
-        <table border="1" width="40%" class="header">
-            <tr>
-                <td rowspan="5" colspan="1">HR SERVICES</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ as_data["at_monthly"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ as_data["total_value"] }} </td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ as_data["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="2" colspan="2"> {{ as_data["e"] }} %</td>
-            </tr>
-        </table>
+    <div style="font-size:30px;align-content: center;color:blue">
+        <center> This is the Team Target Pending for {{month_name}} - {{year}} </center>
     </div>
-    <div class="column">
-        <table border="1" width="40%" class="header">     
-            <tr>
-                <td rowspan="5" colspan="1"> IT SERVICES</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ api_data["at_monthly"] }}</td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ api_data["total_value"] }} </td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ api_data["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="1" colspan="2"> {{ api_data["e"] }} %</td>
-            </tr>
-        </table>
-    </div>
+    <div style="font-size:15px;color:blue">Committed Target(CT)</div>
+    <div class="row">
 
-    <div class="column">
-        <table border="1" width="40%" class="header">
+        <div class="column">
+            <table border="1" width="40%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1">HR SERVICES</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td rowspan="1" colspan="2" nowrap> {{as_data["revised_ct"]}}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td rowspan="1" colspan="2" nowrap> {{ as_data["achieved"] }} </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td rowspan="1" colspan="2" nowrap> {{ as_data["ct_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ as_data["ct_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
+        <div class="column">
+            <table border="1" width="40%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1"> IT SERVICES</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2" nowrap>{{api_data["revised_ct"]}}</td>
 
-            <tr>
-                <td rowspan="5" colspan="1">TRADING </td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ sp_data["at_monthly"] }}</td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ sp_data["total_value"] }} </td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ sp_data["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="2" colspan="2"> {{ sp_data["e"] }} %</td>
-            </tr>
-        </table>
-    </div>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2" nowrap> {{ api_data["achieved"] }} </td>
 
-    <div class="column">
-        <table border="1" width="20%" class="header">
-            <tr>
-                <td rowspan="5" colspan="1">FOOD PRODUCTS</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ sbmk_data["at_monthly"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ sbmk_data["total_value"] }} </td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ sbmk_data["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="2" colspan="2"> {{ sbmk_data["e"] }} %</td>
-            </tr>
-        </table>
-    </div>
-</div>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2" nowrap> {{ api_data["ct_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ api_data["ct_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
 
-<div style="font-size:15px;color:blue">Foundation Target(FT)</div>
-<div class= "row">
-    <div class="column">
-        <table border="1" width="40%" class="header">
-            <tr>
-                <td rowspan="5" colspan="1">HR SERVICES</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ as_data_ft["ft_monthly"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ as_data_ft["total_value"] }} </td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ as_data_ft["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="2" colspan="2"> {{ as_data_ft["e"] }} %</td>
-            </tr>
-        </table>
-    </div>
-    <div class="column">
-        <table border="1" width="40%" class="header">     
-            <tr>
-                <td rowspan="5" colspan="1"> IT SERVICES</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ api_data_ft["ft_monthly"] }}</td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ api_data_ft["total_value"] }} </td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ api_data_ft["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="1" colspan="2"> {{ api_data_ft["e"] }} %</td>
-            </tr>
-        </table>
+        <div class="column">
+            <table border="1" width="40%" class="header">
+
+                <tr>
+                    <td rowspan="5" colspan="1">TRADING </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2" nowrap>{{ sp_data["revised_ct"] }}</td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2" nowrap> {{ sp_data["achieved"] }} </td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2" nowrap> {{ sp_data["ct_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ sp_data["ct_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="column">
+            <table border="1" width="20%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1">FOOD PRODUCTS</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2" nowrap>{{ sbmk_data["revised_ct"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2" nowrap> {{ sbmk_data["achieved"] }} </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2" nowrap> {{ sbmk_data["ct_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ sbmk_data["ct_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
     </div>
 
-    <div class="column">
-        <table border="1" width="40%" class="header">
+    <div style="font-size:15px;color:blue">Foundation Target(FT)</div>
+    <div class="row">
+        <div class="column">
+            <table border="1" width="40%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1">HR SERVICES</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td rowspan="1" colspan="2" nowrap> {{as_data["revised_ft"]}}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td rowspan="1" colspan="2" nowrap> {{ as_data["achieved"] }} </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td rowspan="1" colspan="2" nowrap> {{ as_data["ft_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ as_data["ft_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
+        <div class="column">
+            <table border="1" width="40%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1"> IT SERVICES</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2" nowrap>{{api_data["revised_ft"]}}</td>
 
-            <tr>
-                <td rowspan="5" colspan="1">TRADING </td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ sp_data_ft["ft_monthly"] }}</td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ sp_data_ft["total_value"] }} </td>
-                
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ sp_data_ft["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="2" colspan="2"> {{ sp_data_ft["e"] }} %</td>
-            </tr>
-        </table>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2" nowrap> {{ api_data["achieved"] }} </td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2" nowrap> {{ api_data["ft_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap>{{ api_data["ft_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="column">
+            <table border="1" width="40%" class="header">
+
+                <tr>
+                    <td rowspan="5" colspan="1">TRADING </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2" nowrap>{{ sp_data["revised_ft"] }}</td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2" nowrap> {{ sp_data["achieved"] }} </td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2" nowrap> {{ sp_data["ft_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ sp_data["ft_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="column">
+            <table border="1" width="20%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1">FOOD PRODUCTS</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2" nowrap>{{ sbmk_data["revised_ft"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2" nowrap> {{ sbmk_data["achieved"] }} </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2" nowrap> {{ sbmk_data["ft_yta"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2" nowrap> {{ sbmk_data["ft_sr"] }} %</td>
+                </tr>
+            </table>
+        </div>
     </div>
 
-    <div class="column">
-        <table border="1" width="20%" class="header">
-            <tr>
-                <td rowspan="5" colspan="1">FOOD PRODUCTS</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> T</td>
-                <td rowspan="1" colspan="2">{{ sbmk_data_ft["ft_monthly"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> A</td>
-                <td rowspan="1" colspan="2"> {{ sbmk_data_ft["total_value"] }} </td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> Y</td>
-                <td rowspan="1" colspan="2"> {{ sbmk_data_ft["d"] }}</td>
-            </tr>
-            <tr>
-                <td rowspan="1" colspan="2"> SR </td>
-                <td rowspan="2" colspan="2"> {{ sbmk_data_ft["e"] }} %</td>
-            </tr>
-        </table>
-    </div>
-</div>
+    <!-- <div style="font-size:15px;color:blue">Foundation Target(FT)</div>
+    <div class="row">
+        <div class="column">
+            <table border="1" width="40%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1">HR SERVICES</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2">{{ as_data_ft["ft_monthly"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2"> {{ as_data_ft["total_value"] }} </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2"> {{ as_data_ft["d"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2"> {{ as_data_ft["e"] }} %</td>
+                </tr>
+            </table>
+        </div>
+        <div class="column">
+            <table border="1" width="40%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1"> IT SERVICES</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2">{{ api_data_ft["ft_monthly"] }}</td>
 
-<div style="font-size:15px;color:blue">Bussiness Target(BT)</div>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2"> {{ api_data_ft["total_value"] }} </td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2"> {{ api_data_ft["d"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2"> {{ api_data_ft["e"] }} %</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="column">
+            <table border="1" width="40%" class="header">
+
+                <tr>
+                    <td rowspan="5" colspan="1">TRADING </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2">{{ sp_data_ft["ft_monthly"] }}</td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2"> {{ sp_data_ft["total_value"] }} </td>
+
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2"> {{ sp_data_ft["d"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2"> {{ sp_data_ft["e"] }} %</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="column">
+            <table border="1" width="20%" class="header">
+                <tr>
+                    <td rowspan="5" colspan="1">FOOD PRODUCTS</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> T</td>
+                    <td colspan="2">{{ sbmk_data_ft["ft_monthly"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> A</td>
+                    <td colspan="2"> {{ sbmk_data_ft["total_value"] }} </td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> Y</td>
+                    <td colspan="2"> {{ sbmk_data_ft["d"] }}</td>
+                </tr>
+                <tr>
+                    <td rowspan="1" colspan="2"> SR </td>
+                    <td colspan="2"> {{ sbmk_data_ft["e"] }} %</td>
+                </tr>
+            </table>
+        </div>
+    </div> -->
+
+    <!-- <div style="font-size:15px;color:blue">Bussiness Target(BT)</div>
 <div class= "row">
     <div class="column">
         <table border="1" width="40%" class="header">
@@ -334,6 +442,7 @@
             </tr>
         </table>
     </div>
+</div> -->
 </div>
-</div>
+
 </html>

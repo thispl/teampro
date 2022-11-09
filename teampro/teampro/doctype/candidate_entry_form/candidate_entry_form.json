@@ -1,0 +1,250 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "NC.####",
+ "creation": "2021-11-27 12:17:10.080807",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "candidate_symmary_section",
+  "given_namesurname",
+  "gender",
+  "date_of_birth",
+  "age",
+  "primary_mobile_number",
+  "secondary_mobile_number",
+  "vaccination_status",
+  "column_break_8",
+  "mail_id",
+  "alternate_mail_id",
+  "address",
+  "location__district",
+  "pincode",
+  "is_married",
+  "section_break_13",
+  "passport_no",
+  "issued_date",
+  "column_break_17",
+  "expiry_date",
+  "place_of_issue",
+  "section_break_20",
+  "education_details",
+  "special_skills_section",
+  "computer_proficiency",
+  "english_proficiency",
+  "column_break_26",
+  "religion",
+  "attachment_section",
+  "passport",
+  "column_break_30",
+  "resume__cv",
+  "column_break_32",
+  "vaccine_certificate"
+ ],
+ "fields": [
+  {
+   "fieldname": "candidate_symmary_section",
+   "fieldtype": "Section Break",
+   "label": "Candidate Symmary"
+  },
+  {
+   "fieldname": "given_namesurname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Given Name/Surname",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "Male\nFemale\nPrefer Not to Say"
+  },
+  {
+   "fieldname": "primary_mobile_number",
+   "fieldtype": "Data",
+   "label": "Primary Mobile Number"
+  },
+  {
+   "fieldname": "secondary_mobile_number",
+   "fieldtype": "Data",
+   "label": "Secondary Mobile number",
+   "length": 10
+  },
+  {
+   "fieldname": "mail_id",
+   "fieldtype": "Data",
+   "label": "Mail ID"
+  },
+  {
+   "fieldname": "alternate_mail_id",
+   "fieldtype": "Data",
+   "label": "Alternate Mail ID"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_married",
+   "fieldtype": "Check",
+   "label": "Is Married"
+  },
+  {
+   "fieldname": "location__district",
+   "fieldtype": "Link",
+   "label": "Location / District",
+   "options": "District"
+  },
+  {
+   "fieldname": "pincode",
+   "fieldtype": "Int",
+   "label": "Pincode",
+   "length": 6
+  },
+  {
+   "fieldname": "section_break_13",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "passport_no",
+   "fieldtype": "Data",
+   "label": "Passport No"
+  },
+  {
+   "fieldname": "issued_date",
+   "fieldtype": "Date",
+   "label": "Issued Date"
+  },
+  {
+   "fieldname": "expiry_date",
+   "fieldtype": "Date",
+   "label": "Expiry Date"
+  },
+  {
+   "fieldname": "place_of_issue",
+   "fieldtype": "Link",
+   "label": "Place of Issue",
+   "options": "Districts"
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date Of Birth"
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_20",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "education_details",
+   "fieldtype": "Table",
+   "label": "Education Details",
+   "options": "Education Details"
+  },
+  {
+   "fieldname": "special_skills_section",
+   "fieldtype": "Section Break",
+   "label": "Special Skills"
+  },
+  {
+   "fieldname": "computer_proficiency",
+   "fieldtype": "Select",
+   "label": "Computer Proficiency",
+   "options": "\nExcellent\nGood\nAverage\nBelow Average\nPoor"
+  },
+  {
+   "fieldname": "english_proficiency",
+   "fieldtype": "Select",
+   "label": "English Proficiency",
+   "options": "\nExcellent\nGood\nAverage\nBelow Average\nPoor"
+  },
+  {
+   "fieldname": "religion",
+   "fieldtype": "Select",
+   "label": "Religion",
+   "options": "\nHinduism\nIslam\nChristianity\nSikhism\nBuddhism\nJainism\nOthers"
+  },
+  {
+   "fieldname": "column_break_26",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachment_section",
+   "fieldtype": "Section Break",
+   "label": "Attachment"
+  },
+  {
+   "fieldname": "passport",
+   "fieldtype": "Attach",
+   "label": "Passport"
+  },
+  {
+   "fieldname": "resume__cv",
+   "fieldtype": "Attach",
+   "label": "Resume / CV"
+  },
+  {
+   "fieldname": "vaccination_status",
+   "fieldtype": "Select",
+   "label": "Vaccination Status",
+   "options": "\nDose 1\nDose 2\nNo Vaccination"
+  },
+  {
+   "depends_on": "eval:doc.vaccination_status == \"Dose 2\"",
+   "fieldname": "vaccine_certificate",
+   "fieldtype": "Attach",
+   "label": "Vaccination Certificate"
+  },
+  {
+   "fieldname": "column_break_30",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_32",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.date_of_birth",
+   "fieldname": "age",
+   "fieldtype": "Data",
+   "label": "Age",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2021-11-29 11:25:34.792684",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Candidate Entry Form",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

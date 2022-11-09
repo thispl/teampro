@@ -88,7 +88,20 @@ doc_events = {
 		"after_insert": "teampro.custom.opportunity_send_mail",
 		# "on_cancel": "method",
 		# "on_trash": "method"
+	},
+	"Candidate": {
+		"on_update": "teampro.custom.update_task_count"
+	},
+	# "Payment Entry":{
+	# 	"on_submit":"jobpro.jobpro.doctype.closure.closure.closure_payment_entry"
+	# },
+	"Sales Invoice":{
+		"after_submit": "teampro.teampro.doctype.target_planner.target_planner.calculate_target_on_update"
 	}
+
+	# "Delivery Note":{
+	# "after_insert": "teampro.custom.get_delivery_note"
+	# }
 }
 
 # Scheduled Tasks
@@ -96,12 +109,12 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"teampro.email_alerts.next_contact_alert",
+		# "teampro.mark_attendance.mark_att",
 		"teampro.email_alerts.checkin_alert",
-		"teampro.mark_attendance.mark_att"
 	],
-	"monthly": [
-		"teampro.mark_attendance.previous_mark_att"
-	]
+	# "monthly": [
+	# 	"teampro.mark_attendance.previous_mark_att"
+	# ]
 }
 # scheduler_events = {
 # 	"all": [

@@ -1,0 +1,349 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-05-18 19:34:29.450693",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_name",
+  "date_of_joining",
+  "designation",
+  "department",
+  "email_id",
+  "dob_official",
+  "dob_actual",
+  "column_break_9",
+  "blood_group",
+  "martial_status",
+  "dommarried",
+  "identification_mark",
+  "address",
+  "personal_mobile_no",
+  "emergency_section",
+  "relation_name",
+  "relation",
+  "column_break_18",
+  "contact_no",
+  "attachments_section",
+  "id_proof",
+  "address_proof",
+  "column_break_23",
+  "education_certificates",
+  "reliving_and_experience_letterif_applicable",
+  "section_break_26",
+  "declaration_name",
+  "place",
+  "column_break_29",
+  "date",
+  "approver",
+  "for_office_use__company_section",
+  "id_card",
+  "visiting_card",
+  "salary_str",
+  "erp_emp",
+  "erp_user_id",
+  "column_break_38",
+  "work_space_and_accessories",
+  "offer_ack",
+  "digital_photo",
+  "all_groupwa_and_mail",
+  "induction",
+  "column_break_44",
+  "mail_id_and_mail_sign",
+  "office_sim",
+  "biometric_reg_and_access_card",
+  "bank_account",
+  "laptop_mouse_and_cable"
+ ],
+ "fields": [
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Designation"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Department",
+   "options": "HR\nIT\nSales\nRecruitment\nFood"
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email ID"
+  },
+  {
+   "fieldname": "dob_official",
+   "fieldtype": "Date",
+   "label": "DOB Official"
+  },
+  {
+   "fieldname": "blood_group",
+   "fieldtype": "Select",
+   "label": "Blood Group",
+   "options": "A+\nA-\nB+\nB-\nO+\nO-\nAB+\nAB-"
+  },
+  {
+   "fieldname": "martial_status",
+   "fieldtype": "Select",
+   "label": "Martial Status",
+   "options": "Single\nMarried"
+  },
+  {
+   "fieldname": "dommarried",
+   "fieldtype": "Date",
+   "label": "DOM(Married)"
+  },
+  {
+   "fieldname": "identification_mark",
+   "fieldtype": "Data",
+   "label": "Identification Mark"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "personal_mobile_no",
+   "fieldtype": "Data",
+   "label": "Personal Mobile No"
+  },
+  {
+   "fieldname": "dob_actual",
+   "fieldtype": "Date",
+   "label": "DOB Actual"
+  },
+  {
+   "fieldname": "emergency_section",
+   "fieldtype": "Section Break",
+   "label": "Emergency"
+  },
+  {
+   "fieldname": "relation",
+   "fieldtype": "Data",
+   "label": "Relation"
+  },
+  {
+   "fieldname": "contact_no",
+   "fieldtype": "Data",
+   "label": "Contact No"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_18",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachments_section",
+   "fieldtype": "Section Break",
+   "label": "Attachments"
+  },
+  {
+   "default": "0",
+   "fieldname": "id_proof",
+   "fieldtype": "Check",
+   "label": "ID Proof"
+  },
+  {
+   "default": "0",
+   "fieldname": "address_proof",
+   "fieldtype": "Check",
+   "label": "Address Proof"
+  },
+  {
+   "fieldname": "column_break_23",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "education_certificates",
+   "fieldtype": "Check",
+   "label": "Education Certificates"
+  },
+  {
+   "default": "0",
+   "fieldname": "reliving_and_experience_letterif_applicable",
+   "fieldtype": "Check",
+   "label": "Reliving and Experience Letter(if applicable)"
+  },
+  {
+   "fieldname": "section_break_26",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "place",
+   "fieldtype": "Data",
+   "label": "Place"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approver",
+   "fieldtype": "Data",
+   "label": "Approver"
+  },
+  {
+   "fieldname": "for_office_use__company_section",
+   "fieldtype": "Section Break",
+   "label": "For Office USE / Company"
+  },
+  {
+   "default": "0",
+   "fieldname": "id_card",
+   "fieldtype": "Check",
+   "label": "ID Card"
+  },
+  {
+   "default": "0",
+   "fieldname": "visiting_card",
+   "fieldtype": "Check",
+   "label": "Visiting Card"
+  },
+  {
+   "default": "0",
+   "fieldname": "salary_str",
+   "fieldtype": "Check",
+   "label": "Salary Str."
+  },
+  {
+   "default": "0",
+   "fieldname": "erp_emp",
+   "fieldtype": "Check",
+   "label": "ERP Emp."
+  },
+  {
+   "default": "0",
+   "fieldname": "erp_user_id",
+   "fieldtype": "Check",
+   "label": "ERP User ID"
+  },
+  {
+   "fieldname": "column_break_38",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "work_space_and_accessories",
+   "fieldtype": "Check",
+   "label": "Work Space and Accessories"
+  },
+  {
+   "default": "0",
+   "fieldname": "offer_ack",
+   "fieldtype": "Check",
+   "label": "Offer Ack"
+  },
+  {
+   "default": "0",
+   "fieldname": "digital_photo",
+   "fieldtype": "Check",
+   "label": "Digital Photo"
+  },
+  {
+   "default": "0",
+   "fieldname": "all_groupwa_and_mail",
+   "fieldtype": "Check",
+   "label": "All Group(WA and Mail)"
+  },
+  {
+   "default": "0",
+   "fieldname": "induction",
+   "fieldtype": "Check",
+   "label": "Induction"
+  },
+  {
+   "fieldname": "column_break_44",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "mail_id_and_mail_sign",
+   "fieldtype": "Check",
+   "label": "Mail ID and Mail Sign"
+  },
+  {
+   "default": "0",
+   "fieldname": "office_sim",
+   "fieldtype": "Check",
+   "label": "Office SIM"
+  },
+  {
+   "default": "0",
+   "fieldname": "biometric_reg_and_access_card",
+   "fieldtype": "Check",
+   "label": "Biometric Reg and Access Card"
+  },
+  {
+   "default": "0",
+   "fieldname": "bank_account",
+   "fieldtype": "Check",
+   "label": "Bank Account"
+  },
+  {
+   "default": "0",
+   "fieldname": "laptop_mouse_and_cable",
+   "fieldtype": "Check",
+   "label": "Laptop/ Mouse and Cable"
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name"
+  },
+  {
+   "fieldname": "relation_name",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "declaration_name",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2022-05-21 12:03:22.812118",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Joining Form",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

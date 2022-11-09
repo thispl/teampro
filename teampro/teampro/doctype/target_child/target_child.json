@@ -1,0 +1,95 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2022-02-08 17:12:51.959752",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "month",
+  "ct",
+  "ft",
+  "achieved",
+  "column_break_6",
+  "ct_yta",
+  "ft_yta",
+  "revised_ct",
+  "revised_ft"
+ ],
+ "fields": [
+  {
+   "columns": 2,
+   "fieldname": "month",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Month",
+   "read_only": 1,
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "ct",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "CT",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "ft",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "FT",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "ct_yta",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "CT YTA",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "ft_yta",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "FT YTA",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "achieved",
+   "fieldtype": "Currency",
+   "label": "Achieved",
+   "read_only": 1
+  },
+  {
+   "fieldname": "revised_ct",
+   "fieldtype": "Currency",
+   "label": "Revised CT"
+  },
+  {
+   "fieldname": "revised_ft",
+   "fieldtype": "Currency",
+   "label": "Revised FT "
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2022-03-10 16:15:33.794304",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Target Child",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

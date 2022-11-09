@@ -255,7 +255,7 @@
   {
    "fieldname": "if_owns_ttc_phote",
    "fieldtype": "Attach",
-   "label": "If Owns TTC - Phote"
+   "label": "If Owns TTC - Photo"
   },
   {
    "fieldname": "naming_series",
@@ -290,7 +290,7 @@
  "image_field": "sa_photo",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2021-03-17 15:28:45.165613",
+ "modified": "2021-10-21 19:46:09.585698",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "SAMS",
