@@ -1,0 +1,39 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-02-21 12:15:13.678442",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "visit_date",
+  "visit_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "visit_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Visit Date"
+  },
+  {
+   "fieldname": "visit_by",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Visit By",
+   "options": "User"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-02-21 12:45:01.797630",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Visit Status",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

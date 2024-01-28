@@ -11,6 +11,7 @@ from frappe.desk.form.assign_to import clear, close_all_assignments
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import add_days, cstr, date_diff, get_link_to_form, getdate, today, flt
 from frappe.utils.nestedset import NestedSet
+from teampro.custom import on_task_save
 
 
 class CircularReferenceError(frappe.ValidationError): pass
@@ -36,6 +37,7 @@ class Task(NestedSet):
 		self.validate_status()
 		self.update_depends_on()
 		self.validate_dependencies_for_template_task()
+
 
 	def validate_dates(self):
 		if self.exp_start_date and self.exp_end_date and getdate(self.exp_start_date) > getdate(self.exp_end_date):

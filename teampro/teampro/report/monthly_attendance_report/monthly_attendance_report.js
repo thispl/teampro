@@ -23,6 +23,4 @@ frappe.query_reports["Monthly Attendance Report"] = {
 			"options": "Employee",
 		}
 	]
-
-   
 };	

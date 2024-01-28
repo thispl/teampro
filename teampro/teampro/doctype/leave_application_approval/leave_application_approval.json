@@ -1,0 +1,87 @@
+{
+ "actions": [],
+ "creation": "2023-08-10 15:28:23.418383",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "application_no",
+  "for_employee",
+  "employee_name",
+  "leave_type",
+  "from_date",
+  "to_date",
+  "total_leave_days",
+  "workflow_state"
+ ],
+ "fields": [
+  {
+   "fieldname": "application_no",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Application No",
+   "options": "Leave Application"
+  },
+  {
+   "fieldname": "for_employee",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "From Employee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "From date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "To date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_leave_days",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Total Leave Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "leave_type",
+   "fieldtype": "Link",
+   "label": "Leave Type",
+   "options": "Leave Type"
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow",
+   "options": "Workflow State"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-09-01 11:13:33.004733",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Leave Application Approval",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

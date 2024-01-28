@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils.data import add_days, today
 from frappe.utils import  formatdate
+from frappe.utils import format_datetime
+
 
 @frappe.whitelist()
 def next_contact_alert():
@@ -81,10 +83,10 @@ def daily_att_report():
     staff += '<table class = table table - bordered style=border-width:2px><tr><td colspan = 6><b>Attendance Report</b></td></tr>'
     staff += '<tr><td>Employee</td><td>Employee Name</td><td>Attendance date</td><td>In Time</td><td>Out Time</td><td>Status</td>'
     for att in daily_att:
-        staff += '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>'%(att.employee,att.employee_name,formatdate(att.attendance_date),att.in_time or '',att.out_time or '',att.status) 
+        staff += '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>'%(att.employee,att.employee_name,formatdate(att.attendance_date),format_datetime(att.in_time) or '',format_datetime(att.out_time) or '',att.status) 
     staff += '</table>' 
     frappe.sendmail(
-    		   recipients=['veeramayandi.p@groupteampro.com','sangeetha.a@groupteampro.com','hrd@groupteampro.com'],
+    		   recipients=['veeramayandi.p@groupteampro.com','sangeetha.a@groupteampro.com','accounts@groupteampro.com'],
 #		   recipients=['veeramayandi.p@groupteampro.com'],
              cc = [''],
              subject=('Daily Attendance Report'),
@@ -114,10 +116,10 @@ def daily_emc_report():
     staff += '<table class = table table - bordered style=border-width:2px><tr><td colspan = 3><b>Checkin Report</b></td></tr>'
     staff += '<tr><td>Employee</td><td>Employee Name</td><td>Time</td>'
     for att in daily_emc:
-        staff += '<tr><td>%s</td><td>%s</td><td>%s</td></tr>'%(att.employee,att.employee_name,att.in_time or '') 
+        staff += '<tr><td>%s</td><td>%s</td><td>%s</td></tr>'%(att.employee,att.employee_name,format_datetime(att.in_time) or '') 
     staff += '</table>' 
     frappe.sendmail(
-            recipients=['veeramayandi.p@groupteampro.com','sangeetha.a@groupteampro.com','hrd@groupteampro.com'],
+            recipients=['veeramayandi.p@groupteampro.com','sangeetha.a@groupteampro.com','accounts@groupteampro.com'],
 #            recipients=['veeramayandi.p@groupteampro.com'],
             cc = [''],
             subject=('Daily Checkin Report'),

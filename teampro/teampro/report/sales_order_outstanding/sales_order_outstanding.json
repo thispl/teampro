@@ -1,0 +1,45 @@
+{
+ "add_total_row": 1,
+ "columns": [],
+ "creation": "2023-06-06 19:13:22.094582",
+ "disable_prepared_report": 0,
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 0,
+ "is_standard": "Yes",
+ "letter_head": "THIS - General",
+ "modified": "2023-06-06 19:14:24.416897",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Sales Order Outstanding",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "ref_doctype": "Sales Order",
+ "report_name": "Sales Order Outstanding",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Accounts User"
+  },
+  {
+   "role": "Maintenance User"
+  },
+  {
+   "role": "Sales User"
+  },
+  {
+   "role": "Stock User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "VANSALES"
+  }
+ ]
+}

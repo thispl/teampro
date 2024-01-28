@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "employee",
+  "employee_name",
   "column_break_2",
   "date",
   "requested_by"
@@ -31,6 +32,7 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Date",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -38,14 +40,21 @@
    "fieldtype": "Link",
    "label": "Requested by",
    "options": "User"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-11-03 14:37:48.184721",
+ "modified": "2023-11-20 10:32:54.866322",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Food Count",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -75,6 +84,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "employee",
  "track_changes": 1
 }

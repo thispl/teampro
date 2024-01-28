@@ -1,0 +1,341 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "NC-.YY.-.MM.-.#####",
+ "creation": "2023-08-10 12:12:37.251128",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_details_section",
+  "employee",
+  "employee_name",
+  "column_break_4",
+  "department",
+  "designation",
+  "report_to_section",
+  "reports_to",
+  "name1",
+  "column_break_10",
+  "report_department",
+  "report_designation",
+  "section_break_12",
+  "non_conformity_reported_by_section",
+  "nc_reported_by",
+  "name3",
+  "column_break_17",
+  "nc_department",
+  "nc_designation",
+  "receivers_list_section",
+  "employee_mail",
+  "column_break_22",
+  "reporting_manager_mail",
+  "nonconformitync_details_section",
+  "nc_class_proposed",
+  "attach_proof_of_nc_if_any",
+  "column_break_23",
+  "cause_of_non_conformity",
+  "section_break_25",
+  "test",
+  "employee_explanation_section",
+  "explanation_of_non_conformity",
+  "column_break_29",
+  "attach_proof_of_explanation",
+  "section_break_31",
+  "html",
+  "action_taken_section",
+  "action_taken_report",
+  "column_break_35",
+  "nc_class_confirmed",
+  "section_break_37",
+  "html_test",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_global_search": 1,
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Non Conformity",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "report_to_section",
+   "fieldtype": "Section Break",
+   "label": "Report To"
+  },
+  {
+   "fetch_from": "employee.reports_to",
+   "fieldname": "reports_to",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Reports To",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "report_department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fieldname": "report_designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "non_conformity_reported_by_section",
+   "fieldtype": "Section Break",
+   "label": "Non Conformity(NC) Reported by"
+  },
+  {
+   "fieldname": "nc_reported_by",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "\u00a0NC Reported by",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "nc_reported_by.first_name",
+   "fieldname": "name3",
+   "fieldtype": "Data",
+   "label": "Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "nc_reported_by.department",
+   "fieldname": "nc_department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "reports_to.designation",
+   "fieldname": "nc_designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "nonconformitync_details_section",
+   "fieldtype": "Section Break",
+   "label": "Non Conformity(NC) Details"
+  },
+  {
+   "fieldname": "nc_class_proposed",
+   "fieldtype": "Select",
+   "label": "NC Class Proposed",
+   "options": "\nMinor\nMajor\nHighly\nCritical"
+  },
+  {
+   "depends_on": "nc_class_proposed",
+   "fieldname": "cause_of_non_conformity",
+   "fieldtype": "Small Text",
+   "label": "Cause of Non-Conformity"
+  },
+  {
+   "depends_on": "nc_class_proposed",
+   "fieldname": "test",
+   "fieldtype": "HTML",
+   "options": " <p> The manager concerned has to explain in detail what the NC Is, why this NC is being issued, against violation of which policy, procedure, workflow, instruction, circular, mail and what is the impact of this violation</p>    \n "
+  },
+  {
+   "depends_on": "nc_class_proposed",
+   "fieldname": "attach_proof_of_nc_if_any",
+   "fieldtype": "Attach",
+   "label": "Attach Proof of NC (if any)"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state!='Draft'",
+   "fieldname": "employee_explanation_section",
+   "fieldtype": "Tab Break",
+   "label": "Employee Explanation"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state!='Draft'",
+   "fieldname": "explanation_of_non_conformity",
+   "fieldtype": "Small Text",
+   "label": "Explanation of Non Conformity"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state!='Draft'",
+   "fieldname": "html",
+   "fieldtype": "HTML",
+   "options": "<p>The employee concerned has to explain the circumstance with valid reasons and evidence on why there has been a violation by him/ her, and what is the assurance of not repeating the same.</p>"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state!='Draft'",
+   "fieldname": "attach_proof_of_explanation",
+   "fieldtype": "Attach",
+   "label": "Attach Proof of Explanation"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state != \"Send for Employee Explanation\" && doc.workflow_state != \"Draft\" && !doc.__islocal",
+   "fieldname": "action_taken_section",
+   "fieldtype": "Tab Break",
+   "label": "Action Taken"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state != \"Send for Employee Explanation\" && \"Draft\" && !doc.__islocal",
+   "fieldname": "action_taken_report",
+   "fieldtype": "Small Text",
+   "label": "Action Taken Report"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state != \"Send for Employee Explanation\" && \"Draft\" && !doc.__islocal",
+   "fieldname": "html_test",
+   "fieldtype": "HTML",
+   "options": "<p> The manager concerned has to fill in the action taken and corrective measures suggested to avoid happening such instances in future, also if there is any external implication of the action please inform the concerned department through the mail </p>"
+  },
+  {
+   "depends_on": "eval:doc.workflow_state != \"Send for Employee Explanation\" && \"Draft\" && !doc.__islocal",
+   "fieldname": "nc_class_confirmed",
+   "fieldtype": "Select",
+   "label": "NC Class Confirmed",
+   "options": "\nMinor\nMajor\nHighly\nCritical\nDropped"
+  },
+  {
+   "fieldname": "column_break_23",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_25",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_31",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_35",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_37",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "receivers_list_section",
+   "fieldtype": "Section Break",
+   "label": "Receivers List"
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fetch_if_empty": 1,
+   "fieldname": "employee_mail",
+   "fieldtype": "Link",
+   "label": "Employee Mail",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_22",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reporting_manager_mail",
+   "fieldtype": "Link",
+   "label": "Reporting Manager Mail",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2023-10-12 09:35:04.600109",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Non Conformity",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

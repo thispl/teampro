@@ -1,8 +1,9 @@
-# Copyright (c) 2022, TeamPRO and Contributors
+# Copyright (c) 2023, TeamPRO and Contributors
 # See license.txt
 
 # import frappe
-import unittest
+from frappe.tests.utils import FrappeTestCase
 
-class TestMissPunchApplication(unittest.TestCase):
+
+class TestMissPunchApplication(FrappeTestCase):
 	pass

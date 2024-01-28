@@ -84,8 +84,33 @@ app_license = "MIT"
 # Hook on document methods and events
 
 doc_events = {
+	"Quotation":{
+		"validate": "teampro.custom.calc_cut_off_prize"
+	},
+	"Employee":{
+		"validate": ["teampro.custom.update_custodian","teampro.custom.inactive_employee"]
+	},
+	"Task":{
+		"on_update": ["teampro.custom.issue_status","teampro.custom.update_cb"],
+	},
+
+	"Project":{
+		"after_insert": "teampro.custom.create_project_completion_task",
+	},
+	"Timesheet":{
+		"on_update": "teampro.custom.fetch_start_time",
+		# "before_submit":"teampro.custom.return_detailed_ts"
+	},
+	"Sales Order":{
+		"on_submit": "teampro.custom.update_batch_status"
+		
+    
+		# "on_update":"teampro.custom.skip_dn_so",
+        # "validate":"teampro.custom.child_table_calc"
+	},
 	"Opportunity": {
 		"after_insert": "teampro.custom.opportunity_send_mail",
+        "on_update":"teampro.custom.update_lead_status",
 		# "on_cancel": "method",
 		# "on_trash": "method"
 	},
@@ -96,8 +121,24 @@ doc_events = {
 	# 	"on_submit":"jobpro.jobpro.doctype.closure.closure.closure_payment_entry"
 	# },
 	"Sales Invoice":{
-		"after_submit": "teampro.teampro.doctype.target_planner.target_planner.calculate_target_on_update"
-	}
+        # "validate":["teampro.custom.get_all_quot"],
+		# "validate": "teampro.custom.sales_order_batch",
+		"after_submit": "teampro.teampro.doctype.target_planner.target_planner.calculate_target_on_update",
+		# "on_submit": "teampro.custom.get_against_so"
+	},
+	# "Attendance Request":{
+	# 	"before_submit": "teampro.custom.update_attendance"
+	# },
+	"Purchase Invoice": {
+        "on_submit": "teampro.custom.validate_date"
+    },
+	# "Sales Invoice": {
+    #     "on_submit": "teampro.custom.validate_date_salesinvoice"
+    # },
+
+	# "Payroll Entry":{
+	# 	"before_save": ["teampro.utility.attendance_calc","teampro.utility.additional_salary"]
+	# },
 
 	# "Delivery Note":{
 	# "after_insert": "teampro.custom.get_delivery_note"
@@ -109,12 +150,24 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"teampro.email_alerts.next_contact_alert",
+		"teampro.custom.create_food_count",
 		# "teampro.mark_attendance.mark_att",
 		"teampro.email_alerts.checkin_alert",
+        "checkpro.checkpro.doctype.case.case.tat_monitor",
+        "teampro.custom.update_batch_age",
+        "teampro.custom.update_check_age",
 	],
-	# "monthly": [
-	# 	"teampro.mark_attendance.previous_mark_att"
-	# ]
+	"monthly": [
+		"teampro.utility.create_update_leave_allocation"
+	],
+	"cron": {
+		"0 9 * * *" : [
+			"teampro.custom.create_food_count"
+		],
+		"*/10 * * * *" : [
+			"teampro.mark_attendance.mark_att"
+		]
+	}
 }
 # scheduler_events = {
 # 	"all": [

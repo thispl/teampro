@@ -8,7 +8,10 @@
   "person_name",
   "designation",
   "mobile",
-  "email_id"
+  "is_primary",
+  "email_id",
+  "is_primaryemail",
+  "has_whatsapp"
  ],
  "fields": [
   {
@@ -20,6 +23,7 @@
   {
    "fieldname": "designation",
    "fieldtype": "Data",
+   "hidden": 1,
    "in_list_view": 1,
    "label": "Designation"
   },
@@ -33,12 +37,32 @@
    "fieldname": "email_id",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Email Id"
+   "label": "Email "
+  },
+  {
+   "default": "0",
+   "fieldname": "is_primary",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Primary(Mobile)"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_whatsapp",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Has Whatsapp"
+  },
+  {
+   "fieldname": "is_primaryemail",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Is Primary(Email)"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2020-08-29 09:57:55.223454",
+ "modified": "2023-05-04 06:57:58.365948",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Lead Contacts",
@@ -47,5 +71,6 @@
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

@@ -1,0 +1,445 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "SFP-.####",
+ "creation": "2023-12-29 12:23:20.293608",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "follow_up_to",
+  "document_type",
+  "customer",
+  "lead",
+  "organization_name",
+  "territory",
+  "market_segment",
+  "region",
+  "location",
+  "customer_name",
+  "customer_type",
+  "customer_group",
+  "territory_customer",
+  "column_break_7",
+  "from_lead",
+  "from_opportunity",
+  "account_manager",
+  "lead_owner",
+  "call_status",
+  "company",
+  "visit_status",
+  "validation_status",
+  "first_name",
+  "address_section",
+  "customer_primary_contact",
+  "address_html",
+  "address_type",
+  "address_line_1",
+  "address_line_2",
+  "website",
+  "column_break_19",
+  "customer_primary_address",
+  "contact",
+  "city_town",
+  "state_province",
+  "country",
+  "postal_code",
+  "service_tab",
+  "next_contact_by",
+  "column_break_17",
+  "next_contact_date",
+  "column_break_21",
+  "service",
+  "column_break_31",
+  "status",
+  "section_break_23",
+  "lead_contact",
+  "customer_contacts",
+  "contacts",
+  "section_break_25",
+  "remarks",
+  "column_break_27",
+  "next_action"
+ ],
+ "fields": [
+  {
+   "fieldname": "follow_up_to",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Follow Up From",
+   "options": "\nLead\nCustomer"
+  },
+  {
+   "fetch_from": "lead.company_name",
+   "fieldname": "organization_name",
+   "fieldtype": "Data",
+   "label": "Organization Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.territory",
+   "fieldname": "territory",
+   "fieldtype": "Data",
+   "label": "Territory",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.market_segment",
+   "fieldname": "market_segment",
+   "fieldtype": "Data",
+   "label": "Market Segment",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.location",
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.lead || doc.follow_up_to==\"Lead\"",
+   "fieldname": "lead",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Lead",
+   "options": "Lead"
+  },
+  {
+   "fetch_from": "lead.lead_owner",
+   "fieldname": "lead_owner",
+   "fieldtype": "Link",
+   "label": "Lead Owner",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.call_status",
+   "fieldname": "call_status",
+   "fieldtype": "Select",
+   "label": "Call Status",
+   "options": "\nEffective\nNon Effective"
+  },
+  {
+   "fetch_from": "lead.company",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.visit_status",
+   "fieldname": "visit_status",
+   "fieldtype": "Select",
+   "label": "Visit Status",
+   "options": "\nVisited\nNot Visited",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.validation_status",
+   "fieldname": "validation_status",
+   "fieldtype": "Select",
+   "label": "Validation Status",
+   "options": "\nValid\nInvalid\nDormant",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.first_name",
+   "fieldname": "first_name",
+   "fieldtype": "Data",
+   "label": "First Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "service_tab",
+   "fieldtype": "Tab Break",
+   "label": "Next Action"
+  },
+  {
+   "fieldname": "lead_contact",
+   "fieldtype": "Table",
+   "label": "Lead Contact",
+   "options": "Lead Contacts",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_contact_by",
+   "fieldtype": "Link",
+   "label": "Next Contact By",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_contact_date",
+   "fieldtype": "Date",
+   "label": "Next Contact Date"
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "service",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Services"
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nLead\nOpen\nReplied\nOpportunity\nQuotation\nLost Quotation\nInterested\nConverted\nDo Not Contact"
+  },
+  {
+   "fieldname": "section_break_23",
+   "fieldtype": "Section Break",
+   "label": "Contact Information"
+  },
+  {
+   "fieldname": "section_break_25",
+   "fieldtype": "Section Break",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "column_break_27",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_action",
+   "fieldtype": "Small Text",
+   "label": "Next Action"
+  },
+  {
+   "fieldname": "address_section",
+   "fieldtype": "Section Break",
+   "label": "Address"
+  },
+  {
+   "fetch_from": "lead.address_type",
+   "fieldname": "address_type",
+   "fieldtype": "Select",
+   "label": "Address Type",
+   "options": "\nBilling\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.address_line_1",
+   "fieldname": "address_line_1",
+   "fieldtype": "Data",
+   "label": "Address Line 1",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.address_line_2",
+   "fieldname": "address_line_2",
+   "fieldtype": "Data",
+   "label": "Address Line 2",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.web",
+   "fieldname": "website",
+   "fieldtype": "Data",
+   "label": "Website",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.city_town",
+   "fieldname": "city_town",
+   "fieldtype": "Data",
+   "label": "City Town",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.state__province",
+   "fieldname": "state_province",
+   "fieldtype": "Data",
+   "label": "State/Province",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.country",
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "label": "Country",
+   "options": "Country",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "lead.postal_code",
+   "fieldname": "postal_code",
+   "fieldtype": "Data",
+   "label": "Postal Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_31",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "document_type",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Document Type",
+   "options": "DocType"
+  },
+  {
+   "depends_on": "eval:doc.customer || doc.follow_up_to==\"Customer\"",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fetch_from": "customer.customer_name",
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Customer Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.customer_type",
+   "fieldname": "customer_type",
+   "fieldtype": "Select",
+   "label": "Customer Type",
+   "options": "\nCompany\nIndividual",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.customer_group",
+   "fieldname": "customer_group",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Customer Group",
+   "options": "Customer Group",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.territory",
+   "fieldname": "territory_customer",
+   "fieldtype": "Data",
+   "label": "Territory",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.lead_name",
+   "fieldname": "from_lead",
+   "fieldtype": "Data",
+   "label": "From Lead",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.opportunity_name",
+   "fieldname": "from_opportunity",
+   "fieldtype": "Data",
+   "label": "From Opportunity",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.account_manager",
+   "fieldname": "account_manager",
+   "fieldtype": "Link",
+   "label": "Account Manager",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.account_manager",
+   "fieldname": "address_html",
+   "fieldtype": "HTML",
+   "hidden": 1,
+   "label": "Address"
+  },
+  {
+   "fieldname": "contact",
+   "fieldtype": "HTML",
+   "hidden": 1,
+   "label": "Contact"
+  },
+  {
+   "fetch_from": "customer.customer_primary_contact",
+   "fieldname": "customer_primary_contact",
+   "fieldtype": "Link",
+   "label": "Customer Primary Contact",
+   "options": "Contact",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "customer.customer_primary_address",
+   "fieldname": "customer_primary_address",
+   "fieldtype": "Link",
+   "label": "Customer Primary Address",
+   "options": "Address",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.customer || doc.follow_up_to==\"Customer\"",
+   "fieldname": "customer_contacts",
+   "fieldtype": "Table",
+   "label": "Customer Contacts",
+   "options": "Lead Contacts"
+  },
+  {
+   "depends_on": "eval:doc.lead || doc.follow_up_to==\"Lead\"",
+   "fieldname": "contacts",
+   "fieldtype": "Table",
+   "label": "Lead Contacts",
+   "options": "Lead Contacts"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-09 14:46:30.543707",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Sales Follow Up",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

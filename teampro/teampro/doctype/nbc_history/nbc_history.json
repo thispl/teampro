@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2023-06-12 10:33:47.753140",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "nbc_date",
+  "column_break_2",
+  "nbc_planned_count",
+  "column_break_4",
+  "nbc_actual_count"
+ ],
+ "fields": [
+  {
+   "fieldname": "nbc_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "NBC Date"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nbc_planned_count",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "NBC Planned Count"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "nbc_actual_count",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "NBC Actual Count"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-06-12 10:33:47.753140",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "NBC History",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

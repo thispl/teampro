@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "creation": "2023-08-10 16:10:13.852398",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "purchase_receipt",
+  "supplier",
+  "date"
+ ],
+ "fields": [
+  {
+   "fieldname": "purchase_receipt",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Purchase Receipt",
+   "options": "Purchase Receipt",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Date",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-08-10 16:10:13.852398",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Purchase Receipt Approval",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

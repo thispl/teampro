@@ -1,0 +1,23 @@
+{
+ "content": null,
+ "creation": "2023-07-06 12:03:49.351432",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2023-07-06 12:15:12.038308",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "acgc-dashboard",
+ "owner": "Administrator",
+ "page_name": "acgc-dashboard",
+ "roles": [
+  {
+   "role": "Customer User"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "ACGC Dashboard"
+}

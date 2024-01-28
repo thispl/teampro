@@ -422,7 +422,8 @@
    "description": "Aadhar card",
    "fieldname": "criminal_check_document_required",
    "fieldtype": "Attach",
-   "label": "Document required"
+   "label": "Document required",
+   "permlevel": 1
   },
   {
    "depends_on": "eval:doc.customer != 'Manappuram Finance  Ltd'",
@@ -472,7 +473,8 @@
    "description": "Voter ID/Aadhar/Driving licence",
    "fieldname": "scanned_document_required",
    "fieldtype": "Attach",
-   "label": "Document required"
+   "label": "Document required",
+   "permlevel": 1
   },
   {
    "fieldname": "amended_from",
@@ -494,10 +496,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-05-18 16:27:48.705982",
+ "modified": "2023-01-31 17:44:25.814035",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "BG Entry Form",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -515,6 +518,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "title_field": "employee_name",
  "track_changes": 1
 }

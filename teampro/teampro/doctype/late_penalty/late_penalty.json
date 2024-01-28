@@ -12,8 +12,14 @@
   "late_days",
   "permissions",
   "column_break_3",
+  "deduction_amount",
+  "actual_late",
   "deduction_days",
-  "deduction_amount"
+  "from_date",
+  "to_date",
+  "on_duty",
+  "miss_punch",
+  "late_penalty"
  ],
  "fields": [
   {
@@ -40,12 +46,13 @@
   },
   {
    "fieldname": "deduction_days",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "label": "Deduction days"
   },
   {
    "fieldname": "deduction_amount",
    "fieldtype": "Int",
+   "hidden": 1,
    "label": "Deduction Amount"
   },
   {
@@ -54,14 +61,47 @@
    "fieldtype": "Read Only",
    "in_list_view": 1,
    "label": "Employee Name"
+  },
+  {
+   "fieldname": "actual_late",
+   "fieldtype": "Data",
+   "label": "Actual Late "
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "on_duty",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "On Duty"
+  },
+  {
+   "fieldname": "miss_punch",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Miss Punch"
+  },
+  {
+   "fieldname": "late_penalty",
+   "fieldtype": "Currency",
+   "label": "Late Penalty"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-03 12:14:23.277223",
+ "modified": "2023-05-06 07:09:23.724685",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Late Penalty",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -79,5 +119,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

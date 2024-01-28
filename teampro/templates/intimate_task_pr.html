@@ -1,0 +1,57 @@
+
+<h2>Task Completion Report </h2>
+
+<table class ='table table-bordered' style="width:100%">
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>A</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Task ID</td>
+    <td>{{ doc.name }}</td>
+  </tr>
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>B</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Project</td>
+     <td>{{ doc.project }}</td>
+  </tr>
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>C</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Task Title / Description</td>
+     <td>{{ doc.subject }}</td>
+  </tr>
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>D</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Task Type</td>
+     <td>{{ doc.type }}</td>
+  </tr>
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>E</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Output</td>
+     <td> {{ doc.output }} </td>
+  </tr>
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>F</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Cr. Status</td>
+     <td>{{ doc.status }}</td>
+  </tr>
+  <tr>
+  <!-- <td style='color:white;background-color:blue;font-weight:bold'>G</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Req. Status</td>
+     <td> doc.req_status </td>
+  </tr> -->
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>H</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Estimated Hour</td>
+     <td>{{ doc.expected_time }}</td>
+  </tr>
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>I</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Actual Hour</td>
+     <td>{{ doc.actual_time }}</td>
+  </tr>
+  
+  <tr>
+  <td style='color:white;background-color:blue;font-weight:bold'>J</td>
+    <td style='color:white;background-color:blue;font-weight:bold'>Completed By</td>
+     <td>{{ doc.completed_by }}</td>
+  </tr>
+  
+</table>

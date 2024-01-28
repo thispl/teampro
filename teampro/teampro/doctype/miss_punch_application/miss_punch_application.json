@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "MP-.####",
- "creation": "2022-01-08 19:27:48.536797",
+ "creation": "2023-09-23 14:12:52.021606",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
@@ -19,6 +19,7 @@
   "column_break_10",
   "shift",
   "attendance",
+  "amended_from",
   "amended_from"
  ],
  "fields": [
@@ -30,21 +31,16 @@
    "reqd": 1
   },
   {
-   "fieldname": "amended_from",
-   "fieldtype": "Link",
-   "label": "Amended From",
-   "no_copy": 1,
-   "options": "Miss Punch Application",
-   "print_hide": 1,
-   "read_only": 1
-  },
-  {
    "fetch_from": "employee.employee_name",
    "fieldname": "employee_name",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Employee Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_3",
+   "fieldtype": "Column Break"
   },
   {
    "fetch_from": "employee.department",
@@ -59,10 +55,6 @@
    "fieldtype": "Data",
    "label": "Designation",
    "read_only": 1
-  },
-  {
-   "fieldname": "column_break_3",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "section_break_6",
@@ -87,6 +79,10 @@
    "label": "Out Time"
   },
   {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "shift",
    "fieldtype": "Link",
    "label": "Shift",
@@ -99,17 +95,33 @@
    "options": "Attendance"
   },
   {
-   "fieldname": "column_break_10",
-   "fieldtype": "Column Break"
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Miss Punch Application",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Miss Punch Application",
+   "print_hide": 1,
+   "read_only": 1
   }
  ],
+ "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2022-03-03 12:40:15.559155",
+ "modified": "2023-09-23 14:12:52.021606",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Miss Punch Application",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -127,5 +139,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

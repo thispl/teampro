@@ -1,0 +1,114 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "CP.#####",
+ "creation": "2023-03-04 17:30:12.942174",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "total_outstanding_invoice",
+  "total_outstanding_so",
+  "column_break_4",
+  "payment_received",
+  "in_words",
+  "mode_of_payment",
+  "reference_number",
+  "date",
+  "attach",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "total_outstanding_invoice",
+   "fieldtype": "Data",
+   "label": "Total Outstanding Invoice"
+  },
+  {
+   "fieldname": "total_outstanding_so",
+   "fieldtype": "Data",
+   "label": "Total Outstanding SO"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "payment_received",
+   "fieldtype": "Currency",
+   "label": "Payment Received"
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Select",
+   "label": "Mode of Payment",
+   "options": "Cash\nCheque\nOnline"
+  },
+  {
+   "depends_on": "eval:doc.mode_of_payment == 'Cheque' || doc.mode_of_payment == 'Online'\n\n",
+   "fieldname": "reference_number",
+   "fieldtype": "Data",
+   "label": "Reference Number"
+  },
+  {
+   "depends_on": "eval:doc.mode_of_payment == 'Cheque' || doc.mode_of_payment == 'Online'\n",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "attach",
+   "fieldtype": "Attach",
+   "label": "Attach"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Customer Payment",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "in_words",
+   "fieldtype": "Data",
+   "label": "In Words"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2023-03-08 19:24:50.665836",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Customer Payment",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

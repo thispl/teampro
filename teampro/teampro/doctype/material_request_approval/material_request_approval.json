@@ -1,0 +1,50 @@
+{
+ "actions": [],
+ "creation": "2023-08-10 16:13:17.209426",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "material_request",
+  "purpose",
+  "date"
+ ],
+ "fields": [
+  {
+   "fieldname": "material_request",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Material Request",
+   "options": "Material Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "purpose",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Purpose",
+   "read_only": 1
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Date",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2023-08-10 16:13:17.209426",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Material Request Approval",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
