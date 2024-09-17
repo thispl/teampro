@@ -4,5 +4,5 @@
 # import frappe
 import unittest
 
-class TestTargetPlanner(unittest.TestCase):
+class TestTargetManager(unittest.TestCase):
 	pass

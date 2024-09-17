@@ -1,0 +1,55 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-03-27 18:11:06.817727",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "id_type",
+  "id_number",
+  "document"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "id_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "ID Type",
+   "options": "\nAadhar\nVoter ID\nDriving Licence\nPassport\nPAN Card",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "id_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "ID Number",
+   "reqd": 1
+  },
+  {
+   "columns": 5,
+   "fieldname": "document",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Document (Voter ID/Aadhar/Driving licence)",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-03-27 18:15:16.272449",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "ID Proof",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

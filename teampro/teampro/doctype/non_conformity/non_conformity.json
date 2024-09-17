@@ -20,7 +20,6 @@
   "column_break_10",
   "report_department",
   "report_designation",
-  "section_break_12",
   "non_conformity_reported_by_section",
   "nc_reported_by",
   "name3",
@@ -33,6 +32,7 @@
   "reporting_manager_mail",
   "nonconformitync_details_section",
   "nc_class_proposed",
+  "energy_score",
   "attach_proof_of_nc_if_any",
   "column_break_23",
   "cause_of_non_conformity",
@@ -61,6 +61,7 @@
   {
    "fieldname": "employee",
    "fieldtype": "Link",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Employee",
    "options": "Employee"
@@ -117,6 +118,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "reports_to.department",
    "fieldname": "report_department",
    "fieldtype": "Link",
    "label": "Department",
@@ -124,6 +126,7 @@
    "read_only": 1
   },
   {
+   "fetch_from": "reports_to.designation",
    "fieldname": "report_designation",
    "fieldtype": "Link",
    "label": "Designation",
@@ -133,10 +136,6 @@
   {
    "fieldname": "column_break_10",
    "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "section_break_12",
-   "fieldtype": "Section Break"
   },
   {
    "fieldname": "non_conformity_reported_by_section",
@@ -151,13 +150,14 @@
    "options": "Employee"
   },
   {
+   "fetch_from": "reports_to.employee_name",
    "fieldname": "name1",
    "fieldtype": "Data",
    "label": "Name",
    "read_only": 1
   },
   {
-   "fetch_from": "nc_reported_by.first_name",
+   "fetch_from": "nc_reported_by.employee_name",
    "fieldname": "name3",
    "fieldtype": "Data",
    "label": "Name",
@@ -176,7 +176,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "reports_to.designation",
+   "fetch_from": "nc_reported_by.designation",
    "fieldname": "nc_designation",
    "fieldtype": "Link",
    "label": "Designation",
@@ -192,7 +192,7 @@
    "fieldname": "nc_class_proposed",
    "fieldtype": "Select",
    "label": "NC Class Proposed",
-   "options": "\nMinor\nMajor\nHighly\nCritical"
+   "options": "\nMinor\nMajor\nCritical"
   },
   {
    "depends_on": "nc_class_proposed",
@@ -259,7 +259,7 @@
    "fieldname": "nc_class_confirmed",
    "fieldtype": "Select",
    "label": "NC Class Confirmed",
-   "options": "\nMinor\nMajor\nHighly\nCritical\nDropped"
+   "options": "\nMinor\nMajor\nCritical"
   },
   {
    "fieldname": "column_break_23",
@@ -304,17 +304,25 @@
    "fieldtype": "Column Break"
   },
   {
+   "fetch_from": "reports_to.user_id",
+   "fetch_if_empty": 1,
    "fieldname": "reporting_manager_mail",
    "fieldtype": "Link",
    "label": "Reporting Manager Mail",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "fieldname": "energy_score",
+   "fieldtype": "Data",
+   "label": "Energy Score",
+   "options": "\n-1\n-2\n-3",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
- "is_submittable": 1,
  "links": [],
- "modified": "2023-10-12 09:35:04.600109",
+ "modified": "2024-06-01 17:09:32.425479",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Non Conformity",
@@ -332,10 +340,24 @@
    "role": "System Manager",
    "share": 1,
    "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HOD",
+   "share": 1,
+   "write": 1
   }
  ],
+ "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],
+ "title_field": "employee",
  "track_changes": 1
 }

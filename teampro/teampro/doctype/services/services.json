@@ -8,6 +8,7 @@
  "engine": "InnoDB",
  "field_order": [
   "service",
+  "hod",
   "service_title",
   "logo"
  ],
@@ -30,12 +31,18 @@
    "in_preview": 1,
    "in_standard_filter": 1,
    "label": "Logo"
+  },
+  {
+   "default": "abdulla.pi@groupteampro.com",
+   "fieldname": "hod",
+   "fieldtype": "Data",
+   "label": "HOD"
   }
  ],
  "image_field": "logo",
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-02-25 17:38:06.633560",
+ "modified": "2024-08-17 14:31:54.153355",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Services",

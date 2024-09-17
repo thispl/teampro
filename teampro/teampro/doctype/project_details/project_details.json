@@ -1,0 +1,94 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-05-27 12:00:22.371623",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "software",
+  "license_active_from",
+  "license_validate_upto",
+  "customer",
+  "spoc",
+  "account_manager",
+  "project_manager"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "software",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Software",
+   "options": "\nEasytimePRO\nEasyWDMS"
+  },
+  {
+   "fieldname": "license_active_from",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "License Active From"
+  },
+  {
+   "fieldname": "license_validate_upto",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "License Validate Upto"
+  },
+  {
+   "fetch_from": "project.customer",
+   "fetch_if_empty": 1,
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "project.spoc",
+   "fetch_if_empty": 1,
+   "fieldname": "spoc",
+   "fieldtype": "Link",
+   "label": "SPOC",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "project.account_manager",
+   "fetch_if_empty": 1,
+   "fieldname": "account_manager",
+   "fieldtype": "Link",
+   "label": "Account Manager",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "project.project_manager",
+   "fetch_if_empty": 1,
+   "fieldname": "project_manager",
+   "fieldtype": "Link",
+   "label": "Project Manager",
+   "options": "User",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-05-27 15:35:01.409829",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Project Details",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

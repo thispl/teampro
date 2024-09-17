@@ -42,10 +42,7 @@ def attendance_calc(from_date,to_date):
 		role = "HOD"
 		hod = frappe.get_value('Has Role',{'role':role,'parent':hod})
 		if hod:
-			if user_id in ['accounts@groupteampro.com','veeramayandi.p@groupteampro.com','rohit.p@groupteampro.com','gayathri.r@groupteampro.com','janisha.g@groupteampro.com','mohamedshajith.j@groupteampro.com','sahayasterwin.a@groupteampro.com','narayanan.m@groupteampro.com','jenisha.p@groupteampro.com','gifty.p@groupteampro.com'] :
-					late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:30:00' and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
-			else:
-				late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:45:00' and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+			late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:45:00' and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
 		else:
 			late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:30:00' and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
 		attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
@@ -79,49 +76,58 @@ def attendance_calc(from_date,to_date):
 				late = 4.5
 		else:
 			late = 0
-		frappe.errprint(emp.name)
+		# frappe.errprint(emp.name)
 		ad = frappe.db.sql("""select * from `tabSalary Structure Assignment` where employee = '%s' and docstatus = 1 ORDER BY from_date DESC LIMIT 1  """%(emp.name),as_dict=True)[0]
-		days = 31
-		if frappe.db.exists('Late Penalty',{'emp_name':emp.name,'from_date':from_date,'to_date':to_date}):
-			adsl = frappe.get_doc('Late Penalty',{'emp_name':emp.name,'from_date':from_date,'to_date':to_date})
-			adsl.emp_name = emp.name
-			adsl.deduction_days = late
-			adsl.actual_late = at
-			adsl.late_days = late_list 
-			adsl.on_duty= on_duty
-			adsl.permissions = attendance_perm
-			adsl.from_date = from_date
-			adsl.to_date = to_date
-			adsl.late_penalty = (late * (int(ad.base + ad.variable)/(days)))
-			adsl.save()
-			frappe.errprint("Late Penalty Created")
-		else:
-			adsl = frappe.new_doc("Late Penalty")
-			adsl.emp_name = emp.name
-			adsl.deduction_days = late
-			adsl.actual_late = at
-			adsl.late_days = late_list 
-			adsl.on_duty= on_duty
-			adsl.permissions = attendance_perm
-			adsl.from_date = from_date
-			adsl.to_date = to_date
-			adsl.late_penalty = (late * (int(ad.base+ ad.variable)/(days)))
-			adsl.save()
-			frappe.errprint("Late Penalty Created")
+		frappe.errprint(ad)
+		if ad:
+			days = date_diff(to_date,from_date) + 1
+			if frappe.db.exists('Late Penalty',{'emp_name':emp.name,'from_date':from_date,'to_date':to_date}):
+				adsl = frappe.get_doc('Late Penalty',{'emp_name':emp.name,'from_date':from_date,'to_date':to_date})
+				adsl.emp_name = emp.name
+				adsl.deduction_days = late
+				adsl.actual_late = at
+				adsl.late_days = late_list 
+				adsl.on_duty= on_duty
+				adsl.permissions = attendance_perm
+				adsl.from_date = from_date
+				adsl.to_date = to_date
+				frappe.errprint(emp.name)
+				# frappe.errprint(late)
+				# frappe.errprint(ad.base + ad.variable)
+				# frappe.errprint(days)
+				adsl.late_penalty = (late * (int(ad.base + ad.variable)/(days)))
+				adsl.save()
+				frappe.errprint("Late Penalty Created")
+			else:
+				adsl = frappe.new_doc("Late Penalty")
+				frappe.errprint(emp.name)
+				adsl.emp_name = emp.name
+				adsl.deduction_days = late
+				adsl.actual_late = at
+				adsl.late_days = late_list 
+				adsl.on_duty= on_duty
+				adsl.permissions = attendance_perm
+				adsl.from_date = from_date
+				adsl.to_date = to_date
+				adsl.late_penalty = (late * (int(ad.base+ ad.variable)/(days)))
+				adsl.save()
+				frappe.errprint(" New Late Penalty Created")
 	return "ok"
 
 import datetime
 @frappe.whitelist()
 def additional_salary(from_date,to_date):
+	# from_date="2024-07-01"
+	# to_date="2024-07-31"
 	employees = frappe.get_all("Employee",{"status":"Active",'date_of_joining':['<=',from_date]},["*"])
 	for emp in employees:
-		lp = frappe.db.sql("""select * from `tabLate Penalty` where emp_name = '%s' and from_date = '%s' and to_date = '%s' """%(emp.name,from_date,to_date),as_dict=True)[0]
-		if lp.deduction_days > 0:
-			frappe.errprint(emp.name)
+		
+		lp= frappe.db.sql("""select emp_name,deduction_days,from_date,late_penalty from `tabLate Penalty` where emp_name = '%s' and from_date = '%s' and to_date = '%s' """%(emp.name,from_date,to_date),as_dict=True)[0]
+		if lp.deduction_days>0:
 			date_str1 = lp.from_date
-			date_obj1 = datetime.strptime(str(date_str1), '%Y-%m-%d').date()
 			date_str2 = emp.date_of_joining
-			date_obj2 = datetime.strptime(str(date_str2), '%Y-%m-%d').date()
+			date_obj1 = datetime.strptime(str(date_str1), '%Y-%m-%d').date()
+			date_obj2 = datetime.strptime(str(date_str2),'%Y-%m-%d').date()
 			if date_obj1 > date_obj2:
 				payroll_date = date_obj1
 			else:
@@ -153,20 +159,23 @@ from datetime import datetime
 import calendar
 @frappe.whitelist()
 def create_update_leave_allocation():
-	employees = frappe.get_all("Employee",{"status":"Active"},["*"])
+	employees = frappe.get_all("Employee",{"status":"Active"},["*"],order_by='name ASC')
 	current_date = datetime.now().date()
+	# current_date=(get_first_day(current_date1))
 	for emp in employees:
 		doj = emp.date_of_joining
 		diff = current_date - doj
 		years = diff.days / 365.25  
 		frappe.errprint(emp.name)
-		print(int(years))
+		
 		if(int(years)) > 0 :
-			if frappe.db.exists("Leave Allocation",{'employee':emp.employee,'leave_type':"Casual Leave"}):
-				la = frappe.get_doc("Leave Allocation",{'employee':emp.employee,'leave_type':"Casual Leave"},["*"])
+			
+			if frappe.db.exists("Leave Allocation",{'employee':emp.employee,'leave_type':"Casual Leave",'from_date':('>=',"2024-04-01")}):
+				la = frappe.get_doc("Leave Allocation",{'employee':emp.employee,'leave_type':"Casual Leave"})
 				la.new_leaves_allocated = la.new_leaves_allocated + 1.5
-				la.to_date = "2024-03-31"
+				la.to_date = "2025-03-31"
 				la.save(ignore_permissions=True)
+				print(int(years))
 				la.submit()   
 			else:
 				la = frappe.new_doc("Leave Allocation")
@@ -174,9 +183,37 @@ def create_update_leave_allocation():
 				la.leave_type = "Casual Leave"
 				la.new_leaves_allocated = 1.5
 				la.from_date = current_date
-				la.to_date = "2024-03-31"
+				la.to_date = "2025-03-31"
 				la.save(ignore_permissions=True)
 				la.submit()  
+
+@frappe.whitelist()
+def update_leave_ledger_entry():
+	prev_date = datetime.now().date()
+	start_time = datetime.combine(prev_date, datetime.min.time()) + timedelta(hours=0)
+	end_time = datetime.combine(prev_date, datetime.min.time()) + timedelta(hours=20)
+	llg=frappe.db.sql("""SELECT * FROM `tabLeave Ledger Entry` WHERE creation BETWEEN %s AND %s and transaction_type = 'Leave Allocation' and leave_type ='Casual Leave'""", (start_time, end_time), as_dict=True)
+	i=0
+	print(start_time)
+	print(end_time)
+	
+	for l in llg:
+		i+=1	
+		llg_doc=frappe.get_doc("Leave Ledger Entry",l.name)
+		print(llg_doc.name)
+		frappe.db.set_value("Leave Ledger Entry",llg_doc.name,"from_date","prev_date")
+
+def update_leave_ledger_entry_cron():
+	job = frappe.db.exists('Scheduled Job Type', 'update_leave_ledger_entry')
+	if not job:
+		sjt = frappe.new_doc("Scheduled Job Type")
+		sjt.update({
+			"method": 'teampro.utility.update_leave_ledger_entry',
+			"frequency": 'Cron',
+			"cron_format": '00 1 1 * *'
+		})
+		sjt.save(ignore_permissions=True)
+
 
 # def transfer_website():
 #     leads = frappe.get_all("Lead",['name','website'])
@@ -252,3 +289,8 @@ def bulk_update_closure_status():
 		if not cl.visa:
 			frappe.db.set_value('Closure',cl.name,'status','Visa')
 			frappe.db.commit() 
+
+@frappe.whitelist()
+def rename_file(doc,method):
+	hashcode = frappe.generate_hash()[:5]
+	doc.file_name = hashcode + doc.file_name

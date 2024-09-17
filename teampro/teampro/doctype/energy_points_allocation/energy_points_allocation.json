@@ -1,0 +1,311 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "EP-.YY.-.MM.-.#####",
+ "creation": "2024-04-03 12:29:45.620506",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_details_section",
+  "employee",
+  "employee_name",
+  "column_break_uvgs",
+  "department",
+  "designation",
+  "report_to_section",
+  "reports_to",
+  "name1",
+  "column_break_5jww",
+  "report_department",
+  "report_designation",
+  "energy_pointsep_reported_by_section",
+  "ep_reported_by",
+  "name3",
+  "column_break_4nui",
+  "nc_dep",
+  "nc_des",
+  "receivers_list_section",
+  "employee_mail",
+  "column_break_pzl0",
+  "reporting_manager_mail",
+  "energy_pointsep_details_section",
+  "ep_class_proposed",
+  "energy_score",
+  "attach_proof_of_appreciation_if_any",
+  "column_break_kvtb",
+  "reason_of_ep",
+  "section_break_pdwg",
+  "html1",
+  "employee_explanation_tab",
+  "explanation_of_appreciation",
+  "column_break_nopu",
+  "attach_proof_of_appreciation",
+  "action_taken_tab",
+  "action_taken_report",
+  "column_break_edwi",
+  "ep_class_confirmed"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_uvgs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "report_to_section",
+   "fieldtype": "Section Break",
+   "label": "Report To"
+  },
+  {
+   "fetch_from": "employee.reports_to",
+   "fieldname": "reports_to",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "Reports To",
+   "options": "Employee",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "reports_to.employee_name",
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_5jww",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "reports_to.department",
+   "fieldname": "report_department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "reports_to.designation",
+   "fieldname": "report_designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "energy_pointsep_reported_by_section",
+   "fieldtype": "Section Break",
+   "label": "Energy Points(EP) Reported by"
+  },
+  {
+   "fieldname": "ep_reported_by",
+   "fieldtype": "Link",
+   "ignore_user_permissions": 1,
+   "label": "\u00a0EP Reported by",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "ep_reported_by.employee_name",
+   "fieldname": "name3",
+   "fieldtype": "Data",
+   "label": "Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_4nui",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "ep_reported_by.department",
+   "fieldname": "nc_dep",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "ep_reported_by.designation",
+   "fieldname": "nc_des",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "receivers_list_section",
+   "fieldtype": "Section Break",
+   "label": "Receivers List"
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fieldname": "employee_mail",
+   "fieldtype": "Link",
+   "label": "Employee Mail",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_pzl0",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "reports_to.user_id",
+   "fieldname": "reporting_manager_mail",
+   "fieldtype": "Link",
+   "label": "Reporting Manager Mail",
+   "options": "User"
+  },
+  {
+   "fieldname": "energy_pointsep_details_section",
+   "fieldtype": "Section Break",
+   "label": "Energy Points(EP) Details"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "fieldname": "ep_class_proposed",
+   "fieldtype": "Select",
+   "label": "EP Class Proposed",
+   "options": "\nGood\nVery Good\nExcellent"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "depends_on": "ep_class_proposed",
+   "fieldname": "attach_proof_of_appreciation_if_any",
+   "fieldtype": "Attach",
+   "label": "Attach Proof of Appreciation (if any)"
+  },
+  {
+   "fieldname": "column_break_kvtb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_in_quick_entry": 1,
+   "depends_on": "ep_class_proposed",
+   "fieldname": "reason_of_ep",
+   "fieldtype": "Small Text",
+   "label": "Reason for Appreciation"
+  },
+  {
+   "fieldname": "section_break_pdwg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "html1",
+   "fieldtype": "HTML",
+   "options": " <p> The manager concerned has to explain in detail reason for this Energy Point Allocation</p>    \n "
+  },
+  {
+   "fieldname": "employee_explanation_tab",
+   "fieldtype": "Tab Break",
+   "hidden": 1,
+   "label": "Employee Explanation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "explanation_of_appreciation",
+   "fieldtype": "Small Text",
+   "label": "Explanation of Appreciation"
+  },
+  {
+   "fieldname": "column_break_nopu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attach_proof_of_appreciation",
+   "fieldtype": "Attach",
+   "label": "Attach Proof of Appreciation"
+  },
+  {
+   "fieldname": "action_taken_tab",
+   "fieldtype": "Tab Break",
+   "label": "Action Taken"
+  },
+  {
+   "depends_on": "eval:!doc.__islocal",
+   "fieldname": "action_taken_report",
+   "fieldtype": "Small Text",
+   "label": "Action Taken Report"
+  },
+  {
+   "fieldname": "column_break_edwi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:!doc.__islocal",
+   "fieldname": "ep_class_confirmed",
+   "fieldtype": "Select",
+   "label": "EP Class Confirmed",
+   "options": "\nGood\nVery Good\nExcellent"
+  },
+  {
+   "fieldname": "energy_score",
+   "fieldtype": "Select",
+   "label": "Energy Score",
+   "options": "\n+1\n+2\n+3",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-06-01 17:10:02.946601",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Energy Points Allocation",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "employee",
+ "track_changes": 1
+}

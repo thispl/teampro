@@ -92,12 +92,13 @@
   {
    "fieldname": "late_penalty",
    "fieldtype": "Currency",
-   "label": "Late Penalty"
+   "label": "Late Penalty",
+   "non_negative": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2023-05-06 07:09:23.724685",
+ "modified": "2024-04-10 12:44:07.802552",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Late Penalty",

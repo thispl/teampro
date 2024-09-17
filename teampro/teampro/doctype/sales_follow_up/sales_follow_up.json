@@ -45,6 +45,20 @@
   "state_province",
   "country",
   "postal_code",
+  "section_break_irbc",
+  "appointment",
+  "sheduled_time",
+  "name1",
+  "phone_no",
+  "skype_id",
+  "email",
+  "calendar_event",
+  "column_break_jfdi",
+  "appointment_status",
+  "appointment_with",
+  "party",
+  "details",
+  "appointment_remarks",
   "service_tab",
   "next_contact_by",
   "column_break_17",
@@ -75,6 +89,7 @@
    "fetch_from": "lead.company_name",
    "fieldname": "organization_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "label": "Organization Name",
    "read_only": 1
   },
@@ -120,17 +135,16 @@
    "options": "Lead"
   },
   {
-   "fetch_from": "lead.lead_owner",
    "fieldname": "lead_owner",
    "fieldtype": "Link",
    "label": "Lead Owner",
-   "options": "User",
-   "read_only": 1
+   "options": "User"
   },
   {
    "fetch_from": "lead.call_status",
    "fieldname": "call_status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Call Status",
    "options": "\nEffective\nNon Effective"
   },
@@ -147,23 +161,20 @@
    "fieldname": "visit_status",
    "fieldtype": "Select",
    "label": "Visit Status",
-   "options": "\nVisited\nNot Visited",
-   "read_only": 1
+   "options": "\nVisited\nNot Visited"
   },
   {
    "fetch_from": "lead.validation_status",
    "fieldname": "validation_status",
    "fieldtype": "Select",
    "label": "Validation Status",
-   "options": "\nValid\nInvalid\nDormant",
-   "read_only": 1
+   "options": "\nValid\nInvalid\nDormant"
   },
   {
    "fetch_from": "lead.first_name",
    "fieldname": "first_name",
    "fieldtype": "Data",
-   "label": "First Name",
-   "read_only": 1
+   "label": "First Name"
   },
   {
    "fieldname": "service_tab",
@@ -190,6 +201,7 @@
   {
    "fieldname": "next_contact_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Next Contact Date"
   },
   {
@@ -209,6 +221,7 @@
   {
    "fieldname": "status",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "label": "Status",
    "options": "\nLead\nOpen\nReplied\nOpportunity\nQuotation\nLost Quotation\nInterested\nConverted\nDo Not Contact"
   },
@@ -246,22 +259,19 @@
    "fieldname": "address_type",
    "fieldtype": "Select",
    "label": "Address Type",
-   "options": "\nBilling\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther",
-   "read_only": 1
+   "options": "\nBilling\nShipping\nOffice\nPersonal\nPlant\nPostal\nShop\nSubsidiary\nWarehouse\nCurrent\nPermanent\nOther"
   },
   {
    "fetch_from": "lead.address_line_1",
    "fieldname": "address_line_1",
    "fieldtype": "Data",
-   "label": "Address Line 1",
-   "read_only": 1
+   "label": "Address Line 1"
   },
   {
    "fetch_from": "lead.address_line_2",
    "fieldname": "address_line_2",
    "fieldtype": "Data",
-   "label": "Address Line 2",
-   "read_only": 1
+   "label": "Address Line 2"
   },
   {
    "fetch_from": "lead.web",
@@ -274,30 +284,26 @@
    "fetch_from": "lead.city_town",
    "fieldname": "city_town",
    "fieldtype": "Data",
-   "label": "City Town",
-   "read_only": 1
+   "label": "City Town"
   },
   {
    "fetch_from": "lead.state__province",
    "fieldname": "state_province",
    "fieldtype": "Data",
-   "label": "State/Province",
-   "read_only": 1
+   "label": "State/Province"
   },
   {
    "fetch_from": "lead.country",
    "fieldname": "country",
    "fieldtype": "Link",
    "label": "Country",
-   "options": "Country",
-   "read_only": 1
+   "options": "Country"
   },
   {
    "fetch_from": "lead.postal_code",
    "fieldname": "postal_code",
    "fieldtype": "Data",
-   "label": "Postal Code",
-   "read_only": 1
+   "label": "Postal Code"
   },
   {
    "fieldname": "column_break_31",
@@ -366,12 +372,10 @@
    "read_only": 1
   },
   {
-   "fetch_from": "customer.account_manager",
    "fieldname": "account_manager",
    "fieldtype": "Link",
    "label": "Account Manager",
-   "options": "User",
-   "read_only": 1
+   "options": "User"
   },
   {
    "fetch_from": "customer.account_manager",
@@ -399,8 +403,7 @@
    "fieldname": "customer_primary_address",
    "fieldtype": "Link",
    "label": "Customer Primary Address",
-   "options": "Address",
-   "read_only": 1
+   "options": "Address"
   },
   {
    "depends_on": "eval:doc.customer || doc.follow_up_to==\"Customer\"",
@@ -415,11 +418,108 @@
    "fieldtype": "Table",
    "label": "Lead Contacts",
    "options": "Lead Contacts"
+  },
+  {
+   "fieldname": "section_break_irbc",
+   "fieldtype": "Section Break",
+   "label": "Appointment Details"
+  },
+  {
+   "fetch_from": "appointment.custom_remarks",
+   "fieldname": "appointment_remarks",
+   "fieldtype": "Small Text",
+   "label": "Appointment Remarks",
+   "read_only": 1
+  },
+  {
+   "fieldname": "appointment",
+   "fieldtype": "Link",
+   "label": "Appointment",
+   "options": "Appointment",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.scheduled_time",
+   "fieldname": "sheduled_time",
+   "fieldtype": "Datetime",
+   "label": "Sheduled Time",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.custom_appointment_from",
+   "fieldname": "appointment_status",
+   "fieldtype": "Select",
+   "label": "Appointment Status",
+   "options": "Closed",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_name",
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_phone_number",
+   "fieldname": "phone_no",
+   "fieldtype": "Data",
+   "label": "Phone No",
+   "options": "Phone",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_skype",
+   "fieldname": "skype_id",
+   "fieldtype": "Data",
+   "label": "Skype ID",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_email",
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_jfdi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "appointment.appointment_with",
+   "fieldname": "appointment_with",
+   "fieldtype": "Link",
+   "label": "Appointment With",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.party",
+   "fieldname": "party",
+   "fieldtype": "Dynamic Link",
+   "label": "Party",
+   "options": "appointment_with",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.calendar_event",
+   "fieldname": "calendar_event",
+   "fieldtype": "Data",
+   "label": "Calendar Event",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "appointment.customer_details",
+   "fieldname": "details",
+   "fieldtype": "Small Text",
+   "label": "Details",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-01-09 14:46:30.543707",
+ "modified": "2024-09-16 13:21:47.069794",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sales Follow Up",
@@ -441,5 +541,7 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "organization_name",
+ "track_changes": 1
 }

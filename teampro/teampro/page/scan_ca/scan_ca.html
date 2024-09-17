@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candidate Details</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 20px;
+        }
+        .info-box {
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .info-box b {
+            color: #333;
+            font-size: 16px;
+        }
+        .btn-scan {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+        .btn-scan:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="info-box">
+                <b>Candidate Name: &nbsp;&nbsp; {{ data["given_name"] }}</b>
+            </div>
+        </div>
+        <div class="col-md-12">
+            <div class="info-box">
+                Candidate ID: <b>&nbsp;&nbsp; {{ data["name"] }}</b>
+            </div>
+        </div>
+        <!-- <div class="col-md-12">
+            <div class="info-box">
+                Date & Time: <b>&nbsp;&nbsp;{{ data["nowtime"] }}</b>
+            </div> -->
+        </div>
+        <div class="col-md-12">
+            <div class="info-box">
+                Candidate Status: <b>&nbsp;&nbsp; {{ data["pending_for"] }}</b>
+            </div>
+        </div>
+        <div class="col-md-12 text-center">
+            <button id="scan" class="btn-scan">Scan QR Code</button>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS and dependencies (Optional) -->
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<script type="text/javascript">
+    if(document.getElementById("scan")){
+    
+        document.getElementById("scan").onclick = function () {
+            
+            location.href = "/scan_ia";
+
+        };
+    }
+</script>
+
+</body>
+</html>

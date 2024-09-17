@@ -1,0 +1,92 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "PC-.####",
+ "creation": "2024-03-26 12:48:56.448192",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "candidate_name",
+  "job_applicant_name",
+  "email_id",
+  "column_break_ophl",
+  "position_applied_for",
+  "phone_number",
+  "passcode"
+ ],
+ "fields": [
+  {
+   "fieldname": "candidate_name",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Job Applicant",
+   "options": "Job Applicant"
+  },
+  {
+   "fetch_from": "candidate_name.email_id",
+   "fetch_if_empty": 1,
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email ID",
+   "options": "Email"
+  },
+  {
+   "fieldname": "column_break_ophl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "candidate_name.phone_number",
+   "fetch_if_empty": 1,
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Phone Number"
+  },
+  {
+   "fieldname": "passcode",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Passcode",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "candidate_name.applicant_name",
+   "fetch_if_empty": 1,
+   "fieldname": "job_applicant_name",
+   "fieldtype": "Data",
+   "label": "Job Applicant Name"
+  },
+  {
+   "fetch_from": "candidate_name.job_title",
+   "fieldname": "position_applied_for",
+   "fieldtype": "Data",
+   "label": "Position Applied For"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-03-26 18:37:31.726384",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "BG Entry Passcode",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

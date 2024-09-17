@@ -84,6 +84,9 @@ app_license = "MIT"
 # Hook on document methods and events
 
 doc_events = {
+    "File":{
+		"before_save": "teampro.utility.rename_file"
+	},
 	"Quotation":{
 		"validate": "teampro.custom.calc_cut_off_prize"
 	},
@@ -91,7 +94,9 @@ doc_events = {
 		"validate": ["teampro.custom.update_custodian","teampro.custom.inactive_employee"]
 	},
 	"Task":{
-		"on_update": ["teampro.custom.issue_status","teampro.custom.update_cb"],
+		"on_update": ["teampro.custom.issue_status","jobpro.custom.update_project_count"],
+		"validate": ["teampro.custom.update_issue_type","teampro.custom.update_issue_typein_issue"]
+
 	},
 
 	"Project":{
@@ -102,9 +107,9 @@ doc_events = {
 		# "before_submit":"teampro.custom.return_detailed_ts"
 	},
 	"Sales Order":{
-		"on_submit": "teampro.custom.update_batch_status"
-		
-    
+		"on_submit":["teampro.custom.update_batch_status","teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update_manager"],
+        "on_cancel": "teampro.custom.update_pi_workflow",
+		# "after_submit": "teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update_manager",
 		# "on_update":"teampro.custom.skip_dn_so",
         # "validate":"teampro.custom.child_table_calc"
 	},
@@ -115,7 +120,7 @@ doc_events = {
 		# "on_trash": "method"
 	},
 	"Candidate": {
-		"on_update": "teampro.custom.update_task_count"
+		"on_update": ["teampro.custom.update_task_count"]
 	},
 	# "Payment Entry":{
 	# 	"on_submit":"jobpro.jobpro.doctype.closure.closure.closure_payment_entry"
@@ -123,15 +128,20 @@ doc_events = {
 	"Sales Invoice":{
         # "validate":["teampro.custom.get_all_quot"],
 		# "validate": "teampro.custom.sales_order_batch",
-		"after_submit": "teampro.teampro.doctype.target_planner.target_planner.calculate_target_on_update",
+		# "after_submit": "teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update",
+		"on_submit": "teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update_manager",
 		# "on_submit": "teampro.custom.get_against_so"
 	},
 	# "Attendance Request":{
 	# 	"before_submit": "teampro.custom.update_attendance"
 	# },
 	"Purchase Invoice": {
-        "on_submit": "teampro.custom.validate_date"
+        "before_submit": "teampro.custom.validate_date",
+        "on_update":"teampro.custom.update_workflow_state"
     },
+    # "Task":{
+    #     "validate": ["teampro.custom.update_issue_type","teampro.custom.update_issue_typein_issue"]
+	# },
 	# "Sales Invoice": {
     #     "on_submit": "teampro.custom.validate_date_salesinvoice"
     # },
@@ -142,7 +152,20 @@ doc_events = {
 
 	# "Delivery Note":{
 	# "after_insert": "teampro.custom.get_delivery_note"
-	# }
+	# },
+    
+	"BG Entry Form": {
+        "after_insert": "teampro.teampro.doctype.bg_entry_form.bg_entry_form.mark_files_public"
+	},
+    
+	# "Job Applicant": {
+    #     "after_insert": "teampro.utility.mark_files_public"
+	# },
+    
+	"Attendance":{
+        "on_cancel":"teampro.mark_attendance.cancel_comp_off"
+	},
+	
 }
 
 # Scheduled Tasks
@@ -150,24 +173,102 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"teampro.email_alerts.next_contact_alert",
-		"teampro.custom.create_food_count",
-		# "teampro.mark_attendance.mark_att",
+		# "teampro.custom.create_food_count",
+		"teampro.mark_attendance.mark_att",
 		"teampro.email_alerts.checkin_alert",
-        "checkpro.checkpro.doctype.case.case.tat_monitor",
-        "teampro.custom.update_batch_age",
+        # "checkpro.checkpro.doctype.case.case.tat_monitor",
+        "teampro.custom.update_case_age",
+		"teampro.custom.update_batch_age",
         "teampro.custom.update_check_age",
+        "teampro.custom.update_cv_age",
 	],
 	"monthly": [
-		"teampro.utility.create_update_leave_allocation"
+		"teampro.utility.create_update_leave_allocation",
+        "teampro.custom.epnc_send_mail",
+        "teampro.custom.ep_mail",
 	],
 	"cron": {
-		"0 9 * * *" : [
-			"teampro.custom.create_food_count"
+		"00 9 * * *" : [
+			"teampro.teampro.doctype.food_count.food_count.create_food_count"
 		],
 		"*/10 * * * *" : [
 			"teampro.mark_attendance.mark_att"
+		],
+		"00 18 * * *" : [
+			"checkpro.custom.cases_with_to_be_billed_status"
+		],
+		"00 18 * * *" : [
+			"checkpro.custom.cases_with_generate_report_status"
+		],
+		"00 18 * * *" : [
+			"checkpro.custom.insuff_consolidated_mail"
+		],
+		"00 09 * * *" : [
+			"checkpro.custom.dpr_excel_format"
+		],
+		"00 18 * * *" : [
+			"checkpro.custom.cases_with_gr_daily_report"
+		],
+		"00 18 * * *" : [
+			"checkpro.custom.submitted_bg_entry"
+		],
+		"00 09 * * *" : [
+			"jobpro.jobpro.doctype.closure.closure.visa_expiry_alert"
+		],
+		"00 09 * * *" : [
+			"jobpro.jobpro.doctype.closure.closure.fm_expiry_alert"
+		],
+		"30 18 * * *" : [
+			"checkpro.custom.dsr_mail"
+		],
+		"00 18 * * *" : [
+			"checkpro.custom.cases_with_insuff_daily_report"
+		],
+		"00 09 * * *" : [
+			"checkpro.custom.cases_with_insuff"
+		],
+		"00 09 * * *" : [
+			"checkpro.custom.cases_beyond_tat_age_10"
+		],
+		"00 1 1 * *" : [
+			"teampro.utility.update_leave_ledger_entry"
+		],
+        "30 18 * * *" : [
+			"checkpro.custom.statement_of_account"
+		],'00 10 * * 1,4':[
+            'teampro.email_alerts.sales_invoice_overdue_docs'
+		],'00 10 * * 1':[
+            'checkpro.custom.task_mail_notification'
+		],'00 10 * * 2,5':[
+            'checkpro.custom.sales_order_follow_up'
+		],'00 10 * * 1':[
+            'checkpro.custom.task_mail_notification_status'
+		],
+        "00 23 * * *" : [
+			"checkpro.custom.statement_of_account_test_1"
+		],"00 10 * * 1":[
+            'checkpro.custom.sales_order_follow_up_test'
+		],"00 10 * * 1":[
+            'checkpro.custom.sales_invoice_follow_up_test'
+		],"59 23 * * *":[
+            'checkpro.custom.statement_of_account_test'
+		],
+        # "0 1 * * * ":[
+        #     'checkpro.custom.dpr_mail'
+		# ],
+        "0 1 * * * ":[
+            'checkpro.custom.dpr_over_all_task'
+		],"0 1 * * * ":[
+            'checkpro.custom.dpr_over_all_meeting'
+		],"0 1 * * * ":[
+            'checkpro.custom.dpr_over_all'
 		]
 	}
+}
+jinja = {
+	"methods": [
+        "teampro.custom.get_task_details"
+	]
 }
 # scheduler_events = {
 # 	"all": [
@@ -181,11 +282,26 @@ scheduler_events = {
 # 	],
 # 	"weekly": [
 # 		"teampro.tasks.weekly"
-# 	]
+# 	],
+#     "weekly":[
+#         "checkpro.custom.task_mail_notification_status"
+# 	],
 # 	"monthly": [
 # 		"teampro.tasks.monthly"
 # 	]
 # }
+
+scheduler_events={
+    "Weekly":[
+		"checkpro.custom.task_mail_notification_status"
+	],
+    "Weekly":[
+        "checkpro.custom.sales_order_invoiced"
+	],
+    "Weekly":[
+        "teampro.email_alerts.create_email_sales_invoice_overdue_docs"
+	]
+}
 
 # Testing
 # -------
@@ -205,6 +321,8 @@ scheduler_events = {
 # override_doctype_dashboards = {
 # 	"Task": "teampro.task.get_dashboard_data"
 # }
+
+
 
 # exempt linked doctypes from being automatically cancelled
 #

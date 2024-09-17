@@ -1,0 +1,117 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-06-17 13:06:08.684832",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "from_date",
+  "to_date",
+  "case_status",
+  "column_break_cppg",
+  "employee_name",
+  "employee_id",
+  "report_status",
+  "column_break_mgia",
+  "batch",
+  "company",
+  "download",
+  "section_break_4eus",
+  "html"
+ ],
+ "fields": [
+  {
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Batch",
+   "options": "Batch"
+  },
+  {
+   "fieldname": "column_break_mgia",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "section_break_4eus",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "html",
+   "fieldtype": "HTML",
+   "label": "HTML"
+  },
+  {
+   "fieldname": "download",
+   "fieldtype": "Button",
+   "hidden": 1,
+   "label": "Download"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_cppg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.batch || doc.to_date ||doc.employee_name ||doc.employee_id",
+   "fieldname": "case_status",
+   "fieldtype": "Select",
+   "label": "Case status"
+  },
+  {
+   "depends_on": "eval:doc.batch || doc.to_date ||doc.employee_name ||doc.employee_id",
+   "fieldname": "report_status",
+   "fieldtype": "Select",
+   "label": "Report Status"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name"
+  },
+  {
+   "fieldname": "employee_id",
+   "fieldtype": "Data",
+   "label": "Employee ID"
+  }
+ ],
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-07-22 14:57:50.335758",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Case Summary",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

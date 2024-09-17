@@ -10,11 +10,15 @@
   "ct",
   "ft",
   "achieved",
+  "ytct",
+  "month_nos",
   "column_break_6",
   "ct_yta",
   "ft_yta",
   "revised_ct",
-  "revised_ft"
+  "revised_ft",
+  "ytft",
+  "is_yta_added"
  ],
  "fields": [
   {
@@ -32,6 +36,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "CT",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -40,6 +45,7 @@
    "fieldtype": "Currency",
    "in_list_view": 1,
    "label": "FT",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -68,22 +74,48 @@
   {
    "fieldname": "revised_ct",
    "fieldtype": "Currency",
-   "label": "Revised CT"
+   "label": "Revised CT",
+   "read_only": 1
   },
   {
    "fieldname": "revised_ft",
    "fieldtype": "Currency",
-   "label": "Revised FT "
+   "label": "Revised FT ",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_6",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "ytct",
+   "fieldtype": "Currency",
+   "label": "YTCT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ytft",
+   "fieldtype": "Currency",
+   "label": "YTFT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "month_nos",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Month No"
+  },
+  {
+   "fieldname": "is_yta_added",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Is YTA added"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2022-03-10 16:15:33.794304",
+ "modified": "2024-09-16 09:42:35.955266",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Target Child",
@@ -91,5 +123,6 @@
  "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

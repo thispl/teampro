@@ -63,10 +63,13 @@ def get_columns(filters):
 
 def get_data(filters):
 	data = []
-	# employee = frappe.db.get_all("Employee",{"status":"Active",'date_of_joining':['>=',filters.to_date]},['*'])
-	employee = frappe.db.sql("""select * from `tabEmployee` where status = 'Active' and date_of_joining < '%s'"""%(filters.to_date),as_dict = True)
-	for emp in employee:
-		frappe.errprint(emp.name)
+	employee = frappe.db.get_all("Employee",{'status':'Active','date_of_joining':['<=',filters.to_date]},['*'])
+	left = frappe.db.get_all("Employee",{'status':'Left','relieving_date': ['>=', filters.from_date, '<=', filters.to_date]},['*'])
+	# employee = frappe.db.sql("""select * from `tabEmployee` where date_of_joining < '%s'"""%(filters.to_date),as_dict = True)
+	employees=employee + left
+	
+	for emp in employees:
+		frappe.errprint("Hello")
 		month_days= 0
 		payment_days = 0
 		total_payment_days = 0

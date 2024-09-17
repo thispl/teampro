@@ -69,7 +69,7 @@ class Task(NestedSet):
 			self.status = "Template"
 		if self.status!=self.get_db_value("status") and self.status == "Completed":
 			for d in self.depends_on:
-				if frappe.db.get_value("Task", d.task, "status") not in ("Completed", "Cancelled"):
+				if frappe.db.get_value("Task", d.task, "status") not in ("Completed", "Cancelled","Hold","Pending Review"):
 					frappe.throw(_("Cannot complete task {0} as its dependant task {1} are not ccompleted / cancelled.").format(frappe.bold(self.name), frappe.bold(d.task)))
 
 			close_all_assignments(self.doctype, self.name)
@@ -209,7 +209,7 @@ class Task(NestedSet):
 		self.update_project()
 
 	def update_status(self):
-		if self.status not in ('Cancelled', 'Completed','Hold','Pending Review','Client Review') and self.exp_end_date:
+		if self.status in ('Open' ,'Working') and self.exp_end_date:
 			from datetime import datetime
 			if self.exp_end_date < datetime.now().date():
 				self.db_set('status', 'Overdue', update_modified=False)

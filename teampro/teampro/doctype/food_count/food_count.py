@@ -23,4 +23,31 @@ class FoodCount(Document):
 		food_count = frappe.db.exists('Food Count',{'employee':self.employee,'date':self.date})
 		if food_count:
 			frappe.throw(_('Already food applied'))	
+   
+@frappe.whitelist()
+def create_food_count():
+    from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
+    holiday_list_name = 'TEAMPRO 2023'
+    start_date = getdate(today())
+    if not is_holiday(holiday_list_name, start_date):
+        emp = ["TI00150","TI00149"]
+        for i in emp:
+            if not frappe.db.exists("Food Count",{'employee':i,'date':nowdate()}):
+                doc = frappe.new_doc("Food Count")
+                doc.employee = i
+                doc.date = nowdate()
+                doc.save(ignore_permissions=True)
+
+def add_food_count():
+    job = frappe.db.exists('Scheduled Job Type', 'create_food_count')
+    if not job:
+        print("HI")
+        sjt = frappe.new_doc("Scheduled Job Type")
+    sjt.update({
+        "method": 'teampro.teampro.doctype.food_count.food_count.create_food_count',
+        "frequency": 'Cron',
+        "cron_format": '00 9 * * *'
+    })
+    sjt.save(ignore_permissions=True)
+
 			
