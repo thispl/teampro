@@ -1,0 +1,76 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-05-31 17:30:08.301181",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "date",
+  "employee",
+  "section_break_kdcf",
+  "task_details",
+  "section_break_eygs",
+  "timesheet_details"
+ ],
+ "fields": [
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_kdcf",
+   "fieldtype": "Section Break",
+   "label": "Task "
+  },
+  {
+   "fieldname": "task_details",
+   "fieldtype": "Table",
+   "label": "Task Details",
+   "options": "Task Details"
+  },
+  {
+   "fieldname": "section_break_eygs",
+   "fieldtype": "Section Break",
+   "label": "Timesheet"
+  },
+  {
+   "fieldname": "timesheet_details",
+   "fieldtype": "Table",
+   "label": "Timesheet Details",
+   "options": "Timesheet Details"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-06-11 12:21:53.530865",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "IT Daily Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

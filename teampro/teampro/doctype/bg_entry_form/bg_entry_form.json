@@ -36,7 +36,10 @@
   "address_and_contact_details",
   "employee_code",
   "employment_type",
+  "date_of_joining",
+  "date_of_relieving",
   "period_of_employment",
+  "emp_period",
   "designation",
   "ctc_drawn",
   "column_break_30",
@@ -53,6 +56,8 @@
   "address_and_contact_detail",
   "employeecode",
   "employmenttype",
+  "date_of_joining_2",
+  "date_of_relieving_2",
   "period_of_employment11",
   "designation11",
   "ctc_drawn11",
@@ -80,7 +85,12 @@
   "date_of_birth_as_in_proof",
   "father_name_as_in_proof",
   "scanned_document_required",
-  "amended_from"
+  "amended_from",
+  "section_break_k2ub",
+  "enter_the_password",
+  "phone_number",
+  "candidate_name",
+  "email"
  ],
  "fields": [
   {
@@ -159,7 +169,7 @@
   },
   {
    "fieldname": "register_no_id_no",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Register No./ ID No."
   },
   {
@@ -244,6 +254,7 @@
   {
    "fieldname": "period_of_employment",
    "fieldtype": "Int",
+   "hidden": 1,
    "label": "Period of Employment"
   },
   {
@@ -332,7 +343,7 @@
   },
   {
    "fieldname": "period_of_employment11",
-   "fieldtype": "Int",
+   "fieldtype": "Data",
    "label": "Period of Employment"
   },
   {
@@ -491,12 +502,64 @@
    "fieldtype": "Link",
    "label": "Customer",
    "options": "Customer"
+  },
+  {
+   "fieldname": "section_break_k2ub",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "enter_the_password",
+   "fieldtype": "Data",
+   "label": "enter_the_password"
+  },
+  {
+   "fieldname": "phone_number",
+   "fieldtype": "Data",
+   "label": "phone_number"
+  },
+  {
+   "fieldname": "candidate_name",
+   "fieldtype": "Data",
+   "label": "candidate_name"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "email",
+   "options": "Email"
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Date",
+   "label": "Date of Joining"
+  },
+  {
+   "fieldname": "date_of_relieving",
+   "fieldtype": "Date",
+   "label": "Date of Relieving"
+  },
+  {
+   "fieldname": "emp_period",
+   "fieldtype": "Data",
+   "label": "Period of Employment"
+  },
+  {
+   "fieldname": "date_of_joining_2",
+   "fieldtype": "Date",
+   "label": "Date of Joining"
+  },
+  {
+   "fieldname": "date_of_relieving_2",
+   "fieldtype": "Date",
+   "label": "Date of Relieving"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-01-31 17:44:25.814035",
+ "make_attachments_public": 1,
+ "modified": "2024-08-24 14:32:31.610444",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "BG Entry Form",

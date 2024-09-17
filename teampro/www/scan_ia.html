@@ -1,0 +1,163 @@
+{% extends "templates/web.html" %}
+{% block title %}QR Scan{% endblock %}
+{% block head_include %}
+<style>
+    hr {
+        margin-top: 32px;
+    }
+
+    input[type="file"] {
+        display: block;
+        margin-bottom: 16px;
+    }
+
+    div {
+        margin-bottom: 16px;
+    }
+
+    #flash-toggle {
+        display: none;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<center>
+    <h1>Scan from WebCam:</h1>
+</center>
+<div>
+    <br>
+    <center><video id="qr-video" width="300"></video></center>
+    <br>
+</div>
+
+<center><b>Detected ID: </b><span id="cam-qr-result">None</span></center>
+<br>
+<center><b>Last detected at: <span id="cam-qr-result-timestamp"></span></b></center>
+<br>
+
+<br>
+
+<div class="row">
+
+    <div class="col-md-4 col-xs-1"></div>
+    <div class=" col-md-2 col-xs-5">
+        <button id="rescan" type="button" class="btn btn-primary btn-lg">Rescan</button>
+    </div>
+
+    <div class="col-md-2 col-xs-5">
+        <button id="back" type="button" class="btn btn-primary btn-lg">Back</button>
+    </div>
+    <!-- <div class="col-md-2 col-xs-5">
+        <button id="open" type="button" class="btn btn-primary btn-lg">Open</button>
+    </div> -->
+    <div class="col-md-2 col-xs-1"></div>
+</div>
+
+{% endblock %}
+
+{% block script %}
+
+
+
+<script type="module">
+
+    if (document.getElementById("rescan")) {
+        document.getElementById("rescan").onclick = function () {
+            scanner.start().then(() => {
+                scanner.hasFlash().then(hasFlash => {
+                    camHasFlash.textContent = hasFlash;
+                    if (hasFlash) {
+                        flashToggle.style.display = 'inline-block';
+                        flashToggle.addEventListener('click', () => {
+                            scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
+                        });
+                    }
+                });
+            });
+        };
+    }
+
+
+    document.getElementById("back").onclick = function () {
+        location.href = "/app/scan-ca";
+    };
+    // document.getElementById("open").onclick = function () {
+    //     location.href = "/app/candidate";
+    // };
+
+    import QrScanner from "../qr-scanner.min.js";
+    QrScanner.WORKER_PATH = '../qr-scanner-worker.min.js';
+
+    const video = document.getElementById('qr-video');
+    const camHasCamera = document.getElementById('cam-has-camera');
+    const camHasFlash = document.getElementById('cam-has-flash');
+    const flashToggle = document.getElementById('flash-toggle');
+    const flashState = document.getElementById('flash-state');
+    const camQrResult = document.getElementById('cam-qr-result');
+    const camQrResultTimestamp = document.getElementById('cam-qr-result-timestamp');
+    const fileSelector = document.getElementById('file-selector');
+    const fileQrResult = document.getElementById('file-qr-result');
+
+    function setResult(label, result) {
+
+        scanner.stop();
+        label.textContent = result;
+        camQrResultTimestamp.textContent = new Date().toString();
+        label.style.color = 'teal';
+        clearTimeout(label.highlightTimeout);
+        label.highlightTimeout = setTimeout(() => label.style.color = 'inherit', 100);
+
+       
+        frappe.call({
+            method: "teampro.teampro.page.scan_ca.ca_utils.validation_scan_qr",
+            args: {
+                result: result
+            },
+            callback: function (r) {
+                if (r.message) {
+                    if (r.message.link_format_url) {
+                        frappe.msgprint({
+                            title: __('Candidate Verified')
+                        });
+                        window.location.href=r.message.link_format_url;
+                        
+                        // window.location.href = r.message.print_format_url;
+                        
+                    } else {
+                        
+                        frappe.msgprint(__('Candidate not found or access denied.'));
+                    }
+                }
+            }
+        });
+    }
+
+   
+     // ####### Web Cam Scanning #######
+
+     QrScanner.hasCamera().then(hasCamera => camHasCamera.textContent = hasCamera);
+
+const scanner = new QrScanner(video, result => setResult(camQrResult, result), error => {
+    camQrResult.textContent = error;
+    camQrResult.style.color = 'red';
+});
+
+scanner.start().then(() => {
+    scanner.hasFlash().then(hasFlash => {
+        camHasFlash.textContent = hasFlash;
+        if (hasFlash) {
+            flashToggle.style.display = 'inline-block';
+            flashToggle.addEventListener('click', () => {
+                scanner.toggleFlash().then(() => flashState.textContent = scanner.isFlashOn() ? 'on' : 'off');
+            });
+        }
+    });
+});
+
+// for debugging
+window.scanner = scanner;
+
+
+</script>
+{% endblock %}

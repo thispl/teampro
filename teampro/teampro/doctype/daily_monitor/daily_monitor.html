@@ -1,0 +1,50 @@
+<html>
+    <script type="text/template" id="dsr-template">
+<style>
+    .th {
+        background-color: #0f1568;
+        color: white;
+    };
+    
+</style>
+<body>
+    <table border="1" id="dsr">
+        <thead>
+            <tr class="th">
+                <th>SI NO</th>
+                <th>ID</th>
+                <th>Project </th>
+                <th>Subject</th>
+                <th>CB</th>
+                <th>Status</th>
+                <th>Revision</th>
+                <th>AT</th>
+                <th>ET</th>
+                <th>RT</th>
+                <th>Priority</th>
+                <th>Allocated On</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in data %}
+            <tr>
+                <td>{{ d.s_no }}</td>
+                <td>{{ d.id }}</td>
+                <td>{{ d.project }}</td>
+                <td>{{ d.sub }}</td>
+                <td>{{ d.cb }}</td>
+                <td>{{ d.status }}</td>
+                <td>{{ d.rev }}</td>
+                <td>{{ d.at }}</td>
+                <td>{{ d.et }}</td>
+                <td>{{ d.rt }}</td>
+                <td>{{ d.priority }}</td>
+                <td>{{ d.date }}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</script>
+</html>

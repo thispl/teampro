@@ -1,0 +1,64 @@
+<html>
+    <head>
+    <script>$("#caseSummary").DataTable({searching:false,lengthChange: false,});</script>
+    <link rel="stylesheet" href="/assets/teampro/css/dataTables.min.css" type="text/css">
+
+</head>
+<style>
+    .th {
+        background-color: #0f1568;
+        color: white;
+    };
+    
+</style>
+<body>
+    <table border="1" id="caseSummary">
+        <thead>
+            <tr class="th">
+                <th>SI NO</th>
+                <th>Case Name</th>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Batch</th>
+                <th>Date of Initiation</th>
+                <th>Completion Date</th>
+                <th>Age</th>
+                <th>Case Status</th>
+                <th>Case Report</th>
+                <th>Report Status</th>
+                <th>Download</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for d in data %}
+            <tr>
+                <td>{{ d.s_no }}</td>
+                <td>{{ d.case_name }}</td>
+                <td>{{ d.id }}</td>
+                <td>{{ d.name }}</td>
+                <td>{{ d.batch }}</td>
+                <td>{{ d.initiation }}</td>
+                <td>{{ d.completion }}</td>
+                <td>{{ d.age }}</td>
+                <td>{{ d.case_status }}</td>
+                <td><button onclick="viewCaseStatus('{{ d.case_name }}')">Details</button></td>
+                {% if d.report_status == 'Positive'%}
+                <td><span style="color:blue">{{ d.report_status }}</span></td>
+                {% endif %}
+                {% if d.report_status == 'Negative' %}
+                <td><span style="color:red">{{ d.report_status}}</span></td>
+                {% endif %}
+                {% if d.report_status == 'Dilemma' %}
+                <td><span style="color: orange;">{{ d.report_status }}</span> </td>
+                {% endif %}
+                {% if d.report_status != 'Dilemma' && d.report_status != 'Negative' && d.report_status != 'Positive' %}
+                <td>{{ d.report_status }}</td>
+                {% endif %}
+
+                <td><button onclick="downloadReport('{{ d.case_name }}')">Download</button></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

@@ -44,7 +44,7 @@ def get_attendance(filters):
 		role = "HOD"
 		hod = frappe.get_value('Has Role',{'role':role,'parent':hod})
 		if hod:
-			if user_id in ['accounts@groupteampro.com','veeramayandi.p@groupteampro.com','rohit.p@groupteampro.com','gayathri.r@groupteampro.com','janisha.g@groupteampro.com','mohamedshajith.j@groupteampro.com','sahayasterwin.a@groupteampro.com','narayanan.m@groupteampro.com','jenisha.p@groupteampro.com','gifty.p@groupteampro.com'] :		
+			if user_id in ['accounts@groupteampro.com','veeramayandi.p@groupteampro.com','siva.m@groupteampro.com','gayathri.r@groupteampro.com','sivarenisha.m@groupteampro.com','mohamedshajith.j@groupteampro.com','pavithra.s@groupteampro.com','jenisha.p@groupteampro.com','gifty.p@groupteampro.com','divya.p@groupteampro.com','jothi.m@groupteampro.com','nandini.a@groupteampro.com','lowra.g@groupteampro.com','arockia.k@groupteampro.com','jeniba.a@groupteampro.com','amar.p@groupteampro.com','muthu.i@groupteampro.com'] :		
 				attendance = frappe.db.sql("""select * from `tabAttendance` where employee = '%s' and time(in_time) > '09:30:00' and attendance_date between '%s' and '%s' """%(filters.employee,filters.from_date,filters.to_date),as_dict=True)
 			else:
 				attendance = frappe.db.sql("""select * from `tabAttendance` where employee = '%s' and time(in_time) > '09:45:00' and attendance_date between '%s' and '%s' """%(filters.employee,filters.from_date,filters.to_date),as_dict=True)
@@ -58,7 +58,7 @@ def get_attendance(filters):
 				if att_req == '' :
 					if leave_app == '' :
 						if hod:
-							if user_id in ['accounts@groupteampro.com','veeramayandi.p@groupteampro.com','rohit.p@groupteampro.com','gayathri.r@groupteampro.com','janisha.g@groupteampro.com','mohamedshajith.j@groupteampro.com','sahayasterwin.a@groupteampro.com','narayanan.m@groupteampro.com','jenisha.p@groupteampro.com','gifty.p@groupteampro.com'] :
+							if user_id in ['accounts@groupteampro.com','veeramayandi.p@groupteampro.com','siva.m@groupteampro.com','gayathri.r@groupteampro.com','sivarenisha.m@groupteampro.com','mohamedshajith.j@groupteampro.com','pavithra.s@groupteampro.com','jenisha.p@groupteampro.com','gifty.p@groupteampro.com','divya.p@groupteampro.com','jothi.m@groupteampro.com','nandini.a@groupteampro.com','lowra.g@groupteampro.com','arockia.k@groupteampro.com','jeniba.a@groupteampro.com','amar.p@groupteampro.com','muthu.i@groupteampro.com'] :
 								if att.shift and att.in_time:
 									shift_time = frappe.get_value("Shift Type",{'name':att.shift},["start_time"])
 									get_time = datetime.strptime(str(shift_time),'%H:%M:%S').strftime('%H:%M:%S')

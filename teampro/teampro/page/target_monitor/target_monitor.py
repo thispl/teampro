@@ -11,14 +11,14 @@ def get_ct_ft():
     date = datetime.strptime(today(),'%Y-%m-%d')
     mon = datetime.strftime(date,'%b')
     year = datetime.strftime(date,'%Y')
-    hr_tp = frappe.db.exists('Target Planner',{'employee':'TI00003','year':year},'name')
-    hr = frappe.db.get_all('Target Child',{'parent':hr_tp,'month':mon},['revised_ct','revised_ft','achieved','ct_yta','ft_yta'])
-    it_tp = frappe.db.exists('Target Planner',{'employee':'TI00005','year':year},'name')
-    it = frappe.db.get_all('Target Child',{'parent':it_tp,'month':mon},['revised_ct','revised_ft','achieved','ct_yta','ft_yta'])
-    td_tp = frappe.db.exists('Target Planner',{'employee':'TI00004','year':year},'name')
-    td = frappe.db.get_all('Target Child',{'parent':td_tp,'month':mon},['revised_ct','revised_ft','achieved','ct_yta','ft_yta'])
-    fp_tp = frappe.db.exists('Target Planner',{'employee':'TI00002','year':year},'name')
-    fp = frappe.db.get_all('Target Child',{'parent':fp_tp,'month':mon},['revised_ct','revised_ft','achieved','ct_yta','ft_yta'])
+    hr_tp = frappe.db.get_value('Target Manager',{'employee':'TI00003'},'name')
+    hr = frappe.db.get_all('Target Child',{'parent':hr_tp,'month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
+    it_tp = frappe.db.get_value('Target Manager',{'employee':'TI00005'},'name')
+    it = frappe.db.get_all('Target Child',{'parent':'TA-0002','month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
+    td_tp = frappe.db.get_value('Target Manager',{'employee':'TI00002'},'name')
+    td = frappe.db.get_all('Target Child',{'parent':td_tp,'month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
+    fp_tp = frappe.db.get_value('Target Manager',{'employee':'TI00002'},'name')
+    fp = frappe.db.get_all('Target Child',{'parent':fp_tp,'month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
     return hr,it,td,fp
 
 

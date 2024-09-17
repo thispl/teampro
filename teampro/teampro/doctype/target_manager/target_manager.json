@@ -11,11 +11,13 @@
   "employee_name",
   "year",
   "target_based_unit",
+  "annual_ct",
   "column_break_3",
   "designation",
   "department",
   "services",
   "update_target",
+  "annual_ft",
   "section_break_5",
   "target_child"
  ],
@@ -70,39 +72,47 @@
    "depends_on": "eval:doc.employee",
    "fieldname": "year",
    "fieldtype": "Link",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
+   "hidden": 1,
    "label": "Year",
-   "options": "Yearly",
-   "reqd": 1
+   "options": "Yearly"
   },
   {
    "fieldname": "target_based_unit",
    "fieldtype": "Select",
    "in_standard_filter": 1,
-   "label": "Target Based Unit",
-   "options": "\nService Based\nAccount Based"
+   "label": "Target Based On",
+   "options": "\nSales Order on TO\nSales Invoice on TO\nSales Invoice on SC (Service)\nSales Invoice on SC (Item)"
   },
   {
-   "depends_on": "eval:doc.target_based_unit == \"Service Based\"",
+   "depends_on": "eval:doc.target_based_unit == \"Sales Invoice on SC (Service)\"",
    "fieldname": "services",
    "fieldtype": "Table MultiSelect",
    "label": "Services",
    "options": "Employee services"
   },
   {
-   "depends_on": "eval:doc.target_based_unit == \"Service Based\"",
    "fieldname": "update_target",
    "fieldtype": "Button",
    "label": "Update Target"
+  },
+  {
+   "fieldname": "annual_ct",
+   "fieldtype": "Int",
+   "label": "Annual CT"
+  },
+  {
+   "fieldname": "annual_ft",
+   "fieldtype": "Int",
+   "label": "Annual FT"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2022-03-19 12:50:33.015241",
+ "modified": "2024-09-13 21:56:17.448971",
  "modified_by": "Administrator",
  "module": "Teampro",
- "name": "Target Planner",
+ "name": "Target Manager",
+ "naming_rule": "Expression (old style)",
  "owner": "Administrator",
  "permissions": [
   {
@@ -120,5 +130,6 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

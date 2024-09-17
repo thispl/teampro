@@ -1,0 +1,96 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-05-31 16:34:19.863354",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "task__details_section",
+  "task_id",
+  "project",
+  "subject",
+  "custom_allocated_to",
+  "custom_allocated_on",
+  "cb",
+  "expected_time",
+  "actual_time"
+ ],
+ "fields": [
+  {
+   "fieldname": "task__details_section",
+   "fieldtype": "Section Break",
+   "label": "Task  Details"
+  },
+  {
+   "fetch_from": ".",
+   "fieldname": "task_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task ID",
+   "options": "Task"
+  },
+  {
+   "fetch_from": "task_id.project",
+   "fieldname": "project",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Project"
+  },
+  {
+   "fetch_from": "task_id.subject",
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subject"
+  },
+  {
+   "fetch_from": "task_id.custom_allocated_to",
+   "fieldname": "custom_allocated_to",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Allocated To"
+  },
+  {
+   "fetch_from": "task_id.custom_allocated_on",
+   "fieldname": "custom_allocated_on",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Allocated On"
+  },
+  {
+   "fetch_from": "task_id.cb",
+   "fieldname": "cb",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CB"
+  },
+  {
+   "fetch_from": "task_id.expected_time",
+   "fieldname": "expected_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Expected Time"
+  },
+  {
+   "fetch_from": "task_id.actual_time",
+   "fieldname": "actual_time",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Actual Time"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-06-11 14:30:04.309454",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Task Details",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

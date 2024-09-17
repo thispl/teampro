@@ -20,44 +20,46 @@ frappe.pages['target-monitor'].on_page_load = function (wrapper) {
 	).then(r => {
 		var total_achieved = fmt_money(Math.round(r[0][0]['achieved'] + r[1][0]['achieved'] + r[2][0]['achieved'] + r[3][0]['achieved']))
 		var total_achv = Math.round(r[0][0]['achieved'] + r[1][0]['achieved'] + r[2][0]['achieved'] + r[3][0]['achieved'])
-		var total_target = fmt_money(Math.round(r[0][0]['revised_ct'] + r[1][0]['revised_ct'] + r[2][0]['revised_ct'] + r[3][0]['revised_ct']))
-		var total_tar = Math.round(r[0][0]['revised_ct'] + r[1][0]['revised_ct'] + r[2][0]['revised_ct'] + r[3][0]['revised_ct'])
+		var total_target = fmt_money(Math.round(r[0][0]['ct'] + r[1][0]['ct'] + r[2][0]['ct'] + r[3][0]['ct']))
+		var total_tar = Math.round(r[0][0]['ct'] + r[1][0]['ct'] + r[2][0]['ct'] + r[3][0]['ct'])
 		var total_yta = fmt_money(total_achv - total_tar,0)
 		var total_sr = Math.round((total_achv/total_tar)*100,2)
 
-		var as_data = r[0][0]
-		as_data["ct_sr"] = Math.round((r[0][0]['achieved']/r[0][0]['revised_ct'])*100)
-		as_data["ft_sr"] = Math.round((r[0][0]['achieved']/r[0][0]['revised_ft'])*100)
-		as_data['revised_ct'] = fmt_money(Math.round(r[0][0]['revised_ct']))
-		as_data['revised_ft'] = fmt_money(Math.round(r[0][0]['revised_ft']))
+		var as_data = r[0]
+		as_data["ct_sr"] = Math.round((r[0][0]['achieved']/r[0][0]['ct'])*100)
+		as_data["ft_sr"] = Math.round((r[0][0]['achieved']/r[0][0]['ft'])*100)
+		as_data['ct'] = fmt_money(Math.round(r[0][0]['ct']))
+		as_data['ft'] = fmt_money(Math.round(r[0][0]['ft']))
 		as_data['achieved'] = fmt_money(Math.round(r[0][0]['achieved']))
 		as_data['ct_yta'] = fmt_money(Math.round(r[0][0]['ct_yta']))
 		as_data['ft_yta'] = fmt_money(Math.round(r[0][0]['ft_yta']))
+		console.log(as_data)
 
-		var api_data = r[1][0]
-		api_data["ct_sr"] = Math.round((r[1][0]['achieved']/r[1][0]['revised_ct'])*100)
-		api_data["ft_sr"] = Math.round((r[1][0]['achieved']/r[1][0]['revised_ft'])*100)
-		api_data['revised_ct'] = fmt_money(Math.round(r[1][0]['revised_ct']))
-		api_data['revised_ft'] = fmt_money(Math.round(r[1][0]['revised_ft']))
+		var api_data = r[1]
+		api_data["ct_sr"] = Math.round((r[1][0]['achieved']/r[1][0]['ct'])*100)
+		api_data["ft_sr"] = Math.round((r[1][0]['achieved']/r[1][0]['ft'])*100)
+		api_data['ct'] = fmt_money(Math.round(r[1][0]['ct']))
+		api_data['ft'] = fmt_money(Math.round(r[1][0]['ft']))
 		api_data['achieved'] = fmt_money(Math.round(r[1][0]['achieved']))
 		api_data['ct_yta'] = fmt_money(Math.round(r[1][0]['ct_yta']))
 		api_data['ft_yta'] = fmt_money(Math.round(r[1][0]['ft_yta']))
+		console.log(api_data)
 
 		var sp_data = r[2][0]
-		sp_data["ct_sr"] = Math.round((r[2][0]['achieved']/r[2][0]['revised_ct'])*100)
-		sp_data["ft_sr"] = Math.round((r[2][0]['achieved']/r[2][0]['revised_ft'])*100)
-		sp_data['revised_ct'] = fmt_money(Math.round(r[2][0]['revised_ct']))
-		sp_data['revised_ft'] = fmt_money(Math.round(r[2][0]['revised_ft']))
+		sp_data["ct_sr"] = Math.round((r[2][0]['achieved']/r[2][0]['ct'])*100)
+		sp_data["ft_sr"] = Math.round((r[2][0]['achieved']/r[2][0]['ft'])*100)
+		sp_data['ct'] = fmt_money(Math.round(r[2][0]['ct']))
+		sp_data['ft'] = fmt_money(Math.round(r[2][0]['ft']))
 		sp_data['achieved'] = fmt_money(Math.round(r[2][0]['achieved']))
 		sp_data['ct_yta'] = fmt_money(Math.round(r[2][0]['ct_yta']))
 		sp_data['ft_yta'] = fmt_money(Math.round(r[2][0]['ft_yta']))
 		
 
 		var sbmk_data = r[3][0]
-		sbmk_data["ct_sr"] = Math.round((r[3][0]['achieved']/r[3][0]['revised_ct'])*100)
-		sbmk_data["ft_sr"] = Math.round((r[3][0]['achieved']/r[3][0]['revised_ft'])*100)
-		sbmk_data['revised_ct'] = fmt_money(Math.round(r[3][0]['revised_ct']))
-		sbmk_data['revised_ft'] = fmt_money(Math.round(r[3][0]['revised_ft']))
+		sbmk_data["ct_sr"] = Math.round((r[3][0]['achieved']/r[3][0]['ct'])*100)
+		sbmk_data["ft_sr"] = Math.round((r[3][0]['achieved']/r[3][0]['ft'])*100)
+		sbmk_data['ct'] = fmt_money(Math.round(r[3][0]['ct']))
+		sbmk_data['ft'] = fmt_money(Math.round(r[3][0]['ft']))
 		sbmk_data['achieved'] = fmt_money(Math.round(r[3][0]['achieved']))
 		sbmk_data['ct_yta'] = fmt_money(Math.round(r[3][0]['ct_yta']))
 		sbmk_data['ft_yta'] = fmt_money(Math.round(r[3][0]['ft_yta']))

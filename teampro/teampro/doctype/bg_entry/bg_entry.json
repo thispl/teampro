@@ -1,0 +1,171 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-03-27 17:49:07.425521",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "customer",
+  "employee_name",
+  "gender",
+  "date_of_birth",
+  "email_id",
+  "fathers_name",
+  "column_break_lnak",
+  "address",
+  "employee_code",
+  "contact_number",
+  "document_requiredcv",
+  "section_break_qxpq",
+  "education",
+  "section_break_p5fo",
+  "employment",
+  "section_break_yu3d",
+  "id_proof",
+  "section_break_i8gg",
+  "passcode",
+  "email"
+ ],
+ "fields": [
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOthers",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date of Birth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "email_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Email ID",
+   "options": "Email",
+   "reqd": 1
+  },
+  {
+   "fieldname": "fathers_name",
+   "fieldtype": "Data",
+   "label": "Fathers Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_lnak",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address",
+   "reqd": 1
+  },
+  {
+   "fieldname": "employee_code",
+   "fieldtype": "Data",
+   "label": "Employee code"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Data",
+   "label": "Contact Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "document_requiredcv",
+   "fieldtype": "Attach",
+   "label": "Document required(CV)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_qxpq",
+   "fieldtype": "Section Break",
+   "label": "Education"
+  },
+  {
+   "fieldname": "education",
+   "fieldtype": "Table",
+   "options": "Education Document"
+  },
+  {
+   "fieldname": "section_break_p5fo",
+   "fieldtype": "Section Break",
+   "label": "Employment"
+  },
+  {
+   "fieldname": "employment",
+   "fieldtype": "Table",
+   "options": "Employment Document"
+  },
+  {
+   "fieldname": "section_break_yu3d",
+   "fieldtype": "Section Break",
+   "label": "ID Proof"
+  },
+  {
+   "fieldname": "id_proof",
+   "fieldtype": "Table",
+   "options": "ID Proof"
+  },
+  {
+   "fieldname": "section_break_i8gg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "passcode",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Passcode"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "email",
+   "options": "Email"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-03-27 18:26:10.371487",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "BG Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

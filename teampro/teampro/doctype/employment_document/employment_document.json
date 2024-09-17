@@ -1,0 +1,54 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-03-27 18:05:11.786190",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "employer_name",
+  "period_of_employment",
+  "document"
+ ],
+ "fields": [
+  {
+   "columns": 3,
+   "fieldname": "employer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employer Name",
+   "reqd": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "period_of_employment",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Period of Employment",
+   "reqd": 1
+  },
+  {
+   "columns": 5,
+   "fieldname": "document",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Experience certificate, Appointment letter for current employer, pay slips)",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-03-27 18:09:20.398514",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Employment Document",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
