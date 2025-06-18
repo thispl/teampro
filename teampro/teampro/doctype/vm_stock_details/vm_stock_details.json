@@ -1,0 +1,186 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-12 14:44:43.237951",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "slot_id",
+  "cr_stock",
+  "item_code",
+  "stock_uom",
+  "column_break_kgsw",
+  "packing_date",
+  "cr_stock_qty",
+  "item_name",
+  "stock_qty",
+  "column_break_dvdf",
+  "delivery_date",
+  "re_filling",
+  "new_stockuom",
+  "conversion",
+  "qty_as_per_stock_uom",
+  "column_break_zxhl",
+  "re_filling_uom",
+  "re_filling_qty",
+  "new_stock_qty",
+  "read_only_row"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "slot_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Slot ID",
+   "read_only": 1
+  },
+  {
+   "columns": 2,
+   "fieldname": "cr_stock",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Cr. Stock",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "cr_stock_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty",
+   "read_only": 1
+  },
+  {
+   "columns": 1,
+   "fieldname": "item_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "New Stock",
+   "options": "Item",
+   "read_only_depends_on": "eval:doc.read_only_row==1"
+  },
+  {
+   "columns": 1,
+   "fieldname": "new_stockuom",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "UOM",
+   "options": "UOM",
+   "read_only_depends_on": "eval:doc.read_only_row==1"
+  },
+  {
+   "columns": 1,
+   "fieldname": "new_stock_qty",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Qty",
+   "read_only_depends_on": "eval:doc.read_only_row==1"
+  },
+  {
+   "fieldname": "re_filling",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Re Filling ",
+   "options": "Item",
+   "read_only": 1
+  },
+  {
+   "fieldname": "re_filling_uom",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Re Filling UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "re_filling_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Re Filling Qty"
+  },
+  {
+   "default": "0",
+   "fieldname": "read_only_row",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Read Only"
+  },
+  {
+   "columns": 3,
+   "fetch_from": "item_code.item_name",
+   "fetch_if_empty": 1,
+   "fieldname": "item_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Name",
+   "read_only": 1,
+   "read_only_depends_on": "eval:doc.read_only_row==1"
+  },
+  {
+   "fetch_from": "item_code.stock_uom",
+   "fieldname": "stock_uom",
+   "fieldtype": "Link",
+   "label": "Stock UOM",
+   "options": "UOM",
+   "read_only": 1
+  },
+  {
+   "fieldname": "stock_qty",
+   "fieldtype": "Float",
+   "label": "Stock Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "conversion",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Conversion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_kgsw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "packing_date",
+   "fieldtype": "Date",
+   "label": "Packing Date"
+  },
+  {
+   "fieldname": "column_break_dvdf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "Delivery Date"
+  },
+  {
+   "fieldname": "column_break_zxhl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qty_as_per_stock_uom",
+   "fieldtype": "Float",
+   "label": "Qty as per Stock UOM",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-06-16 15:34:58.283825",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "VM Stock Details",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

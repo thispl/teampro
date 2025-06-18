@@ -1,0 +1,252 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-16 11:54:16.306055",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "resource",
+  "aph",
+  "biometric_hours",
+  "timesheet_log",
+  "column_break_xyuc",
+  "sprint_hours_planned",
+  "sprint_hours_completed",
+  "sprint_hours_working",
+  "sprint_hours_not_taken",
+  "column_break_ryek",
+  "other_hours_planned",
+  "other_hours_completed",
+  "other_hours_working",
+  "other_hours_not_taken",
+  "column_break_hrdo",
+  "total_hours_planned",
+  "total_hours_completed",
+  "total_hours_working",
+  "total_hours_not_taken",
+  "section_break_lxir",
+  "column_break_lbwh",
+  "sprint_count_planned",
+  "sprint_count_completed",
+  "sprint_count_working",
+  "sprint_count_not_taken",
+  "total_count_planned_column",
+  "other_count_planned",
+  "other_count_completed",
+  "other_count_working",
+  "other_count_not_taken",
+  "column_break_vkaf",
+  "total_count_planned",
+  "total_count_completed",
+  "total_count_working",
+  "total_count_not_taken",
+  "column_break_mzsa"
+ ],
+ "fields": [
+  {
+   "columns": 1,
+   "fieldname": "resource",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CB"
+  },
+  {
+   "columns": 1,
+   "fieldname": "aph",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "APH"
+  },
+  {
+   "fieldname": "column_break_xyuc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sprint_hours_planned",
+   "fieldtype": "Float",
+   "label": "SHP"
+  },
+  {
+   "fieldname": "sprint_hours_completed",
+   "fieldtype": "Float",
+   "label": "SHC"
+  },
+  {
+   "fieldname": "sprint_hours_working",
+   "fieldtype": "Float",
+   "label": "SHU"
+  },
+  {
+   "fieldname": "sprint_hours_not_taken",
+   "fieldtype": "Float",
+   "label": "SHN"
+  },
+  {
+   "fieldname": "column_break_ryek",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "other_hours_planned",
+   "fieldtype": "Float",
+   "label": "OHP"
+  },
+  {
+   "fieldname": "other_hours_completed",
+   "fieldtype": "Float",
+   "label": "OHC"
+  },
+  {
+   "fieldname": "other_hours_working",
+   "fieldtype": "Float",
+   "label": "OHU"
+  },
+  {
+   "fieldname": "other_hours_not_taken",
+   "fieldtype": "Float",
+   "label": "OHN"
+  },
+  {
+   "fieldname": "column_break_hrdo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_hours_planned",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THP"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_hours_completed",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THC"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_hours_working",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THU"
+  },
+  {
+   "columns": 1,
+   "fieldname": "total_hours_not_taken",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THN"
+  },
+  {
+   "fieldname": "column_break_lbwh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sprint_count_planned",
+   "fieldtype": "Float",
+   "label": "SP#"
+  },
+  {
+   "fieldname": "sprint_count_completed",
+   "fieldtype": "Float",
+   "label": "SC#"
+  },
+  {
+   "fieldname": "sprint_count_working",
+   "fieldtype": "Float",
+   "label": "SU#"
+  },
+  {
+   "fieldname": "sprint_count_not_taken",
+   "fieldtype": "Float",
+   "label": "SN#"
+  },
+  {
+   "fieldname": "total_count_planned_column",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "other_count_planned",
+   "fieldtype": "Float",
+   "label": "OP#"
+  },
+  {
+   "fieldname": "other_count_completed",
+   "fieldtype": "Float",
+   "label": "OC#"
+  },
+  {
+   "fieldname": "other_count_working",
+   "fieldtype": "Float",
+   "label": "OU#"
+  },
+  {
+   "fieldname": "other_count_not_taken",
+   "fieldtype": "Float",
+   "label": "ON#"
+  },
+  {
+   "fieldname": "column_break_vkaf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_count_planned",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "TP#"
+  },
+  {
+   "fieldname": "total_count_completed",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "TC#"
+  },
+  {
+   "fieldname": "total_count_working",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "TU#"
+  },
+  {
+   "fieldname": "total_count_not_taken",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "TN#"
+  },
+  {
+   "columns": 1,
+   "fieldname": "biometric_hours",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "BH"
+  },
+  {
+   "columns": 1,
+   "fieldname": "timesheet_log",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "LH"
+  },
+  {
+   "fieldname": "section_break_lxir",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_mzsa",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-20 14:36:12.771129",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Sprint Assessment",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

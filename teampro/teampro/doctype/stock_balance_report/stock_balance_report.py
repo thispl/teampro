@@ -10,5 +10,4 @@ class StockBalanceReport(Document):
 	@frappe.whitelist()
 	def get_data(self):
 		stock_bal = get_stock_balance("TFP-983302201","Stores - TFP")
-		frappe.errprint(stock_bal)
 		return "hi" 

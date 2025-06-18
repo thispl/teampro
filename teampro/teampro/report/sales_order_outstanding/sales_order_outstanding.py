@@ -22,7 +22,6 @@ def get_columns(filters):
 def get_data(filters):
 	data = []
 	if filters.sales_order:
-		frappe.errprint(filters.sales_order)
 		sales_orders = frappe.db.get_all("Sales Order",{'name':filters.sales_order},['*'])
 	else:
 		sales_orders = frappe.db.get_all("Sales Order",['*'])

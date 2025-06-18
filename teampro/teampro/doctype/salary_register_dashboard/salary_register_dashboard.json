@@ -1,0 +1,64 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-01-03 17:53:05.325451",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "from_date",
+  "to_date",
+  "reports",
+  "download"
+ ],
+ "fields": [
+  {
+   "depends_on": "eval: doc.reports == \"Salary Register Report\" || doc.reports == \"PF Upload Sheet\"",
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "mandatory_depends_on": "eval: doc.reports == \"PF Upload Sheet\""
+  },
+  {
+   "depends_on": "eval: doc.reports == \"Salary Register Report\" || doc.reports == \"PF Upload Sheet\"",
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date",
+   "mandatory_depends_on": "eval: doc.reports == \"PF Upload Sheet\""
+  },
+  {
+   "fieldname": "reports",
+   "fieldtype": "Select",
+   "label": "Reports",
+   "options": "\nSalary Register Report\nBank Upload\nPF Upload Sheet"
+  },
+  {
+   "fieldname": "download",
+   "fieldtype": "Button",
+   "label": "Download"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-01-06 17:19:47.789239",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Salary Register Dashboard",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

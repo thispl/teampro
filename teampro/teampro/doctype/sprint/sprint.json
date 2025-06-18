@@ -1,0 +1,179 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "SPM.#####",
+ "creation": "2025-04-16 11:22:38.532807",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_section",
+  "team",
+  "from_date",
+  "to_date",
+  "column_break_ekeb",
+  "sprint_id",
+  "sprint_hours",
+  "allocated_hours",
+  "status",
+  "section_break_ytuy",
+  "sprint_avl_time",
+  "section_break_vaxi",
+  "sprint_task",
+  "retro_tab",
+  "summary",
+  "retro_section",
+  "retro",
+  "section_break_yjcw",
+  "table_cusg",
+  "assessments_tab",
+  "sprint_assessment_section",
+  "sprint_assessment"
+ ],
+ "fields": [
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Dev Team"
+  },
+  {
+   "fieldname": "column_break_ekeb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sprint_id",
+   "fieldtype": "Link",
+   "label": "Sprint ID",
+   "options": "Task Sprint"
+  },
+  {
+   "fieldname": "sprint_hours",
+   "fieldtype": "Float",
+   "label": "Sprint Hours",
+   "read_only": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nDraft\nPlanned\nIn Progress\nClosed"
+  },
+  {
+   "fieldname": "section_break_ytuy",
+   "fieldtype": "Section Break",
+   "label": "Sprint Avl Time"
+  },
+  {
+   "fieldname": "sprint_avl_time",
+   "fieldtype": "Table",
+   "options": "Sprint Avl Time"
+  },
+  {
+   "fieldname": "section_break_vaxi",
+   "fieldtype": "Section Break",
+   "label": "Sprint Task"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "sprint_task",
+   "fieldtype": "Table",
+   "options": "Sprint Task"
+  },
+  {
+   "fieldname": "details_section",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "retro_section",
+   "fieldtype": "Section Break",
+   "label": "Retro"
+  },
+  {
+   "fieldname": "retro",
+   "fieldtype": "Table",
+   "label": "Retro",
+   "options": "Retro"
+  },
+  {
+   "fieldname": "retro_tab",
+   "fieldtype": "Tab Break",
+   "label": "Retro"
+  },
+  {
+   "fieldname": "assessments_tab",
+   "fieldtype": "Tab Break",
+   "label": "Assessments"
+  },
+  {
+   "fieldname": "sprint_assessment_section",
+   "fieldtype": "Section Break",
+   "label": "Sprint Assessment"
+  },
+  {
+   "fieldname": "sprint_assessment",
+   "fieldtype": "Table",
+   "label": "Sprint Assessment",
+   "options": "Sprint Assessment"
+  },
+  {
+   "fieldname": "allocated_hours",
+   "fieldtype": "Float",
+   "label": "Allocated Hours",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_yjcw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "table_cusg",
+   "fieldtype": "Table",
+   "label": "Tasks Moved to Next Working Date",
+   "options": "Sprint Task Details",
+   "read_only": 1
+  },
+  {
+   "description": "<table width=\"100%\"><tbody><tr>\n<td><b>SP#- Sprint Planned count</b></td></tr></tbody></table>",
+   "fieldname": "summary",
+   "fieldtype": "HTML",
+   "label": "Summary"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-06-10 09:27:11.799944",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Sprint",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

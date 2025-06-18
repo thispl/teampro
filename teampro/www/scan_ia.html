@@ -118,7 +118,9 @@
                 if (r.message) {
                     if (r.message.link_format_url) {
                         frappe.msgprint({
-                            title: __('Candidate Verified')
+                            title: __('Candidate Verified'),
+                            message: __('The candidate has been successfully verified. Redirecting...'),
+                            indicator: 'green'
                         });
                         window.location.href=r.message.link_format_url;
                         

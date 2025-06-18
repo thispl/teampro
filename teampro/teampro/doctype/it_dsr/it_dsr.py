@@ -16,7 +16,6 @@ def get_task(name,date):
     total_task_list ={}
     user_id= frappe.get_value("Employee",{"name":name},"user_id")
     task_list=frappe.get_all("Task",{"status":["in",["Open","Working","Overdue"]],'custom_allocated_on': ['<=',date],"custom_allocated_to":user_id},["name","project","subject","custom_allocated_to","custom_allocated_on","completed_by","cb","actual_time"])
-    # frappe.errprint(task_list)
     for t in task_list:
         total_task_list.update({
             'task_id':t.name,
@@ -29,7 +28,6 @@ def get_task(name,date):
             'over_all_actual_time':0
         })
         data_list.append(total_task_list.copy())
-        # frappe.errprint(data_list)
     return data_list
 
 @frappe.whitelist()
@@ -66,9 +64,36 @@ def get_timesheet(name, date):
                 'over_all_actual_time':t.hours
             })
             datalist.append(data.copy())
-            # frappe.errprint(datalist)
         return datalist
  
+
+
+@frappe.whitelist()
+def task_updation(name, meeting_id,status,subject):
+    meeting_doc = frappe.get_doc("Meeting", meeting_id)
+    for minute in meeting_doc.minutes:
+        if minute.custom_id == name and not minute.custom_subject:
+            minute.custom_subject=subject
+        if minute.custom_id == name:
+            minute.status = status
+    meeting_doc.save()
+    frappe.db.commit()
+    return {"message": "Task status updated successfully"}
+
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

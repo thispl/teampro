@@ -69,7 +69,6 @@ def get_data(filters):
 	employees=employee + left
 	
 	for emp in employees:
-		frappe.errprint("Hello")
 		month_days= 0
 		payment_days = 0
 		total_payment_days = 0
@@ -99,7 +98,10 @@ def get_data(filters):
 			holiday_list = frappe.db.get_value('Employee',{'name':emp.name},'holiday_list')
 			holiday = frappe.db.sql("""select `tabHoliday`.holiday_date,`tabHoliday`.weekly_off from `tabHoliday List` 
 			left join `tabHoliday` on `tabHoliday`.parent = `tabHoliday List`.name where `tabHoliday List`.name = '%s' and holiday_date = '%s' """%(holiday_list,d),as_dict=True)
+			emp_status=frappe.db.get_value("Employee",{'name':emp.name},"status")
 			doj= frappe.db.get_value("Employee",{'name':emp.name},"date_of_joining")
+	
+			rel_date= frappe.db.get_value("Employee",{'name':emp.name},"relieving_date")
 			if holiday :
 				if doj < holiday[0].holiday_date:
 					attendance = frappe.db.exists("Attendance",{'employee':emp.employee,"attendance_date":d,'docstatus':1})
@@ -112,9 +114,12 @@ def get_data(filters):
 							present += 1 
 						if att.status=="Absent":
 							absent += 1
-						if att.status== "Half Day" and att.leave_type != "Leave Without Pay":
+						if att.status== "Half Day" and att.leave_type and att.leave_type != "Leave Without Pay":
 							present += 1
-						if att.status== "Half Day" and att.leave_type == "Leave Without Pay":
+						if att.status== "Half Day" and att.leave_type and att.leave_type == "Leave Without Pay":
+							present += 0.5
+							unpaid_leave += 0.5
+						if att.status== "Half Day" and not att.leave_type:
 							present += 0.5
 							unpaid_leave += 0.5
 						if att.status== "On Leave":
@@ -124,15 +129,29 @@ def get_data(filters):
 						if att.status== "On Leave" and att.leave_type == "Leave Without Pay":
 							unpaid_leave+=1
 					else:
-						if holiday[0].weekly_off == 1:
-							weekoff += 1 
+						if rel_date:
+							if doj<holiday[0].holiday_date<rel_date:
+								if holiday[0].weekly_off == 1:
+									weekoff += 1 
+								else:
+									gov_holiday += 1
 						else:
-							gov_holiday += 1
+							if doj<holiday[0].holiday_date:
+								if holiday[0].weekly_off == 1:
+									weekoff += 1 
+								else:
+									gov_holiday += 1
 
 			else:
 				attendance = frappe.db.exists("Attendance",{'employee':emp.employee,"attendance_date":d,'docstatus':1})
-				if attendance: 
-					payment_days += 1
+				from_date = datetime.strptime(filters.from_date, '%Y-%m-%d').date()
+				if emp_status=="Left":
+					relieving_date =frappe.db.get_value("Employee",{'name':emp.name},"relieving_date")
+					no_of_payment_days = date_diff(add_days(relieving_date, 1),from_date )
+					payment_days=no_of_payment_days
+				if attendance:
+					if emp_status=="Active":
+						payment_days += 1
 					att = frappe.get_doc('Attendance',attendance)
 					if att.status=="Present": 
 						present += 1 
@@ -140,18 +159,21 @@ def get_data(filters):
 						present += 1 
 					if att.status=="Absent":
 						absent += 1
-					if att.status== "Half Day" and att.leave_type != "Leave Without Pay":
+					if att.status== "Half Day" and  att.leave_type and att.leave_type != "Leave Without Pay":
 						present += 1
-					if att.status== "Half Day" and att.leave_type == "Leave Without Pay":
+					if att.status== "Half Day" and  att.leave_type and att.leave_type == "Leave Without Pay":
 						present += 0.5
 						unpaid_leave += 0.5
+					if att.status== "Half Day" and not att.leave_type:
+							present += 0.5
+							unpaid_leave += 0.5
 					if att.status== "On Leave":
 						on_leave +=1 
 					if att.status== "On Leave" and att.leave_type != "Leave Without Pay":
 						paid_leave+=1
 					if att.status== "On Leave" and att.leave_type == "Leave Without Pay":
 						unpaid_leave+=1 
-				
+		
 		working_days= payment_days 
 		month_days = payment_days + weekoff + gov_holiday
 		total_payment_days=(present+weekoff+paid_leave+gov_holiday)

@@ -9,10 +9,13 @@
   "workflow_state",
   "service",
   "department",
+  "dev_team",
   "column_break_ybbc",
   "date",
+  "sprint",
   "column_break_fz9g",
   "task_type",
+  "type",
   "section_break_1fzk",
   "dsr_check",
   "dm_status",
@@ -24,10 +27,12 @@
   "task_details",
   "dm_rec_task_details",
   "section_break_lmoi",
+  "sprint_avl_time",
   "dm_summary",
   "html",
   "amended_from",
-  "dm_sales_details"
+  "dm_sales_details",
+  "dnd_summary"
  ],
  "fields": [
   {
@@ -35,7 +40,8 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Service",
-   "options": "Services"
+   "options": "Services",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_ybbc",
@@ -47,6 +53,7 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Production Date",
+   "read_only": 1,
    "reqd": 1
   },
   {
@@ -79,8 +86,7 @@
    "default": "0",
    "fieldname": "dsr_check",
    "fieldtype": "Check",
-   "label": "DSR Updated",
-   "read_only": 1
+   "label": "DSR Updated"
   },
   {
    "fieldname": "column_break_su2g",
@@ -101,6 +107,7 @@
    "depends_on": "eval:doc.service == \"IT-SW\"",
    "fieldname": "dm_summary",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "DM Summary",
    "options": "DM Summary Child"
   },
@@ -111,17 +118,20 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "dsr_submitted_on",
    "fieldtype": "Date",
    "label": "DSR Submitted On",
    "read_only": 1
   },
   {
+   "depends_on": "eval:doc.service==\"IT-SW\"",
    "fieldname": "task_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Task Type",
-   "options": "\nCS\nOPS"
+   "options": "\nCS\nOPS",
+   "read_only": 1
   },
   {
    "allow_bulk_edit": 1,
@@ -148,6 +158,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "default": "Draft",
    "fieldname": "dm_status",
    "fieldtype": "Select",
@@ -159,21 +170,58 @@
   {
    "fieldname": "dm_sales_details",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "DM Sales Details",
    "options": "Sales details"
   },
   {
    "fieldname": "department",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Department",
    "options": "Department"
+  },
+  {
+   "depends_on": "eval:doc.type==\"DND\"",
+   "fieldname": "dnd_summary",
+   "fieldtype": "Table",
+   "label": "DND Summary",
+   "options": "DND DPR Details"
+  },
+  {
+   "fieldname": "type",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Type",
+   "options": "\nDND"
+  },
+  {
+   "depends_on": "eval:doc.service==\"IT-SW\"",
+   "fieldname": "dev_team",
+   "fieldtype": "Link",
+   "label": "Dev Team",
+   "options": "Dev Team",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.service==\"IT-SW\"",
+   "fieldname": "sprint",
+   "fieldtype": "Link",
+   "label": "Sprint",
+   "options": "Task Sprint",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.service == \"IT-SW\"",
+   "fieldname": "sprint_avl_time",
+   "fieldtype": "Table",
+   "options": "Sprint Avl Time"
   }
  ],
- "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-09-12 11:36:20.150264",
+ "modified": "2025-06-04 20:00:08.050169",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Daily Monitor",
@@ -182,5 +230,7 @@
  "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1,
+ "track_seen": 1
 }

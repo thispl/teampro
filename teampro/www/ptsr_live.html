@@ -1,0 +1,57 @@
+{% extends "templates/web.html" %}
+
+{% block title %} PTSR Live Report {% endblock %}
+
+{% block head_include %}
+    <style>
+        #ptsrCorousel {
+            padding: 10px;
+        }
+        table {
+            width: 100%;
+        }
+        .zoom-out-content {
+            margin-top: 35px;
+            min-height: 38rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+{% if ptsr_data %}
+    <div id="ptsrCorousel" class="carousel slide" data-ride="carousel" data-interval="5000"> <!-- Set data-interval to 5000 -->
+        <div class="carousel-inner">
+            {% for index, data in enumerate(ptsr_data) %}
+                <div class="carousel-item {% if index == 0 %}active{% endif %}">
+                    <div class="d-flex justify-content-center align-items-center">
+                        <div>{{ data|safe }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <a class="carousel-control-prev button" href="#ptsrCorousel" role="button" data-slide="prev">
+            <span class="sr-only">Previous</span>
+        </a>
+        <a class="carousel-control-next button" href="#ptsrCorousel" role="button" data-slide="next">
+            <span class="sr-only">Next</span>
+        </a>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#ptsrCorousel').carousel({
+                interval: 5000
+            });
+            setTimeout(() => {
+                window.loaction.reload()
+            }, 10 * 60 * 1000)
+        });
+    </script>
+{% endblock %}

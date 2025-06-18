@@ -51,7 +51,6 @@ def get_attendance(filters):
 		else:
 			attendance = frappe.db.sql("""select * from `tabAttendance` where employee = '%s' and time(in_time) > '09:30:00' and attendance_date between '%s' and '%s' """%(filters.employee,filters.from_date,filters.to_date),as_dict=True)
 		for att in attendance:
-			frappe.errprint(att.name)
 			if not frappe.db.exists("Attendance Permission",{'employee':att.employee,'permission_date':att.attendance_date,'session':'First Half','workflow_state':'Approved'}):
 				att_req = frappe.get_value("Attendance",{'employee':att.employee,'attendance_date':att.attendance_date,'docstatus':1},['attendance_request']) or ''
 				leave_app = frappe.get_value("Attendance",{'employee':att.employee,'attendance_date':att.attendance_date,'docstatus':1},['leave_application']) or ''

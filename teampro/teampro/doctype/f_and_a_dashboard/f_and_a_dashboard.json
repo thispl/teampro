@@ -1,0 +1,120 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-11-06 14:46:57.093371",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "from_date",
+  "column_break_o1vp",
+  "to_date",
+  "column_break_plmc",
+  "service",
+  "receivable_section",
+  "html1",
+  "payable_section",
+  "html2",
+  "financial_status_section",
+  "html3",
+  "bcs_section",
+  "html4",
+  "tfp_section",
+  "html5"
+ ],
+ "fields": [
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "column_break_o1vp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "html1",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "html2",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "html3",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "receivable_section",
+   "fieldtype": "Section Break",
+   "label": "Receivable"
+  },
+  {
+   "fieldname": "payable_section",
+   "fieldtype": "Section Break",
+   "label": "Payable"
+  },
+  {
+   "fieldname": "financial_status_section",
+   "fieldtype": "Section Break",
+   "label": "Financial Status"
+  },
+  {
+   "depends_on": "eval:doc.service==\"BCS\"",
+   "fieldname": "bcs_section",
+   "fieldtype": "Section Break",
+   "label": "BCS"
+  },
+  {
+   "fieldname": "html4",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "service",
+   "fieldtype": "Select",
+   "label": "Service",
+   "options": "\nBCS\nTFP"
+  },
+  {
+   "fieldname": "column_break_plmc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.service==\"TFP\"",
+   "fieldname": "tfp_section",
+   "fieldtype": "Section Break",
+   "label": "TFP"
+  },
+  {
+   "fieldname": "html5",
+   "fieldtype": "HTML"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2024-11-16 17:35:50.433162",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "F and A Dashboard",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

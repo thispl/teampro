@@ -209,34 +209,39 @@ def validate_for_easytimepro():
 		fromdate1 = datetime.strptime(fromdate, '%Y-%m-%d').date()
 		todate1 = datetime.strptime(todate, '%Y-%m-%d').date()
 		if c.license_validate_upto is not None and  fromdate1 < c.license_validate_upto < todate1:
+			print(c.software)
 			expiry_date =c.license_validate_upto
 			days_diff = (expiry_date - fromdate1).days
-			frappe.sendmail(
-		#recipients=['nandini.a@groupteampro.com'],
-		recipients=[c.spoc,c.account_manager,c.project_manager,'gifty.p@groupteampro.com','jenisha.p@groupteampro.com','nandini.a@groupteampro.com'],
-		subject=('EasytimePRO License Renewal - '+ c.project),
-		message=f"""
-				Dear Sir/Mam,<br>
-				<p>This is a reminder that the {c.project} - {c.software} license will expire in next {days_diff} days ({c.license_validate_upto}). Kindly take the necessary action.
-				</p>
-				 <br>
-				Thanks & Regards<br>TEAMPRO<br>
-				""" % ()
-			) 
+			if c.software=="Trial/Demo Login":
+				frappe.sendmail(
+			recipients=['divya.p@groupteampro.com'],
+			# recipients=[c.spoc,c.account_manager,c.project_manager,'gifty.p@groupteampro.com','jenisha.p@groupteampro.com','divya.p@groupteampro.com'],
+			subject=('Trial/ Demo Login Expiry Alert - '+ c.project),
+			message=f"""
+					Dear Sir/Mam,<br>
+					<p>This is a reminder that the {c.project} - {c.software} license will expire in next {days_diff} days ({c.license_validate_upto}). Kindly take the necessary action.
+					</p>
+					<br>
+					Thanks & Regards<br>TEAMPRO<br>
+					""" % ()
+				) 
+			else:
+				frappe.sendmail(
+			# recipients=['divya.p@groupteampro.com'],
+			recipients=[c.spoc,c.account_manager,c.project_manager,'gifty.p@groupteampro.com','jenisha.p@groupteampro.com'],
+			subject=('EasytimePRO License Renewal - '+ c.project),
+			message=f"""
+					Dear Sir/Mam,<br>
+					<p>This is a reminder that the {c.project} - {c.software} license will expire in next {days_diff} days ({c.license_validate_upto}). Kindly take the necessary action.
+					</p>
+					<br>
+					Thanks & Regards<br>TEAMPRO<br>
+					""" % ()
+				) 
 			print("mail shared")
 			print(days_diff)
 
 
-def create_hooks_email_for_easytimepro():
-	job = frappe.db.exists('Scheduled Job Type', 'validate_for_easytimepro')
-	if not job:
-		var = frappe.new_doc("Scheduled Job Type")
-		var.update({
-			"method": 'teampro.email_alerts.validate_for_easytimepro',
-			"frequency": 'Cron',
-			"cron_format": '30 00 * * *'
-		})
-		var.save(ignore_permissions=True)
 
 		######################   Sales Invoice   #####################
 
@@ -249,36 +254,6 @@ from frappe.utils import date_diff
 @frappe.whitelist()
 def sales_invoice_overdue_docs():
 	sales_invoice = frappe.get_list("Sales Invoice", filters={"status":["not in",[ "Return","Credit Note Issued","Paid","Cancelled"]]}, fields=["name","company","customer","services","posting_date","due_date","grand_total","outstanding_amount","account_manager","delivery_manager"])
-	# order_by="customer asc"
-	# thai_summit =''
-	# thai_summit +='<table border=1><tr style =text-align: center><td style=background-color:#063970;color:white>ID</td><td style=background-color:#063970;color:white>Services</td><td style=background-color:#063970;color:white>AM</td><td style=background-color:#063970;color:white>DM</td><td style=background-color:#063970;color:white>Customer Name</td><td style=background-color:#063970;color:white>Grand Total</td><td style=background-color:#063970;color:white>Outstanding Amount</td><td style=background-color:#063970;color:white>Date</td><td style=background-color:#063970;color:white>Age</td></tr>'
-	# amount= 0
-	# for i in sales_invoice:
-	# 	postingdate =i.posting_date
-	# 	todate=date.today()
-	# 	postingdate1 = datetime.strptime(str(postingdate), '%Y-%m-%d').date()
-	# 	todate1 = datetime.strptime(str(todate), '%Y-%m-%d').date()
-	# 	if i.services =='TFP' and i.customer =='THAI SUMMIT AUTOPARTS INDIA PRIVATE LIMITED':
-	# 		amount += i.outstanding_amount
-	# 		age = (todate1- postingdate1).days
-	# 		thai_summit +='<tr style =font-size:14px><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td style =text-align:left;>%s</td><td style =text-align:right;>%s</td><td>%s</td><td style =text-align:right;>%s</td></tr>'%(i.name,i.services,i.account_manager,i.delivery_manager,i.customer,i.grand_total,i.outstanding_amount,i.posting_date,age)
-	# thai_summit +='<tr><td></td><td></td><td style =text-align:center; colspan=3>Total</td><td></td><td style =text-align:right;>%s</td><td></td><td></td></tr>'%(amount)
-	# thai_summit +='</table>'
-	# frappe.sendmail(
-	# 	recipients='annie.m@groupteampro.com',
-	# 	subject='Sales Invoice Overdue',
-	# 	cc = ['accounts@groupteampro.com','sangeetha.s@groupteampro.com','dineshbabu.k@groupteampro.com'],
-	# 	message="""
-	# 	Dear Sir/Mam,<br>
-	# 	{}
-	# 	<br>
-	# 	Thanks & Regards<br>TEAMPRO<br>
-	# 	""".format(thai_summit)
-	# )
-
-# comment
-
-
 	from datetime import datetime
 
 	def format_currency(amount):
@@ -320,8 +295,7 @@ def sales_invoice_overdue_docs():
 	
 	frappe.sendmail(
 		recipients='amirtham.g@groupteampro.com',
-		# recipients='siva.m@groupteampro.com',
-		# recipients='siva.m@groupteampro.com',
+		# recipients='divya.p@groupteampro.com',
 		cc=['sangeetha.s@groupteampro.com','dineshbabu.k@groupteampro.com','accounts@groupteampro.com'],
 		subject='Collection Follow Up-Sales Invoice Report',
 		message="""
@@ -565,16 +539,7 @@ def sales_invoice_overdue_docs():
 		""".format(additional,tgt)
 	)
 
-def create_email_sales_invoice_overdue_docs():
-	job = frappe.db.exists('Scheduled Job Type', 'sales_invoice_overdue_docs')
-	if not job:
-		var = frappe.new_doc("Scheduled Job Type")
-		var.update({
-			"method": 'teampro.email_alerts.sales_invoice_overdue_docs',
-			"frequency": 'Cron',
-			"cron_format": '00 10 * * 1,4'
-		})
-		var.save(ignore_permissions=True)
+
 				
 	
 			

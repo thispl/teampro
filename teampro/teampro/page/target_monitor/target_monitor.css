@@ -1,7 +1,7 @@
 /*.table table-bordered {*/
 /*    display:inline-flex;*/
 /*}*/
-.header{
+/* .header{
     width :"10%"
 }
 
@@ -22,7 +22,7 @@
   float: left;
   width: 25%;
   padding: 6px;
-}
+} */
 
 /* Clearfix (clear floats) */
 /* .row::after {
@@ -33,7 +33,7 @@
 
 }  */
 
-table {
+/* table {
   border-collapse: collapse;
   border-spacing: 0;
   width: 100%;
@@ -43,8 +43,100 @@ table {
 th, td {
   border: 1px solid black;
   padding: 12px;
-}
+} */
 
 /* tr:nth-child(even) {
   background-color: #f5f5f5;
 } */
+#slideContainer {
+  padding: 100px; /* Adjust padding for better spacing */
+  background-color: #f9f9f9; /* Background color for better contrast */
+  border-radius: 5px; /* Rounded corners */
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+  display: flex; /* Flexbox for layout */
+  align-items: flex-start; /* Align items to the top */
+  justify-content: space-between; /* Space between child elements */
+  flex-wrap: wrap; /* Wrap elements on smaller screens */
+}
+
+.employee-info {
+  margin-right: 20px; /* Space between employee info and slide */
+  text-align: center; /* Center align text */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+.employee-info img {
+  width: 200%; /* Adjust this as needed */
+  height: auto; /* Maintain aspect ratio */
+  margin-bottom: 20px; 
+  border: 2px solid #007bff; 
+}
+
+@keyframes backgroundBlink {
+  0% { background-color: #ffffff; }  /* White */
+  50% { background-color: #ffeb3b; } /* Yellow */
+  100% { background-color: #ffffff; }
+}
+
+.blinking-background {
+  animation: backgroundBlink 1.5s infinite;
+}
+
+
+.employee-info h4 {
+  font-size: 1.2em; /* Slightly larger font for name */
+  margin: 0; /* Remove default margin */
+  color: #333; /* Dark text for contrast */
+}
+
+.employee-info p {
+  margin: 0; /* Remove default margin */
+  color: #555; /* Lighter text for designation */
+}
+
+.slide {
+  flex-grow: 1; /* Allow slide content to take up remaining space */
+  margin-left: 50px; /* Space between employee-info and the slide content */
+}
+
+footer {
+  margin-top: 20px; /* Space above footer */
+  border-top: 1px solid #ccc; /* Top border for footer */
+  padding-top: 10px; /* Space inside footer */
+  display: flex; /* Flexbox for layout */
+  justify-content: space-between; /* Space between footer items */
+}
+
+footer div {
+  flex: 1; /* Equal space for footer items */
+  text-align: center; /* Center align text */
+  font-weight: bold; /* Bold text */
+  color: #333; /* Dark text color */
+}
+
+/* Media query for responsiveness */
+@media (max-width: 768px) {
+  #slideContainer {
+      flex-direction: column; /* Stack elements on smaller screens */
+      /* padding: 10px; Adjust padding on smaller screens */
+      padding: 100px;
+  }
+
+  .employee-info {
+      margin-bottom: 20px; /* Space below employee info */
+      text-align: center; /* Ensure employee info is centered on small screens */
+  }
+
+  .slide {
+      margin-left: 0; /* Remove margin on smaller screens */
+  }
+
+  footer {
+      flex-direction: column; /* Stack footer items on smaller screens */
+      text-align: center;
+  }
+
+  footer div {
+      margin-bottom: 10px; /* Add space between footer items */
+  }
+}

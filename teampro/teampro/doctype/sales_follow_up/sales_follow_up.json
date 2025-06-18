@@ -8,10 +8,16 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "active",
   "follow_up_to",
+  "party_from",
+  "party_name",
   "document_type",
   "customer",
   "lead",
+  "appointments",
+  "appointment_date",
+  "opportunity",
   "organization_name",
   "territory",
   "market_segment",
@@ -23,6 +29,7 @@
   "territory_customer",
   "column_break_7",
   "from_lead",
+  "account_manager_lead_owner",
   "from_opportunity",
   "account_manager",
   "lead_owner",
@@ -31,12 +38,14 @@
   "visit_status",
   "validation_status",
   "first_name",
+  "qualification_status",
   "address_section",
   "customer_primary_contact",
   "address_html",
   "address_type",
   "address_line_1",
   "address_line_2",
+  "add_address",
   "website",
   "column_break_19",
   "customer_primary_address",
@@ -46,6 +55,7 @@
   "country",
   "postal_code",
   "section_break_irbc",
+  "appointment_clone",
   "appointment",
   "sheduled_time",
   "name1",
@@ -67,38 +77,51 @@
   "service",
   "column_break_31",
   "status",
+  "column_break_zq5v",
+  "last_contacted_on",
   "section_break_23",
   "lead_contact",
   "customer_contacts",
   "contacts",
   "section_break_25",
   "remarks",
-  "column_break_27",
-  "next_action"
+  "next_action",
+  "appointment_tab",
+  "appointment_fixed_on",
+  "app_status",
+  "planned",
+  "visited",
+  "cancel",
+  "visted_date",
+  "visted_by",
+  "accompanied_by",
+  "appointment_created_on"
  ],
  "fields": [
   {
    "fieldname": "follow_up_to",
    "fieldtype": "Select",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
-   "label": "Follow Up From",
-   "options": "\nLead\nCustomer"
+   "label": "SFP from",
+   "options": "\nLead\nCustomer\nOpportunity\nAppointment"
   },
   {
    "fetch_from": "lead.company_name",
+   "fetch_if_empty": 1,
    "fieldname": "organization_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Organization Name",
-   "read_only": 1
+   "label": "Organization Name"
   },
   {
    "fetch_from": "lead.territory",
+   "fetch_if_empty": 1,
    "fieldname": "territory",
    "fieldtype": "Data",
    "label": "Territory",
-   "read_only": 1
+   "translatable": 1
   },
   {
    "fetch_from": "lead.market_segment",
@@ -126,9 +149,9 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.lead || doc.follow_up_to==\"Lead\"",
    "fieldname": "lead",
    "fieldtype": "Link",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Lead",
@@ -137,6 +160,7 @@
   {
    "fieldname": "lead_owner",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Lead Owner",
    "options": "User"
   },
@@ -152,6 +176,8 @@
    "fetch_from": "lead.company",
    "fieldname": "company",
    "fieldtype": "Link",
+   "hidden": 1,
+   "ignore_user_permissions": 1,
    "label": "Company",
    "options": "Company",
    "read_only": 1
@@ -219,6 +245,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Lead",
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
@@ -233,16 +260,13 @@
   {
    "fieldname": "section_break_25",
    "fieldtype": "Section Break",
-   "label": "Remarks"
+   "label": "Remarks",
+   "read_only_depends_on": "eval:doc.active==1"
   },
   {
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
-  },
-  {
-   "fieldname": "column_break_27",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "next_action",
@@ -317,9 +341,9 @@
    "options": "DocType"
   },
   {
-   "depends_on": "eval:doc.customer || doc.follow_up_to==\"Customer\"",
    "fieldname": "customer",
    "fieldtype": "Link",
+   "hidden": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Customer",
@@ -352,10 +376,10 @@
   },
   {
    "fetch_from": "customer.territory",
+   "fetch_if_empty": 1,
    "fieldname": "territory_customer",
    "fieldtype": "Data",
-   "label": "Territory",
-   "read_only": 1
+   "label": "Territory"
   },
   {
    "fetch_from": "customer.lead_name",
@@ -374,6 +398,7 @@
   {
    "fieldname": "account_manager",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Account Manager",
    "options": "User"
   },
@@ -406,14 +431,14 @@
    "options": "Address"
   },
   {
-   "depends_on": "eval:doc.customer || doc.follow_up_to==\"Customer\"",
+   "depends_on": "eval:doc.customer || doc.follow_up_to==\"Customer\"||doc.party_from==\"Customer\"",
    "fieldname": "customer_contacts",
    "fieldtype": "Table",
    "label": "Customer Contacts",
    "options": "Lead Contacts"
   },
   {
-   "depends_on": "eval:doc.lead || doc.follow_up_to==\"Lead\"",
+   "depends_on": "eval:doc.party_from==\"Lead\"",
    "fieldname": "contacts",
    "fieldtype": "Table",
    "label": "Lead Contacts",
@@ -422,21 +447,21 @@
   {
    "fieldname": "section_break_irbc",
    "fieldtype": "Section Break",
+   "hidden": 1,
    "label": "Appointment Details"
   },
   {
-   "fetch_from": "appointment.custom_remarks",
+   "depends_on": "eval:doc.app_status=='Visited'",
+   "fetch_from": ".custom_remarks",
    "fieldname": "appointment_remarks",
    "fieldtype": "Small Text",
-   "label": "Appointment Remarks",
-   "read_only": 1
+   "label": "Appointment Remarks"
   },
   {
    "fieldname": "appointment",
    "fieldtype": "Link",
-   "label": "Appointment",
-   "options": "Appointment",
-   "read_only": 1
+   "label": "Appointment ID",
+   "options": "Appointment"
   },
   {
    "fetch_from": "appointment.scheduled_time",
@@ -449,8 +474,8 @@
    "fetch_from": "appointment.custom_appointment_from",
    "fieldname": "appointment_status",
    "fieldtype": "Select",
-   "label": "Appointment Status",
-   "options": "Closed",
+   "label": "App Status",
+   "options": "\nClosed",
    "read_only": 1
   },
   {
@@ -515,11 +540,150 @@
    "fieldtype": "Small Text",
    "label": "Details",
    "read_only": 1
+  },
+  {
+   "fieldname": "appointment_clone",
+   "fieldtype": "Link",
+   "label": "Appointment clone",
+   "options": "Appointment"
+  },
+  {
+   "fieldname": "column_break_zq5v",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_contacted_on",
+   "fieldtype": "Date",
+   "label": "Last Contacted On"
+  },
+  {
+   "depends_on": "eval:doc.opportunity || doc.follow_up_to==\"Opportunity\"",
+   "fieldname": "opportunity",
+   "fieldtype": "Link",
+   "label": "Opportunity",
+   "options": "Opportunity"
+  },
+  {
+   "fieldname": "appointments",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Appointment",
+   "options": "Appointment"
+  },
+  {
+   "depends_on": "eval:doc.appointments || doc.follow_up_to ==\"Appointment\"",
+   "fieldname": "appointment_date",
+   "fieldtype": "Datetime",
+   "label": "Appointment Date"
+  },
+  {
+   "fieldname": "party_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Party Name",
+   "options": "party_from",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_from",
+   "fieldtype": "Link",
+   "label": "Follow Up From",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "account_manager_lead_owner",
+   "fieldtype": "Link",
+   "label": "Account Manager/ Lead Owner",
+   "options": "User"
+  },
+  {
+   "fieldname": "add_address",
+   "fieldtype": "Button",
+   "label": "Add Address"
+  },
+  {
+   "default": "0",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Active"
+  },
+  {
+   "fieldname": "appointment_tab",
+   "fieldtype": "Tab Break",
+   "label": "Appointment"
+  },
+  {
+   "fieldname": "appointment_fixed_on",
+   "fieldtype": "Datetime",
+   "label": "Appointment on"
+  },
+  {
+   "default": "Yet to Meet",
+   "fieldname": "app_status",
+   "fieldtype": "Select",
+   "label": "App status",
+   "options": "Yet to Meet\nFix Meeting\nScheduled\nVisited"
+  },
+  {
+   "depends_on": "eval:doc.app_status=='Yet to visit(YTV)' || doc.app_status=='Visited'",
+   "fieldname": "planned",
+   "fieldtype": "Button",
+   "label": "Planned"
+  },
+  {
+   "depends_on": "eval:doc.app_status=='Planned'",
+   "fieldname": "visited",
+   "fieldtype": "Button",
+   "label": "Visited"
+  },
+  {
+   "depends_on": "eval:doc.app_status=='Planned'",
+   "fieldname": "cancel",
+   "fieldtype": "Button",
+   "label": "Cancel"
+  },
+  {
+   "fieldname": "visted_date",
+   "fieldtype": "Date",
+   "label": "Visted date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "visted_by",
+   "fieldtype": "Link",
+   "label": "Visted by",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "accompanied_by",
+   "fieldtype": "Table MultiSelect",
+   "label": "Accompanied by",
+   "options": "DPR Mail Users",
+   "read_only": 1
+  },
+  {
+   "fieldname": "appointment_created_on",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Appointment Created On"
+  },
+  {
+   "fieldname": "qualification_status",
+   "fieldtype": "Select",
+   "label": "Qualification Status",
+   "options": "Unqualified\nIn Process\nQualified\nTargeted",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2024-09-16 13:21:47.069794",
+ "links": [
+  {
+   "link_doctype": "Opportunity",
+   "link_fieldname": "custom_sales_follow_up"
+  }
+ ],
+ "modified": "2025-06-11 13:48:16.351102",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sales Follow Up",

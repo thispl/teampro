@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "EPNC-.YY.-.MM.-.#####",
+ "autoname": "naming_series:naming_series",
  "creation": "2024-07-02 12:43:48.797864",
  "default_view": "List",
  "doctype": "DocType",
@@ -13,7 +13,16 @@
   "emp_name",
   "column_break_uvgs",
   "department",
+  "reason_of_ep",
+  "attach_proof_of_appreciation_if_any",
+  "total_nc",
+  "nc_score",
+  "total",
+  "energy_score",
   "designation",
+  "naming_series",
+  "class_proposed",
+  "ep_class_proposed",
   "report_to_section",
   "reports_to",
   "name1",
@@ -30,16 +39,7 @@
   "employee_mail",
   "column_break_pzl0",
   "reporting_manager_mail",
-  "energy_pointsep_details_section",
-  "ep_class_proposed",
-  "class_proposed",
-  "energy_score",
-  "total",
-  "nc_score",
-  "total_nc",
-  "attach_proof_of_appreciation_if_any",
   "column_break_kvtb",
-  "reason_of_ep",
   "section_break_pdwg",
   "html1",
   "employee_explanation_tab",
@@ -75,7 +75,7 @@
    "options": "Employee"
   },
   {
-   "fetch_from": "employee.employee_name",
+   "fetch_from": "emp.employee_name",
    "fieldname": "emp_name",
    "fieldtype": "Data",
    "in_list_view": 1,
@@ -87,7 +87,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "employee.department",
+   "fetch_from": "emp.department",
    "fieldname": "department",
    "fieldtype": "Link",
    "label": "Department",
@@ -95,7 +95,7 @@
    "read_only": 1
   },
   {
-   "fetch_from": "employee.designation",
+   "fetch_from": "emp.designation",
    "fieldname": "designation",
    "fieldtype": "Link",
    "label": "Designation",
@@ -206,11 +206,6 @@
    "options": "User"
   },
   {
-   "fieldname": "energy_pointsep_details_section",
-   "fieldtype": "Section Break",
-   "label": " Details"
-  },
-  {
    "allow_in_quick_entry": 1,
    "depends_on": "eval:doc.action==\"Energy Point(EP)\"",
    "fieldname": "ep_class_proposed",
@@ -272,14 +267,12 @@
   {
    "fieldname": "employee_explanation_tab",
    "fieldtype": "Tab Break",
-   "hidden": 1,
-   "label": "Employee Explanation",
-   "read_only": 1
+   "label": "Employee Explanation"
   },
   {
    "fieldname": "explanation_of_appreciation",
    "fieldtype": "Small Text",
-   "label": "Explanation of Appreciation"
+   "label": "Explanation of Non Conformity"
   },
   {
    "fieldname": "column_break_nopu",
@@ -288,6 +281,7 @@
   {
    "fieldname": "attach_proof_of_appreciation",
    "fieldtype": "Attach",
+   "hidden": 1,
    "label": "Attach Proof of Appreciation"
   },
   {
@@ -310,21 +304,23 @@
    "fieldname": "ep_class_confirmed",
    "fieldtype": "Select",
    "label": " Class Confirmed",
-   "options": "\nGood\nVery Good\nExcellent"
+   "options": "\nGood\nVery Good\nExcellent",
+   "read_only": 1
   },
   {
-   "depends_on": "eval:!doc.__islocal && doc.action==\"Non Conformity(NC)\"",
+   "depends_on": "eval:!doc.__islocal&&doc.action==\"Non Conformity(NC)\"",
    "fieldname": "class_confirmed",
    "fieldtype": "Select",
    "label": " Class Confirmed",
-   "options": "\nMinor\nMajor\nCritical"
+   "options": "\nMinor\nMajor\nCritical",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
    "fieldtype": "Link",
    "label": "Amended From",
    "no_copy": 1,
-   "options": "Energy Point  Non Conformity",
+   "options": "Energy Point And Non Conformity",
    "print_hide": 1,
    "read_only": 1,
    "search_index": 1
@@ -333,7 +329,6 @@
    "depends_on": "eval:doc.action==\"Energy Point(EP)\"",
    "fieldname": "total",
    "fieldtype": "Int",
-   "hidden": 1,
    "label": "Total EP",
    "options": "\n1\n2\n3",
    "read_only": 1
@@ -342,38 +337,29 @@
    "depends_on": "eval:doc.action==\"Non Conformity(NC)\"",
    "fieldname": "total_nc",
    "fieldtype": "Int",
-   "hidden": 1,
    "label": "Total NC",
    "options": "\n-1\n-2\n-3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "no_copy": 1,
+   "options": "\nEP\nNC",
    "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2024-07-17 16:38:17.556841",
+ "modified": "2025-06-17 19:36:57.266058",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Energy Point And Non Conformity",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "By \"Naming Series\" field",
  "owner": "Administrator",
- "permissions": [
-  {
-   "amend": 1,
-   "cancel": 1,
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "submit": 1,
-   "write": 1
-  }
- ],
+ "permissions": [],
  "quick_entry": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

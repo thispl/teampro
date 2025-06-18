@@ -1,0 +1,82 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-21 11:15:34.132224",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "scheduling_criteria",
+  "scheduling_parameter",
+  "criteria_data",
+  "criteria_float",
+  "criteria_select",
+  "updated"
+ ],
+ "fields": [
+  {
+   "fieldname": "scheduling_criteria",
+   "fieldtype": "Small Text",
+   "label": "Scheduling Criteria",
+   "read_only_depends_on": "eval:doc.parenttype === \"Candidate\""
+  },
+  {
+   "fieldname": "scheduling_parameter",
+   "fieldtype": "Select",
+   "label": "Scheduling Parameter",
+   "options": "\nScore\nYes/No\nText"
+  },
+  {
+   "depends_on": "eval:doc.parenttype === \"Candidate\"",
+   "fieldname": "criteria_data",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Criteria Data",
+   "read_only_depends_on": "eval:doc.scheduling_parameter!='Text'"
+  },
+  {
+   "depends_on": "eval:doc.parenttype === \"Candidate\"",
+   "fieldname": "criteria_float",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Criteria Float",
+   "read_only_depends_on": "eval:doc.scheduling_parameter!='Score'"
+  },
+  {
+   "depends_on": "eval:doc.parenttype === \"Candidate\"",
+   "fieldname": "criteria_select",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Criteria Select",
+   "options": "\nYes\nNo",
+   "read_only_depends_on": "eval:doc.scheduling_parameter!='Yes/No'"
+  },
+  {
+   "default": "0",
+   "fieldname": "updated",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "in_preview": 1,
+   "in_standard_filter": 1,
+   "label": "Updated"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-03 18:45:50.812525",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Criteria",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

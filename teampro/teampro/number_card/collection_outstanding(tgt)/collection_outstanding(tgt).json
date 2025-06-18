@@ -1,0 +1,23 @@
+{
+ "creation": "2024-12-19 13:40:59.038957",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "dynamic_filters_json": "{}",
+ "filters_json": "{\"from_date\":\"2024-12-01\",\"to_date\":\"2024-12-19\"}",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Collection Outstanding(TGT)",
+ "modified": "2024-12-19 13:40:59.038957",
+ "modified_by": "divya.p@groupteampro.com",
+ "module": "Teampro",
+ "name": "Collection Outstanding(TGT)",
+ "owner": "divya.p@groupteampro.com",
+ "report_field": "total_booked",
+ "report_function": "Sum",
+ "report_name": "Collection Outstanding(TGT)",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Report"
+}

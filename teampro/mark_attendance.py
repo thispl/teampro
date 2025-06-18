@@ -11,33 +11,38 @@ from frappe.utils import time_diff
 
 
 @frappe.whitelist()
-def cron_job():
-    job = frappe.db.exists('Scheduled Job Type', 'mark_att')
-    if not job:
-        sjt = frappe.new_doc("Scheduled Job Type")  
-        sjt.update({
-            "method" : 'teampro.mark_attendance.mark_att',
-            "frequency" : 'Cron',
-            "cron_format" : '*/55 * * * *'
-        })
-        sjt.save(ignore_permissions=True)
-
-@frappe.whitelist()
-def mark_att():
-    # from_date='2024-09-01'
-    # to_date='2024-09-13'
-    from_date = add_days(today(),-1)  
-    to_date = today()
+def mark_att_manual():
+    from_date='2025-05-02'
+    to_date='2025-05-31'
+    # employee ='TC00039'
     dates = get_dates(from_date,to_date)
     for date in dates:
         from_date = add_days(date,-1)
         to_date = date
-    checkins = frappe.db.sql("""select * from `tabEmployee Checkin` where date(time) between '%s' and '%s' order by time """%(from_date,to_date),as_dict=1)
-    for c in checkins:
-        employee = frappe.db.exists('Employee',{'status':'Active','date_of_joining':['<=',from_date],'name':c.employee})
-        if employee:  
-            mark_attendance_from_checkin(c.name,c.employee,c.time)
-    mark_absent(from_date,to_date)                                
+        checkins = frappe.db.sql("""select * from `tabEmployee Checkin` where date(time) between '%s' and '%s' order by time """%(from_date,to_date),as_dict=1)
+        for c in checkins:
+            employee = frappe.db.exists('Employee',{'status':'Active','date_of_joining':['<=',from_date],'name':c.employee})
+            if employee:  
+                mark_attendance_from_checkin(c.name,c.employee,c.time)
+                # mark_late_in_att(from_date, to_date,c.employee)
+    mark_absent(from_date,to_date)      
+@frappe.whitelist()
+def mark_att():
+    # from_date='2025-01-01'
+    # to_date='2025-01-18'
+    from_date = add_days(today(),-2)  
+    to_date = today()
+    dates = get_dates(from_date,to_date)
+    for date in dates:
+        from_date = date
+        to_date = date
+        checkins = frappe.db.sql("""select * from `tabEmployee Checkin` where date(time) between '%s' and '%s' order by time """%(from_date,to_date),as_dict=1)
+        for c in checkins:
+            employee = frappe.db.exists('Employee',{'status':'Active','date_of_joining':['<=',from_date],'name':c.employee})
+            if employee:  
+                mark_attendance_from_checkin(c.name,c.employee,c.time)
+                # mark_late_in_att(from_date, to_date,c.employee) 
+    mark_absent(from_date,to_date)                               
 
 def mark_attendance_from_checkin(checkin,employee,time):
     att_time = time.time()
@@ -55,13 +60,13 @@ def mark_attendance_from_checkin(checkin,employee,time):
         if in_time and out_time:  
             value = time_diff(out_time,in_time)
             if frappe.db.exists('Attendance Permission',{'employee':employee,'permission_date':att_date,'docstatus':1}):
-                frappe.errprint(employee)
                 att_per=frappe.db.get_value("Attendance Permission",{'employee':employee,'permission_date':att_date,'docstatus':1},['total_time'])
                 print(employee)
                 val = float(att_per) + (value.total_seconds() / 3600)
             elif frappe.db.exists('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]}):
-                att_req=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day'])
-                if att_req==1:
+                att_req_date=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day'])
+                att_req=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day_date'])
+                if att_req_date==att_date:
                     req_time=4
                     val = value.total_seconds() / 3600 + float(req_time)
                 else:
@@ -69,7 +74,6 @@ def mark_attendance_from_checkin(checkin,employee,time):
                     val = float(req_time)
             else:
                 val = value.total_seconds() / 3600
-            frappe.errprint(type(val))
             print(att_date)
             if val < 4 :
                 status = "Absent"
@@ -87,10 +91,10 @@ def mark_attendance_from_checkin(checkin,employee,time):
         else:
             
             if frappe.db.exists('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]}):
-                att_req=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day'])
-                if att_req==1:
+                att_req=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day_date'])
+                if att_req==att_date:
                     req_time=4
-                    
+                    val = float(req_time)
                 else:
                     req_time=8
                     val = float(req_time)
@@ -149,8 +153,8 @@ def mark_attendance_from_checkin(checkin,employee,time):
     else:
         status='Absent'
         if frappe.db.exists('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]}):
-                att_req=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day'])
-                if att_req==1:
+                att_req=frappe.db.get_value('Attendance Request',{'employee': employee,'docstatus': 1,'from_date': ['<=', att_date],'to_date': ['>=', att_date]},['half_day_date'])
+                if att_req==att_date:
                     req_time=4
                     val = float(req_time)
                     status='Half Day'
@@ -213,7 +217,10 @@ def check_holiday(date,emp):
         else:
             return "HH"
 @frappe.whitelist()
-def update_coff(date, emp):
+# def update_coff(date, emp):
+def update_coff(doc,method):
+    date=doc.attendance_date
+    emp=doc.employee
     holiday_list = frappe.get_value('Employee', emp, 'holiday_list')
     holiday = frappe.get_all('Holiday',filters={'parent': holiday_list, 'holiday_date': date},fields=['holiday_date', 'weekly_off'])
     if holiday:
@@ -221,14 +228,10 @@ def update_coff(date, emp):
         end_date = datetime.date(current_year, 12, 31)
         att = frappe.get_doc("Attendance", {"attendance_date": date, "employee": emp})
         if att:
-            frappe.errprint("Hello 1")
             if att.status=='Present':
-                frappe.errprint("Hello2")
                 if att.custom_comp_off == 0:
-                    frappe.errprint("Hello3")
-                    
-                    if frappe.db.exists("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date)}):
-                        leave = frappe.get_doc("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date)})
+                    if frappe.db.exists("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date),'docstatus':['!=',2]}):
+                        leave = frappe.get_doc("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date),'docstatus':['!=',2]})
                         leave.new_leaves_allocated += 1
                         leave.save(ignore_permissions=True)
                         if leave.docstatus != 1:
@@ -246,16 +249,13 @@ def update_coff(date, emp):
                         frappe.db.commit()
                     att = frappe.get_doc("Attendance", {"attendance_date": date, "employee": emp})
                     att.custom_comp_off = 1
-                    att.custom_leave_allocation = leave.name
+                    # att.custom_leave_allocation = leave.name
                     att.save(ignore_permissions=True)
                     frappe.db.commit()
             if att.status=='Half Day':
-                frappe.errprint("Hello 1")
                 if att.custom_comp_off == 0:
-                    frappe.errprint("Hello 1")
-                    
-                    if frappe.db.exists("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date)}):
-                        leave = frappe.get_doc("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date)})
+                    if frappe.db.exists("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date),'docstatus':['!=',2]}):
+                        leave = frappe.get_doc("Leave Allocation",{"employee": emp, "leave_type": "Compensatory Off","from_date": ('<=', date), "to_date": ('>=', date),'docstatus':['!=',2]})
                         leave.new_leaves_allocated += 0.5
                         leave.save(ignore_permissions=True)
                         if leave.docstatus != 1:
@@ -273,7 +273,7 @@ def update_coff(date, emp):
                         frappe.db.commit()
                     att = frappe.get_doc("Attendance", {"attendance_date": date, "employee": emp})
                     att.custom_comp_off = 1
-                    att.custom_leave_allocation = leave.name
+                    # att.custom_leave_allocation = leave.name
                     att.save(ignore_permissions=True)
                     frappe.db.commit()
         
@@ -281,16 +281,28 @@ def update_coff(date, emp):
 @frappe.whitelist()
 def cancel_comp_off(doc, method):
     if doc.custom_comp_off == 1:
-        if frappe.db.exists("Leave Allocation",{"employee": doc.employee, "leave_type": "Compensatory Off","from_date": ('<=', doc.attendance_date), "to_date": ('>=', doc.attendance_date)}):
-            leave = frappe.get_doc("Leave Allocation",{"employee": doc.employee, "leave_type": "Compensatory Off","from_date": ('<=', doc.attendance_date), "to_date": ('>=', doc.attendance_date)})
-            leave.new_leaves_allocated -= 1
-            leave.save(ignore_permissions=True)
-            frappe.db.commit()
-            att = frappe.get_doc("Attendance", {"attendance_date": doc.attendance_date, "employee": doc.employee})
-            att.custom_comp_off = 0
-            att.custom_leave_allocation = ''
-            att.save(ignore_permissions=True)
-            frappe.db.commit()
+        if doc.status=='Half Day':
+            if frappe.db.exists("Leave Allocation",{"employee": doc.employee, "leave_type": "Compensatory Off","from_date": ('<=', doc.attendance_date), "to_date": ('>=', doc.attendance_date),'docstatus':['!=',2]}):
+                leave = frappe.get_doc("Leave Allocation",{"employee": doc.employee, "leave_type": "Compensatory Off","from_date": ('<=', doc.attendance_date), "to_date": ('>=', doc.attendance_date),'docstatus':['!=',2]})
+                leave.new_leaves_allocated -= 0.5
+                leave.save(ignore_permissions=True)
+                frappe.db.commit()
+                att = frappe.get_doc("Attendance", {"attendance_date": doc.attendance_date, "employee": doc.employee})
+                att.custom_comp_off = 0
+                # att.custom_leave_allocation = ''
+                att.save(ignore_permissions=True)
+                frappe.db.commit()
+        if doc.status=='Present':
+            if frappe.db.exists("Leave Allocation",{"employee": doc.employee, "leave_type": "Compensatory Off","from_date": ('<=', doc.attendance_date), "to_date": ('>=', doc.attendance_date),'docstatus':['!=',2]}):
+                leave = frappe.get_doc("Leave Allocation",{"employee": doc.employee, "leave_type": "Compensatory Off","from_date": ('<=', doc.attendance_date), "to_date": ('>=', doc.attendance_date),'docstatus':['!=',2]})
+                leave.new_leaves_allocated -= 1
+                leave.save(ignore_permissions=True)
+                frappe.db.commit()
+                att = frappe.get_doc("Attendance", {"attendance_date": doc.attendance_date, "employee": doc.employee})
+                att.custom_comp_off = 0
+                # att.custom_leave_allocation = ''
+                att.save(ignore_permissions=True)
+                frappe.db.commit()
 
 
 
@@ -337,17 +349,66 @@ def new_mark_att():
 
 
 
-@frappe.whitelist()
-def mark_att_present():
-    emp_list = frappe.db.get_all('Employee', {'status': 'Active'}, ['name'])
-    for emp in emp_list:
-        emp_name = emp['name']    
-        attendance = frappe.db.get_value('Attendance', {
-            'employee': emp_name,
-            'attendance_date': '2024-07-15' 
-        }, ['name'])
-        if attendance:
-            att_in = frappe.db.get_value("Attendance", {'name': attendance}, ['in_time'])
-            if att_in is not None:
-                frappe.db.set_value('Attendance', attendance, 'status', "Present")
+# @frappe.whitelist()
+# def mark_att_present():
+#     frappe.db.set_value("Attendance",'HR-ATT-2024-12208','docstatus',0)
+    # emp_list = frappe.db.get_all('Employee', {'status': 'Active'}, ['name'])
+    # for emp in emp_list:
+    #     emp_name = emp['name']    
+    #     attendance = frappe.db.get_value('Attendance', {
+    #         'employee': emp_name,
+    #         'attendance_date': '2024-07-15' 
+    #     }, ['name'])
+    #     if attendance:
+    #         att_in = frappe.db.get_value("Attendance", {'name': attendance}, ['in_time'])
+    #         if att_in is not None:
+    #             frappe.db.set_value('Attendance', attendance, 'status', "Present")
         
+@frappe.whitelist()
+def mark_late_in_att(from_date, to_date,employee):
+    first_date=get_first_day(from_date)
+    last_date=get_last_day(from_date)
+    count=0
+    attendance = frappe.db.get_all("Attendance",{"attendance_date": ("between", [first_date, last_date]), "docstatus": ("!=", 2),"employee":employee},["name", "in_time", "leave_application", "attendance_request", "custom_attendance_permission","status","attendance_date"],order_by="attendance_date asc")
+    if attendance:
+        for att in attendance:
+            if att.status=="Present":
+                if att.in_time and att.custom_attendance_permission:
+                    permission=frappe.db.get_value("Attendance Permission",{"name":att.custom_attendance_permission,"docstatus":("!=",2),"permission_date":att.attendance_date},["session"])
+                    if permission=="Second Half":
+                        at_time = att.in_time.strftime('%H:%M:%S')
+                        if at_time >="09:41:00":
+                            count+=1
+                            if count>3:
+                                print(count)
+                                frappe.db.set_value("Attendance", att.name, "status", "Half Day")
+                else:
+                    if att.in_time and not (att.leave_application or att.attendance_request or att.custom_attendance_permission):
+                        at_time = att.in_time.strftime('%H:%M:%S')
+                        if at_time >="09:41:00":
+                            count+=1
+                            if count>3:
+                                print(count)
+                                frappe.db.set_value("Attendance", att.name, "status", "Half Day")
+
+# @frappe.whitelist()
+# # def mark_late_in_att(from_date, to_date,employee):
+# def mark_late_in_att():
+#     from_date="2025-01-22"
+#     first_date=get_first_day(from_date)
+#     last_date=get_last_day(from_date)
+#     count=0
+#     # attendance = frappe.db.get_all("Attendance",{"attendance_date": ("between", [first_date, last_date]), "docstatus": ("!=", 2),"employee":employee},["name", "in_time", "leave_application", "attendance_request", "custom_attendance_permission","status"])
+#     attendance = frappe.db.get_all("Attendance",{"attendance_date": ("between", [first_date, last_date]), "docstatus": ("!=", 2),"employee":"TI00186"},["attendance_date","name", "in_time", "leave_application", "attendance_request", "custom_attendance_permission","status"],order_by="attendance_date asc")   
+#     if attendance:
+#         for att in attendance:
+#             print(att.attendance_date)
+#             if att.in_time and not (att.leave_application or att.attendance_request or att.custom_attendance_permission):
+#                 at_time = att.in_time.strftime('%H:%M:%S')
+#                 if at_time >="09:41:00":
+#                     count+=1
+#                     if count>3:
+#                         print(att.name)
+#                         print(count)
+#                         frappe.db.set_value("Attendance", att.name, "status", "Half Day")
+

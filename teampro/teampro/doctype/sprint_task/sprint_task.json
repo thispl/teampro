@@ -1,0 +1,162 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-16 11:29:57.848669",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "task",
+  "subject",
+  "cb",
+  "task_type",
+  "kt_confirmed",
+  "column_break_vrlt",
+  "et",
+  "at",
+  "rt",
+  "status",
+  "priority",
+  "column_break_illy",
+  "production_date",
+  "at_period",
+  "cr_status",
+  "explanation"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Project",
+   "options": "Project",
+   "read_only": 1
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Task",
+   "options": "Task",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "task.subject",
+   "fieldname": "subject",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Subject",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "task.cb",
+   "fetch_if_empty": 1,
+   "fieldname": "cb",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CB",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vrlt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "task.expected_time",
+   "fieldname": "et",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "ET",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "task.actual_time",
+   "fieldname": "at",
+   "fieldtype": "Float",
+   "label": "AT",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "task.rt",
+   "fetch_if_empty": 1,
+   "fieldname": "rt",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "RT"
+  },
+  {
+   "fetch_from": "task.status",
+   "fetch_if_empty": 1,
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status"
+  },
+  {
+   "fetch_from": "task.type",
+   "fieldname": "task_type",
+   "fieldtype": "Link",
+   "label": "Task Type",
+   "options": "Task Type",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fetch_from": "task.kt_confirmed",
+   "fieldname": "kt_confirmed",
+   "fieldtype": "Check",
+   "label": "KT Confirmed",
+   "read_only_depends_on": "eval:doc.status!=\"Open\""
+  },
+  {
+   "fetch_from": "task.priority",
+   "fieldname": "priority",
+   "fieldtype": "Data",
+   "label": "Priority",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_illy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "task.custom_production_date",
+   "fieldname": "production_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Production Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "at_period",
+   "fieldtype": "Float",
+   "label": "AT Period"
+  },
+  {
+   "fieldname": "cr_status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Cr Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "explanation",
+   "fieldtype": "Small Text",
+   "label": "Explanation",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-05-28 13:11:21.405375",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Sprint Task",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

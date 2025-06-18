@@ -1,0 +1,21 @@
+{
+ "creation": "2024-12-19 14:36:13.443841",
+ "docstatus": 0,
+ "doctype": "Number Card",
+ "filters_json": "null",
+ "function": "Count",
+ "idx": 0,
+ "is_public": 1,
+ "is_standard": 1,
+ "label": "Total Purchase Order Outstanding",
+ "method": "jobpro.custom.get_po_outstanding_tot",
+ "modified": "2024-12-19 14:36:22.717053",
+ "modified_by": "divya.p@groupteampro.com",
+ "module": "Teampro",
+ "name": "Total Purchase Order Outstanding",
+ "owner": "divya.p@groupteampro.com",
+ "report_function": "Sum",
+ "show_percentage_stats": 1,
+ "stats_time_interval": "Daily",
+ "type": "Custom"
+}

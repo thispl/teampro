@@ -1,0 +1,239 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "VM.######",
+ "creation": "2025-06-12 14:42:39.423479",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "details_tab",
+  "upload",
+  "total_crstock_qty",
+  "delivery_date",
+  "manufactured_date",
+  "status",
+  "column_break_dxwg",
+  "posting_date",
+  "total_new_stock_qty",
+  "packing_date",
+  "name_print",
+  "grn_received",
+  "section_break_frhs",
+  "status_transition",
+  "details1_tab",
+  "section_break_mxcr",
+  "amended_from",
+  "column_break_bxbr",
+  "a_section",
+  "slot_a",
+  "tab_2_tab",
+  "slot_b",
+  "c_tab",
+  "slot_c",
+  "d_tab",
+  "slot_d",
+  "e_tab",
+  "slot_e",
+  "rack_f_tab",
+  "slot_f"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_mxcr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "VM Stock Register",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "upload",
+   "fieldtype": "Attach",
+   "label": "Upload"
+  },
+  {
+   "fieldname": "a_section",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "slot_a",
+   "fieldtype": "Table",
+   "options": "VM Stock Details"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "slot_b",
+   "fieldtype": "Table",
+   "options": "VM Stock Details"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "slot_c",
+   "fieldtype": "Table",
+   "options": "VM Stock Details"
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "B  - RACK "
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "slot_d",
+   "fieldtype": "Table",
+   "options": "VM Stock Details"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "slot_e",
+   "fieldtype": "Table",
+   "options": "VM Stock Details"
+  },
+  {
+   "fieldname": "details1_tab",
+   "fieldtype": "Tab Break",
+   "label": "A  - RACK "
+  },
+  {
+   "fieldname": "column_break_bxbr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "c_tab",
+   "fieldtype": "Tab Break",
+   "label": "C -  RACK"
+  },
+  {
+   "fieldname": "d_tab",
+   "fieldtype": "Tab Break",
+   "label": "D - RACK"
+  },
+  {
+   "fieldname": "e_tab",
+   "fieldtype": "Tab Break",
+   "label": "E - RACK"
+  },
+  {
+   "fieldname": "rack_f_tab",
+   "fieldtype": "Tab Break",
+   "label": "F - RACK"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "fieldname": "slot_f",
+   "fieldtype": "Table",
+   "label": "Slot F",
+   "options": "VM Stock Details"
+  },
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "total_crstock_qty",
+   "fieldtype": "Float",
+   "label": "Total Cr.Stock Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_dxwg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_new_stock_qty",
+   "fieldtype": "Float",
+   "label": "Total New Stock Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "delivery_date",
+   "fieldtype": "Date",
+   "label": "Delivery Date"
+  },
+  {
+   "fieldname": "manufactured_date",
+   "fieldtype": "Date",
+   "label": "Manufactured Date"
+  },
+  {
+   "fieldname": "packing_date",
+   "fieldtype": "Date",
+   "label": "Packing Date"
+  },
+  {
+   "fieldname": "name_print",
+   "fieldtype": "Select",
+   "label": "Name Print",
+   "options": "\nYes\nNo"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nSchedule\nPacked\nDispatched\nGRN Received",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_frhs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "status_transition",
+   "fieldtype": "Table",
+   "label": "Status Transition",
+   "options": "VM Status Transition",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "grn_received",
+   "fieldtype": "Attach",
+   "label": "GRN Received",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-06-17 19:48:11.809216",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "VM Stock Register",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

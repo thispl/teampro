@@ -13,7 +13,10 @@
   "customer",
   "spoc",
   "account_manager",
-  "project_manager"
+  "project_manager",
+  "in_punch_machines_serial_number",
+  "out_punch_machine_serial_number",
+  "machine_quantity"
  ],
  "fields": [
   {
@@ -28,7 +31,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Software",
-   "options": "\nEasytimePRO\nEasyWDMS"
+   "options": "\nEasytimePRO\nEasyWDMS\nTrial/Demo Login"
   },
   {
    "fieldname": "license_active_from",
@@ -77,12 +80,30 @@
    "label": "Project Manager",
    "options": "User",
    "read_only": 1
+  },
+  {
+   "description": "Please provide each serial number in the 'IN Punch Machine's Serial Number' field one by one. If there is a single machine for both punches, update the serial number in the 'IN Punch Machine's Serial Number' field.",
+   "fieldname": "in_punch_machines_serial_number",
+   "fieldtype": "Small Text",
+   "label": "IN Punch Machine's Serial Number"
+  },
+  {
+   "description": "Please provide each serial number in the 'OUT Punch Machine's Serial Number' field one by one.",
+   "fieldname": "out_punch_machine_serial_number",
+   "fieldtype": "Small Text",
+   "label": "OUT Punch Machine Serial Number"
+  },
+  {
+   "fieldname": "machine_quantity",
+   "fieldtype": "Float",
+   "label": "Machine Quantity",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-05-27 15:35:01.409829",
+ "modified": "2025-03-10 20:57:11.680163",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Project Details",

@@ -98,47 +98,35 @@ def get_employee(filters):
 
                 dev_si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE delivery_manager = '%s' AND account_manager != '%s' AND posting_date BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND YEAR(posting_date) = '%s'""" % (
                     emp.prefered_email,emp.prefered_email,from_date,to_date,filters.yearly),as_dict=True)
-                # frappe.errprint(dev_si[0].total)
                 
                 both_si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE delivery_manager = '%s' AND account_manager = '%s' AND posting_date BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND YEAR(posting_date) = '%s'""" % (
                     emp.prefered_email,emp.prefered_email,from_date,to_date,filters.yearly),as_dict=True)
-                # frappe.errprint("anil")
-                # frappe.errprint(both_si[0].total)
                 acc_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE account_manager = '%s' AND  candidate_owner != '%s' AND so_confirmed_date BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND YEAR(so_confirmed_date) ='%s'""" % (
                     emp.prefered_email,emp.prefered_email,from_date,to_date,filters.yearly),as_dict=True)
 
                 dev_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE candidate_owner = '%s'  AND account_manager != '%s'AND so_confirmed_date BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND YEAR(so_confirmed_date) ='%s'""" % (
                     emp.prefered_email,emp.prefered_email,from_date,to_date,filters.yearly),as_dict=True)
-                # frappe.errprint("hi test")
-                # frappe.errprint(flt(acc_si[0].total )+flt( dev_si[0].total) + flt( both_si[0].total))
                 total_value =flt(acc_si[0].total )+flt( dev_si[0].total) + flt( both_si[0].total) + flt(acc_closure[0].charges ) + flt(dev_closure[0].charges )
 
             elif emp.based_on_value == "Service Based":
                 
                 services = frappe.get_all("Employee services", {'parent': emp.name}, ['services'])
-                # frappe.errprint(services)
                 # s = services[0].services
                 service_list = []
                 for s in services:
                     service_list.append(s.services)
                 str_list = str(service_list).strip('[')
                 str_list = str(str_list).strip(']')
-                # frappe.errprint(str_list)
                 if service_list:
                     
                     # for s in services:
-                    # frappe.errprint(s.services)
                     service_si  = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE services IN (%s) AND posting_date BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND YEAR(posting_date) = '%s'""" % (
                         str_list,from_date,to_date,filters.yearly),as_dict=True)
-                    # frappe.errprint(service_si[0].total)
                     total_value += flt(service_si[0].total)
-                    # frappe.errprint(total_value)
                     if set(["REC-I","REC-D"]).intersection(set(service_list)):
                         service_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE so_confirmed_date BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND YEAR(so_confirmed_date) ='%s'""" % (from_date,to_date,filters.yearly),as_dict=True)
-                        # frappe.errprint("hi")
-                        # frappe.errprint(service_closure[0].charges)
+                        
                 total_value = flt(service_si[0].total) + flt(service_closure[0].charges)
-                    # frappe.errprint(total_value)
         
         except TypeError:
             closure = 0
@@ -150,7 +138,6 @@ def get_employee(filters):
         if total_value:
             ft_sr = (flt(total_value)/flt(ft[0].ft_value))*100
             ft_strike_rate = round(ft_sr)
-            # frappe.errprint(ft_strike_rate)
             bt_sr = (flt(total_value)/flt(ft[0].bt_value) )*100
             bt_strike_rate = round(bt_sr)
             if flt(ft[0].at_value) > 0:

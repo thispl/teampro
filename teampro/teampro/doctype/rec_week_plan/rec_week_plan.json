@@ -1,0 +1,146 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "REC.#####",
+ "creation": "2025-06-18 10:11:18.079035",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project_details_tab",
+  "section_break_ej7b",
+  "amended_from",
+  "posting_date",
+  "column_break_wvkn",
+  "start_date",
+  "column_break_wvdw",
+  "end_date",
+  "section_break_fezl",
+  "project_details",
+  "allocated_details_section",
+  "details",
+  "task_details_tab",
+  "section_break_mkti",
+  "task_allocation",
+  "allocation_tab",
+  "allocation"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_ej7b",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "REC Week Plan",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "posting_date",
+   "fieldtype": "Datetime",
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_fezl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "project_details",
+   "fieldtype": "Table",
+   "label": "Project Details",
+   "options": "REC Project Details"
+  },
+  {
+   "fieldname": "task_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Task Details"
+  },
+  {
+   "fieldname": "task_allocation",
+   "fieldtype": "Table",
+   "label": "Task Allocation",
+   "options": "REC Task Details"
+  },
+  {
+   "fieldname": "project_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Project Details"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date"
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "label": "End Date"
+  },
+  {
+   "fieldname": "section_break_mkti",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "allocation_tab",
+   "fieldtype": "Tab Break",
+   "label": "Allocation"
+  },
+  {
+   "fieldname": "allocation",
+   "fieldtype": "Table",
+   "label": "Allocation",
+   "options": "Week Plan Details"
+  },
+  {
+   "fieldname": "column_break_wvdw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_wvkn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "allocated_details_section",
+   "fieldtype": "Section Break",
+   "label": "Allocated Details"
+  },
+  {
+   "fieldname": "details",
+   "fieldtype": "Table",
+   "label": "Details",
+   "options": "Project Details Allocated"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-06-18 18:13:16.771266",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "REC Week Plan",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

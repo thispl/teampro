@@ -1,0 +1,175 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "F.#####",
+ "creation": "2024-10-08 15:08:04.769647",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "client_information_section",
+  "name1",
+  "contact_number",
+  "column_break_okqw",
+  "company",
+  "email",
+  "product_feedback_section",
+  "product",
+  "service_feedback_section",
+  "service",
+  "section",
+  "additional_comments",
+  "would_you_recommand_our_snacks_to_others_section",
+  "yes",
+  "column_break_p8wb",
+  "no",
+  "if_no_please_explain_why",
+  "section_break_4ghr",
+  "suggestions_for_improvement",
+  "submitted_date",
+  "tab_2_tab",
+  "t_company"
+ ],
+ "fields": [
+  {
+   "fieldname": "client_information_section",
+   "fieldtype": "Section Break",
+   "label": "Client Information\t\t"
+  },
+  {
+   "fieldname": "name1",
+   "fieldtype": "Data",
+   "label": "Name"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Data",
+   "label": "Company"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Phone",
+   "label": "Contact Number"
+  },
+  {
+   "fieldname": "email",
+   "fieldtype": "Data",
+   "label": "Email"
+  },
+  {
+   "fieldname": "product_feedback_section",
+   "fieldtype": "Section Break",
+   "label": "Product Feedback\t\t"
+  },
+  {
+   "fieldname": "section",
+   "fieldtype": "Section Break",
+   "label": "Additional Comments"
+  },
+  {
+   "fieldname": "additional_comments",
+   "fieldtype": "Small Text"
+  },
+  {
+   "fieldname": "would_you_recommand_our_snacks_to_others_section",
+   "fieldtype": "Section Break",
+   "label": "Would you recommand our Snacks to others?"
+  },
+  {
+   "default": "0",
+   "fieldname": "yes",
+   "fieldtype": "Check",
+   "label": "Yes"
+  },
+  {
+   "fieldname": "column_break_p8wb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "no",
+   "fieldtype": "Check",
+   "label": "No"
+  },
+  {
+   "depends_on": "eval:doc.no==1",
+   "fieldname": "if_no_please_explain_why",
+   "fieldtype": "Small Text",
+   "label": "If no, please explain why"
+  },
+  {
+   "fieldname": "suggestions_for_improvement",
+   "fieldtype": "Small Text",
+   "label": "Suggestions for Improvement"
+  },
+  {
+   "fieldname": "section_break_4ghr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "service_feedback_section",
+   "fieldtype": "Section Break",
+   "label": "Service Feedback\t\t"
+  },
+  {
+   "fieldname": "product",
+   "fieldtype": "Table",
+   "label": "Product",
+   "options": "Client Feedback child"
+  },
+  {
+   "fieldname": "service",
+   "fieldtype": "Table",
+   "label": "Service",
+   "options": "Client feedback1"
+  },
+  {
+   "fieldname": "column_break_okqw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "submitted_date",
+   "fieldtype": "Date",
+   "label": "Submitted Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tab_2_tab",
+   "fieldtype": "Tab Break",
+   "label": "Company"
+  },
+  {
+   "default": "TEAMPRO Food Products",
+   "fieldname": "t_company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-10-17 11:45:37.040775",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Client Feedback",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

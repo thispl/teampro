@@ -22,7 +22,6 @@ def get_data(filters):
 		tewh = frappe.db.sql("""select sum(expected_time) as hours from `tabTask` where project= '{project}' """.format(project=project.name),as_dict=1)[0]
 		query = """select sum(hours) as hours from `tabTimesheet Detail` where project= '{project}' """.format(project=project.name)
 		timesheet_hours = frappe.db.sql(query,as_dict=1)[0]
-		frappe.errprint(timesheet_hours)
 		if timesheet_hours.hours:
 			tawh = round(timesheet_hours.hours,2)
 		ts_dates = frappe.db.sql("""select min(date(from_time)) as tsd,max(date(to_time)) as ted from `tabTimesheet Detail` where project= '{project}' """.format(project=project.name),as_dict=1)[0]

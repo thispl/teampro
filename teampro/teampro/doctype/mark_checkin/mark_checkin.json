@@ -1,0 +1,47 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-02-21 18:04:01.447259",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "checkin",
+  "mark_checkin"
+ ],
+ "fields": [
+  {
+   "fieldname": "mark_checkin",
+   "fieldtype": "Button",
+   "label": "Check In"
+  },
+  {
+   "fieldname": "checkin",
+   "fieldtype": "HTML",
+   "label": "Checkin"
+  }
+ ],
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-02-24 13:02:51.686802",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Mark Checkin",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

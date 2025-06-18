@@ -1,0 +1,130 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-11-27 17:58:51.217290",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "id",
+  "passport_number",
+  "given_namesurname",
+  "status",
+  "customer_name",
+  "position",
+  "next_action",
+  "next_action_on",
+  "remarks",
+  "latest_remarks",
+  "latest_next_action",
+  "latest_next_action_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "ID",
+   "options": "Closure"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "id.passport_no",
+   "fetch_if_empty": 1,
+   "fieldname": "passport_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Passport Number"
+  },
+  {
+   "columns": 2,
+   "fetch_from": "id.given_name",
+   "fetch_if_empty": 1,
+   "fieldname": "given_namesurname",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Given Name/Surname"
+  },
+  {
+   "columns": 2,
+   "fetch_from": "id.status",
+   "fetch_if_empty": 1,
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Status"
+  },
+  {
+   "columns": 3,
+   "fetch_from": "id.customer",
+   "fetch_if_empty": 1,
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Customer Name"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "id.task_subject",
+   "fetch_if_empty": 1,
+   "fieldname": "position",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Position"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "id.std_remarks",
+   "fetch_if_empty": 1,
+   "fieldname": "next_action",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Next Action"
+  },
+  {
+   "columns": 1,
+   "fetch_from": "id.custom_next_follow_up_on",
+   "fetch_if_empty": 1,
+   "fieldname": "next_action_on",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Next Action On"
+  },
+  {
+   "columns": 2,
+   "fetch_from": "id.remark",
+   "fetch_if_empty": 1,
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Remarks"
+  },
+  {
+   "fieldname": "latest_remarks",
+   "fieldtype": "Small Text",
+   "label": "Latest Remarks"
+  },
+  {
+   "fieldname": "latest_next_action",
+   "fieldtype": "Data",
+   "label": "Latest Next Action"
+  },
+  {
+   "fieldname": "latest_next_action_on",
+   "fieldtype": "Date",
+   "label": "Latest Next Action On"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-11-28 13:24:56.772613",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "DND DPR Details",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

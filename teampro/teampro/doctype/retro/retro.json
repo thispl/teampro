@@ -1,0 +1,67 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-04-16 11:48:27.173534",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "what_went_well",
+  "column_break_tbgn",
+  "what_went_wrong",
+  "column_break_kfcs",
+  "points_to_improve",
+  "column_break_zzdg",
+  "kudos"
+ ],
+ "fields": [
+  {
+   "fieldname": "what_went_well",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "What Went Well"
+  },
+  {
+   "fieldname": "column_break_tbgn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "what_went_wrong",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "What Went Wrong"
+  },
+  {
+   "fieldname": "column_break_kfcs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "points_to_improve",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Points to Improve"
+  },
+  {
+   "fieldname": "column_break_zzdg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "kudos",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Kudos"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-04-16 11:49:51.826371",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Retro",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

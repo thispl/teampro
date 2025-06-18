@@ -12,6 +12,8 @@ class EnergyPointAndNonConformity(Document):
 		self.nc_dep = frappe.get_value('Employee',{'user_id':frappe.session.user},'department')
 		self.nc_des = frappe.get_value('Employee',{'user_id':frappe.session.user},'designation')
 		self.ep_class_confirmed=self.ep_class_proposed
+
+		# if self.workflow_state == 'Submitted':
 		if self.ep_class_confirmed=='Good':
 			self.energy_score='+1'
 			self.total=1
@@ -32,3 +34,18 @@ class EnergyPointAndNonConformity(Document):
 		elif self.class_confirmed=='Critical':
 			self.nc_score='-3'	
 			self.total_nc=3
+
+		# elif self.workflow_state=='NC Revoked':
+		# 	self.class_confirmed=self.class_proposed
+		# 	if self.class_confirmed=='Minor':
+		# 		self.nc_score='1'
+		# 		self.total_nc=1
+		# 	elif self.class_confirmed=='Major':
+		# 		self.nc_score='2'
+		# 		self.total_nc=2
+		# 	elif self.class_confirmed=='Critical':
+		# 		self.nc_score='3'	
+		# 		self.total_nc=3
+
+
+

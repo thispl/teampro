@@ -1,5 +1,6 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
  "autoname": "TA-.####",
  "creation": "2022-02-08 17:11:08.148109",
@@ -9,17 +10,30 @@
  "field_order": [
   "employee",
   "employee_name",
+  "user_id",
   "year",
+  "custom_fiscal_year",
   "target_based_unit",
-  "annual_ct",
+  "has_reportees",
   "column_break_3",
   "designation",
   "department",
   "services",
   "update_target",
+  "reportees",
+  "column_break_mgqn",
+  "service_list",
+  "annual_ct",
   "annual_ft",
+  "based_on_account_manager",
+  "based_on_service",
+  "based_on_candidate_owner",
+  "annual_ct_currency",
+  "annual_ft_currency",
   "section_break_5",
-  "target_child"
+  "target_child",
+  "foundation_target_section",
+  "monthly_ft_allocation"
  ],
  "fields": [
   {
@@ -56,12 +70,13 @@
   },
   {
    "fieldname": "section_break_5",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "label": "Committed Target"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "target_child",
    "fieldtype": "Table",
-   "label": "Monthly Target Allocation",
    "options": "Target Child"
   },
   {
@@ -69,65 +84,139 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.employee",
+   "depends_on": "employee",
    "fieldname": "year",
    "fieldtype": "Link",
    "hidden": 1,
    "label": "Year",
-   "options": "Yearly"
+   "options": "Yearly",
+   "print_hide": 1,
+   "report_hide": 1
   },
   {
    "fieldname": "target_based_unit",
    "fieldtype": "Select",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Target Based On",
-   "options": "\nSales Order on TO\nSales Invoice on TO\nSales Invoice on SC (Service)\nSales Invoice on SC (Item)"
+   "options": "\nSales Order\nSales Invoice"
   },
   {
-   "depends_on": "eval:doc.target_based_unit == \"Sales Invoice on SC (Service)\"",
+   "depends_on": "eval:doc.target_based_unit == \"Sales Invoice on Service\" || doc.target_based_unit == \"Sales Order on Service\"",
    "fieldname": "services",
    "fieldtype": "Table MultiSelect",
+   "hidden": 1,
    "label": "Services",
    "options": "Employee services"
   },
   {
    "fieldname": "update_target",
    "fieldtype": "Button",
+   "hidden": 1,
    "label": "Update Target"
   },
   {
    "fieldname": "annual_ct",
    "fieldtype": "Int",
+   "in_list_view": 1,
    "label": "Annual CT"
   },
   {
    "fieldname": "annual_ft",
    "fieldtype": "Int",
    "label": "Annual FT"
+  },
+  {
+   "fieldname": "monthly_ft_allocation",
+   "fieldtype": "Table",
+   "options": "Target FT Child"
+  },
+  {
+   "depends_on": "eval:doc.has_reportees==1",
+   "fieldname": "reportees",
+   "fieldtype": "Table MultiSelect",
+   "label": "Reportees",
+   "options": "Target Manager Reportee"
+  },
+  {
+   "fieldname": "column_break_mgqn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_reportees",
+   "fieldtype": "Check",
+   "label": "Has Reportees"
+  },
+  {
+   "fieldname": "custom_fiscal_year",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Fiscal Year",
+   "options": "Fiscal Year"
+  },
+  {
+   "fieldname": "service_list",
+   "fieldtype": "Table",
+   "label": "Service",
+   "options": "DM Services"
+  },
+  {
+   "fetch_from": "employee.user_id",
+   "fetch_if_empty": 1,
+   "fieldname": "user_id",
+   "fieldtype": "Link",
+   "label": "User Id",
+   "options": "User"
+  },
+  {
+   "default": "0",
+   "fieldname": "based_on_account_manager",
+   "fieldtype": "Check",
+   "label": "Based On Account Manager",
+   "read_only_depends_on": "eval:doc.based_on_service==1"
+  },
+  {
+   "default": "0",
+   "fieldname": "based_on_service",
+   "fieldtype": "Check",
+   "label": "Based On Service",
+   "read_only_depends_on": "eval:doc.based_on_account_manager==1"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "foundation_target_section",
+   "fieldtype": "Section Break",
+   "label": "Foundation Target"
+  },
+  {
+   "fieldname": "annual_ct_currency",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Annual CT Currency"
+  },
+  {
+   "fieldname": "annual_ft_currency",
+   "fieldtype": "Currency",
+   "hidden": 1,
+   "label": "Annual FT Currency"
+  },
+  {
+   "default": "0",
+   "fieldname": "based_on_candidate_owner",
+   "fieldtype": "Check",
+   "label": "Based On Candidate Owner"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2024-09-13 21:56:17.448971",
+ "modified": "2025-06-11 15:55:56.301083",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Target Manager",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
+ "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

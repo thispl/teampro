@@ -53,7 +53,6 @@ def get_data(filters):
 				att = "Y"
 			else:
 				att = "N"
-			frappe.errprint(att)
 			if frappe.db.exists("Food Count",{"date":filters.date,"employee":e.name}):
 				food = "Y"
 			else:

@@ -33,7 +33,6 @@ class TIIP(Document):
         for e in emp:
             si_amount = 0
             closure_amount = 0
-            frappe.errprint(e.name)
             
             get_bt=frappe.get_value(
                 "Tiips", {'parent': e.name,'quarterly':self.quarterly,'year':self.year}, ['quarterly','year','bt'])
@@ -41,10 +40,8 @@ class TIIP(Document):
                 if e.tiips_role == "Account Manager":
                     si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE account_manager = '%s'  AND month(posting_date) BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND year(posting_date) = '%s'""" % (
                         e.prefered_email,start,end,self.year),as_dict=True)
-                    # frappe.errprint(si)
                     closure =frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE account_manager = '%s'  AND month(so_confirmed_date) BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND year(so_confirmed_date) ='%s'""" % (
                         e.prefered_email,start,end,self.year),as_dict=True)
-                    # frappe.errprint(closure)
                     
                 elif e.tiips_role == "Delivery Manager":
                     si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE delivery_manager = '%s'  AND month(posting_date) BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND year(posting_date) = '%s' """ % (
@@ -66,20 +63,16 @@ class TIIP(Document):
                     node_si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE account_manager = '%s'  AND month(posting_date) BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND year(posting_date) = '%s'""" % (
                         node.prefered_email,start,end,self.year),as_dict=True)
                     si_amount += flt(node_si[0].total)
-                    frappe.errprint(si_amount)
                     node_closure =frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE account_manager = '%s'  AND month(so_confirmed_date) BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND year(so_confirmed_date) ='%s'""" % (
                         node.prefered_email,start,end,self.year),as_dict=True)
                     closure_amount += flt(node_closure[0].charges)
-                    frappe.errprint(closure_amount)
                 if node.tiips_role == "Delivery Manager":
                     node_si = frappe.db.sql("""select sum(total_dec) as total from`tabSales Invoice` WHERE delivery_manager = '%s'  AND month(posting_date) BETWEEN '%s' and '%s' AND status in ("Paid","Overdue","Unpaid") AND year(posting_date) = '%s' """ % (
                         node.prefered_email, start,end,self.year),as_dict=True)
                     si_amount += flt(node_si[0].total)
-                    frappe.errprint(si_amount)
                     node_closure =frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE candidate_owner = '%s'  AND month(so_confirmed_date) BETWEEN '%s' and '%s' AND collection_status in ("PAID") AND year(so_confirmed_date) ='%s'""" % (
                         node.prefered_email,start,end,self.year),as_dict=True)
                     closure_amount += flt(node_closure[0].charges)
-                    frappe.errprint(closure_amount)
                 ssa = frappe.get_value("Salary Structure Assignment", {'employee': node.name}, ['base'])
                 ft_time = frappe.get_value("Tiips", {'parent': node.name,"quarterly":self.quarterly,"year":self.year}, ['ft_times'])
                 if ssa:
@@ -128,7 +121,6 @@ class TIIP(Document):
 #                            'employee_name': employee_name}, ['base'])
 #     ft_time = frappe.get_value(
 #                 "Tiips", {'parent': name,"quarterly":"1","year":"2020"}, ['ft_times'])
-#     frappe.errprint(ft_time)
 #     if ssa:
 #         if ft_time:
 #             quarter = int(ssa) * int(ft_time)
@@ -157,15 +149,11 @@ class TIIP(Document):
 #     if both[0][0]:
 #         am_dm = both[0][0]
 #     total = int(account_manager) + int(delivery_manager) + int(am_dm)
-#     # frappe.errprint(account_manager)
-#     # frappe.errprint(delivery_manager)
-#     # frappe.errprint(total)
 #     return total
 
 # @frappe.whitelist()
 # def get_bt(employee_name):
 # 	bt =frappe.get_value("Employee",{'employee_name':employee_name})
-# 	frappe.errprint(bt)
 
 # si = 0
             #

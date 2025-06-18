@@ -1,372 +1,213 @@
 import frappe
 from datetime import datetime
 from frappe import _
-from frappe.utils import getdate, get_timespan_date_range,flt,today,nowdate
+from frappe.utils import getdate, get_timespan_date_range,flt,today,nowdate,add_months,fmt_money
 import json
 from datetime import date, timedelta
 import pandas as pd
 
+
 @frappe.whitelist()
-def get_ct_ft():
-    date = datetime.strptime(today(),'%Y-%m-%d')
-    mon = datetime.strftime(date,'%b')
-    year = datetime.strftime(date,'%Y')
-    hr_tp = frappe.db.get_value('Target Manager',{'employee':'TI00003'},'name')
-    hr = frappe.db.get_all('Target Child',{'parent':hr_tp,'month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
-    it_tp = frappe.db.get_value('Target Manager',{'employee':'TI00005'},'name')
-    it = frappe.db.get_all('Target Child',{'parent':'TA-0002','month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
-    td_tp = frappe.db.get_value('Target Manager',{'employee':'TI00002'},'name')
-    td = frappe.db.get_all('Target Child',{'parent':td_tp,'month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
-    fp_tp = frappe.db.get_value('Target Manager',{'employee':'TI00002'},'name')
-    fp = frappe.db.get_all('Target Child',{'parent':fp_tp,'month':mon},['ct','ft','achieved','ct_yta','ft_yta','parent'])
-    return hr,it,td,fp
-
-
-# @frappe.whitelist()
-# def get_sc_value(month=None,year =None):
-#     try :
-#         data = []
-#         add = 0
-#         sr = 0
-#         total_dec = frappe.db.sql("""select sum(total_sc_company_currency) as total from `tabSales Invoice` where month(creation)= '%s' and status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") and year(creation) = '%s' """ %(month,year),as_dict=True)
-#         closure = frappe.db.sql("""select sum(candidate_service_charge) as closure from `tabClosure` where month(so_confirmed_date) = '%s' and so_created = 1 AND YEAR(so_confirmed_date) ='%s'""" % (month,year),as_dict=True)
-#         total= round(flt(total_dec[0].total)+ flt(closure[0].closure))
-#         # get_at_api = frappe.db.sql("""select at_value from `tabTiips` where employee_id = "TI00005" """)
-#         # get_at_sbmk = frappe.db.sql("""select at_value from `tabTiips` where employee_id = "TI00002" """)  
-#         # at_api= flt(get_at_api[0][0])/flt(12)
-#         # at_sbmk = flt(get_at_sbmk[0][0])/flt(12)
-#         # add = flt(at_api)+ flt(at_sbmk) ##R
-#         last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
-#         short_code = ['AS','API','SP','SBMK']
-#         for sc in short_code:
-#             emp = frappe.get_doc("Employee",{'status':'Active','tiip_employee':'1','short_code':sc})
-#             emp_dict = {}
-#             content = []
-#             at_yearly = frappe.get_all("Tiips", {'parent': emp.name}, ['at_value'])[0]
-#             april_month = (datetime.today()).strftime("%Y-04-01")
-#             now = datetime.now()
-#             # today_date = now.strftime("%Y-%m-%d")
-#             if emp.short_code =='API':
-#                 acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from `tabSales Invoice` WHERE services in ("IT-SW","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-
-#             if emp.short_code == 'SBMK':
-#                 acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from `tabSales Invoice` WHERE services ="TFP" AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-              
-#             if emp.short_code == 'SP':
-#                 acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from `tabSales Invoice` WHERE services in ("EMS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-               
-#             if emp.short_code == 'AS':
-#                 acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from `tabSales Invoice` WHERE services not in ("TFP","IT-SW","TGT","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-             
-#             at = at_yearly['at_value']
-#             month_april = datetime.strptime(april_month,"%Y-%m-%d")
-            
-#             today_date = now.strftime("%Y-%m-%d")
-#             today = datetime.strptime(today_date,"%Y-%m-%d")
-            
-#             balance_months = (today.year - month_april.year) * 12 + (today.month - month_april.month)
-#             balance = 12 - balance_months
-            
-#             if acheieved_till_date['total']:
-#                 at_actual = (at - acheieved_till_date['total'])/ balance
-#                 add += at_actual
-#             else:
-#                 at_actual = (at - 0)/ balance
-                
-#                 add += round(at_actual)
-                
-#         get_sr = (flt(total)/flt(add)) *100 ##Q/R*100
-#         sr = (round(get_sr))
-        
-#     except TypeError:
-#         total = 0
-#     data += round(total),round(add),sr
+def get_ct_ft(fiscal_year):
+    from datetime import datetime
+    from frappe.utils import today
+    # Get current date information
+    date = datetime.strptime(today(), '%Y-%m-%d')
+    current_month = datetime.strftime(date, '%b')
     
-#     employee_data = []
-#     short_code = ['AS','API','SP','SBMK']
-#     for sc in short_code:
-#         emp = frappe.get_doc("Employee",{'status':'Active','tiip_employee':'1','short_code':sc})
-#         emp_dict = {}
-#         content = []
-#         at_yearly = frappe.get_all("Tiips", {'parent': emp.name}, ['at_value'])[0]
-#         april_month = (datetime.today()).strftime("%Y-04-01")
-#         # previous_month = frappe.utils.add_months(datetime.today(), -1).strftime("%Y-%m-%d")
-#         last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
-#         # now = datetime.now()
-#         # today_date = now.strftime("%Y-%m-%d")
-#         if emp.short_code =='API':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services in ("IT-SW","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-            
-#         if emp.short_code == 'SBMK':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services ="TFP" AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-            
-#         if emp.short_code == 'SP':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services in ("TGT","EMS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-           
-#         if emp.short_code == 'AS':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services not in ("TFP","IT-SW","TGT","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-         
-#         at = at_yearly['at_value']
-#         month_april = datetime.strptime(april_month,"%Y-%m-%d")
-#         now = datetime.now()
-#         today_date = now.strftime("%Y-%m-%d")
-#         today = datetime.strptime(today_date,"%Y-%m-%d")
-        
-#         balance_months = (today.year - month_april.year) * 12 + (today.month - month_april.month)
-#         balance = 12 - balance_months
-#         if acheieved_till_date['total']:
-#             at_actual = (at - acheieved_till_date['total'])/ balance
-#         else :
-#             at_actual = (at - 0)/ balance
-#         at_monthly = round(at_actual,2)
-     
-#         d = 0
-#         e = 0
-#         service_closure = 0
-#         service_si = 0
-#         total_value = 0
-#         acc_si = []
-#         dev_si = []
-#         both_si = []
-#         services = []
-        
-#         try:
-#             if emp.based_on_value == "Role Based":
-                
-#                 acc_si  = frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE account_manager = '%s' AND delivery_manager != '%s'  AND month(creation) ='%s' AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND YEAR(creation) = '%s'""" % (
-#                     emp.prefered_email,emp.prefered_email,month,year),as_dict=True)
+    # Define quarter months
+    quarters = {
+        'Q1': ['Apr', 'May', 'Jun'],
+        'Q2': ['Jul', 'Aug', 'Sep'],
+        'Q3': ['Oct', 'Nov', 'Dec'],
+        'Q4': ['Jan', 'Feb', 'Mar']
+    }
 
-#                 dev_si = frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE delivery_manager = '%s' AND account_manager != '%s' AND month(creation) ='%s'  AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND YEAR(creation) = '%s'""" % (
-#                     emp.prefered_email,emp.prefered_email,month,year),as_dict=True)
-               
-                
-#                 both_si = frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE delivery_manager = '%s' AND account_manager = '%s' AND month(creation) ='%s' AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND YEAR(creation) = '%s'""" % (
-#                     emp.prefered_email,emp.prefered_email,month,year),as_dict=True)
-               
-#                 acc_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE account_manager = '%s' AND  candidate_owner != '%s' AND month(so_confirmed_date) = '%s' AND so_created = 1 AND YEAR(so_confirmed_date) ='%s'""" % (
-#                     emp.prefered_email,emp.prefered_email,month,year),as_dict=True)
+    # Determine the quarter the current month falls into
+    current_quarter = None
+    for quarter, months in quarters.items():
+        if current_month in months:
+            current_quarter = quarter
+            break
 
-#                 dev_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE candidate_owner = '%s'  AND account_manager != '%s'AND month(so_confirmed_date) = '%s' AND so_created = 1 AND YEAR(so_confirmed_date) ='%s'""" % (
-#                     emp.prefered_email,emp.prefered_email,month,year),as_dict=True)
-                
-#                 total_value =flt(acc_si[0].total )+flt( dev_si[0].total) + flt( both_si[0].total) + flt(acc_closure[0].charges ) + flt(dev_closure[0].charges )
+    # Get all Target Manager documents
+    target_managers = frappe.db.get_all('Target Manager',{"custom_fiscal_year":fiscal_year} ,["*"])  
+    slides = []
 
-#             elif emp.based_on_value == "Service Based":
-#                 services = frappe.get_all("Employee services", {'parent': emp.name}, ['services'])
-                               
-#                 service_list = []
-#                 for s in services:
-#                     service_list.append(s.services)
-#                 str_list = str(service_list).strip('[')
-#                 str_list = str(str_list).strip(']')
-                
-#                 if service_list:
-#                     service_si  = frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services IN (%s) AND month(creation) = '%s' AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND YEAR(creation) = '%s'""" % (
-#                         str_list,month,year),as_dict=True)
-                    
-#                     total_value += flt(service_si[0].total)
-                    
-#                     if set(["REC-I","REC-D"]).intersection(set(service_list)):
-#                         service_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE month(so_confirmed_date) = '%s' AND so_created = 1 AND YEAR(so_confirmed_date) ='%s'""" % 
-#                         (month,year),as_dict=True)
-                        
-#                 total_value = flt(service_si[0].total) + flt(service_closure[0].charges) #C
-                
-#         except TypeError:
-#             closure = 0
-#             s = ''
-#         if total_value and at_monthly:
-#             d = int(total_value) - int(at_monthly) #C-B
-#             e = (int(total_value) /int(at_monthly))*100  #C-B *100
-#         emp_dict['image'] = emp.image
-#         emp_dict['at_monthly'] = round(at_monthly)
-#         emp_dict['total_value'] = round(total_value)
-#         emp_dict['d'] = round(d)
-#         emp_dict['e'] = round(e)
-#         for key, value in emp_dict.items() :
-#             print (key, value)
-#         employee_data.append(emp_dict.copy())
+    # Loop through each Target Manager and fetch child table data
+    for target in target_managers:
+        doc = frappe.get_doc('Target Manager', target['name'])
         
+        fiscal_year = doc.custom_fiscal_year
+        fiscal_year_months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']
+        months_to_include = fiscal_year_months[:fiscal_year_months.index(current_month) + 1]
+        
+        # Initialize variables for YTD and QTD
+        qtd_target_ct = 0  
+        qtd_achieved = 0  
+        ytd_target_ct = 0  
+        ytd_achieved = 0  
+        yta_qtd = 0  
+        yta_ytd = 0  
+        qtd_sr = 0  
+        ytd_sr = 0  
+        revised_tot=0
+        revised_qtd=0
+        yol_sr=0
+        # Fetch child data for current month only
+        child_data = frappe.db.get_all(
+            'Target Child', 
+            {'parent': doc.name, 'month': current_month}, 
+            ['ct', 'achieved', 'ct_yta', 'revised_ct']
+        )
+        
+        child_data1 = frappe.db.get_all(
+            'Target FT Child',
+            {"parent": doc.name, "month": current_month},
+            ["ft", "cr_ft", "f_achieved", "ftyta"]
+        )
+        employee = frappe.get_doc("Employee", doc.employee)  # Fetch employee using the ID from Target Manager
+        if employee.status == "Active":
 
-#     data += employee_data
+            if current_quarter == 'Q3':  # For Quarter 3 (Oct, Nov, Dec)
+                if current_month == 'Oct':
+                    # Add October, November, and December
+                    months_in_quarter = ['Oct', 'Nov', 'Dec']
+                elif current_month == 'Nov':
+                    # Add November and December
+                    months_in_quarter = ['Oct', 'Nov', 'Dec']
+                elif current_month == 'Dec':
+                    # Add December only
+                    months_in_quarter = ['Oct', 'Nov', 'Dec']
+                # For other quarters (Q1, Q2, Q4), you can add similar logic if needed
+            if current_quarter == 'Q1':  # For Quarter 3 (Oct, Nov, Dec)
+                if current_month == 'Apr':
+                    # Add October, November, and December
+                    months_in_quarter = ['Apr', 'May', 'Jun']
+                elif current_month == 'May':
+                    # Add November and December
+                    months_in_quarter = ['Apr', 'May', 'Jun']
+                elif current_month == 'Jun':
+                    # Add December only
+                    months_in_quarter = ['Apr', 'May', 'Jun']
+            if current_quarter == 'Q2':  # For Quarter 3 (Oct, Nov, Dec)
+                if current_month == 'Jul':
+                    # Add October, November, and December
+                    months_in_quarter = ['Jul', 'Aug', 'Sep']
+                elif current_month == 'Aug':
+                    # Add November and December
+                    months_in_quarter = ['Jul', 'Aug', 'Sep']
+                elif current_month == 'Sep':
+                    # Add December only
+                    months_in_quarter = ['Jul', 'Aug', 'Sep']
+            if current_quarter == 'Q4':  # For Quarter 3 (Oct, Nov, Dec)
+                if current_month == 'Jan':
+                    # Add October, November, and December
+                    months_in_quarter = ['Jan', 'Feb', 'Mar']
+                elif current_month == 'Feb':
+                    # Add November and December
+                    months_in_quarter =['Jan', 'Feb', 'Mar']
+                elif current_month == 'Mar':
+                    months_in_quarter =['Jan', 'Feb', 'Mar']
 
-#     return data
 
-# @frappe.whitelist()
-# def get_sc_value_ft(month=None,year =None):
-#     data = []
-#     employee_data = []
-#     short_code = ['AS','API','SP','SBMK']
-#     for sc in short_code:
-#         emp = frappe.get_doc("Employee",{'status':'Active','tiip_employee':'1','short_code':sc})
-#         emp_dict = {}
-#         content = []
-#         ft_yearly = frappe.get_all("Tiips", {'parent': emp.name}, ['ft_value'])[0]
-#         april_month = (datetime.today()).strftime("%Y-04-01")
-#         last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
-#         if emp.short_code =='API':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services in ("IT-SW","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-            
-#         if emp.short_code == 'SBMK':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services ="TFP" AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-           
-#         if emp.short_code == 'SP':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services  in ("TGT","EMS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-           
-#         if emp.short_code == 'AS':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services not in ("TFP","IT-SW","TGT","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-         
-#         ft = ft_yearly['ft_value']
-#         month_april = datetime.strptime(april_month,"%Y-%m-%d")
-#         now = datetime.now()
-#         today_date = now.strftime("%Y-%m-%d")
-#         today = datetime.strptime(today_date,"%Y-%m-%d")
-        
-#         balance_months = (today.year - month_april.year) * 12 + (today.month - month_april.month)
-#         balance = 12 - balance_months
-#         if acheieved_till_date['total']:
-#             ft_actual = (ft - acheieved_till_date['total'])/ balance
-#         else :
-#             ft_actual = (ft - 0)/ balance
-#         ft_monthly = round(ft_actual,2)
-     
-#         d = 0
-#         e = 0
-#         service_closure = 0
-#         service_si = 0
-#         total_value = 0
-#         acc_si = []
-#         dev_si = []
-#         both_si = []
-#         services = []
-        
-#         try:
-#             if emp.based_on_value == "Service Based":
-#                 services = frappe.get_all("Employee services", {'parent': emp.name}, ['services'])
-                               
-#                 service_list = []
-#                 for s in services:
-#                     service_list.append(s.services)
-#                 str_list = str(service_list).strip('[')
-#                 str_list = str(str_list).strip(']')
+            for month in months_in_quarter:
+
+                quarter_data = frappe.db.get_all(
+                    'Target Child', 
+                    {'parent': doc.name, 'month': month}, 
+                    ['ct', 'achieved', 'ct_yta', 'revised_ct']
+                )
+                for data in quarter_data:
+                    # qtd_target_ct += round(data.ct,2) if data.ct else 0
+                    qtd_target_ct += round(data.revised_ct) if data.revised_ct else 0
+                    qtd_achieved += round(data.achieved) if data.achieved else 0
+                    revised_qtd+=round(data.revised_ct) if data.revised_ct else 0
+                    yta_qtd += round(data.ct_yta) if data.ct_yta else 0
+                    if revised_qtd!= 0:
+                        qtd_sr = round(((qtd_achieved / revised_qtd) * 100)) if revised_qtd else 0
+
+            # Loop through fiscal year months and calculate YTD totals
+            for month in months_to_include:
+                ytd_data = frappe.db.get_all(
+                    'Target Child', 
+                    {'parent': doc.name, 'month': month}, 
+                    ['ct', 'achieved', 'ct_yta', 'revised_ct']
+                )
+                for p in ytd_data:
+                    # ytd_target_ct += round(p.ct,2) if p.ct else 0
+                    ytd_target_ct += round(p.revised_ct) if p.revised_ct else 0
+                    ytd_achieved += round(p.achieved) if p.achieved else 0
+                    revised_tot+=round(p.revised_ct) if p.revised_ct else 0
+                    yta_ytd += round(p.ct_yta) if p.ct_yta else 0
+                    if revised_tot != 0:
+                        ytd_sr = round(((ytd_achieved / revised_tot) * 100)) if revised_tot else 0
+            yol_ytd_target_ct = yol_ytd_achieved = yol_revised_tot = yol_yta_ytd = 0
+            for m in fiscal_year_months:
+                # Retrieve data for each month in the YOL calculation
+                yol_data = frappe.db.get_all(
+                    'Target Child', 
+                    {'parent': doc.name, 'month': m}, 
+                    ['ct', 'achieved', 'ct_yta', 'revised_ct']
+                )
                 
-#                 if service_list:
-#                     service_si  = frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services IN (%s) AND month(creation) = '%s' AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND YEAR(creation) = '%s'""" % (
-#                         str_list,month,year),as_dict=True)
-                    
-#                     total_value += flt(service_si[0].total)
-                    
-#                     if set(["REC-I","REC-D"]).intersection(set(service_list)):
-#                         service_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE month(so_confirmed_date) = '%s' AND so_created = 1 AND YEAR(so_confirmed_date) ='%s'""" % 
-#                         (month,year),as_dict=True)
-                        
-#                 total_value = flt(service_si[0].total) + flt(service_closure[0].charges) #C
-                
-#         except TypeError:
-#             closure = 0
-#             s = ''
-#         if total_value and ft_monthly:
-#             d = int(total_value) - int(ft_monthly) #C-B
-#             e = (int(total_value) /int(ft_monthly))*100  #C-B *100
-#         emp_dict['image'] = emp.image
-#         emp_dict['ft_monthly'] = round(ft_monthly)
-#         emp_dict['total_value'] = round(total_value)
-#         emp_dict['d'] = round(d)
-#         emp_dict['e'] = round(e)
-#         for key, value in emp_dict.items() :
-#             print (key, value)
-#         employee_data.append(emp_dict.copy())
-        
-        
+                # Summing up the values to calculate YOL totals
+                for p in yol_data:
+                    yol_ytd_target_ct += round(p.revised_ct or 0)
+                    yol_ytd_achieved += round(p.achieved or 0) if p.achieved else 0
+                    yol_revised_tot += round(p.revised_ct or 0)
+                    yol_yta_ytd += round(p.ct_yta or 0) if p.ct_yta else 0
+                    if yol_revised_tot!=0:
+                        yol_sr = round(((yol_ytd_achieved / yol_revised_tot) * 100)) if yol_revised_tot else 0
+            combined_data = []
+            for i in range(max(len(child_data), len(child_data1))):
+                entry = {}
+                if i < len(child_data):
+                    mtd_sr = round(((child_data[i].achieved / child_data[i].revised_ct) * 100),2) if child_data[i].revised_ct != 0 else 0
+                    entry.update({
+                        'ct': fmt_money(int(child_data[i].ct)) if child_data[i].ct is not None else 0,
+                        'achieved': fmt_money(int(child_data[i].achieved)) if child_data[i].achieved is not None else 0,
+                        'ct_yta': fmt_money(int(child_data[i].ct_yta)) if child_data[i].ct_yta is not None else 0,
+                        'revised_ct': fmt_money(int(child_data[i].revised_ct)) if child_data[i].revised_ct is not None else 0,
+                        'mtd_sr': mtd_sr
+                    })
+                if i < len(child_data1):
+                    entry.update({
+                        'ft': round(child_data1[i].ft, 2) if child_data1[i].ft is not None else 0,
+                        'cr_ft': round(child_data1[i].cr_ft, 2) if child_data1[i].cr_ft is not None else 0,
+                        'f_achieved': round(child_data1[i].f_achieved, 2) if child_data1[i].f_achieved is not None else 0,
+                        'ftyta': round(child_data1[i].ftyta, 2) if child_data1[i].ftyta is not None else 0
+                    })
+                combined_data.append(entry)
 
-#     data += employee_data
-   
-#     return data
-
-# @frappe.whitelist()
-# def get_sc_value_bt(month=None,year =None):
-#     data = []
-#     employee_data = []
-#     short_code = ['AS','API','SP','SBMK']
-#     for sc in short_code:
-#         emp = frappe.get_doc("Employee",{'status':'Active','tiip_employee':'1','short_code':sc})
-#         emp_dict = {}
-#         content = []
-#         bt_yearly = frappe.get_all("Tiips", {'parent': emp.name}, ['bt_value'])[0]
-#         april_month = (datetime.today()).strftime("%Y-04-01")
-#         last_day_of_prev_month = date.today().replace(day=1) - timedelta(days=1)
-#         if emp.short_code =='API':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services in ("IT-SW","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-            
-#         if emp.short_code == 'SBMK':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services ="TFP" AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-           
-#         if emp.short_code == 'SP':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services in ("TGT","EMS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-#         if emp.short_code == 'AS':
-#             acheieved_till_date =frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services not in ("TFP","IT-SW","TGT","IT-IS") AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND creation between '%s' and '%s' """ %(april_month,last_day_of_prev_month),as_dict=True)[0]
-         
-#         bt = bt_yearly['bt_value']
-#         month_april = datetime.strptime(april_month,"%Y-%m-%d")
-#         now = datetime.now()
-#         today_date = now.strftime("%Y-%m-%d")
-#         today = datetime.strptime(today_date,"%Y-%m-%d")
-        
-#         balance_months = (today.year - month_april.year) * 12 + (today.month - month_april.month)
-#         balance = 12 - balance_months
-#         if acheieved_till_date['total']:
-#             bt_actual = (bt - acheieved_till_date['total'])/ balance
-#         else :
-#             bt_actual = (bt - 0)/ balance
-#         bt_monthly = round(bt_actual,2)
-     
-#         d = 0
-#         e = 0
-#         service_closure = 0
-#         service_si = 0
-#         total_value = 0
-#         acc_si = []
-#         dev_si = []
-#         both_si = []
-#         services = []
-        
-#         try:
-#             if emp.based_on_value == "Service Based":
-#                 services = frappe.get_all("Employee services", {'parent': emp.name}, ['services'])
-                               
-#                 service_list = []
-#                 for s in services:
-#                     service_list.append(s.services)
-#                 str_list = str(service_list).strip('[')
-#                 str_list = str(str_list).strip(']')
+                slides.append({
+                    'manager': doc.name,  # Target Manager Document
+                    'data': combined_data,  # Combined data from both child tables
+                    'employee_name': employee.employee_name,
+                    'employee_image': employee.image,
+                    'employee_designation': employee.designation,
+                    'target':doc.target_based_unit,
+                    'fiscal_year': doc.custom_fiscal_year,
+                    'annual_ct':  fmt_money((doc.annual_ct)),
+                    'annual_ft': fmt_money((doc.annual_ft)),
+                    'ytd_target_ct':fmt_money((ytd_target_ct)),
+                    'qtd_target_ct':  fmt_money((qtd_target_ct)),
+                    'qtd_achieved': fmt_money((qtd_achieved)),
+                    'ytd_achieved': fmt_money((ytd_achieved)),
+                    'yta_qtd':fmt_money((yta_qtd)),
+                    'yta_ytd':fmt_money((yta_ytd)),
+                    'ytd_sr':ytd_sr,
+                    'qtd_sr':qtd_sr,
+                    'yol_ytd_target_ct':fmt_money(yol_ytd_target_ct),
+                    'yol_ytd_achieved':fmt_money(yol_ytd_achieved),
+                    'yol_revised_tot':fmt_money(yol_revised_tot),
+                    'yol_yta_ytd':fmt_money(yol_yta_ytd),
+                    'yol_sr':fmt_money(yol_sr)
+                })
                 
-#                 if service_list:
-#                     service_si  = frappe.db.sql("""select sum(total_sc_company_currency) as total from`tabSales Invoice` WHERE services IN (%s) AND month(creation) = '%s' AND status in ("Paid","Overdue","Unpaid","Partly Paid","Draft") AND YEAR(creation) = '%s'""" % (
-#                         str_list,month,year),as_dict=True)
-                    
-#                     total_value += flt(service_si[0].total)
-                    
-#                     if set(["REC-I","REC-D"]).intersection(set(service_list)):
-#                         service_closure = frappe.db.sql("""select sum(candidate_service_charge) as charges from `tabClosure` WHERE month(so_confirmed_date) = '%s' AND so_created = 1 AND YEAR(so_confirmed_date) ='%s'""" % 
-#                         (month,year),as_dict=True)
-                        
-#                 total_value = flt(service_si[0].total) + flt(service_closure[0].charges) #C
-                
-#         except TypeError:
-#             closure = 0
-#             s = ''
-#         if total_value and bt_monthly:
-#             d = int(total_value) - int(bt_monthly) #C-B
-#             e = (int(total_value) /int(bt_monthly))*100  #C-B *100
-#         emp_dict['image'] = emp.image
-#         emp_dict['bt_monthly'] = round(bt_monthly)
-#         emp_dict['total_value'] = round(total_value)
-#         emp_dict['d'] = round(d)
-#         emp_dict['e'] = round(e)
-#         for key, value in emp_dict.items() :
-#             print (key, value)
-#         employee_data.append(emp_dict.copy())
-        
+    return slides
 
-#     data += employee_data
-#     return data
+
+
+
+

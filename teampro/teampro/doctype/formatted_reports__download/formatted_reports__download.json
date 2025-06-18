@@ -1,0 +1,413 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-11-12 10:23:21.370497",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "report_type",
+  "column_break_7evb",
+  "primary_reports",
+  "mr_title",
+  "dm_title",
+  "column_break_tpco",
+  "services_psr",
+  "acc_manager",
+  "section_break_ihvw",
+  "opportunity_owner",
+  "column_break_m7ne",
+  "opp_am",
+  "column_break_cpnc",
+  "opp_service",
+  "section_break_0irn",
+  "customer",
+  "column_break_kcvf",
+  "project",
+  "section_break_ia1f",
+  "so_status",
+  "column_break_nubz",
+  "so_validate",
+  "section_break_ybms",
+  "batch_customer",
+  "column_break_eyok",
+  "batch",
+  "section_break_dccs",
+  "allocated_to",
+  "column_break_dxuq",
+  "todo_type",
+  "section_break_jpyp",
+  "account_manager",
+  "column_break_clzw",
+  "delivery_manager",
+  "column_break_j1rw",
+  "service",
+  "column_break_1lln",
+  "company",
+  "section_break_n40h",
+  "lead__account_manager",
+  "column_break_0rti",
+  "mr_service",
+  "column_break_bd7u",
+  "expected_date",
+  "section_break_tukv",
+  "fiscal_year",
+  "column_break_abyr",
+  "quarter",
+  "column_break_kkzd",
+  "month",
+  "column_break_eutk",
+  "date",
+  "column_break_vgbf",
+  "target_service",
+  "section_break_zyrm",
+  "print",
+  "column_break_hpby",
+  "download"
+ ],
+ "fields": [
+  {
+   "depends_on": "eval:doc.report_type==\"PR: Primary Reports\"",
+   "fieldname": "primary_reports",
+   "fieldtype": "Select",
+   "label": "Report Title",
+   "options": "\nPR:01 \u2013 Opportunity Status Report (OSR)\nPR:02 \u2013 Project Status Report \u2013(PSR - R)\nPR:03 \u2013 Closure Status Report (CSR)\nPR:04 \u2013 Batch Status Report (BSR)\nPR:05 \u2013 To Be Billed - SO Outstanding (TBB)\nPR:06 \u2013 Collection Pending Report \u2013 SI Outstanding (CPR)\nPR.07 \u2013 Target Status Report"
+  },
+  {
+   "fieldname": "print",
+   "fieldtype": "Button",
+   "hidden": 1,
+   "label": "PDF"
+  },
+  {
+   "depends_on": "eval:frappe.session.user =='jothi.m@groupteampro.com'",
+   "fieldname": "download",
+   "fieldtype": "Button",
+   "label": "Excel"
+  },
+  {
+   "depends_on": "eval:doc.mr_title==\"MR:07 \u2013 TODO Status Report\"",
+   "fieldname": "allocated_to",
+   "fieldtype": "Link",
+   "label": "Allocated To",
+   "mandatory_depends_on": "eval:doc.mr_title==\"MR:07 \u2013 TODO Status Report\"",
+   "options": "User"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:05 \u2013 To Be Billed - SO Outstanding (TBB)\" ||doc.primary_reports==\"PR:06 \u2013 Collection Pending Report \u2013 SI Outstanding (CPR)\"",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:05 \u2013 To Be Billed - SO Outstanding (TBB)\" ||doc.primary_reports==\"PR:06 \u2013 Collection Pending Report \u2013 SI Outstanding (CPR)\"",
+   "fieldname": "service",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Services"
+  },
+  {
+   "depends_on": "eval:doc.report_type==\"PR: Primary Reports\" && doc.primary_reports==\"PR:05 \u2013 To Be Billed - SO Outstanding (TBB)\" ||doc.primary_reports==\"PR:06 \u2013 Collection Pending Report \u2013 SI Outstanding (CPR)\"",
+   "fieldname": "account_manager",
+   "fieldtype": "Link",
+   "label": "Account Manager",
+   "options": "User"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:05 \u2013 To Be Billed - SO Outstanding (TBB)\" || doc.primary_reports==\"PR:06 \u2013 Collection Pending Report \u2013 SI Outstanding (CPR)\"",
+   "fieldname": "delivery_manager",
+   "fieldtype": "Link",
+   "label": "Delivery Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "report_type",
+   "fieldtype": "Select",
+   "label": "Report Type",
+   "options": "\nPR: Primary Reports\nMR: Monitoring Report\nDM: Day Monitor"
+  },
+  {
+   "fieldname": "section_break_ihvw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.report_type==\"MR: Monitoring Report\"",
+   "fieldname": "mr_title",
+   "fieldtype": "Select",
+   "label": "Report Title",
+   "options": "\nMR:01 \u2013 Sales Follow-Up Report\nMR:02 \u2013 Customer Follow-Up Report (CFR)\nMR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\nMR:04 \u2013 Batch Check Status Report (BCSR)\nMR:05 \u2013 Closure Detailed Status Report (CDSR)\nMR:06 \u2013 Project Task Issue Status Report (PTISR)\nMR:07 \u2013 TODO Status Report"
+  },
+  {
+   "depends_on": "eval:doc.report_type==\"DM: Day Monitor\"",
+   "fieldname": "dm_title",
+   "fieldtype": "Select",
+   "label": "Report Title",
+   "options": "\nDM:01 \u2013 DPR Vs. DSR : REC\nDM:02 \u2013 DPR Vs. DSR : DND\nDM:03 \u2013 DPR Vs. DSR : BCS\nDM:04 \u2013 DPR Vs. DSR : IT. DV\nDM:05 \u2013 DPR Vs. DSR : IT. CS\nDM:06 \u2013 DPR Vs. DSR : TFP\nDM:07 \u2013 DPR Vs. DSR : R&S (T)\nDM:08 \u2013 DPR Vs. DSR : R&S (D)\nDM:09 \u2013 DPR Vs. DSR : H&A\nDM:10 \u2013 DPR Vs. DSR : F&A"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:01 \u2013 Opportunity Status Report (OSR)\"",
+   "fieldname": "opportunity_owner",
+   "fieldtype": "Link",
+   "label": "Opportunity Owner",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_m7ne",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:01 \u2013 Opportunity Status Report (OSR)\"",
+   "fieldname": "opp_am",
+   "fieldtype": "Link",
+   "label": "Account Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_cpnc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:01 \u2013 Opportunity Status Report (OSR)\"",
+   "fieldname": "opp_service",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Services"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\"||doc.mr_title==\"MR:06 \u2013 Project Task Issue Status Report (PTISR)\"",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\"||doc.mr_title==\"MR:06 \u2013 Project Task Issue Status Report (PTISR)\"",
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "section_break_0irn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_kcvf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_ia1f",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.primary_reports==\"PR:03 \u2013 Closure Status Report (CSR)\"||doc.mr_title==\"MR:05 \u2013 Closure Detailed Status Report (CDSR)\"",
+   "fieldname": "so_status",
+   "fieldtype": "Check",
+   "label": "SO Status"
+  },
+  {
+   "fieldname": "section_break_ybms",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:04 \u2013 Batch Status Report (BSR)\"||doc.mr_title==\"MR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\"||doc.mr_title==\"MR:04 \u2013 Batch Check Status Report (BCSR)\"",
+   "fieldname": "batch_customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "column_break_eyok",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:04 \u2013 Batch Status Report (BSR)\"||doc.mr_title==\"MR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\"||doc.mr_title==\"MR:04 \u2013 Batch Check Status Report (BCSR)\"",
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "label": "Batch",
+   "options": "Batch"
+  },
+  {
+   "fieldname": "section_break_dccs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_clzw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_j1rw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_1lln",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_n40h",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.mr_title==\"MR:01 \u2013 Sales Follow-Up Report\"",
+   "fieldname": "lead__account_manager",
+   "fieldtype": "Link",
+   "label": "Lead / Account Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_0rti",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.mr_title==\"MR:01 \u2013 Sales Follow-Up Report\"",
+   "fieldname": "mr_service",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Services"
+  },
+  {
+   "fieldname": "column_break_bd7u",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.mr_title==\"MR:01 \u2013 Sales Follow-Up Report\"",
+   "fieldname": "expected_date",
+   "fieldtype": "Date",
+   "label": "Expected Date"
+  },
+  {
+   "fieldname": "column_break_dxuq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.mr_title==\"MR:07 \u2013 TODO Status Report\"",
+   "fieldname": "todo_type",
+   "fieldtype": "Data",
+   "label": "ToDo Type"
+  },
+  {
+   "fieldname": "section_break_jpyp",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_hpby",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_zyrm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval:doc.primary_reports==\"PR:03 \u2013 Closure Status Report (CSR)\"||doc.mr_title==\"MR:05 \u2013 Closure Detailed Status Report (CDSR)\"",
+   "description": "If you want both SO status kindly enable this checkbox",
+   "fieldname": "so_validate",
+   "fieldtype": "Check"
+  },
+  {
+   "fieldname": "column_break_nubz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_tpco",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\" ||doc.mr_title==\"MR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\"",
+   "fieldname": "services_psr",
+   "fieldtype": "Link",
+   "label": "Service ",
+   "options": "Services"
+  },
+  {
+   "description": "***Filter Non Mandatory-Current fiscal year***",
+   "fieldname": "section_break_tukv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR.07 \u2013 Target Status Report\"",
+   "fieldname": "acc_manager",
+   "fieldtype": "Link",
+   "label": "Account Manager",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_abyr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR.07 \u2013 Target Status Report\"",
+   "fieldname": "target_service",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Services"
+  },
+  {
+   "fieldname": "column_break_kkzd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR.07 \u2013 Target Status Report\"",
+   "fieldname": "month",
+   "fieldtype": "Select",
+   "label": "Month",
+   "options": "\nApr\nMay\nJun\nJul\nAug\nSep\nOct\nNov\nDec\nJan\nFeb\nMar"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR.07 \u2013 Target Status Report\"",
+   "fieldname": "fiscal_year",
+   "fieldtype": "Link",
+   "label": "Fiscal Year",
+   "options": "Fiscal Year"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR.07 \u2013 Target Status Report\"",
+   "fieldname": "quarter",
+   "fieldtype": "Select",
+   "label": "Quarter",
+   "options": "\nQ1\nQ2\nQ3\nQ4"
+  },
+  {
+   "depends_on": "eval:doc.primary_reports==\"PR.07 \u2013 Target Status Report\"",
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "Date"
+  },
+  {
+   "fieldname": "column_break_7evb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_eutk",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_vgbf",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-06-17 10:17:35.590380",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Formatted Reports  Download",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

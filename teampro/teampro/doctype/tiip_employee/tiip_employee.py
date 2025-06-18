@@ -25,7 +25,6 @@ class TIIPEmployee(Document):
     #         }).save(ignore_permissions=True)
     #     frappe.db.commit()
         get_tiip = frappe.get_value("Tiips", {'parent': self.employee_id}, ['year','ft_value','bt_value','at_value'])
-        # frappe.errprint(get_tiip[0])
         self.append("analytical_section",{
             "year":get_tiip[0],
             "ft":get_tiip[1],
@@ -66,30 +65,24 @@ class TIIPEmployee(Document):
             AND collection_status in ("PAID"))""" 
             % (email,self.from_date,self.to_date,email,self.from_date,self.to_date),as_dict=True)
         elif service == "Service Based":
-            frappe.errprint("service")
             services = frappe.get_all("Employee services",  {'parent': self.employee_id},['services'])
-            frappe.errprint(services)
             # s = services[0].services
             service_list = []
             for s in services:
                 service_list.append(s.services)
             str_list = str(service_list).strip('[')
             str_list = str(str_list).strip(']')
-            # frappe.errprint(str_list)
             if service_list:
                 get_closure = 0
                 get_si = 0
                 # for s in services:
-                # frappe.errprint(s.services)
                 get_si  = frappe.db.sql("""select total_dec,name,total,posting_date,outstanding_amount,customer 
                 from`tabSales Invoice` 
                 WHERE services IN (%s) 
                 AND posting_date BETWEEN '%s' and '%s' 
                 AND status in ("Paid","Overdue","Unpaid") """ % (
                     str_list,self.from_date,self.to_date),as_dict=True)
-                frappe.errprint(get_si)
                 # total_value += flt(service_si[0].total)
-                # frappe.errprint(total_value)
                 if set(["REC-I","REC-D"]).intersection(set(service_list)):
                     get_closure = frappe.db.sql("""select candidate_service_charge,given_name,customer,so_confirmed_date,outstanding_amount,candidate_si
                     from `tabClosure` 
@@ -97,7 +90,6 @@ class TIIPEmployee(Document):
                     AND collection_status in ("PAID")""" 
                     % (self.from_date,self.to_date),as_dict=True)
 
-        # frappe.errprint(get_si[0])
         for get in get_si:
             self.append("sales_invoice",{
                 "si_no": get.name,
@@ -186,21 +178,17 @@ class TIIPEmployee(Document):
             AND collection_status in ("PAID"))""" 
             % (email,value,year,email,value,year),as_dict=True)
         elif service == "Service Based":
-            frappe.errprint("service")
             services = frappe.get_all("Employee services",  {'parent': self.employee_id},['services'])
-            frappe.errprint(services)
             # s = services[0].services
             service_list = []
             for s in services:
                 service_list.append(s.services)
             str_list = str(service_list).strip('[')
             str_list = str(str_list).strip(']')
-            # frappe.errprint(str_list)
             if service_list:
                 get_closure = 0
                 get_si = 0
                 # for s in services:
-                # frappe.errprint(s.services)
                 get_si  = frappe.db.sql("""select total_dec,name,total,posting_date,outstanding_amount,customer 
                 from`tabSales Invoice` 
                 WHERE services IN (%s) 
@@ -208,9 +196,7 @@ class TIIPEmployee(Document):
                 AND year(posting_date) = '%s'
                 AND status in ("Paid","Overdue","Unpaid") """ % (
                     str_list,value,year),as_dict=True)
-                frappe.errprint(get_si)
                 # total_value += flt(service_si[0].total)
-                # frappe.errprint(total_value)
                 if set(["REC-I","REC-D"]).intersection(set(service_list)):
                     get_closure = frappe.db.sql("""select candidate_service_charge,given_name,customer,so_confirmed_date,outstanding_amount,candidate_si
                     from `tabClosure` WHERE
@@ -218,7 +204,6 @@ class TIIPEmployee(Document):
                     AND year(so_confirmed_date) = '%s'
                     AND collection_status in ("PAID")""" 
                     % (value,year),as_dict=True)
-        # frappe.errprint(get_si)
         for get in get_si:
             self.append("sales_invoice",{
                 "si_no": get.name,
@@ -280,22 +265,17 @@ class TIIPEmployee(Document):
             AND collection_status in ("PAID"))""" 
             % (email,start,end,year,email,start,end,year),as_dict=True)
         elif service == "Service Based":
-            frappe.errprint("service")
             services = frappe.get_all("Employee services",  {'parent': self.employee_id},['services'])
-            frappe.errprint(services)
             # s = services[0].services
             service_list = []
             for s in services:
                 service_list.append(s.services)
-                frappe.errprint(service_list)
             str_list = str(service_list).strip('[')
             str_list = str(str_list).strip(']')
-            # frappe.errprint(str_list)
             if service_list:
                 get_closure = 0
                 get_si = 0
                 # for s in services:
-                # frappe.errprint(s.services)
                 get_si  = frappe.db.sql("""select total_dec,name,total,posting_date,outstanding_amount,customer 
                 from`tabSales Invoice` 
                 WHERE services IN (%s) 
@@ -303,19 +283,14 @@ class TIIPEmployee(Document):
                 And year(posting_date) = '%s'
                 AND status in ("Paid","Overdue","Unpaid") """ % (
                     str_list,start,end,year),as_dict=True)
-                frappe.errprint(get_si)
                 # total_value += flt(service_si[0].total)
-                # frappe.errprint(total_value)
-                frappe.errprint(service_list)
                 if set(["REC-I","REC-D"]).intersection(set(service_list)):
-                    frappe.errprint("hiii")
                     get_closure = frappe.db.sql("""select candidate_service_charge,given_name,customer,so_confirmed_date,outstanding_amount,candidate_si
                     from `tabClosure` WHERE
                     month(so_confirmed_date) BETWEEN '%s' and '%s'
                     AND year(so_confirmed_date) = '%s'
                     AND collection_status in ("PAID")""" 
                     % (start,end,year),as_dict=True)
-                    frappe.errprint(get_closure)
         for get in get_si:
             self.append("sales_invoice",{
                 "si_no": get.name,
@@ -372,21 +347,17 @@ class TIIPEmployee(Document):
             AND collection_status in ("PAID"))""" 
             % (email,start,end,year,email,start,end,year),as_dict=True)
         elif service == "Service Based":
-            frappe.errprint("service")
             services = frappe.get_all("Employee services",  {'parent': self.employee_id},['services'])
-            frappe.errprint(services)
             # s = services[0].services
             service_list = []
             for s in services:
                 service_list.append(s.services)
             str_list = str(service_list).strip('[')
             str_list = str(str_list).strip(']')
-            frappe.errprint(str_list)
             if service_list:
                 get_closure = 0
                 get_si = 0
                 # for s in services:
-                # frappe.errprint(s.services)
                 get_si  = frappe.db.sql("""select total_dec,name,total,posting_date,outstanding_amount,customer 
                 from`tabSales Invoice` 
                 WHERE services IN (%s) 
@@ -394,18 +365,14 @@ class TIIPEmployee(Document):
                 And year(posting_date) = '%s'
                 AND status in ("Paid","Overdue","Unpaid") """ % (
                     str_list,start,end,year),as_dict=True)
-                frappe.errprint(get_si)
                 # total_value += flt(service_si[0].total)
-                # frappe.errprint(total_value)
                 if set(["REC-I","REC-D"]).intersection(set(service_list)):
-                    frappe.errprint("hi rec")
                     get_closure = frappe.db.sql("""select candidate_service_charge,given_name,customer,so_confirmed_date,outstanding_amount,candidate_si
                     from `tabClosure` WHERE
                     month(so_confirmed_date) BETWEEN '%s' and '%s'
                     AND year(so_confirmed_date) = '%s'
                     AND collection_status in ("PAID")""" 
                     % (start,end,year),as_dict=True)
-        # frappe.errprint(get_si)
         for get in get_si:
             self.append("sales_invoice",{
                 "si_no": get.name,
@@ -453,37 +420,30 @@ class TIIPEmployee(Document):
             AND collection_status in ("PAID"))""" 
             % (email,self.yearly,email,self.yearly),as_dict=True)
         elif service == "Service Based":
-            frappe.errprint("service")
             services = frappe.get_all("Employee services",  {'parent': self.employee_id},['services'])
-            frappe.errprint(services)
             # s = services[0].services
             service_list = []
             for s in services:
                 service_list.append(s.services)
             str_list = str(service_list).strip('[')
             str_list = str(str_list).strip(']')
-            # frappe.errprint(str_list)
             if service_list:
                 get_closure = 0
                 get_si = 0
                 # for s in services:
-                # frappe.errprint(s.services)
                 get_si  = frappe.db.sql("""select total_dec,name,total,posting_date,outstanding_amount,customer 
                 from`tabSales Invoice` 
                 WHERE services IN (%s) 
                 And year(posting_date) = '%s'
                 AND status in ("Paid","Overdue","Unpaid") """ % (
                     str_list,self.yearly),as_dict=True)
-                frappe.errprint(get_si)
                 # total_value += flt(service_si[0].total)
-                # frappe.errprint(total_value)
                 if set(["REC-I","REC-D"]).intersection(set(service_list)):
                     get_closure = frappe.db.sql("""select candidate_service_charge,given_name,customer,so_confirmed_date,outstanding_amount,candidate_si
                     from `tabClosure` WHERE
                     year(so_confirmed_date) = '%s'
                     AND collection_status in ("PAID")""" 
                     % (self.yearly),as_dict=True)
-        # frappe.errprint(get_si)
         for get in get_si:
             self.append("sales_invoice",{
                 "si_no": get.name,

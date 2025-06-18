@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-03-11 17:38:44.369703",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_lcuf",
+  "report_title",
+  "download"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_lcuf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "report_title",
+   "fieldtype": "Select",
+   "label": "Report Title",
+   "options": "\nconsolidated Check Report\nDaily Status Report\nIssue Report"
+  },
+  {
+   "fieldname": "download",
+   "fieldtype": "Button",
+   "label": "Download"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-03-18 17:33:41.275123",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Reports Dashboard",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
