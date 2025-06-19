@@ -147,6 +147,116 @@ frappe.ui.form.on("REC Week Plan", {
                     }
                 }
             });
+        }
+        else if (frm.doc.options === "DSR") {
+            frappe.call({
+                method: "teampro.teampro.doctype.rec_week_plan.rec_week_plan.get_dsr_collapsible_html",
+                args: {
+                    name: frm.doc.name,
+                    start_date: frm.doc.from_date,
+                    end_date: frm.doc.to_date
+                },
+                callback: function(r) {
+                    if (r.message) {
+                        let data = r.message;
+                        let html = `
+                            <style>
+                                table {
+                                    width: 100%;
+                                    border-collapse: collapse !important;
+                                }
+                                table, th, td {
+                                    border: 1px solid black !important;
+                                }
+                                th {
+                                    background-color:rgb(30, 12, 111) !important;
+                                    color: white !important;
+                                    text-align: center;
+                                    padding: 10px;
+                                }
+                                td {
+                                    padding: 8px;
+                                    text-align: center;
+                                }
+                                .left-align {
+                                    text-align: left !important;
+                                    padding-left: 10px !important;
+                                }
+                                .parent-row {
+                                    cursor: pointer;
+                                    background-color: #e0e0e0;
+                                    font-weight: bold;
+                                }
+                                .child-row {
+                                    background-color: #f9f9f9;
+                                }
+                                .toggle-icon {
+                                    float: right;
+                                    font-weight: bold;
+                                    color: #5E3B63;
+                                }
+                            </style>
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Executive</th>
+                                        <th>Position</th>
+                                        <th>RC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+
+                        let groupIdCounter = 1;
+
+                        Object.keys(data).forEach((exe, idx) => {
+                            let groupId = `group-${groupIdCounter++}`;
+                            let taskList = data[exe];
+                            let totalTasks = taskList.length;
+                            let totalRC = taskList.reduce((sum, row) => sum + (parseFloat(row.rc) || 0), 0);
+                            // html += `
+                            //     <tr class="parent-row" data-group="${groupId}">
+                            //         <td>${idx + 1}</td>
+                            //         <td class="left-align" colspan="3">${exe} <span class="toggle-icon">[+]</span></td>
+                            //     </tr>
+                            // `;
+                            html += `
+                            <tr class="parent-row" data-group="${groupId}">
+                                <td><span class="toggle-icon">[+]</span></td>
+                                <td class="left-align">${exe}</td>
+                               <td>${totalTasks}</td>
+                                <td>${totalRC}</td>
+                            </tr>
+                        `;
+
+
+                            data[exe].forEach(row => {
+                                html += `
+                                    <tr class="child-row ${groupId}" style="display: none;">
+                                        <td></td>
+                                        <td class="left-align">${row.task}</td>
+                                        <td class="left-align">${row.subject}</td>
+                                        <td style="text-align:center">${row.rc}</td>
+                                    </tr>
+                                `;
+                            });
+                        });
+
+                        html += `</tbody></table>`;
+
+                        let $wrapper = frm.fields_dict.dpr.$wrapper;
+                        $wrapper.html(html);
+
+                        $('.parent-row').click(function () {
+                            let groupId = $(this).data('group');
+                            let icon = $(this).find('.toggle-icon');
+                            $(`.${groupId}`).toggle();
+                            icon.text(icon.text() === '[+]' ? '[-]' : '[+]');
+                        });
+                    }
+                }
+            });
         } else {
             frm.fields_dict.dpr.$wrapper.html("");
         }
@@ -194,3 +304,11 @@ frappe.ui.form.on("REC Project Details", {
         allocate_tasks(frm, row.project);
     }
 });
+
+frappe.ui.form.on("Project Details Allocated", {
+    allocate: function (frm, cdt, cdn) {
+        const row = locals[cdt][cdn];
+        allocate_tasks(frm, row.project);
+    }
+});
+

@@ -283,7 +283,7 @@ def get_dsr_collapsible_html(name, start_date=None, end_date=None):
         if start_date <= row_date <= end_date:
             exe_tasks.setdefault(row.exe, []).append({
                 "task": row.task,
-                "subject": "",  # You can fetch subject if needed
+                "subject":row.subject,  # You can fetch subject if needed
                 "rc": row.ac or 0,
                 "from": "DSR"
             })
