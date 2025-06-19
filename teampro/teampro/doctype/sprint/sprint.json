@@ -25,6 +25,8 @@
   "retro",
   "section_break_yjcw",
   "table_cusg",
+  "section_break_r9q0",
+  "retro_summary",
   "assessments_tab",
   "sprint_assessment_section",
   "sprint_assessment"
@@ -149,11 +151,21 @@
    "fieldname": "summary",
    "fieldtype": "HTML",
    "label": "Summary"
+  },
+  {
+   "fieldname": "section_break_r9q0",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "retro_summary",
+   "fieldtype": "Table",
+   "label": "Retro Summary",
+   "options": "Retro summary"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-10 09:27:11.799944",
+ "modified": "2025-06-19 11:56:33.673105",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sprint",

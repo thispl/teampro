@@ -456,7 +456,7 @@ def update_allocated_hrs(doc, method):
         if task.cb:
             cb_at_period_map.setdefault(task.cb, 0)
             cb_at_period_map[task.cb] += task.at_period or 0
-            if task.status in ("Open", "Working"):
+            if task.status in ("Open", "Working","Code Review"):
                 cb_rt_map.setdefault(task.cb, 0)
                 cb_rt_map[task.cb] += task.rt or 0
 

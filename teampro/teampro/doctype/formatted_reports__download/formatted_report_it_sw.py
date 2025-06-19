@@ -132,7 +132,7 @@ def make_xlsx(customer=None, project=None):
                 cell.border = thin_border
                 if col in (1, 2, 3, 4,5):
                     cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-                elif col in (13, 14):
+                elif col in (14, 15):
                     cell.alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
                 else:
                     cell.alignment = alignment

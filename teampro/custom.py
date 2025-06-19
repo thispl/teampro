@@ -832,7 +832,9 @@ def child_table_calc(doc,method):
 @frappe.whitelist()
 def return_detailed_ts(timesheet):
     # Parameterized query for tasks
-    task_query = """
+    tdoc=frappe.get_doc('Timesheet',timesheet)
+    alloc=frappe.db.get_value('Employee',{'name':tdoc.employee},['user_id'])
+    task_query ="""
         SELECT `tabTimesheet Detail`.task,
                `tabTimesheet Detail`.subject,
                `tabTimesheet Detail`.project,
@@ -847,7 +849,42 @@ def return_detailed_ts(timesheet):
         GROUP BY `tabTimesheet Detail`.task
     """
     task = frappe.db.sql(task_query, (timesheet,), as_dict=True)
-    
+    task_list = [t["task"] for t in task]  
+
+    emp = frappe.db.get_value('Timesheet', {'name': timesheet}, 'employee')
+    start_date = frappe.db.get_value('Timesheet', {'name': timesheet}, 'start_date')
+    alloc = frappe.db.get_value('Employee', {'employee': emp}, 'user_id')
+
+    additional_task_query = """
+        SELECT 
+            task.name,
+            task.subject,
+            task.project,
+            task.status
+        FROM `tabTask` task
+        WHERE task.custom_allocated_to = %s
+        AND task.custom_production_date = %s
+        AND task.name NOT IN (
+            SELECT `tabTimesheet Detail`.task
+            FROM `tabTimesheet`
+            LEFT JOIN `tabTimesheet Detail`
+            ON `tabTimesheet`.name = `tabTimesheet Detail`.parent
+            WHERE `tabTimesheet Detail`.task IS NOT NULL
+                AND `tabTimesheet`.name = %s
+        )
+    """
+    additional_tasks = frappe.db.sql(additional_task_query, (alloc, start_date, timesheet), as_dict=True)
+
+    for t in additional_tasks:
+        tstatus=frappe.db.get_all('Task',{'name':t['name']},['status'])
+        task.append({
+            'task': t['name'],
+            'subject': t.get('subject', ''),
+            'project': t.get('project', ''),
+            'hours': 0,
+            'task_status': t.get('status', ''),
+            'description': ''
+        })
     # Parameterized query for meetings
     meeting_query = """
         SELECT `tabTimesheet Detail`.custom_meeting,
@@ -877,7 +914,16 @@ def return_detailed_ts(timesheet):
         GROUP BY `tabTimesheet Detail`.custom_issue
     """
     issue = frappe.db.sql(issue_query, (timesheet,), as_dict=True)
+    # task_list = [t["task"] for t in task]
+    # emp=frappe.db.get_value('Timesheet',{'name':timesheet},['employee'])
+    # sd=frappe.db.get_value('Timesheet',{'name':timesheet},['start_date'])
+    # alloc=frappe.db.get_value('Employee',{'employee':emp},['user_id'])
+    # tasks=frappe.db.get_all('Task',{'custom_allocated_to':alloc,'custom_production_date':sd},['name'])
+    # for t in tasks:
+    #     if t.name not in task_list:
+            
     
+
     return task, meeting, issue
 
 

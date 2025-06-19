@@ -705,12 +705,25 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                         WHERE cs.task=%s AND c.employee=%s AND c.start_date=%s
                     """, (log.task, emp.name, date), as_dict=True)[0].total or 0.0
 
-                    data = {
-                        "id": log.task,
-                        "at_taken": sum_task,
-                        "cb": short_code,
-                        "current_status": status
-                    }
+                    if log.activity_type =="Code Review":
+                        
+                        data = {
+                            "id": log.task,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt":0
+                        }
+                        
+                    else:
+                        
+                        data = {
+                            "id": log.task,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt": frappe.db.get_value("Task",{'name':log.task},['rt'])
+                        }
 
                     if key in existing_task_ids:
                         row = existing_task_ids[key]

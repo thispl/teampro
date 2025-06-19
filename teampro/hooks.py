@@ -169,7 +169,8 @@ doc_events = {
         "validate":"teampro.teampro.doctype.daily_monitor.daily_monitor.update_sprint_avl_time"
 	},
     "Sprint":{
-        "validate":["teampro.teampro.doctype.sprint.sprint.update_sprint_hours","teampro.teampro.doctype.sprint.sprint.update_allocated_hrs","teampro.teampro.doctype.sprint.sprint.update_sprint_status","teampro.teampro.doctype.sprint.sprint.validate_allocate_hrs"]
+        "validate":["teampro.teampro.doctype.sprint.sprint.update_sprint_hours","teampro.teampro.doctype.sprint.sprint.update_allocated_hrs","teampro.teampro.doctype.sprint.sprint.update_sprint_status"],
+        # "validate":["teampro.teampro.doctype.sprint.sprint.validate_allocate_hrs"]
 	},
 	"Candidate": {
 		"on_update": ["teampro.custom.update_task_count"]

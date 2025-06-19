@@ -530,7 +530,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         cell.fill = blue_fill
         if col <= 10:
             cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        elif col == 2:
+        elif cell.column == 2:
             cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
 
     ws.merge_cells(start_row=row_to_fill, start_column=2, end_row=row_to_fill, end_column=4)

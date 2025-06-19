@@ -22,7 +22,17 @@
   "section_break_mkti",
   "task_allocation",
   "allocation_tab",
-  "allocation"
+  "allocation",
+  "section_break_qeoo",
+  "dsr",
+  "monitor_tab",
+  "options",
+  "column_break_qhvs",
+  "from_date",
+  "column_break_lgau",
+  "to_date",
+  "section_break_ugji",
+  "dpr"
  ],
  "fields": [
   {
@@ -114,12 +124,60 @@
    "fieldtype": "Table",
    "label": "Details",
    "options": "Project Details Allocated"
+  },
+  {
+   "fieldname": "monitor_tab",
+   "fieldtype": "Tab Break",
+   "label": "Monitor"
+  },
+  {
+   "fieldname": "options",
+   "fieldtype": "Select",
+   "label": "Options",
+   "options": "\nDPR\nDSR"
+  },
+  {
+   "fieldname": "dpr",
+   "fieldtype": "HTML",
+   "label": "DPR"
+  },
+  {
+   "fieldname": "column_break_qhvs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "column_break_lgau",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date"
+  },
+  {
+   "fieldname": "section_break_ugji",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_qeoo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "dsr",
+   "fieldtype": "Table",
+   "label": "DSR",
+   "options": "Week Plan Details"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-18 18:13:16.771266",
+ "modified": "2025-06-19 12:45:04.784331",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "REC Week Plan",
