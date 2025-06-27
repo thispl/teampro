@@ -1,0 +1,304 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-06-19 11:44:40.801556",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "cb",
+  "biometric_hours",
+  "allocated_count",
+  "spot_count",
+  "total_count",
+  "allocated_completed",
+  "spot_completed",
+  "total_completed",
+  "allocated_pending",
+  "spot_pending",
+  "total_pending",
+  "allocated_not_taken",
+  "spot_not_taken",
+  "total_not_taken",
+  "allocated_hrs",
+  "spot_hrs",
+  "total_hrs",
+  "allocated_completed_hrs",
+  "ac_ts_hrs",
+  "spot_completed_hrs",
+  "sp_ts_hrs",
+  "total_completed_hrs",
+  "total_ts_hrs",
+  "allocated_pending_hrs",
+  "ac_nc_ts",
+  "spot_pending_hrs",
+  "sp_nc_ts",
+  "total_pending_hrs",
+  "tot_nc_ts",
+  "allocated_nt_hrs",
+  "spot_nt_hrs",
+  "total_nt_hrs"
+ ],
+ "fields": [
+  {
+   "allow_on_submit": 1,
+   "fieldname": "cb",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "CB"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "SP#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "OP#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "TP#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_completed",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "SC#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_completed",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "OC#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_completed",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "TC#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_pending",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "SU#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_pending",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "OU#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_pending",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "TU#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_not_taken",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "SN#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_not_taken",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "ON#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_not_taken",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "TN#"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "SHP"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OHP"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THP"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_completed_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "SHC (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_completed_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OHC (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_completed_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THC (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_pending_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "SHU (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_pending_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OHU (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_pending_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THU (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "allocated_nt_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "SHN (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_nt_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OHN (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "total_nt_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THN (RT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "biometric_hours",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Biometric Hours"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "ac_ts_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "SHC (AT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "sp_ts_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OHC (AT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "total_ts_hrs",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THC (AT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "ac_nc_ts",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "SHU (AT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "sp_nc_ts",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "OHU (AT)"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "tot_nc_ts",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "THU (AT)"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2025-06-20 15:23:48.869555",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Retro summary",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

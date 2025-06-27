@@ -7,8 +7,13 @@ from datetime import datetime
 from frappe.utils.data import date_diff, now_datetime, nowdate, today, add_days
 
 class DailyMonitor(Document):
+    
     def validate(self):
         if self.service == "IT-SW" and self.task_type == "OPS":
+            # Update TL Remaks in tasks
+            for task_d in self.task_details:
+                if task_d.tl_remark:
+                    frappe.db.set_value('Task',task_d.id,'custom_tl__remarks',task_d.tl_remark)
             # Step 1: Group RTs by CB
             cb_rt_map = {}
             for row in self.task_details:
@@ -1383,7 +1388,7 @@ def update_sprint_avl_time(doc, method):
 
     for row in doc.task_details:
         if row.cb:
-            grouped[row.cb]["allocated_hours"] += float(row.rt or 0)
+            grouped[row.cb]["allocated_hours"] += float(row.today_rt or 0)
             grouped[row.cb]["at_taken"] += float(row.at_taken or 0)
 
     # Clear and rebuild sprint_avl_time

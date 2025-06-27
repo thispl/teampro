@@ -95,7 +95,7 @@ def dpr_task_mail_it_dev(date,name,service,type,dev_team,sprint):
             grand_total_at=0
             for i in task_data.task_details:
                 cb = i.cb or "Not Set"
-                cb_summary[cb]['rt'] += i.rt or 0
+                cb_summary[cb]['rt'] += i.today_rt or 0
                 cb_summary[cb]['at_taken'] += float(i.at_taken or 0)
             summary = '''
             <table border="1" width="40%" style="border-collapse: collapse; margin-bottom: 10px;">
@@ -712,7 +712,8 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                             "at_taken": sum_task,
                             "cb": short_code,
                             "current_status": status,
-                            "rt":0
+                            "rt":0,
+                            'today_rt':0
                         }
                         
                     else:
@@ -722,7 +723,8 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                             "at_taken": sum_task,
                             "cb": short_code,
                             "current_status": status,
-                            "rt": frappe.db.get_value("Task",{'name':log.task},['rt'])
+                            "rt": frappe.db.get_value("Task",{'name':log.task},['rt']),
+                            'today_rt':frappe.db.get_value("Task",{'name':log.task},['rt'])
                         }
 
                     if key in existing_task_ids:

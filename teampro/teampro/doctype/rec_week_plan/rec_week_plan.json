@@ -26,13 +26,15 @@
   "section_break_qeoo",
   "dsr",
   "monitor_tab",
-  "options",
-  "column_break_qhvs",
   "from_date",
   "column_break_lgau",
   "to_date",
+  "column_break_qbnn",
+  "executive",
   "section_break_ugji",
-  "dpr"
+  "dsr_view",
+  "dpr",
+  "options"
  ],
  "fields": [
   {
@@ -131,8 +133,10 @@
    "label": "Monitor"
   },
   {
+   "default": "DSR",
    "fieldname": "options",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Options",
    "options": "\nDPR\nDSR"
   },
@@ -140,10 +144,6 @@
    "fieldname": "dpr",
    "fieldtype": "HTML",
    "label": "DPR"
-  },
-  {
-   "fieldname": "column_break_qhvs",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "from_date",
@@ -165,19 +165,35 @@
   },
   {
    "fieldname": "section_break_qeoo",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hidden": 1
   },
   {
    "fieldname": "dsr",
    "fieldtype": "Table",
    "label": "DSR",
    "options": "Week Plan Details"
+  },
+  {
+   "fieldname": "column_break_qbnn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "executive",
+   "fieldtype": "Link",
+   "label": "Executive",
+   "options": "User"
+  },
+  {
+   "fieldname": "dsr_view",
+   "fieldtype": "HTML",
+   "label": "DSR View"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-19 12:45:04.784331",
+ "modified": "2025-06-19 17:40:59.026457",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "REC Week Plan",

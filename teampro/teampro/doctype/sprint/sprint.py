@@ -544,3 +544,181 @@ def get_sprint(team):
         },
         "sprint_id" )
     return sprint
+
+
+@frappe.whitelist()
+def get_retro_summary(name):
+    sprint = frappe.get_doc('Sprint', name)
+    original_cb_list = [s.short_code for s in sprint.sprint_avl_time]
+    if not original_cb_list:
+        return []
+    cb_list=[]
+    tl_cb = []
+    non_tl_cb = []
+    for cb in original_cb_list:
+        # sort tl to come first in list
+        has_tl = frappe.db.exists(
+            "Employee",
+            {"short_code": cb, "custom_is_tl": 1}
+        )
+        if has_tl:
+            tl_cb.append(cb)
+        else:
+            non_tl_cb.append(cb)
+
+    cb_list = tl_cb + non_tl_cb
+    result = []
+    # loop cb and create summary for every user
+    for cb in cb_list:
+        user_id = frappe.db.get_value('Employee', {'short_code': cb}, ['user_id'])
+        emp_id = frappe.db.get_value('Employee', {'short_code': cb}, ['name'])
+        filters_base = {
+            'custom_allocated_to': user_id,
+            'custom_sprint': sprint.sprint_id
+        }
+        completed_statuses = ['Pending Review','Client Review','Completed']
+        # Allocated total
+        allocated = frappe.db.count('Task', {**filters_base, 'custom_spot_task': 0})
+        alloc_rt = sum([d.rt for d in frappe.get_all('Task', filters={'custom_allocated_to': user_id,'custom_sprint': sprint.sprint_id,'custom_spot_task': 0}, fields=['rt']) if d.rt])
+        # Spot total
+        spot = frappe.db.count('Task', {**filters_base, 'custom_spot_task': 1})
+        spot_rt = sum([d.rt for d in frappe.get_all('Task', filters={'custom_allocated_to': user_id,'custom_sprint': sprint.sprint_id,'custom_spot_task': 1}, fields=['rt']) if d.rt])
+        # Allocated completed
+        a_comp_filter = {**filters_base, 'custom_spot_task': 0, 'status': ['in', completed_statuses]}
+        a_comp = frappe.db.count('Task', a_comp_filter)
+        a_comp_rt = sum([d.rt for d in frappe.get_all('Task', filters=a_comp_filter, fields=['rt']) if d.rt])
+        # Spot completed
+        s_comp_filter = {**filters_base, 'custom_spot_task': 1, 'status': ['in', completed_statuses]}
+        s_comp = frappe.db.count('Task', s_comp_filter)
+        s_comp_rt = sum([d.rt for d in frappe.get_all('Task', filters=s_comp_filter, fields=['rt']) if d.rt])
+        # Allocated not completed
+        a_not_comp_filter = {**filters_base, 'custom_spot_task': 0, 'status': ['not in', completed_statuses]}
+        a_not_comp = frappe.db.count('Task', a_not_comp_filter)
+        a_not_comp_rt = sum([d.rt for d in frappe.get_all('Task', filters=a_not_comp_filter, fields=['rt']) if d.rt])
+        # Spot not completed
+        s_not_comp_filter = {**filters_base, 'custom_spot_task': 1, 'status': ['not in', completed_statuses]}
+        s_not_comp = frappe.db.count('Task', s_not_comp_filter)
+        s_not_comp_rt = sum([d.rt for d in frappe.get_all('Task', filters=s_not_comp_filter, fields=['rt']) if d.rt])
+        # Get biometric of sprint period
+        bt_diff_total = frappe.db.sql("""
+            SELECT SUM(bt_difference) 
+            FROM `tabAttendance` 
+            WHERE 
+                employee = %s 
+                AND attendance_date BETWEEN %s AND %s 
+                AND status != 'Cancelled'
+        """, (emp_id, sprint.from_date, sprint.to_date))[0][0] or 0
+        # Get time sheet of sprint period      
+        timesheets=frappe.db.get_all('Timesheet',{'start_date':('between',(sprint.from_date,sprint.to_date)),'employee':emp_id,'status':['!=','Cancelled']},['name'])
+        timesheet_tasks=[]
+        allocated_not_taken_tasks = []
+        spot_not_taken_tasks = []
+        seen_ids = set()
+        for time in timesheets:
+            doc = frappe.get_doc('Timesheet', time.name)
+            for d in doc.timesheet_summary:
+                allocated_person=frappe.db.get_value('Task',{'name':d.id},['custom_allocated_to'])
+                if d.id not in seen_ids and allocated_person==user_id:
+                    timesheet_tasks.append(d.id)
+                    seen_ids.add(d.id)
+        #Allocated not taken count
+        allocated_tasks=frappe.db.get_all('Task',filters={'custom_allocated_to': user_id,'custom_sprint': sprint.sprint_id,'custom_spot_task': 0}, fields=['name'])
+        for alloc in allocated_tasks:
+            if alloc.name not in timesheet_tasks:
+                allocated_not_taken_tasks.append(alloc.name)
+            
+        #Spot not taken count
+        spot_tasks=frappe.db.get_all('Task',filters={'custom_allocated_to': user_id,'custom_sprint': sprint.sprint_id,'custom_spot_task': 1}, fields=['name'])
+        for spot_t in spot_tasks:
+            if spot_t.name not in timesheet_tasks:
+                spot_not_taken_tasks.append(spot_t.name)
+            
+        # for allocated_t in timesheets:
+        a_not_taken_rt = sum([d.rt for d in frappe.get_all('Task', filters={'name':['in',allocated_not_taken_tasks]}, fields=['rt']) if d.rt])
+        s_not_taken_rt = sum([d.rt for d in frappe.get_all('Task', filters={'name':['in',spot_not_taken_tasks]}, fields=['rt']) if d.rt])
+        a_nt=len(allocated_not_taken_tasks)
+        s_nt=len(spot_not_taken_tasks)
+        allocated_completed=frappe.db.get_all('Task',{'custom_allocated_to':user_id,'custom_sprint':sprint.sprint_id,'custom_spot_task':0,'status':['in',('Pending Review','Client Review','Completed')]},['name'])
+        allocated_completed_list=[]
+        for a in allocated_completed:
+            allocated_completed_list.append(a.name)
+        
+        alloc_completed_hrs=0
+        for ac in allocated_completed_list:
+            for time_s in timesheets:
+                time_logs = frappe.get_all("Timesheet Detail", filters={'parent': time_s.name, 'task':ac }, fields=['hours','task'])
+                for log in time_logs:
+                    if log['task']==ac:
+                        alloc_completed_hrs+= log['hours']
+        spot_completed=frappe.db.get_all('Task',{'custom_allocated_to':user_id,'custom_sprint':sprint.sprint_id,'custom_spot_task':1,'status':['in',('Pending Review','Client Review','Completed')]},['name'])
+        spot_completed_list=[]
+        for a in spot_completed:
+            spot_completed_list.append(a.name)
+        
+        
+        spot_completed_hrs=0
+        for sc in spot_completed_list:
+            for time_s in timesheets:
+                time_logs = frappe.get_all("Timesheet Detail", filters={'parent': time_s.name, 'task':sc }, fields=['hours','task'])
+                for log in time_logs:
+                    if log['task']==sc:
+                        spot_completed_hrs+= log['hours']
+        allocated_ncompleted=frappe.db.get_all('Task',{'custom_allocated_to':user_id,'custom_sprint':sprint.sprint_id,'custom_spot_task':0,'status':['not in',('Pending Review','Client Review','Completed')]},['name'])
+        allocated_ncompleted_list=[]
+        for a in allocated_ncompleted:
+            allocated_ncompleted_list.append(a.name)
+        alloc_ncompleted_hrs=0
+        for ac in allocated_ncompleted_list:
+            for time_s in timesheets:
+                time_logs = frappe.get_all("Timesheet Detail", filters={'parent': time_s.name, 'task':ac }, fields=['hours','task'])
+                for log in time_logs:
+                    if log['task']==ac:
+                        alloc_ncompleted_hrs+= log['hours']
+        spot_ncompleted=frappe.db.get_all('Task',{'custom_allocated_to':user_id,'custom_sprint':sprint.sprint_id,'custom_spot_task':1,'status':['not in',('Pending Review','Client Review','Completed')]},['name'])
+        spot_ncompleted_list=[]
+        for a in spot_ncompleted:
+            spot_ncompleted_list.append(a.name)
+        spot_ncompleted_hrs=0
+        for sc in spot_ncompleted_list:
+            for time_s in timesheets:
+                time_logs = frappe.get_all("Timesheet Detail", filters={'parent': time_s.name, 'task':sc }, fields=['hours','task'])
+                for log in time_logs:
+                    if log['task']==sc:
+                        spot_ncompleted_hrs+= log['hours']
+        result.append({
+            'cb': cb,
+            'biometric_hours':bt_diff_total,
+            'allocated_count': allocated,
+            'spot_count': spot,
+            'total_count':allocated+spot,
+            'allocated_completed': a_comp,
+            'spot_completed': s_comp,
+            'total_completed':a_comp+s_comp,
+            'allocated_pending': a_not_comp-a_nt,
+            'spot_pending': s_not_comp-s_nt,
+            'total_pending':(a_not_comp-a_nt)+(s_not_comp-s_nt),
+            'allocated_not_taken':a_nt,
+            'spot_not_taken':s_nt,
+            'total_not_taken':a_nt+s_nt,
+            'allocated_hrs':alloc_rt,
+            'spot_hrs':spot_rt,
+            'total_hrs':alloc_rt+spot_rt,
+            'allocated_completed_hrs': a_comp_rt,
+            'spot_completed_hrs': s_comp_rt,
+            'total_completed_hrs':a_comp_rt+s_comp_rt,
+            'allocated_pending_hrs': a_not_comp_rt-a_not_taken_rt,
+            'spot_pending_hrs': s_not_comp_rt-s_not_taken_rt,
+            'total_pending_hrs':(a_not_comp_rt-a_not_taken_rt)+(s_not_comp_rt-s_not_taken_rt),
+            'allocated_nt_hrs':a_not_taken_rt,
+            'spot_nt_hrs':s_not_taken_rt,
+            'total_nt_hrs':a_not_taken_rt+s_not_taken_rt,
+            'ac_ts_hrs':alloc_completed_hrs,
+            'sp_ts_hrs':spot_completed_hrs,
+            'total_ts_hrs':alloc_completed_hrs+spot_completed_hrs,
+            'ac_nc_ts':alloc_ncompleted_hrs,
+            'sp_nc_ts':spot_ncompleted_hrs,
+            'tot_nc_ts':alloc_ncompleted_hrs+spot_ncompleted_hrs
+        })
+
+    return result
+

@@ -211,3 +211,138 @@ def get_available_balance(item_code,warehouse):
 def update_vm_status(doc,method):
     if doc.custom_vm_stock_register:
         frappe.db.set_value("VM Stock Register",doc.custom_vm_stock_register,"status","Schedule")
+
+import frappe
+import openpyxl
+from openpyxl.styles import Alignment, Border, Side, PatternFill, Font
+from frappe.utils.response import build_response
+from io import BytesIO
+
+@frappe.whitelist()
+def download_stock_details(docname=None):
+    if not docname:
+        frappe.throw("VM Stock Register document name is required")
+
+    doc = frappe.get_doc("VM Stock Register", docname)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Stock Register"
+
+    slot_fields = {
+        'A': 'slot_a',
+        'B': 'slot_b',
+        'C': 'slot_c',
+        'D': 'slot_d',
+        'E': 'slot_e',
+        'F': 'slot_f',  # Optional
+    }
+
+    # Styles
+    center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    border = Border(
+        left=Side(border_style="thin", color="000000"),
+        right=Side(border_style="thin", color="000000"),
+        top=Side(border_style="thin", color="000000"),
+        bottom=Side(border_style="thin", color="000000"),
+    )
+    header_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")
+    section_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")  # Light green
+    total_fill = PatternFill(start_color="D9D9D9", end_color="D9D9D9", fill_type="solid")   # Light yellow
+
+    # 🎯 Add heading
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=12)
+    heading_cell = ws.cell(row=1, column=1, value="VM Stock Details")
+    heading_cell.alignment = center
+    heading_cell.font = Font(size=14, bold=True)
+
+    row_index = 3  # Start table content from row 3
+    section_totals = []
+
+    for section, fieldname in slot_fields.items():
+        rows = getattr(doc, fieldname)
+        if not rows:
+            continue
+
+        slot_ids = [f"{section} x {i}" for i in range(1, 11)]
+        data_map = {r.slot_id.strip(): r for r in rows if r.slot_id}
+
+        # Merge and style section letter (A, B...)
+        ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index + 3, end_column=1)
+        cell = ws.cell(row=row_index, column=1, value=section)
+        cell.alignment = center
+        cell.border = border
+        cell.fill = section_fill
+
+        # Row 1: Slot headers
+        for idx, sid in enumerate(slot_ids):
+            cell = ws.cell(row=row_index, column=2 + idx, value=sid)
+            cell.alignment = center
+            cell.border = border
+            cell.fill = header_fill
+        cell = ws.cell(row=row_index, column=12, value="Total")
+        cell.alignment = center
+        cell.border = border
+        cell.fill = header_fill
+        row_index += 1
+
+        # Row 2: Item names
+        for idx, sid in enumerate(slot_ids):
+            item = data_map.get(sid).item_name if data_map.get(sid) else ""
+            cell = ws.cell(row=row_index, column=2 + idx, value=item)
+            cell.alignment = center
+            cell.border = border
+        ws.cell(row=row_index, column=12).border = border
+        row_index += 1
+
+        # Row 3: Quantities
+        total = 0
+        for idx, sid in enumerate(slot_ids):
+            qty = float(data_map.get(sid).new_stock_qty or 0) if data_map.get(sid) else 0
+            total += qty
+            cell = ws.cell(row=row_index, column=2 + idx, value=qty)
+            cell.alignment = center
+            cell.border = border
+        cell = ws.cell(row=row_index, column=12, value=total)
+        cell.alignment = center
+        cell.border = border
+        section_totals.append(total)
+        row_index += 1
+
+        # Row 4: UOMs
+        for idx, sid in enumerate(slot_ids):
+            uom = data_map.get(sid).new_stockuom if data_map.get(sid) else ""
+            cell = ws.cell(row=row_index, column=2 + idx, value=uom or "")
+            cell.alignment = center
+            cell.border = border
+        ws.cell(row=row_index, column=12).border = border
+        row_index += 1
+
+    # 🟨 Grand Total row
+    ws.merge_cells(start_row=row_index, start_column=1, end_row=row_index, end_column=11)
+    for col in range(1, 12):
+        cell = ws.cell(row=row_index, column=col)
+        cell.border = border
+        cell.fill = total_fill
+        cell.alignment = center
+    ws.cell(row=row_index, column=1, value="Grand Total")
+
+    grand_total_cell = ws.cell(row=row_index, column=12, value=sum(section_totals))
+    grand_total_cell.alignment = center
+    grand_total_cell.fill = total_fill
+    grand_total_cell.border = border
+
+    # Column width
+    for col in range(1, 13):
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 14
+
+    # Download response
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    frappe.response["filename"] = f"Stock Register - {docname}.xlsx"
+    frappe.response["filecontent"] = output.getvalue()
+    frappe.response["type"] = "binary"
+    frappe.response["doctype"] = None
+    return build_response("download")

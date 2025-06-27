@@ -158,6 +158,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "retro_summary",
    "fieldtype": "Table",
    "label": "Retro Summary",
@@ -171,7 +172,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-19 14:32:59.561712",
+ "modified": "2025-06-19 18:27:44.772892",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sprint",

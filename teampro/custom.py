@@ -11487,7 +11487,10 @@ def get_so_item_details(doc,method):
                 "custom_per_2p",
                 "custom_per_3p",
                 "custom_wrd_uom",
-                "custom_wrd_rate"
+                "custom_wrd_rate",
+                "custom_mfg_on",
+                "custom_name_print",
+                "custom_wrd_item_name"
             ],
             as_dict=True
         )
@@ -11503,6 +11506,9 @@ def get_so_item_details(doc,method):
             item.custom_per_3p = so_item.custom_per_3p
             item.custom_wrd_uom = so_item.custom_wrd_uom
             item.custom_wrd_rate = so_item.custom_wrd_rate
+            item.custom_mfg_on=so_item.custom_mfg_on
+            item.custom_name_print=so_item.custom_name_print
+            item.custom_wrd_item_name=so_item.custom_wrd_item_name
 
     # Save updated child table values
     doc.save(ignore_permissions=True)

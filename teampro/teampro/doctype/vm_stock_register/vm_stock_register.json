@@ -12,6 +12,7 @@
   "delivery_date",
   "manufactured_date",
   "status",
+  "total_covers",
   "column_break_dxwg",
   "posting_date",
   "total_new_stock_qty",
@@ -24,18 +25,24 @@
   "section_break_mxcr",
   "amended_from",
   "column_break_bxbr",
+  "slot_a_total_gty",
   "a_section",
   "slot_a",
   "tab_2_tab",
   "slot_b",
+  "slot_b_total_qty",
   "c_tab",
   "slot_c",
+  "slot_c_total_qty",
   "d_tab",
   "slot_d",
+  "slot_d_total_qty",
   "e_tab",
   "slot_e",
+  "slot_e_total_qty",
   "rack_f_tab",
-  "slot_f"
+  "slot_f",
+  "slot_f_total_qty"
  ],
  "fields": [
   {
@@ -207,12 +214,58 @@
    "fieldtype": "Attach",
    "label": "GRN Received",
    "read_only": 1
+  },
+  {
+   "fieldname": "slot_a_total_gty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot A Total Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "slot_b_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot B Total Qty"
+  },
+  {
+   "fieldname": "slot_c_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot C Total Qty"
+  },
+  {
+   "fieldname": "slot_d_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot D Total Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "slot_e_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot E Total Qty"
+  },
+  {
+   "fieldname": "slot_f_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot F Total Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_covers",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Total Covers"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-17 19:48:11.809216",
+ "make_attachments_public": 1,
+ "modified": "2025-06-19 18:54:43.866571",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "VM Stock Register",

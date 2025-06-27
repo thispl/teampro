@@ -2138,7 +2138,7 @@ def get_packed_dn_summary_html():
         html += f'<td style="border: 1px solid #ccc;text-align:left">Precision-Employee</td>'
         html += f'<td style="border: 1px solid #ccc;">{formatdate(register.delivery_date) if register.delivery_date else ""}</td>'
         html += f'<td style="text-align:right; border: 1px solid #ccc;">{register.total_new_stock_qty}</td>'
-        html += f'<td style="text-align:right; border: 1px solid #ccc;"></td>'
+        html += f'<td style="text-align:right; border: 1px solid #ccc;">{float(register.total_covers or 0):.2f}</td>'
         html += '</tr>'
         grand_total_qty += register.total_new_stock_qty
     if not packed_dns and not stock_entry:
@@ -2247,9 +2247,10 @@ def get_packed_dn_summary_dispatched_html():
         html += f'<td style="border: 1px solid #ccc;text-align:left">Precision-Employee</td>'
         html += f'<td style="border: 1px solid #ccc;">{formatdate(register.delivery_date) if register.delivery_date else ""}</td>'
         html += f'<td style="text-align:right; border: 1px solid #ccc;">{register.total_new_stock_qty}</td>'
-        html += f'<td style="text-align:right; border: 1px solid #ccc;"></td>'
+        html += f'<td style="text-align:right; border: 1px solid #ccc;">{float(register.total_covers or 0):.2f}</td>'
         html += '</tr>'
         grand_total_qty += register.total_new_stock_qty
+        grand_total_covers += register.total_covers
     if not packed_dns and not stock_entry:
         html += '<tr><td colspan="6" style="text-align:center; border: 1px solid #ccc;">Nothing to show</td></tr>'
         html += '</tbody></table></div>'
@@ -2595,10 +2596,15 @@ def get_tfp_plan_html_plan_update_new():
             total_2p += flt(item.custom_2nd_packing)
             total_bag += flt(item.custom_bag)
             total_box += flt(item.custom_box)
-
-            primary = frappe.db.get_value("Item", item.custom_cover_type, "item_name") or ''
-            secondary = frappe.db.get_value("Item", item.custom_packing_type, "item_name") or ''
-            tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
+            primary=''
+            secondary=''
+            tertiary=''
+            if item.custom_cover_type:
+                primary = frappe.db.get_value("Item", item.custom_cover_type, "item_name") or ''
+            if item.custom_packing_type:
+                secondary = frappe.db.get_value("Item", item.custom_packing_type, "item_name") or ''
+            if item.custom_tertiary_packingbox:
+                tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
 
             cr_stock = frappe.db.get_value("Bin", {
                 "item_code": item.item_code,
@@ -2657,14 +2663,35 @@ def get_tfp_plan_html_plan_update_new():
         grand_total_bag += total_bag
         grand_total_box += total_box
         s_no += 1
-    stock_entry=frappe.db.get_all("Stock Entry",{"custom_vm_stock_register":("!=",""),"docstatus":0},["name","custom_vm_stock_register"])
+    stock_entry=frappe.db.get_all("Stock Entry",{"custom_vm_stock_register":("!=",""),"docstatus":0,"stock_entry_type":"Material Transfer"},["name","custom_vm_stock_register"])
     slot_tables = ["slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"]
 
     for i in stock_entry:
         if not i.custom_vm_stock_register:
             continue
         register = frappe.get_doc("VM Stock Register", i.custom_vm_stock_register)
-        
+        vm_items = [item for table in slot_tables for item in register.get(table)]
+        show_submit = all(
+            flt(item.stock_qty or 0) <= (frappe.db.get_value("Bin", {"item_code": item.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0)
+            for item in vm_items if item.item_code
+        )
+
+        # vm_button_html = f'''
+        #     <button class="submit-stock-btn"
+        #         data-vm-reg="{register.name}"
+        #         style="background-color: #f5f5f5; border: none; outline: none; box-shadow: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: {'green' if show_submit else 'red'};">
+        #         {"Submit Stock" if show_submit else "Create MR"}
+        #     </button>
+        # '''
+        vm_button_html = f'''
+            <button class="{"submit-stock-btn" if show_submit else "create-mr-vm-batch-btn"}"
+                data-vm-reg="{register.name}"
+                style="background-color: #f5f5f5; border: none; outline: none; box-shadow: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: {'green' if show_submit else 'red'};">
+                {"Submit Stock" if show_submit else "Create MR"}
+            </button>
+        '''
+
+
         html += f'''
         <tr style="font-weight:bold; background-color:#f2f2f2;">
             <td colspan="1" style="text-align:left;"> {s_no}</td>
@@ -2673,8 +2700,8 @@ def get_tfp_plan_html_plan_update_new():
             <td colspan="3" style="text-align:left;">Precision-Employee</td>
             <td colspan="1" style="text-align:center;">{formatdate(register.packing_date) if register.packing_date else ""}</td>
             <td colspan="1" style="text-align:center;">{formatdate(register.delivery_date) if register.delivery_date else ""}</td>
-            <td colspan="1" style="text-align:center;"></td>
-            <td colspan="2" style="text-align:center;"></td>
+            <td colspan="1" style="text-align:center;">{float(register.total_new_stock_qty):.2f}</td>
+            <td colspan="2" style="text-align:center;">{vm_button_html}</td>
         </tr>
         <tr class="details-row sos-{register.name}" style="display:none; background-color: #d9e1f2; font-weight: bold;">
             <td style="text-align:center;">Item</td>
@@ -2697,7 +2724,6 @@ def get_tfp_plan_html_plan_update_new():
                     "item_code": item.item_code,
                     "warehouse": "Stores - TFP"
                 }, "actual_qty") or 0
-
                 stock_status = '<span style="color: green; font-weight: bold;">In Stock</span>' \
                     if flt(item.stock_qty) <= cr_stock else \
                     '<span style="color: red; font-weight: bold;">Out of Stock</span>'
@@ -2715,6 +2741,7 @@ def get_tfp_plan_html_plan_update_new():
                 balance_qty = flt(item.new_stock_qty or 0)
                 if item.item_code:
                     total_vm_qty+= flt(item.new_stock_qty)
+                    grand_total_qty += total_vm_qty
                     total_vm_stock+= flt(item.stock_qty)
                     html += f'''
                     <tr class="details-row sos-{register.name}" style="display:none;">
@@ -2791,6 +2818,39 @@ def get_tfp_plan_html_plan_update_new():
                 }});
             }});
         }});
+        document.querySelectorAll(".submit-stock-btn").forEach(btn => {{
+            btn.addEventListener("click", function () {{
+                const vm_stock_reg = this.dataset.vmReg;
+                frappe.call({{
+                    method: "teampro.teampro.page.finance_details.tfp_dashboard.submit_stock_entry_from_vm_register",
+                    args: {{ vm_stock_register: vm_stock_reg }},
+                    callback: function (r) {{
+                        if (!r.exc) {{
+                            frappe.msgprint("Stock Entry submitted: " + r.message);
+                        }} else {{
+                            frappe.msgprint("Failed to submit stock entry.");
+                        }}
+                    }}
+                }});
+            }});
+        }});
+        document.querySelectorAll(".create-mr-vm-batch-btn").forEach(btn => {{
+            btn.addEventListener("click", function () {{
+                const vm_stock_reg = this.dataset.vmReg;
+                frappe.call({{
+                    method: "teampro.teampro.page.finance_details.tfp_dashboard.create_mr_from_vm_item",
+                    args: {{ vm_stock_register: vm_stock_reg }},
+                    callback: function (r) {{
+                        if (!r.exc) {{
+                            frappe.msgprint("Material Request created: " + r.message);
+                        }} else {{
+                            frappe.msgprint("Failed to create MR.");
+                        }}
+                    }}
+                }});
+            }});
+        }});
+
     </script>
     '''
     
@@ -2962,6 +3022,7 @@ def get_tfp_plan_html_schedule_opertaions_new():
     slot_tables = ["slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"]
 
     for i in stock_entry:
+        stock=frappe.db.get_value("Stock Entry",{"docstatus":1,"custom_vm_stock_register":i.name},["name"])
         total_vm_qty=total_vm_stock=0
         if not i.name:
             continue
@@ -2975,8 +3036,9 @@ def get_tfp_plan_html_schedule_opertaions_new():
             <td colspan="3" style="text-align:left;">Precision-Employee</td>
             <td colspan="1" style="text-align:center;">{formatdate(register.packing_date) if register.packing_date else ""}</td>
             <td colspan="1" style="text-align:center;">{formatdate(register.delivery_date) if register.delivery_date else ""}</td>
-            <td colspan="1" style="text-align:center;"></td>
-            <td colspan="2" style="text-align:center;"></td>
+            <td colspan="1" style="text-align:center;">{float(register.total_new_stock_qty):.2f}</td>
+            <td colspan="2" style="text-align:center;"><a href="/app/stock-entry/{ stock }" target="_blank">{ stock }</a></td>
+            
         </tr>
         <tr class="details-row dos-{register.name}" style="display:none; background-color: #d9e1f2; font-weight: bold;">
             <td style="text-align:center;">Item</td>
@@ -3381,3 +3443,423 @@ def get_tfp_plan_html_plan_update_stock():
     
 
     return html
+
+@frappe.whitelist()
+def get_tfp_plan_html_vm():
+    from frappe.utils import formatdate, flt
+
+    headers = ["Sr", "SO ID", "PRT", "Customer Name", "Packing", "Delivery"]
+
+    html = '''
+    <div class="tfp-table-wrapper" style="max-height: 600px; overflow: auto; display: block; border: 1px solid #ccc;">
+    <style>
+        .tfp-table-wrapper td, .tfp-table-wrapper th {
+            padding: 6px;
+            vertical-align: middle;
+            border: 1px solid #ccc;
+        }
+    </style>
+    <table class="table table-bordered" style="border-collapse: collapse; width: 100%; table-layout: auto;">
+    '''
+    html += f''' <tr style="background-color: #002060; color: white;">
+            <th colspan="1">Sr</th>
+            <th colspan="3">SO</th>
+            <th colspan="1">PRT</th>
+            <th colspan="3">Customer</th>
+            <th colspan="1">Packing Date</th>
+            <th colspan="1">Delivery Date</th>
+            <th colspan="1">Balance Qty</th>
+            <th colspan="2">Action</th>
+        </tr>'''
+    
+    html += '</tr></thead><tbody>'
+
+    s_no = 1
+    grand_total_qty = 0
+    grand_total_stock_qty = 0
+    grand_total_covers = 0
+    grand_total_2p = 0
+    grand_total_bag = 0
+    grand_total_box = 0
+    so_list = frappe.db.get_all("Sales Order", {
+        "service": "TFP",
+        "status": "To Deliver and Bill"
+    }, ["name", "customer", "custom_packing_on", "delivery_date","per_delivered","custom_priority"], order_by="custom_packing_on asc")
+
+    if not so_list:
+        html += '<tr><td colspan="6" style="text-align:center;">Nothing to show</td></tr>'
+        html += '</tbody></table></div>'
+        return html
+
+    for so in so_list:
+        balance_qty=0
+        items = frappe.db.get_all("Sales Order Item", {"parent": so.name}, [
+            "item_code", "item_name", "qty", "uom", "stock_qty", "stock_uom", "custom_cover_type", "mrp",
+            "custom_mfg_on", "custom_covers", "custom_packing_type", "custom_per_2p",
+            "custom_2nd_packing", "custom_name_print", "custom_tertiary_packingbox", "custom_bag", "custom_box",
+            "custom_wrd_uom", "custom_wrd_rate", "custom_packing_on","delivered_qty"
+        ])
+        show_dn = all(
+            flt(it.stock_qty) <= (frappe.db.get_value("Bin", {"item_code": it.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0)
+            for it in items
+        )
+        for i in items:
+            item_qty = flt(i.qty or 0)
+            delivered = flt(i.delivered_qty or 0)
+            item_balanced_qty = item_qty - delivered
+            balance_qty += item_balanced_qty
+            
+
+        button_html = f'''
+    <button class="action-btn {'create-dn-btn' if show_dn else 'create-mr-btn'}" data-so="{so.name}"
+        style="background-color: #f5f5f5 ; border: none; outline: none; box-shadow: none; padding: 5px 10px; border-radius: 5px; cursor: pointer;color: {'green' if show_dn else 'red'};">
+        {"Create DN" if show_dn else "Create MR"}
+    </button>
+'''
+
+
+        html += f'''
+        <tr style="font-weight:bold; background-color:#f2f2f2;">
+            <td colspan="1" style="text-align:left;"> {s_no}</td>
+            <td colspan="3" style="text-align:left;"><button class="toggle-btn" data-sos="{so.name}" style="background:none; border:none; font-weight:bold; cursor:pointer;">+</button>{so.name}</td>
+            <td colspan="1" style="text-align:center">{so.custom_priority or ""}</td>
+            <td colspan="3" style="text-align:left;">{so.customer}</td>
+            <td colspan="1" style="text-align:center;">{formatdate(so.custom_packing_on)}</td>
+            <td colspan="1" style="text-align:center;">{formatdate(so.delivery_date)}</td>
+            <td colspan="1" style="text-align:center;">{float(balance_qty):.2f}</td>
+            <td colspan="2" style="text-align:center;">{button_html}</td>
+        </tr>
+        <tr class="details-row sos-{so.name}" style="display:none; background-color: #d9e1f2; font-weight: bold;">
+            <td style="text-align:center;">Item</td>
+            <td style="text-align:center;">Qty</td>
+            <td style="text-align:center;">UOM</td>
+            <td style="text-align:center;">Stock Qty</td>
+            <td style="text-align:center;background-color: #C00000; color: white;">CR. Stock</td>
+            <td style="text-align:center;background-color: #C00000; color: white;">Stock Status</td>
+            <td style="text-align:center;">UOM</td>
+            <td style="text-align:center;">MRP</td>
+            <td style="text-align:center;">Packing Details</td>
+            <td style="text-align:center;" colspan="1">WRD Details</td>
+            <td style="text-align:center;" colspan="1">Balance Qty</td>
+            <td style="text-align:center;" colspan="1">Name Details</td>
+            
+        </tr>
+        '''
+
+
+        total_qty = total_stock_qty = total_covers = total_2p = total_bag = total_box = total_vm_qty=total_vm_stock=0
+        for item in items:
+            total_qty += flt(item.qty)
+            total_stock_qty += flt(item.stock_qty)
+            total_covers += flt(item.custom_covers)
+            total_2p += flt(item.custom_2nd_packing)
+            total_bag += flt(item.custom_bag)
+            total_box += flt(item.custom_box)
+            primary=''
+            secondary=''
+            tertiary=''
+            if item.custom_cover_type:
+                primary = frappe.db.get_value("Item", item.custom_cover_type, "item_name") or ''
+            if item.custom_packing_type:
+                secondary = frappe.db.get_value("Item", item.custom_packing_type, "item_name") or ''
+            if item.custom_tertiary_packingbox:
+                tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
+
+            cr_stock = frappe.db.get_value("Bin", {
+                "item_code": item.item_code,
+                "warehouse": "Stores - TFP"
+            }, "actual_qty") or 0
+
+            stock_status = '<span style="color: green; font-weight: bold;">In Stock</span>' \
+                if flt(item.stock_qty) <= cr_stock else \
+                '<span style="color: red; font-weight: bold;">Out of Stock</span>'
+            if item.custom_wrd_rate:
+                item_rate=f"{float(item.custom_wrd_rate):.2f}"
+            else:
+                item_rate=''
+            if (item.qty - (item.delivered_qty or 0)) > 0:
+                item_balance_qty = flt(item.qty - (item.delivered_qty or 0))
+
+                html += f'''
+                <tr class="details-row sos-{so.name}" style="display:none;">
+                    <td style="text-align:left;">{item.item_name}</td>
+                    <td style="text-align:center;">{item.qty}</td>
+                    <td style="text-align:center;">{item.uom}</td>
+                    <td style="text-align:center;">{item.stock_qty}</td>
+                    <td style="text-align:center;">{cr_stock}</td>
+                    <td style="text-align:center;">{stock_status}</td>
+                    <td style="text-align:center;">{item.stock_uom}</td>
+                    <td style="text-align:right;">{item.mrp}</td>
+                    <td style="text-align:left;">(C): {primary or "None"}: {item.custom_covers or "0"}<br>(B): {secondary or "None"}: {item.custom_bag or "0"}<br>(BX): {tertiary or "None"}: {item.custom_box or "0"}</td>
+                    <td style="text-align:left;" colspan="1">(W): {item.custom_wrd_uom or ""}<br>(R): {item_rate or ""}<br>(D): {formatdate(item.custom_mfg_on) if item.custom_mfg_on else ""}</td>
+                    <td style="text-align:center;" colspan="1">{item_balance_qty:.2f}</td>
+                    <td style="text-align:center;" colspan="1">{item.custom_name_print or ""}</td>
+                    
+                </tr>
+                '''
+
+        go_status = "CREATE DN" if all(
+            flt(it.stock_qty) <= (frappe.db.get_value("Bin", {"item_code": it.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0)
+            for it in items
+        ) else "CREATE MR"
+
+        html += f'''
+        <tr class="details-row sos-{so.name}" style="display:none; font-weight:bold; background-color: #d9e1f2;">
+        <td colspan="1" style="text-align:center; border: 1px solid #ccc;">Total</td>
+                <td style="text-align:center; border: 1px solid #ccc;">{total_qty}</td>
+                <td></td>
+                <td style="text-align:center; border: 1px solid #ccc;">{total_stock_qty}</td>
+                <td colspan="2" style="text-align:center; border: 1px solid #ccc;vertical-align: middle;">{go_status}</td>
+                <td></td>
+            <td colspan="10" style="text-align:right;"></td>
+        </tr>
+        '''
+
+        grand_total_qty += total_qty
+        grand_total_stock_qty += total_stock_qty
+        grand_total_covers += total_covers
+        grand_total_2p += total_2p
+        grand_total_bag += total_bag
+        grand_total_box += total_box
+        s_no += 1
+    stock_entry = frappe.db.get_all("Stock Entry", {
+        "custom_vm_stock_register": ("!=", ""),
+        "docstatus": 0,
+        "stock_entry_type": "Material Transfer"
+    }, ["name", "custom_vm_stock_register"])
+
+    slot_tables = ["slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"]
+
+    for i in stock_entry:
+        if not i.custom_vm_stock_register:
+            continue
+        register = frappe.get_doc("VM Stock Register", i.custom_vm_stock_register)
+
+        # Check if all VM items are in stock
+        vm_items = [item for table in slot_tables for item in register.get(table)]
+        show_submit = all(
+            flt(item.stock_qty or 0) <= (frappe.db.get_value("Bin", {"item_code": item.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0)
+            for item in vm_items if item.item_code
+        )
+
+        vm_button_html = f'''
+            <button class="vm-create-mr-btn"
+                data-vm-reg="{register.name}"
+                style="background-color: #f5f5f5; border: none; outline: none; box-shadow: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; color: {'green' if show_submit else 'red'};">
+                {"Submit Stock" if show_submit else "Create MR"}
+            </button>
+        '''
+
+
+        html += f'''
+        <tr style="font-weight:bold; background-color:#f2f2f2;">
+            <td colspan="1" style="text-align:left;"> {s_no}</td>
+            <td colspan="3" style="text-align:left;">
+                <button class="toggle-btn" data-sos="{register.name}" style="background:none; border:none; font-weight:bold; cursor:pointer;">+</button>
+                {register.name}
+            </td>
+            <td colspan="1" style="text-align:center"></td>
+            <td colspan="3" style="text-align:left;">Precision-Employee</td>
+            <td colspan="1" style="text-align:center;">{formatdate(register.packing_date) if register.packing_date else ""}</td>
+            <td colspan="1" style="text-align:center;">{formatdate(register.delivery_date) if register.delivery_date else ""}</td>
+            <td colspan="1" style="text-align:center;">{float(register.total_new_stock_qty):.2f}</td>
+            <td colspan="2" style="text-align:center;">{vm_button_html}</td>
+        </tr>
+        '''
+
+        html += f'''
+        <tr class="details-row sos-{register.name}" style="display:none; background-color: #d9e1f2; font-weight: bold;">
+            <td style="text-align:center;">Item</td>
+            <td style="text-align:center;">Qty</td>
+            <td style="text-align:center;">UOM</td>
+            <td style="text-align:center;">Stock Qty</td>
+            <td style="text-align:center;background-color: #C00000; color: white;">CR. Stock</td>
+            <td style="text-align:center;background-color: #C00000; color: white;">Stock Status</td>
+            <td style="text-align:center;">UOM</td>
+            <td style="text-align:center;">MRP</td>
+            <td style="text-align:center;">Packing Details</td>
+            <td style="text-align:center;" colspan="2">WRD Details</td>
+            <td style="text-align:center;" colspan="1">Name Details</td>
+        </tr>
+        '''
+
+        total_vm_qty = 0
+        total_vm_stock = 0
+
+        for table in slot_tables:
+            for item in register.get(table):
+                cr_stock = frappe.db.get_value("Bin", {
+                    "item_code": item.item_code,
+                    "warehouse": "Stores - TFP"
+                }, "actual_qty") or 0
+
+                stock_status = '<span style="color: green; font-weight: bold;">In Stock</span>' if flt(item.stock_qty) <= cr_stock else '<span style="color: red; font-weight: bold;">Out of Stock</span>'
+
+                primary_1 = frappe.db.get_value("Item", item.custom_primary_packing_cover, "item_name") if item.custom_primary_packing_cover else ''
+                secondary_1 = frappe.db.get_value("Item", item.custom_secondary_packing_bag, "item_name") if item.custom_secondary_packing_bag else ''
+                tertiary_1 = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") if item.custom_tertiary_packingbox else ''
+
+                item_rate = f"{float(item.custom_mrp_r):.2f}" if item.custom_mrp_r else ""
+                total_vm_qty += flt(item.new_stock_qty)
+                total_vm_stock += flt(item.stock_qty)
+
+                html += f'''
+                <tr class="details-row sos-{register.name}" style="display:none;">
+                    <td style="text-align:left;">{item.item_name}</td>
+                    <td style="text-align:center;">{item.new_stock_qty}</td>
+                    <td style="text-align:center;">{item.new_stockuom}</td>
+                    <td style="text-align:center;">{item.stock_qty}</td>
+                    <td style="text-align:center;">{cr_stock}</td>
+                    <td style="text-align:center;">{stock_status}</td>
+                    <td style="text-align:center;">{item.stock_uom or ""}</td>
+                    <td style="text-align:right;">{item.custom_mrp}</td>
+                    <td style="text-align:left;">(C): {primary_1 or "None"}: {item.custom_covers or "0"}<br>(B): {secondary_1 or "None"}: {item.custom_bag or "0"}<br>(BX): {tertiary_1 or "None"}: {item.custom_box or "0"}</td>
+                    <td style="text-align:left;" colspan="2">(W): {item.custom_weight_w or ""}<br>(R): {item_rate}<br>(D): {formatdate(item.custom_manufactured_date_d) if item.custom_manufactured_date_d else ""}</td>
+                    <td style="text-align:center;" colspan="1">{item.custom_name_print or ""}</td>
+                </tr>
+                '''
+
+        html += f'''
+        <tr class="details-row sos-{register.name}" style="display:none; font-weight:bold; background-color: #d9e1f2;">
+            <td colspan="1" style="text-align:center; border: 1px solid #ccc;">Total</td>
+            <td style="text-align:center; border: 1px solid #ccc;">{total_vm_qty}</td>
+            <td></td>
+            <td style="text-align:center; border: 1px solid #ccc;">{total_vm_stock}</td>
+            <td colspan="2" style="text-align:center; border: 1px solid #ccc;vertical-align: middle;"></td>
+            <td></td>
+            <td colspan="10" style="text-align:right;"></td>
+        </tr>
+        '''
+        grand_total_qty += total_vm_qty
+        grand_total_stock_qty += total_vm_stock
+        s_no += 1
+    html += f'''
+        <tr style="background-color: #002060; font-weight: bold; color: white;">
+         <td colspan="1" style="text-align:center; border: 1px solid #ccc;">Grand Total</td>
+            <td style="text-align:center; border: 1px solid #ccc;">{grand_total_qty}</td>
+            <td style="border: 1px solid #ccc;"></td>
+            <td style="text-align:center; border: 1px solid #ccc;">{grand_total_stock_qty:.2f}</td>
+            <td colspan="10" style="border: 1px solid #ccc;"></td>
+        </tr>
+    </tbody></table></div>
+    <script>
+        document.querySelectorAll(".toggle-btn").forEach(btn => {{
+            btn.addEventListener("click", function() {{
+                const sos = this.dataset.sos;
+                const rows = document.querySelectorAll(".sos-" + sos);
+                const isVisible = rows[0].style.display === "table-row";
+                rows.forEach(row => row.style.display = isVisible ? "none" : "table-row");
+                this.textContent = isVisible ? "+" : "-";
+            }});
+        }});
+        document.querySelectorAll(".create-dn-btn").forEach(btn => {{
+            btn.addEventListener("click", function () {{
+                const so = this.dataset.so;
+                frappe.call({{
+                    method: "teampro.custom.create_dn_from_so",
+                    args: {{ sales_order: so }},
+                    callback: function (r) {{
+                        if (!r.exc) {{
+                            frappe.msgprint("Delivery Note created: " + r.message);
+                        }}
+                    }}
+                }});
+            }});
+        }});
+
+        document.querySelectorAll(".create-mr-btn").forEach(btn => {{
+            btn.addEventListener("click", function () {{
+                const so = this.dataset.so;
+                frappe.call({{
+                    method: "teampro.custom.create_mr_from_so",
+                    args: {{ sales_order: so }},
+                    callback: function (r) {{
+                        if (!r.exc) {{
+                            frappe.msgprint("Material Request created: " + r.message);
+                        }}
+                    }}
+                }});
+            }});
+        }});
+        document.querySelectorAll(".submit-stock-btn").forEach(btn => {{
+            btn.addEventListener("click", function () {{
+                const vm_stock_reg = this.dataset.vmReg;
+                frappe.call({{
+                    method: "teampro.teampro.page.finance_details.tfp_dashboard.submit_stock_entry_from_vm_register",
+                    args: {{ vm_stock_register: vm_stock_reg }},
+                    callback: function (r) {{
+                        if (!r.exc) {{
+                            frappe.msgprint("Stock Entry submitted: " + r.message);
+                        }} else {{
+                            frappe.msgprint("Failed to submit stock entry.");
+                        }}
+                    }}
+                }});
+            }});
+        }});
+        
+    </script>
+    '''
+    
+
+    return html
+
+import frappe
+
+@frappe.whitelist()
+def submit_stock_entry_from_vm_register(vm_stock_register):
+    stock_entry_name = frappe.db.get_value("Stock Entry", {
+        "custom_vm_stock_register": vm_stock_register,
+        "stock_entry_type": "Material Transfer",
+        "company": "TEAMPRO Food Products",
+        "docstatus": 0
+    }, "name")
+
+    if not stock_entry_name:
+        frappe.throw(f"No draft Stock Entry found for: {vm_stock_register}")
+
+    stock_entry = frappe.get_doc("Stock Entry", stock_entry_name)
+    stock_entry.set_posting_time=1
+    stock_entry.save()
+    # stock_entry.submit()
+    return stock_entry.name
+
+import frappe
+from frappe.utils import nowdate, flt
+
+@frappe.whitelist()
+def create_mr_from_vm_item(vm_stock_register):
+    from frappe.utils import nowdate
+    from frappe.model.document import Document
+    import json
+
+    doc = frappe.get_doc("VM Stock Register", vm_stock_register)
+    slot_tables = ["slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"]
+
+    items = []
+    for table in slot_tables:
+        for row in doc.get(table):
+            actual_qty = flt(frappe.db.get_value("Bin", {
+                "item_code": row.item_code,
+                "warehouse": "Stores - TFP"
+            }, "actual_qty") or 0)
+
+            if row.item_code:
+                items.append({
+                    "item_code": row.item_code,
+                    "qty": row.new_stock_qty,
+                    "schedule_date": nowdate(),
+                    "uom": row.new_stockuom,
+                    "warehouse": "Stores - TFP"
+                })
+    mr = frappe.get_doc({
+        "doctype": "Material Request",
+        "material_request_type": "Purchase",
+        "company":"Teampro Food Products",
+        "set_warehouse" : "Stores - TFP",
+        "schedule_date": nowdate(),
+        "items": items
+    })
+    mr.insert(ignore_permissions=True)
+    # mr.submit()
+    return mr.name

@@ -91,9 +91,9 @@ doc_events = {
     "File":{
 		"before_save": "teampro.utility.rename_file"
 	},
-    "Leave Application":{
-		"after_insert": "jobpro.custom.restrict_leave"
-	},
+    # "Leave Application":{
+	# 	"after_insert": "jobpro.custom.restrict_leave"
+	# },
 	"Quotation":{
 		"validate": "teampro.custom.calc_cut_off_prize",
         "after_insert":"teampro.custom.set_quotation"
@@ -196,7 +196,7 @@ doc_events = {
 	},
 	"Attendance Request":{
 		"on_cancel": "teampro.custom.update_wh_att",
-        "after_insert": "jobpro.custom.restrict_att_req",
+        # "after_insert": "jobpro.custom.restrict_att_req",
         
 	},
 	"Purchase Invoice": {

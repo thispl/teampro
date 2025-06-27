@@ -117,11 +117,9 @@
   },
   {
    "fetch_from": "lead.territory",
-   "fetch_if_empty": 1,
    "fieldname": "territory",
    "fieldtype": "Data",
-   "label": "Territory",
-   "translatable": 1
+   "label": "Territory"
   },
   {
    "fetch_from": "lead.market_segment",
@@ -683,7 +681,7 @@
    "link_fieldname": "custom_sales_follow_up"
   }
  ],
- "modified": "2025-06-11 13:48:16.351102",
+ "modified": "2025-06-20 11:27:26.402649",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sales Follow Up",

@@ -60,36 +60,36 @@ frappe.ui.form.on("VM Stock Register", {
     onload(frm) {
         if (frm.is_new()) {
             // 
-             frappe.db.get_list('VM Stock Register', {
-                fields: ['name'],
-                filters: {
-                    docstatus: 1
-                },
-                limit: 1,
-                order_by: 'creation desc'
-            }).then(records => {
-                if (records.length) {
-                    frappe.db.get_doc('VM Stock Register', records[0].name).then(prev_doc => {
-                        const slots = ['slot_a', 'slot_b', 'slot_c', 'slot_d', 'slot_e', 'slot_f'];
+            //  frappe.db.get_list('VM Stock Register', {
+            //     fields: ['name'],
+            //     filters: {
+            //         docstatus: 1
+            //     },
+            //     limit: 1,
+            //     order_by: 'creation desc'
+            // }).then(records => {
+            //     if (records.length) {
+            //         frappe.db.get_doc('VM Stock Register', records[0].name).then(prev_doc => {
+            //             const slots = ['slot_a', 'slot_b', 'slot_c', 'slot_d', 'slot_e', 'slot_f'];
 
-                        slots.forEach(slot => {
-                            const current_rows = frm.doc[slot] || [];
-                            const prev_rows = prev_doc[slot] || [];
+            //             slots.forEach(slot => {
+            //                 const current_rows = frm.doc[slot] || [];
+            //                 const prev_rows = prev_doc[slot] || [];
 
-                            current_rows.forEach(row => {
-                                const matching = prev_rows.find(r => r.slot_id === row.slot_id);
-                                if (matching) {
-                                    row.item_code = matching.item_code;
-                                    row.new_stockuom = matching.new_stockuom;
-                                    row.new_stock_qty = matching.new_stock_qty;
-                                }
-                            });
-                        });
+            //                 current_rows.forEach(row => {
+            //                     const matching = prev_rows.find(r => r.slot_id === row.slot_id);
+            //                     if (matching) {
+            //                         row.item_code = matching.item_code;
+            //                         row.new_stockuom = matching.new_stockuom;
+            //                         row.new_stock_qty = matching.new_stock_qty;
+            //                     }
+            //                 });
+            //             });
 
-                        frm.refresh_fields();
-                    });
-                }
-            });
+            //             frm.refresh_fields();
+            //         });
+            //     }
+            // });
             // 
             for (let i = 1; i <= 10; i++) {
                 let row = frm.add_child("slot_a");
@@ -138,7 +138,23 @@ frappe.ui.form.on("VM Stock Register", {
     },
    
     refresh(frm){
-
+        if(!frm.doc.__islocal){
+         frm.add_custom_button(__("Download"), function () {
+            var path = "teampro.teampro.doctype.vm_stock_register.vm_stock_register.download_stock_details";
+            window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s&docname=' + frm.doc.name, { cmd: path });
+        },"Action");
+        frm.add_custom_button(__("Print"), function () {
+                    var f_name = frm.doc.name
+                    var print_format = "Packing Slip - VM Stock Register";
+                    window.open(frappe.urllib.get_full_url("/api/method/frappe.utils.print_format.download_pdf?"
+                        + "doctype=" + encodeURIComponent("VM Stock Register")
+                        + "&name=" + encodeURIComponent(f_name)
+                        + "&trigger_print=1"
+                        + "&format=" + print_format
+                        + "&no_letterhead=0"
+                    ));
+                },"Action");
+            }
         let grid = frm.fields_dict.slot_a.grid;
         grid.grid_rows.forEach(row => {
             let is_read_only = row.doc.read_only_row === 1;
@@ -184,11 +200,7 @@ frappe.ui.form.on("VM Stock Register", {
      $('*[data-fieldname="slot_f"]').find('.grid-remove-rows').hide();
 	$('*[data-fieldname="slot_f"]').find('.grid-remove-all-rows').hide();
 	$('*[data-fieldname="slot_f"]').find('.grid-add-row').remove()
-   if(frm.doc.__islocal){
-            frm.set_value("posting_date",frappe.datetime.now_datetime())
-            frm.save()
-        }
-        if(frm.doc.status=="Schedule"){
+     if(frm.doc.docstatus == 1 && frm.doc.status=="Schedule"){
 		 frm.add_custom_button(__("Packed"), function () {
            let now = frappe.datetime.now_datetime();
             let d = new frappe.ui.Dialog({
@@ -218,7 +230,7 @@ frappe.ui.form.on("VM Stock Register", {
             d.show();
 
         },("Status"));}
-        if(frm.doc.status=="Packed"){
+        if(frm.doc.docstatus == 1 && frm.doc.status=="Packed"){
 		 frm.add_custom_button(__("Dispatched"), function () {
            let now = frappe.datetime.now_datetime();
             let d = new frappe.ui.Dialog({
@@ -286,6 +298,11 @@ frappe.ui.form.on("VM Stock Register", {
             d.show();
 
         },("Status"));}
+   if(frm.doc.__islocal){
+            frm.set_value("posting_date",frappe.datetime.now_datetime())
+            frm.save()
+        }
+       
         frm.fields_dict['slot_a'].grid.get_field('custom_primary_packing_cover').get_query = function(doc, cdt, cdn) {
             return {
                 filters: {
@@ -420,6 +437,7 @@ frappe.ui.form.on("VM Stock Register", {
     },
    
     upload(frm){
+       
         if (frm.doc.upload) {
             frappe.call({
                 method: "teampro.teampro.doctype.vm_stock_register.vm_stock_register.vm_stock_import_excel",

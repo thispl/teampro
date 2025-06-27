@@ -321,8 +321,8 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				)
 			}
 			else if (frm.doc.report_type == 'MR: Monitoring Report' && frm.doc.mr_title=="MR:03 – Project Task Status Report – REC (PTSR - R)") {
-				// var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_PTSR"
-				var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports_download.download_PTSR_new"
+				var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_PTSR"
+				// var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports_download.download_PTSR_new"
 			}
 			else if( frm.doc.report_type == 'MR: Monitoring Report' && frm.doc.mr_title=="MR:04 – Batch Check Status Report (BCSR)"){
 				var path = "teampro.teampro.doctype.formatted_reports__download.bcsr_report.download_bcsr"

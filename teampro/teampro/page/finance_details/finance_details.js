@@ -689,16 +689,19 @@ frappe.call({
 	// loadreceivabletable();
 	// loadpayabletable();
 	// Load TFP Plan Table
-	frappe.call({
-        //  method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update",
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update_new",
-        callback:function(r) {
-			if (r.message) {
-			 $('#tfp-so-table-content').html(r.message || '<p>No data</p>')
+	function packing_plan_so() {
+		frappe.call({
+			//  method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update",
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update_new",
+			callback:function(r) {
+				if (r.message) {
+				$('#tfp-so-table-content').html(r.message || '<p>No data</p>')
+				}
 			}
-		}
-    });
-	frappe.call({
+		});
+	}
+	function scheduled_details_pink_slip() {
+		frappe.call({
 		// method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule_opertaions",
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule_opertaions_new",
 		callback: function(r) {
@@ -723,6 +726,10 @@ frappe.call({
 			}
 		}
 	});
+	}
+	packing_plan_so();
+	scheduled_details_pink_slip();
+	
 	// frappe.call({
 	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule",
 	// 	callback: function(r) {
@@ -731,22 +738,37 @@ frappe.call({
 	// 		}
 	// 	}
 	// });
-	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_html",
-		callback: function(r) {
-			if (r.message) {
-				$('#tfp-so-table-dn-packed-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+	function packed_details() {
+		frappe.call({
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_html",
+			callback: function(r) {
+				if (r.message) {
+					$('#tfp-so-table-dn-packed-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+				}
 			}
-		}
-	});
-	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_dispatched_html",
-		callback: function(r) {
-			if (r.message) {
-				$('#tfp-so-table-dn-dispatched-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+		});
+	}
+	function dispatched_details() {
+		frappe.call({
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_dispatched_html",
+			callback: function(r) {
+				if (r.message) {
+					$('#tfp-so-table-dn-dispatched-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+				}
 			}
-		}
-	});
+		});
+	}
+
+	packed_details();
+	dispatched_details();
+
+	setInterval(() => {
+		packing_plan_so();
+		scheduled_details_pink_slip();
+		packed_details();
+		dispatched_details();
+	}, 180000);
+
 	$('#tfp-stock-table-content').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
 	frappe.call({
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_stock_html",
@@ -785,7 +807,7 @@ frappe.call({
 	});
 	// $('#tfp-stock-table-content-packing1').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
 	// frappe.call({
-	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule_opertaions_new",
+	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_vm",
 	// 	callback: function(r) {
 	// 		if (r.message) {
 	// 			$('#tfp-stock-table-content-packing1').html(r.message);

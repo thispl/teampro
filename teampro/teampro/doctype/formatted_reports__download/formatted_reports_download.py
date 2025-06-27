@@ -50,7 +50,7 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
     # yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     black_font = Font(color="000000")
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
         "Ex Value", "Ex PSL","AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
@@ -116,7 +116,7 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
         cust_vac = cust_sp = cust_fp = cust_sl = cust_lp = cust_psl = cust_ev = cust_ex_psl = cust_psl_value = 0
         for p in pname:
             project_vac = project_sp = project_fp = project_sl = project_lp = project_psl = project_psl_value = 0
-            project_psl_value =p.get('custom_psl_value') or 0
+            project_psl_value =float(p.get('custom_psl_value',0) or 0)
             tasks = frappe.get_all("Task", {
                 "status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')),
                 "project": p.name
@@ -149,7 +149,7 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
 
 
             task_data = [
-                p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,p.get('custom_psl_value') or 0,
+                p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
                 p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
                 p.get('custom_spoc_remark', '')
             ]
@@ -280,7 +280,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     # ws = wb.create_sheet(sheet_name, 0)
     valid_sheet_name = sheet_name.replace(":", "-")
     ws = wb.create_sheet(valid_sheet_name, 0)
-    default_column_widths = [8, 25, 10, 43, 60, 60, 15, 15,15, 15, 25, 15, 15, 7, 7, 7, 7, 7, 7]
+    default_column_widths = [8, 25, 10, 43, 60, 60,15, 15, 15,15, 15, 25, 15, 15, 7, 7, 7, 7, 7, 7]
     column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -295,7 +295,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     black_font = Font(color="000000")
     header_font = Font(color="FFFFFF")
     white_font = Font(color="FFFFFF")
-    headers = ["SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "AM Remark", "PM Remark",'SPOC Remark', 'Exp Value', 'Exp PSL', 'Sourcing Status', 'Territory', 'TASK', 'Task Priority', '#VAC', '#SP', '#FP', '#SL', '#PSL', '#LP']
+    headers = ["SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "AM Remark", "PM Remark",'SPOC Remark', 'Exp Value', 'Exp PSL', 'PSL Value','Sourcing Status', 'Territory', 'TASK', 'Task Priority', '#VAC', '#SP', '#FP', '#SL', '#PSL', '#LP']
     black_border = Border(
         left=Side(border_style="thin", color="000000"),
         right=Side(border_style="thin", color="000000"),
@@ -324,16 +324,17 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     row = 3
     serial_number = 1
     s_no=1
-    grand_totals = {'vac':0,'sp': 0,'fp': 0,'sl':0,'psl':0,'custom_lp':0,'exp_value':0.0,'exp_psl':0.0}
+    grand_totals = {'vac':0,'sp': 0,'fp': 0,'sl':0,'psl':0,'custom_lp':0,'exp_value':0.0,'exp_psl':0.0,'project_psl_value':0}
     proj_s_no = 1 
     for c in cust:
         priority = {"High": 1, "Medium": 2, "Low": 3}
         pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry']), "customer": c['name'], "service": ("in", ['REC-I', 'REC-D'])}, ['*'],order_by= "priority ASC")
         if not pname:
             continue
-        task_totals = {'exp_value':0.0,'vac':0,'sp':0,'fp':0,'sl':0,'psl':0,'custom_lp':0,'exp_psl':0.0}
+        task_totals = {'exp_value':0.0,'vac':0,'sp':0,'fp':0,'sl':0,'psl':0,'custom_lp':0,'exp_psl':0.0,'project_psl_value':0}
         project_data = []      
         for p in pname:
+            project_psl_value =float(p.get('custom_psl_value',0) or 0)
             pdata = []
             print(p.project_name)        
             taskid = frappe.get_all("Task", {"status": ("in",('Working', 'Open', 'Overdue', 'Pending Review')), "project": p.name}, ['*'],order_by= "priority ASC")              
@@ -341,13 +342,14 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
             # for tn in taskid:
                 # print(tn.name)
             for t in taskid:
-                pdata.append([p['project_name'] if p['project_name'] else "",p['priority'] if p['priority'] else "",p['remark'] if p['remark'] else "",p['account_manager_remark'] if p['account_manager_remark'] else "",p['custom_spoc_remark'] if p['custom_spoc_remark'] else "",p['expected_value'] if p['expected_value'] else "",p['expected_psl'] if p['expected_psl'] else "",p['sourcing_statu'] if p['sourcing_statu'] else "",p['territory'] if p['territory'] else "",t['subject'],t['priority'],t['vac'],t['sp'],t['fp'],t['sl'],t['psl'],t['custom_lp']])
+                pdata.append([p['project_name'] if p['project_name'] else "",p['priority'] if p['priority'] else "",p['remark'] if p['remark'] else "",p['account_manager_remark'] if p['account_manager_remark'] else "",p['custom_spoc_remark'] if p['custom_spoc_remark'] else "",p['expected_value'] if p['expected_value'] else "",p['expected_psl'] if p['expected_psl'] else "",project_psl_value,p['sourcing_statu'] if p['sourcing_statu'] else "",p['territory'] if p['territory'] else "",t['subject'],t['priority'],t['vac'],t['sp'],t['fp'],t['sl'],t['psl'],t['custom_lp']])
                 task_totals['vac'] +=t['vac']
                 task_totals['sp'] +=t['sp']
                 task_totals['fp']+= t['fp']
                 task_totals['sl'] +=t['sl']
                 task_totals['psl'] += t['psl']
                 task_totals['custom_lp'] += t['custom_lp']
+            task_totals['project_psl_value'] += project_psl_value
             task_totals['exp_value'] += float(p['expected_value']) if p['expected_value'] not in (None, '') else 0
             task_totals['exp_psl'] += float(p['expected_psl']) if p['expected_psl'] not in (None, '') else 0
             project_data.append({
@@ -357,7 +359,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
         s_no+=1
         blue_fill = PatternFill(start_color="98d7f5", end_color="98d7f5", fill_type="solid")
         # row_data = [serial_number, c['name']] + [""] * 14 + [task_totals['vac'], task_totals['sp'], task_totals['fp'], task_totals['sl'], task_totals['psl'],task_totals['custom_lp']]
-        row_data = [int_to_roman(serial_number), c['name']] + [""] * 4 +[task_totals['exp_value']]+[task_totals['exp_psl']]+[""] * 4+ [task_totals['vac'], task_totals['sp'], task_totals['fp'], task_totals['sl'], task_totals['psl'],task_totals['custom_lp']]        
+        row_data = [int_to_roman(serial_number), c['name']] + [""] * 4 +[task_totals['exp_value']]+[task_totals['exp_psl']]+[task_totals['project_psl_value']]+[""] * 4+ [task_totals['vac'], task_totals['sp'], task_totals['fp'], task_totals['sl'], task_totals['psl'],task_totals['custom_lp']]        
         ws.append(row_data)
         row_to_fill = ws.max_row
         for col, cell in enumerate(ws[row_to_fill], start=1):
@@ -386,7 +388,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
                     cell.border = black_border
                 row += 1
             if project_row_start < row - 1:
-                for col in range(2, 13):
+                for col in range(2, 12):
                     ws.merge_cells(start_row=project_row_start, start_column=col, end_row=row-1, end_column=col)
                 ws.merge_cells(start_row=project_row_start, start_column=1, end_row=row-1, end_column=1)
             proj_s_no += 1
@@ -398,9 +400,10 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
         grand_totals['custom_lp'] +=task_totals['custom_lp']
         grand_totals['exp_value'] += float(task_totals['exp_value']) if task_totals['exp_value'] not in (None, '') else 0
         grand_totals['exp_psl'] += int(task_totals['exp_psl']) if task_totals['exp_psl'] not in (None, '') else 0
+        grand_totals['project_psl_value'] +=task_totals['project_psl_value']
 
     yellow_fill = PatternFill(start_color="0f1568", end_color="0f1568", fill_type="solid")
-    ws.append(['Total'] + [''] * 5 +[grand_totals['exp_value']]+ [grand_totals['exp_psl']]+ [''] * 4 +[grand_totals['vac'], grand_totals['sp'], grand_totals['fp'], grand_totals['sl'], grand_totals['psl'],grand_totals['custom_lp']])
+    ws.append(['Total'] + [''] * 5 +[grand_totals['exp_value']]+ [grand_totals['exp_psl']]+[grand_totals['project_psl_value']]+ [''] * 4 +[grand_totals['vac'], grand_totals['sp'], grand_totals['fp'], grand_totals['sl'], grand_totals['psl'],grand_totals['custom_lp']])
     last_row = ws.max_row
     for cell in ws[last_row]:
         cell.fill = yellow_fill
@@ -417,7 +420,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
             col_letter = get_column_letter(cell.column)  # Safe way to get column letter
             if col_letter in ("H","A"):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
-            elif col_letter in ("B","D","E","F","K"):
+            elif col_letter in ("B","D","E","F","L"):
                 cell.alignment = Alignment(horizontal="left", vertical="center",wrap_text=True)
             elif col_letter == "G":
                 cell.alignment = Alignment(horizontal="right", vertical="center")
@@ -495,7 +498,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     )
 
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
         "Ex Value", "Ex PSL", "AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
@@ -539,7 +542,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
 
     for p in pname:
         project_vac = project_sp = project_fp = project_sl = project_lp = project_psl = 0
-        project_psl_value = p.get('custom_psl_value') or 0
+        project_psl_value = float(p.get('custom_psl_value',0) or 0)
         tasks = frappe.get_all("Task", {
             "status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')),
             "project": p.name
@@ -656,7 +659,7 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     )
 
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
         "Ex Value", "Ex PSL", "AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
@@ -722,10 +725,9 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         total_sl += project_sl
         total_lp += project_lp
         total_psl += project_psl
-        total_psl_value += p.get('custom_psl_value') or 0
-
+        total_psl_value += float(p.get('custom_psl_value',0) or 0)
         task_data = [
-            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,p.get('custom_psl_value') or 0,
+            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
             p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
             p.get('custom_spoc_remark', '')
         ]
@@ -821,7 +823,7 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     )
 
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
         "Ex Value", "Ex PSL", "AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
@@ -892,9 +894,8 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         total_lp += project_lp
         total_psl += project_psl
         total_psl_value += float(p.get('custom_psl_value',0) or 0)
-
         task_data = [
-            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value', 0) or 0),
+            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
             p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
             p.get('custom_spoc_remark', '')
         ]
