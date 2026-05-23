@@ -22,7 +22,7 @@ def make_xlsx(customer=None, project=None):
     ws.title = "IT-SW Project Status Report"
 
     headers = [
-        "Project Name","Project Type", "Account Manager Remark", "Project Manager Remark", "SPOC Remark",
+        "Project Name","Project Type", "Account Manager","Account Manager Remark", "Project Manager", "Project Manager Remark","SPOC", "SPOC Remark",
         "# Task", "# Open", "# Working","# CRD","# PR", "# CR","#Issue Open","#Issue Replied", "SO Value", "Pending Billing"
     ]
 
@@ -35,7 +35,7 @@ def make_xlsx(customer=None, project=None):
     thin_border = Border(left=Side(style='thin'), right=Side(style='thin'),
                          top=Side(style='thin'), bottom=Side(style='thin'))
 
-    column_widths = [30,20, 40, 40, 40, 10, 10, 10, 10, 10,10,10,10, 15, 20]
+    column_widths = [30,20, 30,40, 30,40,30, 40, 10, 10, 10, 10, 10,10,10,10, 15, 20]
 
     
     current_date = datetime.today().strftime("%d-%m-%Y")
@@ -73,7 +73,7 @@ def make_xlsx(customer=None, project=None):
         report = frappe.db.get_all(
             "Project",
             filters=filters_1,
-            fields=["name", "project_name", "account_manager_remark", "remark", "custom_spoc_remark","status"],
+            fields=["name", "project_name", "account_manager_remark", "remark", "custom_spoc_remark","status","spoc","project_manager","account_manager"],
             order_by='name'
         )
 
@@ -120,7 +120,7 @@ def make_xlsx(customer=None, project=None):
                 pending_billing = 0.0
 
             ws.append([
-                i.project_name,project_type.name, i.account_manager_remark, i.remark, i.custom_spoc_remark,
+                i.project_name,project_type.name,i.account_manager, i.remark,i.project_manager, i.account_manager_remark, i.spoc, i.custom_spoc_remark,
                 overall, task_open, task_working,task_review,task_pr, task_count, issue_open,issue_replied,
                 f"₹ {so_value:,.0f}", f"₹ {pending_billing:,.0f}"
             ])
@@ -130,9 +130,9 @@ def make_xlsx(customer=None, project=None):
                 cell = ws.cell(row=ws.max_row, column=col)
                 
                 cell.border = thin_border
-                if col in (1, 2, 3, 4,5):
+                if col in (1, 2, 3, 4,5, 6,7,8):
                     cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-                elif col in (14, 15):
+                elif col in (17, 18):
                     cell.alignment = Alignment(horizontal='right', vertical='center', wrap_text=True)
                 else:
                     cell.alignment = alignment

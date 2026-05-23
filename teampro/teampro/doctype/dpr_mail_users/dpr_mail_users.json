@@ -12,6 +12,7 @@
   {
    "fieldname": "user",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "label": "User",
    "options": "User"
@@ -20,7 +21,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2024-10-28 23:05:31.698999",
+ "modified": "2026-03-10 15:37:40.138685",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "DPR Mail Users",

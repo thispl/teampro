@@ -5,12 +5,26 @@
 
 </head>
 <style>
-    .th {
-        background-color: #0f1568;
-        color: white;
-    };
-    
+    /* Dark blue table header */
+    #caseSummary thead tr {
+        background-color: #0f1568 !important;
+        color: white !important;
+    }
+     #caseSummary {
+        font-size: 10px !important;
+    }
+    /* Alternating tbody row colors */
+    #caseSummary tbody tr:nth-child(odd) {
+        background-color: #ffffff !important;  /* white */
+    }
+
+    #caseSummary tbody tr:nth-child(even) {
+        background-color: #e6f2fa !important;  /* light blue */
+    }
 </style>
+
+
+
 <body>
     <table border="1" id="caseSummary">
         <thead>
@@ -41,7 +55,12 @@
                 <td>{{ d.completion }}</td>
                 <td>{{ d.age }}</td>
                 <td>{{ d.case_status }}</td>
-                <td><button onclick="viewCaseStatus('{{ d.case_name }}')">Details</button></td>
+                <td>
+                    <button onclick="viewCaseStatus('{{ d.case_name }}')" class="btn btn-default btn-sm" title="View">
+                        <i class="fa fa-file"></i>
+                    </button>
+                </td>
+
                 {% if d.report_status == 'Positive'%}
                 <td><span style="color:blue">{{ d.report_status }}</span></td>
                 {% endif %}
@@ -55,7 +74,12 @@
                 <td>{{ d.report_status }}</td>
                 {% endif %}
 
-                <td><button onclick="downloadReport('{{ d.case_name }}')">Download</button></td>
+                <td>
+                    <button onclick="downloadReport('{{ d.case_name }}')" class="btn btn-default btn-sm" title="Download">
+                        <i class="fa fa-download"></i>
+                    </button>
+                </td>
+
             </tr>
             {% endfor %}
         </tbody>

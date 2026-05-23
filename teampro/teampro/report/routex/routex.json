@@ -1,0 +1,42 @@
+{
+ "add_total_row": 0,
+ "columns": [],
+ "creation": "2025-11-14 16:39:03.260444",
+ "disabled": 1,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [],
+ "idx": 9,
+ "is_standard": "Yes",
+ "letter_head": "THIS - General",
+ "letterhead": null,
+ "modified": "2026-02-05 17:19:48.750537",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "RouteX",
+ "owner": "pavithra.s@groupteampro.com",
+ "prepared_report": 0,
+ "ref_doctype": "MeetLog",
+ "report_name": "RouteX",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "System Manager"
+  },
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "HR User"
+  },
+  {
+   "role": "Leave Approver"
+  },
+  {
+   "role": "Employee Self Service"
+  },
+  {
+   "role": "Employee"
+  }
+ ]
+}

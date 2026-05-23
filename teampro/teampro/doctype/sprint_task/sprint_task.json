@@ -8,100 +8,110 @@
  "field_order": [
   "project",
   "task",
+  "issue_type",
   "subject",
   "cb",
-  "task_type",
+  "age",
   "kt_confirmed",
   "column_break_vrlt",
   "et",
   "at",
   "rt",
+  "at_period",
   "status",
   "priority",
+  "atet",
+  "rtet_",
   "column_break_illy",
   "production_date",
-  "at_period",
   "cr_status",
-  "explanation"
+  "explanation",
+  "spot_task",
+  "previous_sprint",
+  "allocated_to",
+  "revisions",
+  "et_vs_at_remarks",
+  "section_break_btsq",
+  "action_taken"
  ],
  "fields": [
   {
+   "allow_on_submit": 1,
    "fieldname": "project",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Project",
-   "options": "Project",
-   "read_only": 1
+   "options": "Project"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "task",
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Task",
-   "options": "Task",
-   "read_only": 1
+   "options": "Task"
   },
   {
-   "fetch_from": "task.subject",
+   "allow_on_submit": 1,
+   "fetch_from": ".subject",
    "fieldname": "subject",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Subject",
-   "read_only": 1
+   "label": "Subject"
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "task.cb",
    "fetch_if_empty": 1,
    "fieldname": "cb",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "CB",
-   "read_only": 1
+   "label": "CB"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "column_break_vrlt",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "task.expected_time",
    "fieldname": "et",
    "fieldtype": "Float",
    "in_list_view": 1,
    "label": "ET",
+   "precision": "2",
    "read_only": 1
   },
   {
-   "fetch_from": "task.actual_time",
+   "allow_on_submit": 1,
+   "fetch_from": ".actual_time",
    "fieldname": "at",
    "fieldtype": "Float",
    "label": "AT",
+   "precision": "2",
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "task.rt",
    "fetch_if_empty": 1,
    "fieldname": "rt",
    "fieldtype": "Float",
    "in_list_view": 1,
-   "label": "RT"
+   "label": "RT",
+   "precision": "2"
   },
   {
-   "fetch_from": "task.status",
-   "fetch_if_empty": 1,
+   "allow_on_submit": 1,
+   "fetch_from": ".status",
    "fieldname": "status",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Status"
   },
   {
-   "fetch_from": "task.type",
-   "fieldname": "task_type",
-   "fieldtype": "Link",
-   "label": "Task Type",
-   "options": "Task Type",
-   "read_only": 1
-  },
-  {
+   "allow_on_submit": 1,
    "default": "0",
    "fetch_from": "task.kt_confirmed",
    "fieldname": "kt_confirmed",
@@ -110,6 +120,7 @@
    "read_only_depends_on": "eval:doc.status!=\"Open\""
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "task.priority",
    "fieldname": "priority",
    "fieldtype": "Data",
@@ -117,10 +128,12 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "column_break_illy",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fetch_from": "task.custom_production_date",
    "fieldname": "production_date",
    "fieldtype": "Date",
@@ -129,28 +142,110 @@
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "at_period",
    "fieldtype": "Float",
-   "label": "AT Period"
+   "label": "AT Period",
+   "precision": "2"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "cr_status",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Cr Status",
-   "read_only": 1
+   "label": "Cr Status"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "explanation",
    "fieldtype": "Small Text",
    "label": "Explanation",
    "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "spot_task",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Spot Task"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "previous_sprint",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Previous Sprint"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "atet",
+   "fieldtype": "Percent",
+   "label": "AT/ET (%)",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "allocated_to",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Allocated to",
+   "options": "User"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "0",
+   "fieldname": "revisions",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Revisions",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "rtet_",
+   "fieldtype": "Percent",
+   "label": "RT/AT (%)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "et_vs_at_remarks",
+   "fieldtype": "Small Text",
+   "label": "ET Vs AT Remarks"
+  },
+  {
+   "fetch_from": "task.custom_age",
+   "fieldname": "age",
+   "fieldtype": "Data",
+   "label": "Age",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "task.custom_issue_type",
+   "fetch_if_empty": 1,
+   "fieldname": "issue_type",
+   "fieldtype": "Link",
+   "label": "Issue Type",
+   "options": "Issue Type"
+  },
+  {
+   "fieldname": "section_break_btsq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fetch_from": "task.custom_taskissue_action_taken",
+   "fetch_if_empty": 1,
+   "fieldname": "action_taken",
+   "fieldtype": "Small Text",
+   "label": "Action Taken"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-28 13:11:21.405375",
+ "modified": "2026-05-16 15:18:33.642221",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sprint Task",

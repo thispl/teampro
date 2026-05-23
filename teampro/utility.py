@@ -199,15 +199,75 @@ def attendance_calc(from_date,to_date):
         role = "HOD"
         hod = frappe.get_value('Has Role',{'role':role,'parent':hod})
         if hod:
-            late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:45:00' and leave_application IS NULL and attendance_request IS NULL and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+            late_list = frappe.db.sql("""
+                SELECT count(a.name) as count
+                FROM `tabAttendance` a
+
+                WHERE a.employee = %s
+                AND time(a.in_time) > '09:45:00'
+                AND a.leave_application IS NULL
+                AND a.attendance_date BETWEEN %s AND %s
+
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM `tabHoliday` h
+                    WHERE h.holiday_date = a.attendance_date
+                    AND h.parent = (
+                        SELECT e.holiday_list
+                        FROM `tabEmployee` e
+                        WHERE e.name = %s
+                    )
+                )
+
+            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
+            
         else:
-            late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:30:00' and leave_application IS NULL and attendance_request IS NULL and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+            late_list = frappe.db.sql("""
+                SELECT count(a.name) as count
+                FROM `tabAttendance` a
+                WHERE a.employee = %s
+                AND time(a.in_time) > '09:30:00'
+                AND a.leave_application IS NULL
+                AND a.attendance_date BETWEEN %s AND %s
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM `tabHoliday` h
+                    WHERE h.holiday_date = a.attendance_date
+                    AND h.parent = (
+                        SELECT e.holiday_list
+                        FROM `tabEmployee` e
+                        WHERE e.name = %s
+                    )
+                )
+
+            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
+          
         attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' and half_day = 0 """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
+        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and half_day_date between '%s' and '%s' and half_day=1 and custom_session='First Half'"""%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
+        on_duty_permission=frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and from_date between '%s' and '%s' and reason="Permission" and custom_permission_session="First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+        on_duty_full_day = frappe.db.sql("""
+            SELECT count(*) as count
+            FROM `tabAttendance Request` ar
+
+            WHERE ar.employee = %s
+            AND ar.docstatus = 1
+            AND ar.from_date BETWEEN %s AND %s
+            AND ar.reason = 'On Duty Working Day'
+            AND ar.workflow_state="Approved"
+            AND ar.half_day = 0
+
+            AND EXISTS (
+                SELECT 1
+                FROM `tabAttendance` att
+                WHERE att.attendance_request = ar.name
+                AND att.in_time IS NOT NULL
+            )
+
+        """, (emp.name, from_date, to_date), as_dict=True)[0].count or 0
+        leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and half_day=1 and half_day_date between '%s' and '%s' and custom_session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
         allowed_late = 3
         late = 0
-        actual_late = late_list - (allowed_late + attendance_perm + on_duty + leave)
+        actual_late = late_list - (allowed_late+ leave+on_duty_permission+on_duty+attendance_perm+on_duty_full_day)
         
         if actual_late >= 0:
             at = actual_late
@@ -271,15 +331,77 @@ def attendance_calc(from_date,to_date):
         role = "HOD"
         hod = frappe.get_value('Has Role',{'role':role,'parent':hod})
         if hod:
-            late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:45:00' and leave_application IS NULL and attendance_request IS NULL and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+            late_list = frappe.db.sql("""
+                SELECT count(a.name) as count
+                FROM `tabAttendance` a
+
+                WHERE a.employee = %s
+                AND time(a.in_time) > '09:45:00'
+                AND a.leave_application IS NULL
+                AND a.attendance_date BETWEEN %s AND %s
+
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM `tabHoliday` h
+                    WHERE h.holiday_date = a.attendance_date
+                    AND h.parent = (
+                        SELECT e.holiday_list
+                        FROM `tabEmployee` e
+                        WHERE e.name = %s
+                    )
+                )
+
+            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
         else:
-            late_list = frappe.db.sql("""select count(name) as count from `tabAttendance` where employee = '%s' and time(in_time) > '09:30:00' and leave_application IS NULL and attendance_request IS NULL and attendance_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+            late_list = frappe.db.sql("""
+                SELECT count(a.name) as count
+                FROM `tabAttendance` a
+
+                WHERE a.employee = %s
+                AND time(a.in_time) > '09:30:00'
+                AND a.leave_application IS NULL
+                AND a.attendance_date BETWEEN %s AND %s
+
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM `tabHoliday` h
+                    WHERE h.holiday_date = a.attendance_date
+                    AND h.parent = (
+                        SELECT e.holiday_list
+                        FROM `tabEmployee` e
+                        WHERE e.name = %s
+                    )
+                )
+
+            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
         attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' and half_day = 0 """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
+        # on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
+        # leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' and half_day = 0 """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
+        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and half_day_date between '%s' and '%s' and half_day=1 and custom_session='First Half'"""%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
+        on_duty_permission=frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and from_date between '%s' and '%s' and reason="Permission" and custom_permission_session="First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+        on_duty_full_day = frappe.db.sql("""
+            SELECT count(*) as count
+            FROM `tabAttendance Request` ar
+
+            WHERE ar.employee = %s
+            AND ar.docstatus = 1
+            AND ar.from_date BETWEEN %s AND %s
+            AND ar.reason = 'On Duty Working Day'
+            AND ar.half_day = 0
+            AND ar.workflow_state="Approved"
+            AND EXISTS (
+                SELECT 1
+                FROM `tabAttendance` att
+                WHERE att.attendance_request = ar.name
+                AND att.in_time IS NOT NULL
+            )
+
+        """, (emp.name, from_date, to_date), as_dict=True)[0].count or 0
+
+        leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and half_day=1 and half_day_date between '%s' and '%s' and custom_session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
         allowed_late = 3
         late = 0
-        actual_late = late_list - (allowed_late + attendance_perm + on_duty + leave)
+        actual_late = late_list - (allowed_late + attendance_perm + on_duty + leave + on_duty_permission + on_duty_full_day)
         
         if actual_late >= 0:
             at = actual_late
@@ -381,41 +503,41 @@ def additional_salary(from_date, to_date):
     return "ok"
 
 
-from datetime import datetime
-import calendar
-@frappe.whitelist()
-def create_update_leave_allocation():
-    employees = frappe.get_all("Employee",{"status":"Active"},["*"],order_by='name ASC')
-    current_date = datetime.now().date()
-    # current_date=(get_first_day(current_date1))
-    today_date = date.today()
-    year = today_date.year
-    year = int(year)
-    next_year = year + 1
-    from_date = f"01-04-{year}"
-    to_date = f"31-03-{next_year}"
-    from_date = datetime.strptime(from_date, "%d-%m-%Y").date() 
-    to_date = datetime.strptime(to_date, "%d-%m-%Y").date()
-    for emp in employees:
-        doj = emp.date_of_joining
-        diff = current_date - doj
-        years = diff.days / 365.25  
-        if(int(years)) > 0 :
-            if frappe.db.exists("Leave Allocation",{'docstatus':1,'employee':emp.employee,'leave_type':"Casual Leave",'from_date': ('between', (from_date,to_date)),'to_date': ('between', (from_date,to_date))}):
-                la = frappe.get_doc("Leave Allocation",{'docstatus':1,'employee':emp.employee,'leave_type':"Casual Leave",'from_date':('between', (from_date,to_date)),'to_date': ('between', (from_date,to_date))})
-                la.new_leaves_allocated = la.new_leaves_allocated + 1.5
-                la.to_date = to_date
-                la.save(ignore_permissions=True)
-                la.submit()   
-            else:
-                la = frappe.new_doc("Leave Allocation")
-                la.employee = emp.name
-                la.leave_type = "Casual Leave"
-                la.new_leaves_allocated = 1.5
-                la.from_date = current_date
-                la.to_date = to_date
-                la.save(ignore_permissions=True)
-                la.submit()  
+# from datetime import datetime
+# import calendar
+# @frappe.whitelist()
+# def create_update_leave_allocation():
+#     employees = frappe.get_all("Employee",{"status":"Active"},["*"],order_by='name ASC')
+#     current_date = datetime.now().date()
+#     # current_date=(get_first_day(current_date1))
+#     today_date = date.today()
+#     year = today_date.year
+#     year = int(year)
+#     next_year = year + 1
+#     from_date = f"01-04-{year}"
+#     to_date = f"31-03-{next_year}"
+#     from_date = datetime.strptime(from_date, "%d-%m-%Y").date() 
+#     to_date = datetime.strptime(to_date, "%d-%m-%Y").date()
+#     for emp in employees:
+#         doj = emp.date_of_joining
+#         diff = current_date - doj
+#         years = diff.days / 365.25  
+#         if(int(years)) > 0 :
+#             if frappe.db.exists("Leave Allocation",{'docstatus':1,'employee':emp.employee,'leave_type':"Casual Leave",'from_date': ('between', (from_date,to_date)),'to_date': ('between', (from_date,to_date))}):
+#                 la = frappe.get_doc("Leave Allocation",{'docstatus':1,'employee':emp.employee,'leave_type':"Casual Leave",'from_date':('between', (from_date,to_date)),'to_date': ('between', (from_date,to_date))})
+#                 la.new_leaves_allocated = la.new_leaves_allocated + 1.25
+#                 la.to_date = to_date
+#                 la.save(ignore_permissions=True)
+#                 la.submit()   
+#             else:
+#                 la = frappe.new_doc("Leave Allocation")
+#                 la.employee = emp.name
+#                 la.leave_type = "Casual Leave"
+#                 la.new_leaves_allocated = 1.25
+#                 la.from_date = current_date
+#                 la.to_date = to_date
+#                 la.save(ignore_permissions=True)
+#                 la.submit()  
 
 @frappe.whitelist()
 def update_leave_ledger_entry():
@@ -514,3 +636,179 @@ def bulk_update_closure_status():
 def rename_file(doc,method):
     hashcode = frappe.generate_hash()[:5]
     doc.file_name = hashcode + doc.file_name
+
+
+import frappe
+from datetime import date, timedelta
+
+@frappe.whitelist()
+def create_update_leave_allocation():
+    employees = frappe.get_all(
+        "Employee", 
+        filters={
+            "status": "Active",
+        }, 
+        fields=["name", "date_of_joining"]
+    )
+
+    today = date.today()
+
+    for emp in employees:
+        doj = emp.date_of_joining
+        if not doj:
+            continue
+        print(doj)
+        if (today - doj).days < 365:
+            continue
+
+        anniversary_this_year = doj.replace(year=today.year)
+        if anniversary_this_year > today:
+            anniversary_this_year = doj.replace(year=today.year - 1)
+        print(anniversary_this_year)
+        next_anniversary = anniversary_this_year.replace(year=anniversary_this_year.year + 1)
+        to_date = next_anniversary - timedelta(days=1)
+        print(to_date)
+        is_anniversary_day = (today.month == doj.month and today.day == doj.day)
+
+        existing_allocation = frappe.db.exists("Leave Allocation", {
+            'docstatus': 1,
+            'employee': emp.name,
+            'leave_type': "Casual Leave",
+            'from_date': anniversary_this_year,
+            'to_date': to_date
+        })
+
+        if is_anniversary_day:
+            la = frappe.new_doc("Leave Allocation")
+            la.employee = emp.name
+            la.leave_type = "Casual Leave"
+            la.new_leaves_allocated = 1.25
+            la.from_date = anniversary_this_year
+            la.to_date = to_date
+            la.save(ignore_permissions=True)
+            la.submit()
+        else:
+            if existing_allocation and today.day == doj.day:
+                la = frappe.get_doc("Leave Allocation", existing_allocation)
+                la.new_leaves_allocated += 1.25
+                la.save(ignore_permissions=True)
+                la.submit()
+
+@frappe.whitelist()
+def create_update_leave_allocation_new():
+    employees = frappe.get_all(
+        "Employee", 
+        filters={
+            "status": "Active",
+        }, 
+        fields=["name", "date_of_joining"]
+    )
+
+    today = date.today()
+
+    for emp in employees:
+        doj = emp.date_of_joining
+        if not doj:
+            continue
+        print(doj)
+        if (today - doj).days < 365:
+            continue
+
+        anniversary_this_year = doj.replace(year=today.year)
+        if anniversary_this_year > today:
+            anniversary_this_year = doj.replace(year=today.year - 1)
+        print(anniversary_this_year)
+        next_anniversary = anniversary_this_year.replace(year=anniversary_this_year.year + 1)
+        to_date = next_anniversary - timedelta(days=1)
+        print(to_date)
+        is_anniversary_day = (today.month == doj.month and today.day == doj.day)
+
+        existing_allocation = frappe.db.exists("Leave Allocation", {
+            'docstatus': 1,
+            'employee': emp.name,
+            'leave_type': "Casual Leave",
+            'from_date': anniversary_this_year,
+            'to_date': to_date
+        })
+
+        if is_anniversary_day:
+            la = frappe.new_doc("Leave Allocation")
+            la.employee = emp.name
+            la.leave_type = "Casual Leave"
+            la.new_leaves_allocated = 1.25
+            la.from_date = anniversary_this_year
+            la.to_date = to_date
+            la.save(ignore_permissions=True)
+            la.submit()
+        else:
+            if existing_allocation and today.day == doj.day:
+                la = frappe.get_doc("Leave Allocation", existing_allocation)
+                la.new_leaves_allocated += 1.25
+                la.save(ignore_permissions=True)
+                la.submit()
+
+
+from datetime import datetime
+import frappe
+
+@frappe.whitelist()
+def update_tot_leave_days(doc, method):
+    if doc.from_date and doc.to_date and (not doc.total_leave_days or doc.total_leave_days == 0):
+        if isinstance(doc.from_date, str):
+            doc.from_date = datetime.strptime(doc.from_date, "%Y-%m-%d").date()
+        if isinstance(doc.to_date, str):
+            doc.to_date = datetime.strptime(doc.to_date, "%Y-%m-%d").date()
+
+        total_days = (doc.to_date - doc.from_date).days + 1
+        if doc.half_day:
+            total_days -= 0.5
+        doc.total_leave_days = total_days
+
+# @frappe.whitelist()
+# def create_schedule_job_type():
+# 	job = frappe.db.exists('Scheduled Job Type', 'create_cl')
+# 	if not job:
+# 		sjt = frappe.new_doc("Scheduled Job Type")
+# 		sjt.update({
+# 			"method": 'teampro.utility.create_update_leave_allocation_new',
+# 			"frequency": 'Cron',
+# 			"cron_format": '0 1 * * *'
+# 		})
+# 		sjt.save(ignore_permissions=True)
+
+@frappe.whitelist()
+def update_customer_contact_table(doc,method):
+    if doc.custom_sfp_details:
+        for i in doc.custom_sfp_details:
+            sfp=frappe.get_doc('Sales Follow Up',i.sfp_id)
+            if sfp.contacts:
+                for s in sfp.contacts:
+                    sfp.append("customer_contacts", {
+                        "person_name": s.person_name,
+                        "mobile": s.mobile,
+                        "is_primary": s.is_primary,
+                        "email_id": s.email_id,
+                        "is_primaryemail": s.is_primaryemail,
+                        "has_whatsapp": s.has_whatsapp,
+                        "service": s.service
+                    })
+            sfp.save(ignore_permission=True)
+
+
+@frappe.whitelist()
+def update_sfp_details_customer(doc, method):
+    if not doc.custom_sfp_details:
+        if doc.lead_name:
+
+            lead_doc = frappe.get_doc("Lead", doc.lead_name)
+            if lead_doc.custom_sfp_details:
+
+                for row in lead_doc.custom_sfp_details:
+                    doc.append("custom_sfp_details", {
+                        "sfp_id": row.sfp_id,
+                        "sfp_owner": row.sfp_owner,
+                        "created_on": row.created_on,
+                        "service": row.service
+                    })
+
+                doc.save()

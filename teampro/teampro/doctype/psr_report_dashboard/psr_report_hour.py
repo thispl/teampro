@@ -28,7 +28,7 @@ def make_xlsx_with_hour(data, sheet_name="Daily PSR Report", wb=None, column_wid
     valid_sheet_name = sheet_name.replace(":", "-")
     ws = wb.create_sheet(valid_sheet_name, 0)
     # Styles
-    fill_color_total = PatternFill(start_color="4C3B69", end_color="4C3B69", fill_type="solid")  # Total row
+    fill_color_total = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")  # Total row
     fill_color_blue = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")  # Blue row
     fill_color_white = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")  # White row
     alignment_center = Alignment(horizontal="center", vertical="center")
@@ -66,7 +66,7 @@ def make_xlsx_with_hour(data, sheet_name="Daily PSR Report", wb=None, column_wid
         cell.alignment = alignment_center
         cell.border = thin_border
     # Data rows
-    data1 = get_data()
+    data1 = get_data_with_hour()
     total_row = ["", "Total", ""] + [0] * 7
 
     for idx, row in enumerate(data1):
@@ -107,7 +107,7 @@ def make_xlsx_with_hour(data, sheet_name="Daily PSR Report", wb=None, column_wid
     xlsx_file.seek(0)
     return xlsx_file
 
-def get_data():
+def get_data_with_hour():
     data = []
     s_no = 1
     projects = frappe.db.sql("""
@@ -169,7 +169,7 @@ def get_data():
         issue_open_hour = issue_open[0].issue_open__rt if issue_open and issue_open[0].issue_open__rt else 0
         issue_rep_hour = issue_rep[0].issue_replied__rt if issue_rep and issue_rep[0].issue_replied__rt else 0
         data.append([
-            s_no,project.project_name, project.project_type,open_hour,working_hour,code_rev_hour,pr_hour,cr_hour,
+            s_no,project.project_name, project.project_type or '',open_hour,working_hour,code_rev_hour,pr_hour,cr_hour,
             issue_open_hour,issue_rep_hour
         ])
         s_no+=1

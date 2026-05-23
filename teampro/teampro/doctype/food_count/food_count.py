@@ -12,7 +12,7 @@ class FoodCount(Document):
     def before_save(self):
         today_time = datetime.now()
         current_time = today_time.strftime("%H:%M:%S")
-        food_time = get_time('10:30:00')
+        food_time = get_time('10:00:00')
         if get_time(current_time) > food_time:
             frappe.throw(_('Time Out'))
         else:

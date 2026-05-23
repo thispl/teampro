@@ -7,6 +7,12 @@ from datetime import datetime
 from io import BytesIO
 
 
+
+
+import frappe, io, json, base64
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+
     
 @frappe.whitelist()
 def download_PSR_new():
@@ -26,7 +32,7 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
     ws = wb.create_sheet(valid_sheet_name, 0)
     args = frappe.local.form_dict
 
-    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 11,10, 5, 43, 43, 43]
+    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 11,10, 5,25, 43, 43, 43]
     column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -47,22 +53,16 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
         top=Side(border_style="thin", color="000000"),
         bottom=Side(border_style="thin", color="000000")
     )
-    # yellow_fill = PatternFill(start_color="FFFF00", end_color="FFFF00", fill_type="solid")
     black_font = Font(color="000000")
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
-        "Ex Value", "Ex PSL","AM Remark", "PM Remark", "SPOC Remark"
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
+        "Ex Value", "Ex PSL","SPOC","AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
     ws.freeze_panes = "A3"
-    # yellow_columns = {"Completed Value", "Cr. Exp. Value", "Cr.Exp.PSL", "Exp.Week"}
     header_row = ws[ws.max_row]
 
     for cell in header_row:
-        # if cell.value in yellow_columns:
-        #     cell.fill = yellow_fill
-        #     cell.font = black_font
-        # else:
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = Alignment(horizontal="center", vertical="center")
@@ -77,7 +77,7 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
     proj_s_no = 1 
     for c in cust:
         pname = frappe.get_all("Project", {
-            "status": ("in", ['Open', 'Enquiry']),
+            "status": ("in", ['Open', 'Enquiry','Draft']),
             "customer": c['name'],
             "service": ("in", ['REC-I', 'REC-D'])
         }, ['*'], order_by="priority ASC")
@@ -99,7 +99,7 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
         ws.cell(row=customer_row_index, column=12).number_format = '#,##0'
         ws.cell(row=customer_row_index, column=13).alignment = Alignment(horizontal="center", vertical="center")
         for col, cell in enumerate(ws[row_to_fill], start=1):
-            if col <= 16:
+            if col <= 17:
                 cell.fill = blue_fill
             if col == 1:
                 cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -114,21 +114,28 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
         serial_number += 1
         row += 1
         cust_vac = cust_sp = cust_fp = cust_sl = cust_lp = cust_psl = cust_ev = cust_ex_psl = cust_psl_value = 0
+        spoc_name=''
         for p in pname:
             project_vac = project_sp = project_fp = project_sl = project_lp = project_psl = project_psl_value = 0
-            project_psl_value =p.get('custom_psl_value') or 0
+            project_psl_value =float(p.get('custom_psl_value',0) or 0)
             tasks = frappe.get_all("Task", {
                 "status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')),
                 "project": p.name
             }, ['subject', 'priority', 'vac', 'sp', 'fp', 'sl', 'psl', 'custom_lp'])
-
+            spoc_name = ""
+            if p.get("spoc"):
+                spoc_name = frappe.db.get_value("Employee", {"user_id": p.spoc}, "employee_name")
+            if not spoc_name:
+                spoc_name = "" 
+            project_psl = frappe.db.count("Closure", {"status": ("not in", ["Arrived"]), "project": p.name})
             for task in tasks:
                 project_vac += task.get('vac', 0) or 0
                 project_sp += task.get('sp', 0) or 0
                 project_fp += task.get('fp', 0) or 0
                 project_sl += task.get('sl', 0) or 0
                 project_lp += task.get('custom_lp', 0) or 0
-                project_psl += task.get('psl', 0) or 0
+                # project_psl += task.get('psl', 0) or 0
+                # project_psl +=task_psl
 
             total_vac += project_vac
             total_sp += project_sp
@@ -144,13 +151,20 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
             cust_lp += project_lp
             cust_psl += project_psl
             cust_psl_value += project_psl_value
-            cust_ev += float(p.get('expected_value', 0) or 0)
-            cust_ex_psl += float(p.get('expected_psl', 0) or 0)
+            expected_value = p.get('expected_value', 0)
+            expected_psl= p.get('expected_psl', 0)
+            try:
+                cust_ev += float(expected_value)
+                cust_ex_psl+=float(expected_psl)
+            except (ValueError, TypeError):
+                cust_ev += 0
+                cust_ex_psl+=0
+
 
 
             task_data = [
-                p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,p.get('custom_psl_value') or 0,
-                p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
+                p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
+                p.get('expected_value', 0), p.get('expected_psl', 0),spoc_name, p.get('remark', ''), p.get('account_manager_remark', ''),
                 p.get('custom_spoc_remark', '')
             ]
             ws.append([proj_s_no]+ task_data)
@@ -160,15 +174,14 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
             except ValueError:
                 frappe.log_error(f"Expected value is not a number for project {p.get('project_name')}", "Data Error in PSR Report")
             from openpyxl.cell.cell import MergedCell
-            # Alignment Logic: Columns 13, 14, 15 left-aligned, others center-aligned
             for col in range(1, len(task_data) + 2):
                 cell = ws.cell(row=row, column=col)
-                if col in [14,15,16]:  # Left-align AM Remark, PM Remark, SPOC Remark
+                if col in [14,15,16,17]: 
                     cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
-                elif col == 12:  # Expected Value column
+                elif col == 12:
                     cell.alignment = Alignment(horizontal="right", vertical="center")
                     cell.number_format = '#,##0'
-                elif col == 2:  # Expected Value column
+                elif col == 2:
                     cell.alignment = Alignment(horizontal="left", vertical="center")
                 else: 
                     cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
@@ -185,10 +198,9 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
         ws.cell(row=customer_row_index, column=12, value=cust_ev)
         ws.cell(row=customer_row_index, column=13, value=cust_ex_psl)
 
-    # Total Row with Ex PSL Total
     total_row = [
         "", "Total", "", "", total_vac, total_sp, total_fp, total_sl, total_lp, total_psl,total_psl_value,
-        ev_total, ex_psl_total, "","",""
+        ev_total, ex_psl_total,"", "","",""
     ]
 
     ws.append(total_row)
@@ -196,10 +208,9 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
     total_fill = PatternFill(start_color="0f1568", end_color="0f1568", fill_type="solid")
 
     for col_idx, cell in enumerate(last_row, start=1):
-        if col_idx <= 16:
+        if col_idx <= 17:
             cell.fill = total_fill
             cell.border = black_border
-        # cell.fill = total_fill
         cell.font = Font(color="FFFFFF")
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
         
@@ -280,7 +291,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     # ws = wb.create_sheet(sheet_name, 0)
     valid_sheet_name = sheet_name.replace(":", "-")
     ws = wb.create_sheet(valid_sheet_name, 0)
-    default_column_widths = [8, 25, 10, 43, 60, 60, 15, 15,15, 15, 25, 15, 15, 7, 7, 7, 7, 7, 7]
+    default_column_widths = [8, 25, 35,25, 43, 60, 60,15, 15, 15,15, 15, 25, 15, 15, 7, 7, 7, 7, 7, 7]
     column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -295,7 +306,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     black_font = Font(color="000000")
     header_font = Font(color="FFFFFF")
     white_font = Font(color="FFFFFF")
-    headers = ["SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "AM Remark", "PM Remark",'SPOC Remark', 'Exp Value', 'Exp PSL', 'Sourcing Status', 'Territory', 'TASK', 'Task Priority', '#VAC', '#SP', '#FP', '#SL', '#PSL', '#LP']
+    headers = ["SI NO","PROJECT ID", "CUSTOMER/PROJECT NAME", "Project Priority","SPOC", 'SPOC Remark',  "PM Remark", 'Exp Value', 'Exp PSL', 'PSL Value','Sourcing Status', 'Territory', 'TASK', 'Task Priority', '#VAC', '#SP', '#FP', '#SL', '#PSL', '#LP']
     black_border = Border(
         left=Side(border_style="thin", color="000000"),
         right=Side(border_style="thin", color="000000"),
@@ -304,60 +315,83 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     )
     ws.append(headers)
     ws.freeze_panes = "A3"
-    # yellow_columns = {"Completed Value", "Cr. Exp. Value", "Cr.Exp.PSL", "Exp.Week"}
     header_row = ws[ws.max_row]
     for cell in header_row:
-        # if cell.value in yellow_columns:
-        #     cell.fill = yellow_fill
-        #     cell.font = black_font
-        # else:
         cell.fill = header_fill
         cell.font = white_font
         cell.alignment = Alignment(horizontal="center", vertical="center")
         cell.border = black_border
-    # for cell in header_row:
-    #     cell.fill = header_fill
-    #     cell.font = header_font
-    #     cell.alignment = Alignment(horizontal="center", vertical="center")
-    #     cell.border = black_border
-    cust = frappe.db.sql("""SELECT * FROM `tabCustomer` WHERE `disabled` = 0 AND service IN ('REC-I','REC-D') ORDER BY `customer_name` ASC""", as_dict=True)
+   
+    # cust = frappe.db.sql("""SELECT * FROM `tabCustomer` WHERE `disabled` = 0 AND service IN ('REC-I','REC-D') ORDER BY `customer_name` ASC""", as_dict=True)
+    # row = 3
+    # serial_number = 1
+    # s_no=1
+    # grand_totals = {'vac':0,'sp': 0,'fp': 0,'sl':0,'psl':0,'custom_lp':0,'exp_value':0.0,'exp_psl':0.0,'project_psl_value':0}
+    # proj_s_no = 1 
+    # for c in cust:
+    #     priority = {"High": 1, "Medium": 2, "Low": 3}
+    #     pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry','Draft']), "customer": c['name'], "service": ("in", ['REC-I', 'REC-D'])}, ['*'],order_by= "priority ASC")
+    #     if not pname:
+    #         continue
+    projects = frappe.db.sql("""
+    SELECT p.*, c.customer_name
+    FROM `tabProject` p
+    LEFT JOIN `tabCustomer` c ON p.customer = c.name
+    WHERE p.status IN ('Open', 'Enquiry','Draft')
+      AND p.service IN ('REC-I','REC-D')
+      AND (c.disabled = 0 OR c.disabled IS NULL)
+    ORDER BY c.customer_name ASC, p.priority ASC
+""", as_dict=True)
+
     row = 3
     serial_number = 1
-    s_no=1
-    grand_totals = {'vac':0,'sp': 0,'fp': 0,'sl':0,'psl':0,'custom_lp':0,'exp_value':0.0,'exp_psl':0.0}
-    proj_s_no = 1 
-    for c in cust:
-        priority = {"High": 1, "Medium": 2, "Low": 3}
-        pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry']), "customer": c['name'], "service": ("in", ['REC-I', 'REC-D'])}, ['*'],order_by= "priority ASC")
-        if not pname:
-            continue
-        task_totals = {'exp_value':0.0,'vac':0,'sp':0,'fp':0,'sl':0,'psl':0,'custom_lp':0,'exp_psl':0.0}
+    s_no = 1
+    proj_s_no = 1
+    grand_totals = {'vac':0,'sp':0,'fp':0,'sl':0,'psl':0,'custom_lp':0,'exp_value':0.0,'exp_psl':0.0,'project_psl_value':0}
+
+    # group projects by customer
+    from collections import defaultdict
+    cust_projects = defaultdict(list)
+    for p in projects:
+        cust_projects[p.customer_name].append(p)
+
+    for cust_name, pname in cust_projects.items():
+        task_totals = {'exp_value':0.0,'vac':0,'sp':0,'fp':0,'sl':0,'psl':0,'custom_lp':0,'exp_psl':0.0,'project_psl_value':0}
         project_data = []      
         for p in pname:
+            project_psl_value =float(p.get('custom_psl_value',0) or 0)
             pdata = []
-            print(p.project_name)        
+            spoc_name = ""
+            if p.get("spoc"):
+                spoc_name = frappe.db.get_value("Employee", {"user_id": p.spoc}, "employee_name")
+            if not spoc_name:
+                spoc_name = ""  
             taskid = frappe.get_all("Task", {"status": ("in",('Working', 'Open', 'Overdue', 'Pending Review')), "project": p.name}, ['*'],order_by= "priority ASC")              
-            # print(p['project_name'])
-            # for tn in taskid:
-                # print(tn.name)
             for t in taskid:
-                pdata.append([p['project_name'] if p['project_name'] else "",p['priority'] if p['priority'] else "",p['remark'] if p['remark'] else "",p['account_manager_remark'] if p['account_manager_remark'] else "",p['custom_spoc_remark'] if p['custom_spoc_remark'] else "",p['expected_value'] if p['expected_value'] else "",p['expected_psl'] if p['expected_psl'] else "",p['sourcing_statu'] if p['sourcing_statu'] else "",p['territory'] if p['territory'] else "",t['subject'],t['priority'],t['vac'],t['sp'],t['fp'],t['sl'],t['psl'],t['custom_lp']])
+                task_psl = frappe.db.count("Closure", {"status": ("not in", ["Arrived"]), "task": t.name})
+                pdata.append([p['name'] if p['name'] else "",p['project_name'] if p['project_name'] else "",p['priority'] if p['priority'] else "",spoc_name, p['custom_spoc_remark'] if p['custom_spoc_remark'] else "", p['account_manager_remark'] if p['account_manager_remark'] else "",p['expected_value'] if p['expected_value'] else "",p['expected_psl'] if p['expected_psl'] else "",project_psl_value,p['sourcing_statu'] if p['sourcing_statu'] else "",p['territory'] if p['territory'] else "",t['subject'],t['priority'],t['vac'],t['sp'],t['fp'],t['sl'],t['psl'],t['custom_lp']])
                 task_totals['vac'] +=t['vac']
                 task_totals['sp'] +=t['sp']
                 task_totals['fp']+= t['fp']
                 task_totals['sl'] +=t['sl']
+                # task_totals['psl'] += task_psl
                 task_totals['psl'] += t['psl']
                 task_totals['custom_lp'] += t['custom_lp']
-            task_totals['exp_value'] += float(p['expected_value']) if p['expected_value'] not in (None, '') else 0
-            task_totals['exp_psl'] += float(p['expected_psl']) if p['expected_psl'] not in (None, '') else 0
+            task_totals['project_psl_value'] += project_psl_value
+            # task_totals['exp_value'] += float(p['expected_value']) if p['expected_value'] not in (None, '') else 0
+            # task_totals['exp_psl'] += float(p['expected_psl']) if p['expected_psl'] not in (None, '') else 0
+            task_totals['exp_value'] += safe_float(p['expected_value'])
+            task_totals['exp_psl']   += safe_float(p['expected_psl'])
+
             project_data.append({
-                'project_name': p['project_name'],'priority': p['priority'],
+                'name':p['name'],'project_name': p['project_name'],'priority': p['priority'],
                 'remark': p['remark'],'account_manager_remark': p['account_manager_remark'],'custom_spoc_remark':p['custom_spoc_remark'],'sourcing_statu': p['sourcing_statu'],'territory': p['territory'],
-                'expected_value': float(p['expected_value']) if p['expected_value'] not in (None, '') else 0,'expected_psl': p['expected_psl'],'tasks': pdata})
+                'expected_value': safe_float(p['expected_value']),'expected_psl': p['expected_psl'],'tasks': pdata})
         s_no+=1
         blue_fill = PatternFill(start_color="98d7f5", end_color="98d7f5", fill_type="solid")
-        # row_data = [serial_number, c['name']] + [""] * 14 + [task_totals['vac'], task_totals['sp'], task_totals['fp'], task_totals['sl'], task_totals['psl'],task_totals['custom_lp']]
-        row_data = [int_to_roman(serial_number), c['name']] + [""] * 4 +[task_totals['exp_value']]+[task_totals['exp_psl']]+[""] * 4+ [task_totals['vac'], task_totals['sp'], task_totals['fp'], task_totals['sl'], task_totals['psl'],task_totals['custom_lp']]        
+        
+        row_data = [int_to_roman(serial_number)," ",cust_name] + [""] * 4 +[task_totals['exp_value']]+[task_totals['exp_psl']]+[task_totals['project_psl_value']]+[""] * 4+ [task_totals['vac'], task_totals['sp'], task_totals['fp'], task_totals['sl'], task_totals['psl'],task_totals['custom_lp']]    
+            
         ws.append(row_data)
         row_to_fill = ws.max_row
         for col, cell in enumerate(ws[row_to_fill], start=1):
@@ -368,7 +402,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
             else:
                 cell.alignment = Alignment(horizontal="left",vertical="center",wrap_text=True)
             cell.border = black_border
-        ws.merge_cells(start_row=row_to_fill, start_column=2, end_row=row_to_fill, end_column=3)
+        # ws.merge_cells(start_row=row_to_fill, start_column=2, end_row=row_to_fill, end_column=3)
         serial_number += 1
         row += 1
         current_row_start = row
@@ -386,7 +420,7 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
                     cell.border = black_border
                 row += 1
             if project_row_start < row - 1:
-                for col in range(2, 13):
+                for col in range(2, 12):
                     ws.merge_cells(start_row=project_row_start, start_column=col, end_row=row-1, end_column=col)
                 ws.merge_cells(start_row=project_row_start, start_column=1, end_row=row-1, end_column=1)
             proj_s_no += 1
@@ -398,9 +432,10 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
         grand_totals['custom_lp'] +=task_totals['custom_lp']
         grand_totals['exp_value'] += float(task_totals['exp_value']) if task_totals['exp_value'] not in (None, '') else 0
         grand_totals['exp_psl'] += int(task_totals['exp_psl']) if task_totals['exp_psl'] not in (None, '') else 0
+        grand_totals['project_psl_value'] +=task_totals['project_psl_value']
 
     yellow_fill = PatternFill(start_color="0f1568", end_color="0f1568", fill_type="solid")
-    ws.append(['Total'] + [''] * 5 +[grand_totals['exp_value']]+ [grand_totals['exp_psl']]+ [''] * 4 +[grand_totals['vac'], grand_totals['sp'], grand_totals['fp'], grand_totals['sl'], grand_totals['psl'],grand_totals['custom_lp']])
+    ws.append(['Total'] + [''] * 6 +[grand_totals['exp_value']]+ [grand_totals['exp_psl']]+[grand_totals['project_psl_value']]+ [''] * 4 +[grand_totals['vac'], grand_totals['sp'], grand_totals['fp'], grand_totals['sl'], grand_totals['psl'],grand_totals['custom_lp']])
     last_row = ws.max_row
     for cell in ws[last_row]:
         cell.fill = yellow_fill
@@ -413,35 +448,30 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
         for cell in row:
             cell.border = black_border
             if isinstance(cell, MergedCell):
-                continue  # Skip merged cells
-            col_letter = get_column_letter(cell.column)  # Safe way to get column letter
-            if col_letter in ("H","A"):
+                continue  
+            col_letter = get_column_letter(cell.column) 
+            if col_letter in ("I","A","B","D","K","L"):
                 cell.alignment = Alignment(horizontal="center", vertical="center")
-            elif col_letter in ("B","D","E","F","K"):
+            elif col_letter in ("C","E","F","G","M","N"):
                 cell.alignment = Alignment(horizontal="left", vertical="center",wrap_text=True)
-            elif col_letter == "G":
+            elif col_letter == "H":
                 cell.alignment = Alignment(horizontal="right", vertical="center")
-                cell.number_format = '#,##0'  # Example: INR formatting
+                cell.number_format = '#,##0' 
             else:
                 cell.alignment = Alignment(horizontal="center", vertical="center",wrap_text=True)
     from openpyxl.utils.cell import column_index_from_string
-    g_col_idx = column_index_from_string("G")
+    g_col_idx = column_index_from_string("H")
     for row in ws.iter_rows(min_row=3, max_row=ws.max_row):
         cell = row[g_col_idx - 1]
         if isinstance(cell, MergedCell):
             continue
-
-        # Try to convert string values to float
         try:
             if isinstance(cell.value, str) and cell.value.strip().isdigit():
                 cell.value = float(cell.value.strip())
             elif isinstance(cell.value, str):
-                # Handle comma-separated numbers like '1,05,000'
                 cleaned = cell.value.replace(',', '').strip()
                 if cleaned.isdigit():
                     cell.value = float(cleaned)
-
-            # Now apply formatting if it's a number
             if isinstance(cell.value, (int, float)):
                 cell.number_format = '#,##0'
                 cell.alignment = Alignment(horizontal="right", vertical="center")
@@ -454,6 +484,12 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     xlsx_file.seek(0)
     return xlsx_file
 
+@frappe.whitelist()
+def safe_float(val):
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return 0
 
 @frappe.whitelist()
 def download_PSR_proj():
@@ -472,7 +508,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     ws = wb.create_sheet(valid_sheet_name, 0)
     args = frappe.local.form_dict
 
-    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 10,10, 5, 43, 43, 43]
+    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 10,10, 5,25, 43, 43, 43]
     column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -495,8 +531,8 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     )
 
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
-        "Ex Value", "Ex PSL", "AM Remark", "PM Remark", "SPOC Remark"
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
+        "Ex Value", "Ex PSL","SPOC", "AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
     header_row = ws[ws.max_row]
@@ -513,7 +549,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     ex_psl_total = 0  # Initialize Ex PSL total
     total_vac = total_sp = total_fp = total_sl = total_lp = total_psl = total_psl_value = 0
     pro_name=frappe.db.get_single_value("Formatted Reports  Download",'project')
-    pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry']), "name":pro_name, "service": ("in", ['REC-I', 'REC-D'])}, ['*'], order_by="priority ASC")
+    pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry','Draft']), "name":pro_name, "service": ("in", ['REC-I', 'REC-D'])}, ['*'], order_by="priority ASC")
     project_customer=frappe.db.get_value("Project",{"name":pro_name},["customer"])
     cust_territory=frappe.db.get_value("Customer",{"name":project_customer},["territory"])
 
@@ -539,19 +575,25 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
 
     for p in pname:
         project_vac = project_sp = project_fp = project_sl = project_lp = project_psl = 0
-        project_psl_value = p.get('custom_psl_value') or 0
+        project_psl_value = float(p.get('custom_psl_value',0) or 0)
         tasks = frappe.get_all("Task", {
             "status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')),
             "project": p.name
         }, ['subject', 'priority', 'vac', 'sp', 'fp', 'sl', 'psl', 'custom_lp'])
+        spoc_name = ""
+        if p.get("spoc"):
+            spoc_name = frappe.db.get_value("Employee", {"user_id": p.spoc}, "employee_name")
 
+        if not spoc_name:
+            spoc_name = "" 
+        project_psl = frappe.db.count("Closure", {"status": ("not in", ["Arrived"]), "project": p.name})
         for task in tasks:
             project_vac += task.get('vac', 0) or 0
             project_sp += task.get('sp', 0) or 0
             project_fp += task.get('fp', 0) or 0
             project_sl += task.get('sl', 0) or 0
             project_lp += task.get('custom_lp', 0) or 0
-            project_psl += task.get('psl', 0) or 0
+            # project_psl += task.get('psl', 0) or 0
 
         total_vac += project_vac
         total_sp += project_sp
@@ -563,7 +605,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
 
         task_data = [
             p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
-            p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
+            p.get('expected_value', 0), p.get('expected_psl', 0),spoc_name, p.get('remark', ''), p.get('account_manager_remark', ''),
             p.get('custom_spoc_remark', '')
         ]
         ws.append([""] + task_data)
@@ -577,7 +619,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         # Alignment Logic: Columns 13, 14, 15 left-aligned, others center-aligned
         for col in range(2, len(task_data) + 2):
             cell = ws.cell(row=row, column=col)
-            if cell.column in [16, 14, 15,2]:  # Left-align AM Remark, PM Remark, SPOC Remark
+            if cell.column in [16, 14, 15,2,17]:  # Left-align AM Remark, PM Remark, SPOC Remark
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
             elif cell.column == 12:  # Expected Value column
                 cell.alignment = Alignment(horizontal="right", vertical="center")
@@ -590,7 +632,7 @@ def make_xlsx_PSR_proj(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     # Total Row with Ex PSL Total
     total_row = [
         "", "Total", "", "", total_vac, total_sp, total_fp, total_sl, total_lp, total_psl,total_psl_value,
-        ev_total, ex_psl_total, "", "", ""
+        ev_total, ex_psl_total,"", "", "", ""
     ]
 
     ws.append(total_row)
@@ -633,7 +675,7 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     ws = wb.create_sheet(valid_sheet_name, 0)
     args = frappe.local.form_dict
 
-    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 10,10, 5, 43, 43, 43]
+    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 10,10, 5,25, 43, 43, 43]
     column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -656,8 +698,8 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     )
 
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
-        "Ex Value", "Ex PSL", "AM Remark", "PM Remark", "SPOC Remark"
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
+        "Ex Value", "Ex PSL", "SPOC","AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
     header_row = ws[ws.max_row]
@@ -675,7 +717,7 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     total_vac = total_sp = total_fp = total_sl = total_lp = total_psl = total_psl_value = 0
     pro_name=frappe.db.get_single_value("Formatted Reports  Download",'project')
     project_customer=frappe.db.get_single_value("Formatted Reports  Download",'customer')
-    pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry']), "name":pro_name,"customer":project_customer, "service": ("in", ['REC-I', 'REC-D'])}, ['*'], order_by="priority ASC")
+    pname = frappe.get_all("Project", {"status": ("in", ['Open', 'Enquiry','Draft']), "name":pro_name,"customer":project_customer, "service": ("in", ['REC-I', 'REC-D'])}, ['*'], order_by="priority ASC")
     cust_territory=frappe.db.get_value("Customer",{"name":project_customer},["territory"])
 
     blue_fill = PatternFill(start_color="98d7f5", end_color="98d7f5", fill_type="solid")
@@ -707,14 +749,22 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
             "status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')),
             "project": p.name
         }, ['subject', 'priority', 'vac', 'sp', 'fp', 'sl', 'psl', 'custom_lp'])
+        # Fetch SPOC Name
+        spoc_name = ""
+        if p.get("spoc"):
+            spoc_name = frappe.db.get_value("Employee", {"user_id": p.spoc}, "employee_name")
 
+        # If no SPOC assigned, use placeholder/random
+        if not spoc_name:
+            spoc_name = "Unassigned"   # Or use "Random SPOC", "N/A", etc.
+        project_psl = frappe.db.count("Closure", {"status": ("not in", ["Arrived"]), "project": p.name})
         for task in tasks:
             project_vac += task.get('vac', 0) or 0
             project_sp += task.get('sp', 0) or 0
             project_fp += task.get('fp', 0) or 0
             project_sl += task.get('sl', 0) or 0
             project_lp += task.get('custom_lp', 0) or 0
-            project_psl += task.get('psl', 0) or 0
+            # project_psl += task.get('psl', 0) or 0
 
         total_vac += project_vac
         total_sp += project_sp
@@ -722,11 +772,10 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         total_sl += project_sl
         total_lp += project_lp
         total_psl += project_psl
-        total_psl_value += p.get('custom_psl_value') or 0
-
+        total_psl_value += float(p.get('custom_psl_value',0) or 0)
         task_data = [
-            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,p.get('custom_psl_value') or 0,
-            p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
+            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
+            p.get('expected_value', 0), p.get('expected_psl', 0),spoc_name, p.get('remark', ''), p.get('account_manager_remark', ''),
             p.get('custom_spoc_remark', '')
         ]
         ws.append([""] + task_data)
@@ -740,7 +789,7 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         # Alignment Logic: Columns 13, 14, 15 left-aligned, others center-aligned
         for col in range(2, len(task_data) + 2):
             cell = ws.cell(row=row, column=col)
-            if col in [16, 14, 15]:  # Left-align AM Remark, PM Remark, SPOC Remark
+            if col in [16, 14, 15,17]:  # Left-align AM Remark, PM Remark, SPOC Remark
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
             elif cell.column == 2:  
                 cell.alignment = Alignment(horizontal="left", vertical="center")
@@ -755,7 +804,7 @@ def make_xlsx_PSR_both(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     # Total Row with Ex PSL Total
     total_row = [
         "", "Total", "", "", total_vac, total_sp, total_fp, total_sl, total_lp, total_psl,total_psl_value,
-        ev_total, ex_psl_total, "", "", ""
+        ev_total, ex_psl_total,"", "", "", ""
     ]
 
     ws.append(total_row)
@@ -798,7 +847,7 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     ws = wb.create_sheet(valid_sheet_name, 0)
     args = frappe.local.form_dict
 
-    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 10,10, 5, 43, 43, 43]
+    default_column_widths = [8, 25, 10, 10, 5, 5, 5, 5, 5, 5, 10,10, 5,25, 43, 43, 43]
     column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
         ws.column_dimensions[get_column_letter(i)].width = width
@@ -821,8 +870,8 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     )
 
     headers = [
-        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL in Value",
-        "Ex Value", "Ex PSL", "AM Remark", "PM Remark", "SPOC Remark"
+        "SI NO", "CUSTOMER/PROJECT NAME", "Project Priority", "SR Status", "VAC", "SP", "FP", "SL", "LP", "PSL","PSL Value",
+        "Ex Value", "Ex PSL","SPOC", "AM Remark", "PM Remark", "SPOC Remark"
     ]
     ws.append(headers)
     header_row = ws[ws.max_row]
@@ -844,7 +893,7 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     cust_name=frappe.db.get_single_value("Formatted Reports  Download",'customer')
     cust_territory=frappe.db.get_value("Customer",{"name":cust_name},["territory"])
     pname = frappe.get_all("Project", {
-        "status": ("in", ['Open', 'Enquiry']),
+        "status": ("in", ['Open', 'Enquiry','Draft']),
         "customer":cust_name ,
         "service": ("in", ['REC-I', 'REC-D'])
     }, ['*'], order_by="priority ASC")
@@ -876,14 +925,20 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
             "status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')),
             "project": p.name
         }, ['subject', 'priority', 'vac', 'sp', 'fp', 'sl', 'psl', 'custom_lp'])
+        spoc_name = ""
+        if p.get("spoc"):
+            spoc_name = frappe.db.get_value("Employee", {"user_id": p.spoc}, "employee_name")
 
+        if not spoc_name:
+            spoc_name = ""  
+        project_psl = frappe.db.count("Closure", {"status": ("not in", ["Arrived"]), "project": p.name})
         for task in tasks:
             project_vac += task.get('vac', 0) or 0
             project_sp += task.get('sp', 0) or 0
             project_fp += task.get('fp', 0) or 0
             project_sl += task.get('sl', 0) or 0
             project_lp += task.get('custom_lp', 0) or 0
-            project_psl += task.get('psl', 0) or 0
+            # project_psl += task.get('psl', 0) or 0
 
         total_vac += project_vac
         total_sp += project_sp
@@ -892,10 +947,9 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         total_lp += project_lp
         total_psl += project_psl
         total_psl_value += float(p.get('custom_psl_value',0) or 0)
-
         task_data = [
-            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value', 0) or 0),
-            p.get('expected_value', 0), p.get('expected_psl', 0), p.get('remark', ''), p.get('account_manager_remark', ''),
+            p['project_name'], p['priority'], p.get('sourcing_statu', ''), project_vac, project_sp, project_fp, project_sl, project_lp, project_psl,float(p.get('custom_psl_value',0) or 0),
+            p.get('expected_value', 0), p.get('expected_psl', 0),spoc_name, p.get('remark', ''), p.get('account_manager_remark', ''),
             p.get('custom_spoc_remark', '')
         ]
         ws.append([""] + task_data)
@@ -909,7 +963,7 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
         # Alignment Logic: Columns 13, 14, 15 left-aligned, others center-aligned
         for col in range(2, len(task_data) + 2):
             cell = ws.cell(row=row, column=col)
-            if col in [16, 14, 15]:  # Left-align AM Remark, PM Remark, SPOC Remark
+            if col in [16, 14, 15,17]:  # Left-align AM Remark, PM Remark, SPOC Remark
                 cell.alignment = Alignment(horizontal="left", vertical="center", wrap_text=True)
             elif col ==2:
                 cell.alignment = Alignment(horizontal="left", vertical="center")
@@ -924,7 +978,7 @@ def make_xlsx_PSR_cust(sheet_name="PR:02 - Project Status Report - REC (PSR - R)
     # Total Row with Ex PSL Total
     total_row = [
         "", "Total", "", "", total_vac, total_sp, total_fp, total_sl, total_lp, total_psl,total_psl_value,
-        ev_total, ex_psl_total, "", "", ""
+        ev_total, ex_psl_total,"", "", "", ""
     ]
 
     ws.append(total_row)

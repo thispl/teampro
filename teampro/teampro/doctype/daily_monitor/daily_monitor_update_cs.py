@@ -107,7 +107,7 @@ def dpr_task_mail_cs_it_update(name,date,service,task_type):
 
     if task_type == "CS":
         emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00023'},['*'])
-        recievers.append('anil.p@groupteampro.com')
+        recievers.append('annie.m@groupteampro.com')
         for i in emp:
             recievers.append(i.user_id)
     recievers.append('dineshbabu.k@groupteampro.com')

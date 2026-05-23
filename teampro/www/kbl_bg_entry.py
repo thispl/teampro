@@ -20,7 +20,7 @@ def new_kbl_bg(**args):
         ec.specialization = str(args['special'])
         ec.course_period = args['courseperiod']
         ec.year_of_passed = args['yearofpass']
-        ec.education_document_required = 'https://kbl.teamproit.com/'+args['degcert']
+        ec.education_document_required = 'https://hrpro.kblservices.in/'+args['degcert']
         ec.employment_check = args['employer']
         ec.address_and_contact_details = str(args['addandcont'])
         ec.experience = args['experience']
@@ -30,7 +30,7 @@ def new_kbl_bg(**args):
             ec.emp_period = str(args['empperiod'])
             ec.designation = args['empdesig']
             ec.ctc_drawn = args['ctcdrawn']
-            ec.documents_required = 'https://kbl.teamproit.com/'+args['appointment']
+            ec.documents_required = 'https://hrpro.kblservices.in/'+args['appointment']
             ec.data_32 = str(args['reason'])
             ec.data_33 = args['ref1']
             ec.data_34 = args['cont1']
@@ -41,11 +41,11 @@ def new_kbl_bg(**args):
         ec.criminal_check_address = str(args['address1'])
         ec.state_and_country = args['state']
         ec.city = args['city']
-        ec.criminal_check_document_required = 'https://kbl.teamproit.com/'+args['aadhar']
-        ec.document_required = 'https://kbl.teamproit.com/'+args['resume']
+        ec.criminal_check_document_required = 'https://hrpro.kblservices.in/'+args['aadhar']
+        ec.document_required = 'https://hrpro.kblservices.in/'+args['resume']
         ec.name_as_in_proof = args['name']
         ec.date_of_birth_as_in_proof = args['dob']
-        ec.scanned_document_required = 'https://kbl.teamproit.com/'+args['aadhar']
+        ec.scanned_document_required = 'https://hrpro.kblservices.in/'+args['aadhar']
         ec.father_name_as_in_proof = args['father']
         ec.customer = "KBL Services Limited"
         ec.save(ignore_permissions=True)
@@ -54,3 +54,4 @@ def new_kbl_bg(**args):
         return True
     except Exception as e:
         frappe.log_error(f"Error :{str(e)}",("BG Entry Error"))
+

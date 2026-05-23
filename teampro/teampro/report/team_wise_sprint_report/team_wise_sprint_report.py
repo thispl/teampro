@@ -34,6 +34,7 @@ def get_columns(filters):
 		_("Spot Task") + ":Data/:100",
 		_("Current Status") + ":Data/:150",
 		_("Remarks") + ":Data/:300:Align/Center",
+		_("ETVs AT Remarks") + ":Data/:300:Align/Center",
 	]
 	return columns
 
@@ -42,21 +43,21 @@ def get_data(filters):
 	if filters:
 		if filters.sprint and filters.dev_team:
 			task_data = frappe.db.sql("""
-				SELECT name, project, subject, custom_allocated_to, status, expected_time, rt, actual_time, priority, custom_spot_task, custom_remarks
+				SELECT name, project, subject, custom_allocated_to, status, expected_time, rt, actual_time, priority, custom_spot_task, custom_remarks,custom_et_vs_at_remark
 				FROM `tabTask`
 				WHERE custom_dev_team = %s AND custom_sprint = %s
 				ORDER BY custom_allocated_to,project
 			""", (filters.dev_team, filters.sprint), as_dict=1)
 		elif filters.sprint and filters.dev_team is None:
 			task_data = frappe.db.sql("""
-				SELECT name, project, subject, custom_allocated_to, status, expected_time, rt, actual_time, priority, custom_spot_task, custom_remarks
+				SELECT name, project, subject, custom_allocated_to, status, expected_time, rt, actual_time, priority, custom_spot_task, custom_remarks,custom_et_vs_at_remark
 				FROM `tabTask`
 				WHERE custom_sprint = %s
 				ORDER BY custom_allocated_to,project
 			""", (filters.sprint), as_dict=1)
 		elif filters.sprint is None and filters.dev_team:
 			task_data = frappe.db.sql("""
-				SELECT name, project, subject, custom_allocated_to, status, expected_time, rt, actual_time, priority, custom_spot_task, custom_remarks
+				SELECT name, project, subject, custom_allocated_to, status, expected_time, rt, actual_time, priority, custom_spot_task, custom_remarks,custom_et_vs_at_remark
 				FROM `tabTask`
 				WHERE custom_dev_team = %s
 				ORDER BY custom_allocated_to,project
@@ -74,7 +75,7 @@ def get_data(filters):
 			`tabTimesheet`.employee = '%s' and `tabTimesheet Detail`.task = '%s' """%(employee,task.name),as_dict = 1) or ''
 			actual_hours = actual_time[0].get('hours', 0) or 0
 			row = [task.name,task.project,task.subject,emp_short_code,"Working",task.expected_time,task.rt,
-			round(actual_hours, 2),task.priority,spot_task,task.status,task.custom_remarks]
+			round(actual_hours, 2),task.priority,spot_task,task.status,task.custom_remarks,task.custom_et_vs_at_remark]
 			data.append(row)
 	return data
 	

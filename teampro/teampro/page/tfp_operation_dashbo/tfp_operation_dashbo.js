@@ -31,7 +31,7 @@ frappe.pages['tfp-operation-dashbo'].on_page_load = function (wrapper) {
 				<h2 style="font-weight: bold; margin: 0;">TFP OPERATION DASHBOARD</h2>
 				<div id="current-datetime" style="font-size: 16px; color: #666; margin-top: 5px;"></div>
             <!-- PACKING PLAN -->
-            <div id="tfp-so-table" style="max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center">
+            <div id="tfp-so-table" style="max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center;margin-left:15px;margin-right:15px;">
 				<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px;text-align:center">PACKING PLAN (SALES ORDER)</h4>
 					<div style="position: absolute; top: 10px; right: 10px; z-index: 1;">
 						<button id="download-dashboard" class="btn btn-secondary">Download</button>
@@ -39,31 +39,31 @@ frappe.pages['tfp-operation-dashbo'].on_page_load = function (wrapper) {
 					<div id="tfp-so-table-content" style="margin-top: 10px;"></div>
 				</div>
 			</div>
-			<div id="tfp-so-table" style="max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center">
+			<div id="tfp-so-table" style="max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center;margin-left:20px;margin-right:20px;">
 			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px;text-align:center">SCHEDULED DETAILS (PINK SLIP)</h4>
 
 			<div id="tfp-so-table-dn-content" style="margin-top: 0px;"></div>
 			</div>
 <div style="display: flex; gap: 20px; margin-top: 30px; justify-content: center; flex-wrap: nowrap;">
 	<!-- Packed Details -->
-	<div class="table-card" style="max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;">
+	<div class="table-card" style="max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;margin-left:20px;margin-right:20px;">
 		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;">PACKED DETAILS</h4>
 		<div id="tfp-so-table-dn-packed-content" style="margin-top: 0px; overflow-x: auto; white-space: nowrap;"></div>
 	</div>
 
 	<!-- Dispatched Details -->
-	<div class="table-card" style="max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;">
+	<div class="table-card" style="max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;margin-left:20px;margin-right:20px;">
 		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;">DISPATCHED DETAILS</h4>
 		<div id="tfp-so-table-dn-dispatched-content" style="margin-top: 0px; overflow-x: auto; white-space: nowrap;"></div>
 	</div>
 </div>
 
            <div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-		<div id="tfp-stock-table" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="tfp-stock-table" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left:20px;margin-right:20px;">
 			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">STORES - TFP (PRODUCT)</h4>
 			<div id="tfp-stock-table-content" style="margin-top: 20px;"></div>
 		</div>
-		<div id="tfp-stock-table-second" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="tfp-stock-table-second" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left:20px;margin-right:20px;">
 						<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">STORES - TFP (PACKING MATERIAL)</h4>
 			<div id="tfp-stock-table-content-packing" style="margin-top: 20px;"></div>
 		</div>
@@ -71,20 +71,16 @@ frappe.pages['tfp-operation-dashbo'].on_page_load = function (wrapper) {
 	</div>
     
 	<div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-		<div id="second-stock-table" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="second-stock-table" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left:20px;margin-right:20px;">
 			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">VM PRECISION -TFP</h4>
 
 			<div id="second-stock-table-content" style="margin-top: 20px;"></div>
 		</div>
-		<div id="second-stock-table-vm" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="second-stock-table-vm" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left:20px;margin-right:20px;">
 			
 		</div>
 		</div>
-        <div id="tfp-stock-table-third" style="flex: 1; min-width: 100px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
-						<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">Packing Details</h4>
-			<div id="tfp-stock-table-content-packing1" style="margin-top: 20px;"></div>
-		</div>
-        </div>
+       
 		</div>
     `);
 

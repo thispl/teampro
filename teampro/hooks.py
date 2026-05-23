@@ -17,7 +17,13 @@ app_license = "MIT"
 # include js, css files in header of desk.html
 # app_include_css = "/assets/teampro/css/teampro.css"
 # app_include_js = "/assets/teampro/js/teampro.js"
+# app_include_css = "/assets/teampro/css/custom.css"
+app_include_js = [
+		"https://maps.googleapis.com/maps/api/js?sensor=false&libraries=places&key=AIzaSyAdaNNXhTh13TRLiZjSa9YYp66gNNj9aZ8",
+		
+			]
 
+boot_session = "teampro.boot.get_boot_data"			
 # include js, css files in header of web template
 # web_include_css = "/assets/teampro/css/teampro.css"
 # web_include_js = "/assets/teampro/js/teampro.js"
@@ -84,6 +90,9 @@ app_license = "MIT"
 # Hook on document methods and events
 
 doc_events = {
+    "Website Item":{
+        "after_insert":"teampro.custom.create_website_item",
+	},
     "ToDo":{
         "before_save":"teampro.utility.update_subject_from_description",
         "before_insert":"teampro.utility.set_creation_date",
@@ -92,14 +101,17 @@ doc_events = {
 		"before_save": "teampro.utility.rename_file"
 	},
     "Leave Application":{
-		"after_insert": "jobpro.custom.restrict_leave"
+	# 	"after_insert": "jobpro.custom.restrict_leave"
+		"on_submit":"checkpro.custom.update_session_leave",
+		"on_cancel":"checkpro.custom.update_session_leave_cancel",
+        "validate":"teampro.utility.update_tot_leave_days"
 	},
 	"Quotation":{
-		"validate": "teampro.custom.calc_cut_off_prize",
-        "after_insert":"teampro.custom.set_quotation"
+		"validate": "teampro.sales_invoice_method.calc_cut_off_prize",
+        "after_insert":"teampro.teampro_hooks_method.set_quotation"
 	},
 	"Employee":{
-		"validate": ["teampro.custom.update_custodian","teampro.custom.inactive_employee"],
+		"validate": ["teampro.teampro_hooks_method.update_custodian","teampro.teampro_hooks_method.inactive_employee","teampro.custom.emp_short_code_check"],
         # "after_insert": "checkpro.custom.after_insert_employee_onboarding"
 	},
     "Employee Onboarding": {
@@ -108,45 +120,49 @@ doc_events = {
     },
 	"Task":{
         "before_save":"teampro.utility.update_task_subject_from_description",
-		"on_update": ["teampro.custom.issue_status","jobpro.custom.update_project_count"],
-		"validate": ["teampro.custom.update_issue_wonjin","teampro.custom.update_issue_type","teampro.custom.update_issue_typein_issue","teampro.custom.update_country_flag","jobpro.custom.update_project_count"],
-		"after_insert":["teampro.api.create_user_notification","checkpro.custom.send_task_creation_email","teampro.custom.update_criteria_table"]
+		"on_update": ["teampro.teampro_hooks_method.update_dm","teampro.teampro_hooks_method.issue_status","jobpro.custom.update_project_count"],
+		
+		"validate": ["teampro.teampro_hooks_method.update_issue_type","teampro.teampro_hooks_method.update_issue_typein_issue","teampro.teampro_hooks_method.old_sprint_alert","teampro.teampro_hooks_method.update_country_flag","jobpro.custom.update_project_count", "teampro.custom.update_cb_bulk", "teampro.teampro_hooks_method.update_issue_wonjin"],
+  
+		"after_insert":["teampro.api.create_user_notification","checkpro.custom.send_task_creation_email","teampro.teampro_hooks_method.update_criteria_table", "teampro.teampro.doctype.daily_monitor.dm_it_dev.update_daily_monitor_task"]
 
 	},
     "Issue":{
-        "after_insert":["teampro.custom.update_project_issue","teampro.custom.update_issueid_wonjin"]
+        "after_insert":["teampro.teampro_hooks_method.update_project_issue","teampro.teampro_hooks_method.update_issueid_wonjin"]
+       
 	},
 	"User Notifications":{
 		"after_insert":"teampro.api.send_notification"
 	},
 	"Target Manager":{
-        "after_insert":"teampro.custom.update_service_tm"
+        "after_insert":["teampro.teampro_hooks_method.update_service_tm","teampro.api.notify_target_change"],
+		"after_delete": "teampro.api.notify_target_change",
+        "after_update": "teampro.api.notify_target_change"
 	},
     
     # "Court":{
     #     "on_update":["teampro.custom.update_tat_completion_date_court","teampro.custom.update_tat_completion_date_court_ch"]
 	# },
 	"Project":{
-		"after_insert": "teampro.custom.create_project_completion_task",
-        "validate":["teampro.custom.update_sfp_remarks","jobpro.custom.update_sa_details_in_task"],
-        "on_update":'teampro.custom.update_table_in_task'
+		"after_insert": ["teampro.teampro_hooks_method.create_project_completion_task","teampro.teampro_hooks_method.update_color_grade"],
+        "validate":["teampro.teampro_hooks_method.update_sfp_remarks","jobpro.custom.update_sa_details_in_task","jobpro.custom.update_proj_position"],
+        "on_update":['teampro.teampro_hooks_method.update_color_grade_specification',"teampro.teampro_hooks_method.update_project_image"]
 	},
 	"Journal Entry": {
-		"validate": "teampro.custom.update_cost_center"
+		"validate": "teampro.teampro_hooks_method.update_cost_center"
 	},
 	"Timesheet":{
-		"on_update": "teampro.custom.fetch_start_time",
+		"on_update": "teampro.teampro_hooks_method.fetch_start_time",
 		# "before_submit":"teampro.custom.return_detailed_ts"
-        "before_submit":"teampro.custom.validate_timesheet",
-        "on_submit":"teampro.custom.update_working_remarks",
-        # "validate":"teampro.custom.validate_et_vs_at"
+        "before_submit":"teampro.teampro_hooks_method.validate_timesheet",
+        "on_submit":"teampro.teampro_hooks_method.update_working_remarks",
+       
 	},
 	"Sales Order":{
-		"on_submit":["teampro.custom.update_batch_status",
-               "teampro.teampro.doctype.target_manager.updated_target_manager.calculate_target_for_manager_inso_test",
-               "teampro.custom.so_creation_mail_it_sw","teampro.custom.send_mail_so_submission","teampro.custom.update_so_priority_on_submit"],
-        "on_cancel": "teampro.custom.update_pi_workflow",
-        "validate": ["teampro.custom.calc_cut_off_prize"],
+		"on_submit":["teampro.teampro_hooks_method.update_batch_status",
+               "teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.teampro_hooks_method.update_so_priority_on_submit"],
+        "on_cancel": "teampro.teampro_hooks_method.update_pi_workflow",
+        "validate": ["teampro.sales_invoice_method.calc_cut_off_prize"],
         # "after_insert":"teampro.custom.update_cover_count",
 		# "after_submit": "teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update_manager",
 		# "on_update":"teampro.custom.skip_dn_so",
@@ -156,11 +172,10 @@ doc_events = {
     #     "validate":["teampro.teampro.doctype.target_manager.updated_target_manager.calculate_target_for_manager_inso_test"]
 	# },
     "Sales Follow Up":{
-        "after_insert": ["teampro.custom.update_lead_contacts_sfp","teampro.custom.update_spf_details_lead"]
+        "after_insert": ["teampro.teampro_hooks_method.update_lead_contacts_sfp","teampro.teampro_hooks_method.update_spf_details_lead"]
 	},
 	"Opportunity": {
-		"after_insert": "teampro.custom.opportunity_send_mail",
-        "on_update":["teampro.custom.update_lead_status","teampro.custom.update_sfp_opportunity"]
+        "on_update":["teampro.teampro_hooks_method.update_lead_status","teampro.teampro_hooks_method.update_sfp_opportunity"]
 		# "on_cancel": "method",
 		# "on_trash": "method"
 	},
@@ -172,43 +187,44 @@ doc_events = {
         "validate":["teampro.teampro.doctype.sprint.sprint.update_sprint_hours","teampro.teampro.doctype.sprint.sprint.update_allocated_hrs","teampro.teampro.doctype.sprint.sprint.update_sprint_status"],
         # "validate":["teampro.teampro.doctype.sprint.sprint.validate_allocate_hrs"]
 	},
-	"Candidate": {
-		"on_update": ["teampro.custom.update_task_count"]
-	},
-    "Attendance Permission":{
-        "validate":["teampro.custom.validate_permission_request"],
-        "on_submit":["teampro.custom.update_permission_req_in_att"],
-        "on_cancel":["teampro.custom.update_permission_req_in_att_cancel"],
-        "after_insert":["jobpro.custom.mesg_for_permission"]
-	},
+    # "Attendance Permission":{
+    #     "validate":["teampro.teampro_hooks_method.validate_permission_request"],
+    #     "on_submit":["teampro.teampro_hooks_method.update_permission_req_in_att"],
+    #     "on_cancel":["teampro.teampro_hooks_method.update_permission_req_in_att_cancel"],
+    #     "after_insert":["jobpro.custom.mesg_for_permission"]
+	# },
 	# "Payment Entry":{
 	# 	"on_submit":"jobpro.jobpro.doctype.closure.closure.closure_payment_entry"
 	# },
 	"Sales Invoice":{
-        # "validate":["teampro.custom.get_all_quot"],
-		# "validate": "teampro.custom.sales_order_batch",
-		# "after_submit": "teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update",
-		"on_submit": ["teampro.teampro.doctype.target_manager.updated_target_manager.calculate_target_for_manager_inso_test","checkpro.custom.update_case_status_billed"],
+       
+		"on_submit": ["teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.sales_invoice_method.update_case_status_billed"],
         "on_trash":"teampro.utility.si_on_trash",
-        "validate": ["teampro.custom.clear_payment_table_si","teampro.custom.validate_maintain_stok_si","teampro.custom.calc_cut_off_prize"]
-		# "validate": ["teampro.custom.calc_cut_off_prize","teampro.custom.clear_payment_table_si"]
-		# "on_submit": "teampro.custom.get_against_so"
+        "validate": ["teampro.sales_invoice_method.clear_payment_table_si","teampro.sales_invoice_method.calc_cut_off_prize","teampro.sales_invoice_method.calculate_advances_invoice","teampro.sales_invoice_method.validate_maintain_stok_si"],
+        
+		# "validate":["teampro.sales_invoice_method.validate_maintain_stok_si"]
 	},
 	"Attendance Request":{
-		"on_cancel": "teampro.custom.update_wh_att",
-        "after_insert": "jobpro.custom.restrict_att_req",
+		"on_cancel": ["teampro.teampro_hooks_method.update_wh_att","teampro.att_request.on_cancel_attendance_request","teampro.att_request.update_perm_req_in_att_cancel","checkpro.custom.update_session_ar_cancel","teampro.att_request.update_att_oncancel_mispunch"],
+		"on_submit":["checkpro.custom.update_session_ar","teampro.att_request.on_submit_attendance_request","teampro.att_request.update_permission_req_in_att_submission"],
+        "validate":["teampro.att_request.validate_att_working_day"],
+        # "after_insert": "jobpro.custom.restrict_att_req",
         
 	},
+    
 	"Purchase Invoice": {
         # "before_submit": "teampro.custom.validate_date",
-        "on_update":"teampro.custom.update_workflow_state",
-        "validate":"teampro.custom.calc_cost_prize"
+        "on_update":"teampro.teampro_hooks_method.update_workflow_state",
+        "validate":"teampro.teampro_hooks_method.calc_cost_prize"
     },
     "Purchase Order":{
-        "validate":"teampro.custom.calc_cost_prize",
-		"on_submit":["teampro.custom.update_ordered_qty", "teampro.custom.update_material_request_status_on_submit"],
-        "on_cancel":["teampro.custom.update_ordered_qty_on_cancel"]
+        "validate":"teampro.teampro_hooks_method.calc_cost_prize",
+		"on_submit":["teampro.teampro_hooks_method.update_ordered_qty", "teampro.teampro_hooks_method.update_material_request_status_on_submit"],
+        "on_cancel":["teampro.teampro_hooks_method.update_ordered_qty_on_cancel"]
 	},
+    # "Customer":{
+    #     "validate":"teampro.teampro.doctype.update_status.sla.update_sla_status",
+	# },
     # "Stock Counting":{
     #     "validate":"teampro.custom.validate_stock_counting"
 	# },
@@ -227,41 +243,53 @@ doc_events = {
 	# "after_insert": "teampro.custom.get_delivery_note"
 	# },
 	"Delivery Note":{
-	"after_insert": "teampro.custom.get_so_item_details",
-    "validate":["teampro.custom.set_totals_in_delivery_note"],
-    "on_submit":["teampro.custom.update_so_priority","teampro.custom.create_material_isse"],
+	"after_insert": "teampro.delivery_note_method.get_so_item_details",
+    "validate":["teampro.delivery_note_method.set_totals_in_delivery_note","teampro.delivery_note_method.validate_packing_items_on_dn"],
+    "on_submit":["teampro.delivery_note_method.update_so_priority","teampro.delivery_note_method.create_material_issue"],
     # "on_cancel":"teampro.custom.cancel_material_isse"
 	},
+    "Salary Slip":{
+        'validate':'teampro.teampro_hooks_method.update_employer_pf'
+	},
     "VM Stock Register":{
-        "on_submit":["teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_re_filling_stock_entries","teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_packing_stock_entries"],
+        # "on_submit":["teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_re_filling_stock_entries","teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_packing_stock_entries"],
         # "validate":"teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_packing_stock_entries",
+        "on_cancel":["teampro.teampro_hooks_method.update_stock_against_vm"]
 	},
 	"BG Entry Form": {
         "after_insert": "teampro.teampro.doctype.bg_entry_form.bg_entry_form.mark_files_public"
 	},
     "Appraisal Cycle" :{
-        "after_insert":"teampro.custom.update_month_cycle"
+        "after_insert":"teampro.teampro_hooks_method.update_month_cycle",
+	},
+    "Appraisal":{
+        "validate":["teampro.teampro_hooks_method.update_ep_nc_appraisal","teampro.teampro_hooks_method.update_grade"],
+        "on_submit":"teampro.email_alerts.send_appraisal_mail",
+        "before_submit":"teampro.teampro_hooks_method.validate_reviewer_remark",
+        "before_insert":"teampro.teampro_hooks_method.update_company_by_employee"
+
 	},
     "Stock Entry":{
-        "on_submit":"teampro.teampro.doctype.vm_stock_register.vm_stock_register.update_vm_status",
+        "on_submit":["teampro.teampro_hooks_method.create_packing_issue_stock_entry","teampro.teampro_hooks_method.auto_submit_stock","teampro.teampro.doctype.vm_stock_register.vm_stock_register.update_vm_status"],
+		"on_cancel":["teampro.teampro_hooks_method.cancel_packing_issue_stock_entry"]
 	},
     
 	# "Job Applicant": {
     #     "after_insert": "teampro.utility.mark_files_public"
 	# },
     
-	# "Attendance":{
-    #     "on_cancel":"teampro.mark_attendance.cancel_comp_off",
-    #     "on_update":"teampro.mark_attendance.update_coff",
-	# },
+	"Attendance":{
+        # "on_cancel":"teampro.mark_attendance.cancel_comp_off",
+        "validate":"teampro.mark_attendance.update_att_as_present",
+	},
     "Customer":{
-        "after_insert":[ "teampro.custom.update_lead_as_qualified","teampro.custom.update_spf_status"],
-        "on_update":["teampro.custom.update_project_dates"],
-        "validate":"teampro.custom.set_customer_id"
+        "after_insert":[ "teampro.teampro_hooks_method.update_lead_as_qualified","teampro.teampro_hooks_method.update_spf_status","teampro.utility.update_customer_contact_table","teampro.utility.update_sfp_details_customer"],
+        "on_update":["teampro.teampro_hooks_method.update_project_dates", "teampro.utility.update_sfp_details_customer"],
+        "validate":["teampro.teampro_hooks_method.set_customer_id"]
 	},
     "Lead":{
         # "after_insert": ["teampro.custom.update_existing_lead","teampro.custom.update_check_existing_lead"]
-        "after_insert": ["teampro.custom.update_check_existing_lead"]
+        "after_insert": ["teampro.teampro_hooks_method.update_check_existing_lead"]
 	},
    
 	
@@ -535,6 +563,7 @@ jinja = {
         "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.appointment_schedule_report",
         "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.appointment_taken_report",
         "teampro.custom.get_tfp_item",
+		"teampro.teampro.page.it_sw_dashboard_1.production_pdf_print.get_today_task_data",
         
 	]
 }
@@ -598,8 +627,8 @@ scheduler_events={
 override_doctype_class = {
     "Event": "teampro.overrides.customEvent",
     # "Task": "teampro.overrides.customTask",
-    "Leave Application": "teampro.overrides.CustomLeaveApplication",
-    "Attendance Request": "teampro.overrides.CustomAttendanceRequest",
+    # "Leave Application": "teampro.overrides.CustomLeaveApplication",
+    # "Attendance Request": "teampro.overrides.CustomAttendanceRequest",
 }
 
 # exempt linked doctypes from being automatically cancelled

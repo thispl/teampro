@@ -1,0 +1,125 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-11-15 10:44:37.547334",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "documnet_type",
+  "workflow_state",
+  "column_break_viek",
+  "title",
+  "count",
+  "disabled",
+  "expired_on",
+  "column_break_qkiz",
+  "message",
+  "user",
+  "column_break_xzck",
+  "filters_json",
+  "section_break_rgcu",
+  "seen_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "documnet_type",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Doctype",
+   "options": "DocType"
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow State",
+   "options": "Workflow State"
+  },
+  {
+   "fieldname": "column_break_viek",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Title"
+  },
+  {
+   "fieldname": "count",
+   "fieldtype": "Int",
+   "label": "Count"
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "label": "Disabled"
+  },
+  {
+   "fieldname": "expired_on",
+   "fieldtype": "Date",
+   "label": "Expired On"
+  },
+  {
+   "fieldname": "column_break_qkiz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_xzck",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "filters_json",
+   "fieldtype": "JSON",
+   "label": "Filters Json"
+  },
+  {
+   "fieldname": "section_break_rgcu",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "seen_by",
+   "fieldtype": "Table",
+   "label": "Seen By",
+   "options": "Note Seen By"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2025-11-15 10:46:56.846480",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Pending Approval",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -3,34 +3,42 @@
 
 frappe.ui.form.on('Sales Follow Up', {
 	refresh: function(frm) {
-		if (frm.doc.app_status == 'Yet to Meet') {
-			frm.add_custom_button("Fix meeting", function () {
+		if (frm.doc.app_status == 'Not Visited') {
+			frm.add_custom_button("Schedule", function () {
 				frappe.confirm(
-					'Are you sure you want to fix the meeting?',
+					'Are you sure you want to schedule the meeting?',
 					function () {
 						let d = new frappe.ui.Dialog({
-							title: 'Fix Meeting',
+							title: 'Schedule Meeting',
 							fields: [
 								{
 									label: 'Appointment On',
 									fieldname: 'appointment_on',
 									fieldtype: 'Date',
-									// reqd: 1
+									reqd: 1
 								},
 								{
 									label: 'Appointment For',
 									fieldname: 'appointment_for',
 									fieldtype: 'Link',
 									options: 'User',
-									// reqd: 1
+									reqd: 1
+								},
+								{
+									label:"Appointment Mode",
+									fieldname:"appointment_mode",
+									fieldtype:"Select",
+									options:["Direct","Online"],
+									reqd:1
 								}
 							],
 							primary_action_label: 'Submit',
 							primary_action(values) {
-								frm.set_value('app_status', 'Fix Meeting');
+								frm.set_value('app_status', 'Scheduled');
 								frm.set_value('appointment_created_on', frappe.datetime.now_date());
 								frm.set_value('custom_appointment_fixed_for', values.appointment_for);
 								frm.set_value('appointment_fixed_on', values.appointment_on);
+								frm.set_value('custom_appointment_mode', values.appointment_mode);
 								d.hide();
 								frm.save(); 
 							}
@@ -42,31 +50,191 @@ frappe.ui.form.on('Sales Follow Up', {
 						
 					}
 				);
-			});
+			},"Appointment"); 
 			
 		}
-		
-		if (frm.doc.app_status=='Fix Meeting'){
-			frm.add_custom_button(("Schedule Meeting"), function () {
+		if(frm.doc.app_status=="Scheduled"){
+			frm.add_custom_button("Re-Schedule", function () {
 				frappe.confirm(
-					'Are you sure, you want to schedule the meeting?',
+					'Are you sure you want to Reschedule the meeting?',
 					function () {
-						frm.set_value('app_status', 'Scheduled');
+						let d = new frappe.ui.Dialog({
+							title: 'Schedule Meeting',
+							fields: [
+								{
+									label: 'Appointment On',
+									fieldname: 'appointment_on',
+									fieldtype: 'Date',
+									reqd: 1
+								},
+								{
+									label: 'Appointment For',
+									fieldname: 'appointment_for',
+									fieldtype: 'Link',
+									options: 'User',
+									reqd: 1
+								},
+								{
+									label:"Appointment Mode",
+									fieldname:"appointment_mode",
+									fieldtype:"Select",
+									options:["Direct","Online"],
+									reqd:1
+								}
+							],
+							primary_action_label: 'Submit',
+							primary_action(values) {
+								frm.set_value('app_status', 'Scheduled');
+								frm.set_value('appointment_created_on', frappe.datetime.now_date());
+								frm.set_value('custom_appointment_fixed_for', values.appointment_for);
+								frm.set_value('appointment_fixed_on', values.appointment_on);
+								frm.set_value('custom_appointment_mode', values.appointment_mode);
+								d.hide();
+								frm.save(); 
+							}
+						});
+		
+						d.show();
+					},
+					function () {
+						
+					}
+				);
+			},"Appointment"); 
+		}
+		if(frm.doc.app_status=="Re-Scheduled"){
+			frm.add_custom_button("Schedule", function () {
+				frappe.confirm(
+					'Are you sure you want to schedule the meeting?',
+					function () {
+						let d = new frappe.ui.Dialog({
+							title: 'Schedule Meeting',
+							fields: [
+								{
+									label: 'Appointment On',
+									fieldname: 'appointment_on',
+									fieldtype: 'Date',
+									reqd: 1
+								},
+								{
+									label: 'Appointment For',
+									fieldname: 'appointment_for',
+									fieldtype: 'Link',
+									options: 'User',
+									reqd: 1
+								},
+								{
+									label:"Appointment Mode",
+									fieldname:"appointment_mode",
+									fieldtype:"Select",
+									options:["Direct","Online"],
+									reqd:1
+								}
+							],
+							primary_action_label: 'Submit',
+							primary_action(values) {
+								frm.set_value('app_status', 'Scheduled');
+								frm.set_value('appointment_created_on', frappe.datetime.now_date());
+								frm.set_value('custom_appointment_fixed_for', values.appointment_for);
+								frm.set_value('appointment_fixed_on', values.appointment_on);
+								frm.set_value('custom_appointment_mode', values.appointment_mode);
+								d.hide();
+								frm.save(); 
+							}
+						});
+		
+						d.show();
+					},
+					function () {
+						
+					}
+				);
+			},"Appointment"); 
+		}
+		if(frm.doc.app_status=="Visited"){
+			frm.add_custom_button("Schedule", function () {
+				frappe.confirm(
+					'Are you sure you want to schedule the meeting?',
+					function () {
+						let d = new frappe.ui.Dialog({
+							title: 'Schedule Meeting',
+							fields: [
+								{
+									label: 'Appointment On',
+									fieldname: 'appointment_on',
+									fieldtype: 'Date',
+									reqd: 1
+								},
+								{
+									label: 'Appointment For',
+									fieldname: 'appointment_for',
+									fieldtype: 'Link',
+									options: 'User',
+									reqd: 1
+								},
+								{
+									label:"Appointment Mode",
+									fieldname:"appointment_mode",
+									fieldtype:"Select",
+									options:["Direct","Online"],
+									reqd:1
+								}
+							],
+							primary_action_label: 'Submit',
+							primary_action(values) {
+								frm.set_value('app_status', 'Scheduled');
+								frm.set_value('appointment_created_on', frappe.datetime.now_date());
+								frm.set_value('custom_appointment_fixed_for', values.appointment_for);
+								frm.set_value('appointment_fixed_on', values.appointment_on);
+								frm.set_value('custom_appointment_mode', values.appointment_mode);
+								frm.set_value('appointment_remarks', '');
+								frm.set_value('visit_status', '');
+								frm.set_value('visted_by', '');
+								frm.set_value('visted_date', '');
+								d.hide();
+								frm.save(); 
+							}
+						});
+		
+						d.show();
+					},
+					function () {
+						
+					}
+				);
+			},"Appointment"); 
+			if (frm.doc.party_from=='Lead'){
+				frappe.call({
+					method:"teampro.custom.update_app_visit_status",
+					args:{
+						'lead':frm.doc.party_name,
+						'visit':''
+						
+					},
+				})
+			}
+				
+		}
+		if (frm.doc.app_status=='Scheduled'){
+			frm.add_custom_button(("Confirm"), function () {
+				frappe.confirm(
+					'Are you sure, you want to confirm the meeting?',
+					function () {
+						frm.set_value('app_status', 'Confirmed');
 						frm.save()
 						// frm.reload_doc()
 					},
 					function () {					
 					}
 				);
-			}); 
+			},"Appointment"); 
 		}
-		if (frm.doc.app_status === "Scheduled") {
+		if (frm.doc.app_status === "Confirmed") {
             frm.add_custom_button("Visited", function () {
 
                 frappe.confirm(
                     'Are you sure you want to mark as Visited?',
                     function() {
-                        // Show dialog after confirmation
                         const d = new frappe.ui.Dialog({
                             title: 'Visit Details',
                             fields: [
@@ -80,13 +248,13 @@ frappe.ui.form.on('Sales Follow Up', {
                                     label: 'Person Met',
                                     fieldname: 'person_met',
                                     fieldtype: 'Data',
-                                    reqd: 0
+                                    reqd: 1
                                 },
                                 {
                                     label: 'Email',
                                     fieldname: 'email',
                                     fieldtype: 'Data',
-                                    reqd: 0
+                                    reqd: 1
                                 },
 								{
                                     label: 'Accompanied by',
@@ -145,79 +313,84 @@ frappe.ui.form.on('Sales Follow Up', {
                         d.show();
                     }
                 );
-            });
+            },"Appointment");
         }
-		if (frm.doc.app_status=='Visited'){
-			frm.add_custom_button("Yet to Meet", function () {
-				if (frm.doc.party_from=='Lead'){
-					frappe.call({
-						method:"teampro.custom.update_app_visit_status",
-						args:{
-							'lead':frm.doc.party_name,
-							'visit':''
-							
-						},
-					})
-				}
-				frm.set_value('app_status', 'Yet to Meet');
-				frm.set_value('appointment_remarks', '');
-				frm.set_value('visit_status', '');
-				frm.set_value('visted_by', '');
-				frm.set_value('visted_date', '');
-				frm.save()
-			});
-			
+		if (frm.doc.app_status=='Scheduled'){
+			frm.add_custom_button(("Cancelled"), function () {
+				frappe.confirm(
+					'Are you sure, you want to drop the meeting?',
+					function () {
+						frm.set_value('app_status', 'Cancelled');
+						frm.save()
+						// frm.reload_doc()
+					},
+					function () {					
+					}
+				);
+			},"Appointment"); 
 		}
-		// if(frm.doc.app_status=="Visited" || frm.doc.app_status=="Yet to visit(YTV)"){
-		// 	frm.add_custom_button(("Planned"), function () {
-		// 		if(frm.doc.visted_date && frm.doc.visted_by){
-		// 			frm.add_child('custom_appointment_details', {
-		// 				'visted_date':frm.doc.visted_date,
-		// 				'visted_by':frm.doc.visted_by,
-		// 				'appointment_remarks':frm.doc.appointment_remarks,
-		// 			});
-		// 		}
-		// 		frm.refresh_field('custom_appointment_details');  // Corrected field name
-		// 		frm.set_value("appointment_created_on",frappe.datetime.now_date())
-		// 		frm.set_value('app_status', 'Planned');
-		// 		if(frm.doc.party_from=="Lead" && frm.doc.visted_date && frm.doc.visted_by && frm.doc.appointment_remarks){
-		// 			frappe.call({
-		// 				method:"teampro.custom.add_custom_appointment_details_in_lead",
-		// 				args:{
-		// 					'lead':frm.doc.party_name,
-		// 					'visted_date':frm.doc.visted_date,
-		// 					'visted_by':frm.doc.visted_by,
-		// 					'appointment_remarks':frm.doc.appointment_remarks,
-		// 					'name':frm.doc.name
-		// 				},
-		// 				callback(){
-
-		// 				}
-		// 			})
-		// 		}
-		// 		frm.set_value('appointment_remarks', '');
-		// 		frm.set_df_property("appointment_remarks","reqd",0)
-		// 		frm.set_value('visted_by', '');
-		// 		frm.set_value('visted_date', '');
-		// 	}); 
-		// }
-		// if(frm.doc.app_status=="Scheduled"){
-		// 	frm.add_custom_button(("Visited"), function () {
-		// 		frm.set_value('app_status','Visited')
-		// 		frm.set_df_property('appointment_remarks','reqd',1)
-		// 		// frm.set_df_property('accompanied_by','reqd',1)
-		// 		frm.set_value('appointment_fixed_on', '');
-		// 		frm.set_value('custom_appointment_fixed_for', '');
-		// 		frm.set_value("visted_by",frappe.session.user)
-		// 		frm.set_value("visted_date",frappe.datetime.now_date())
-		// 	});
-			// frm.add_custom_button(("Cancel"), function () {
-			// 	frm.set_value('app_status','Yet to Meet')
-			// 	frm.set_value('appointment_fixed_on', '');
-			// 	frm.set_value('appointment_created_on','')
-			// 	frm.set_value('custom_appointment_fixed_for', '');
-			// });
-		// }
+		if (frm.doc.app_status=='Cancelled'){
+			// frm.add_custom_button(("Not Visited"), function () {
+			// 	frappe.confirm(
+			// 		'Are you sure, you want to mark the meeting as not visited?',
+			// 		function () {
+			// 			frm.set_value('app_status', 'Not Visited');
+			// 			frm.save()
+			// 			// frm.reload_doc()
+			// 		},
+			// 		function () {					
+			// 		}
+			// 	);
+			// },"Appointment"); 
+			frm.add_custom_button("Schedule", function () {
+				frappe.confirm(
+					'Are you sure you want to schedule the meeting?',
+					function () {
+						let d = new frappe.ui.Dialog({
+							title: 'Schedule Meeting',
+							fields: [
+								{
+									label: 'Appointment On',
+									fieldname: 'appointment_on',
+									fieldtype: 'Date',
+									reqd: 1
+								},
+								{
+									label: 'Appointment For',
+									fieldname: 'appointment_for',
+									fieldtype: 'Link',
+									options: 'User',
+									reqd: 1
+								},
+								{
+									label:"Appointment Mode",
+									fieldname:"appointment_mode",
+									fieldtype:"Select",
+									options:["Direct","Online"],
+									reqd:1
+								}
+							],
+							primary_action_label: 'Submit',
+							primary_action(values) {
+								frm.set_value('app_status', 'Scheduled');
+								frm.set_value('appointment_created_on', frappe.datetime.now_date());
+								frm.set_value('custom_appointment_fixed_for', values.appointment_for);
+								frm.set_value('appointment_fixed_on', values.appointment_on);
+								frm.set_value('custom_appointment_mode', values.appointment_mode);
+								d.hide();
+								frm.save(); 
+							}
+						});
+		
+						d.show();
+					},
+					function () {
+						
+					}
+				);
+			},"Appointment"); 
+		}
+		
 		$(frm.fields_dict.custom_html_2.wrapper).html(`
 			<p>If you want to add a new contact person, add it in Lead Contacts. If you want to remove a contact person, select and remove the row.</p>`);
 	
@@ -257,6 +430,10 @@ frappe.ui.form.on('Sales Follow Up', {
 		
 		// Extra
 		if(frm.doc.status=="Interested"){
+			frm.add_custom_button(("Open"), function () {
+				frm.set_value("status","Open")
+				frm.save()
+			},("Action")); 
 			frm.add_custom_button(("Opportunity"), function () {
 				frappe.msgprint({
 					title: __('Please Wait'),
@@ -284,6 +461,10 @@ frappe.ui.form.on('Sales Follow Up', {
 			},("Action")); 
 		}
 		if(frm.doc.status == "Replied"){
+			frm.add_custom_button(("Open"), function () {
+				frm.set_value("status","Open")
+				frm.save()
+			},("Action")); 
 			frm.add_custom_button(("Interested"), function () {
 				frm.set_value("status","Interested")
 				frm.save()
@@ -293,7 +474,8 @@ frappe.ui.form.on('Sales Follow Up', {
 				frm.save()
 			},("Action")); 
 		}
-		if(frm.doc.status == "Opportunity"){
+		if(frm.doc.status == "Opportunity" && frm.doc.party_from=="Lead"){
+			
 			frm.add_custom_button(("Interested"), function () {
 				frm.set_value("status","Interested")
 				frm.save()
@@ -307,7 +489,26 @@ frappe.ui.form.on('Sales Follow Up', {
 				frm.save()
 			},("Action")); 
 		}
+		if(frm.doc.status == "Opportunity" && frm.doc.party_from=="Customer"){
+			
+			frm.add_custom_button(("Converted"), function () {
+				frm.set_value("status","Converted")
+				frm.save()
+			},("Action")); 
+			frm.add_custom_button(("DNC"), function () {
+				frm.set_value("status","Do Not Contact")
+				frm.save()
+			},("Action")); 
+
+		// }if(frm.doc.status == "Customer" && frm.doc.party_from=="Customer"){
+		// 	frm.add_custom_button(("DNC"), function () {
+		// 		frm.set_value("status","Do Not Contact")
+		// 		frm.save()
+		// 	},("Action")); 
+		}
+		
 		if(frm.doc.status == "Converted"){
+
 			frm.add_custom_button(("Opportunity"), function () {
 				frappe.msgprint({
 					title: __('Please Wait'),
@@ -338,6 +539,25 @@ frappe.ui.form.on('Sales Follow Up', {
 				else if(frm.doc.party_from=="Customer"){
 					frm.set_value("status","Converted")
 				}
+				frm.save()
+			},("Action")); 
+		}
+		if(frm.doc.status=="Customer"){
+			frm.add_custom_button(("Opportunity"), function () {
+				frappe.msgprint({
+					title: __('Please Wait'),
+					message: __('Creating Opportunity...'),
+					indicator: 'blue',
+					freeze: true
+				});
+				var bg = frappe.model.make_new_doc_and_get_name('Opportunity');
+				bg = locals['Opportunity'][bg];
+				bg.opportunity_from=frm.doc.party_from
+				bg.party_name=frm.doc.party_name
+				bg.organization_name=frm.doc.organization_name
+				bg.custom_sales_follow_up=frm.doc.name
+				frappe.set_route("Form", "Opportunity",bg.name)
+				frm.set_value("status","Opportunity")
 				frm.save()
 			},("Action")); 
 		}

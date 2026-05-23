@@ -3,14 +3,21 @@
  "creation": "2025-05-22 16:06:15.213302",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 0,
- "modified": "2025-05-22 16:06:15.213302",
+ "idx": 32,
+ "modified": "2026-05-18 10:06:52.765675",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "finance-details",
  "owner": "Administrator",
  "page_name": "finance-details",
- "roles": [],
+ "roles": [
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "Accounts Manager"
+  }
+ ],
  "script": null,
  "standard": "Yes",
  "style": null,

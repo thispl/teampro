@@ -1,0 +1,23 @@
+{
+ "content": null,
+ "creation": "2026-03-31 10:16:27.311353",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 3,
+ "modified": "2026-04-24 14:17:05.764367",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "new-it-dashboard",
+ "owner": "Administrator",
+ "page_name": "new-it-dashboard",
+ "roles": [
+  {
+   "role": "HR Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "IT Dashboard"
+}

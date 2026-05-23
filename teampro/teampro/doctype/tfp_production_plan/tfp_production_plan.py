@@ -830,3 +830,659 @@ def download_tfp_plan_excel():
     frappe.response['filecontent'] = file_content.getvalue()
     frappe.response['type'] = 'binary'
 
+import frappe
+import openpyxl
+from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
+from frappe.utils import formatdate, flt
+from io import BytesIO
+
+@frappe.whitelist()
+def download_tfp_plan_excel_update():
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "TFP Packing Plan"
+
+
+    headers = [
+        "Sr", "SO ID", "PRT", "Customer Name", "Packing", "Delivery", "Item Name", "QTY", "UOM",
+        "St.QTY", "Cr. Stock", "Stock Status", "UOM", "MRP", "Packing Details", "WRD Details", "Name Print"
+    ]
+
+    # Styles
+    header_font = Font(bold=True, color="FFFFFF")
+    stock_header_fill = PatternFill("solid", fgColor="FF0000")
+    header_fill = PatternFill("solid", fgColor="002060")
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+    thin_border = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
+    total_fill = PatternFill("solid", fgColor="D9D9D9")
+    white_font = Font(color="FFFFFF", bold=True)
+
+    def style_cell(cell, align=center_align, font=None, fill=None):
+        cell.alignment = align
+        cell.border = thin_border
+        if font:
+            cell.font = font
+        if fill:
+            cell.fill = fill
+
+    def style_merged_range(ws, start_row, end_row, col, value, align=left_align, font=None, fill=None):
+        cell = ws.cell(row=start_row, column=col, value=value)
+        style_cell(cell, align=align, font=font, fill=fill)
+        ws.merge_cells(start_row=start_row, start_column=col, end_row=end_row, end_column=col)
+        for r in range(start_row + 1, end_row + 1):
+            style_cell(ws.cell(row=r, column=col), align=align, font=font, fill=fill)
+
+    # Header row
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        if header in ["Cr. Stock", "Stock Status"]:
+            style_cell(cell, align=center_align, font=white_font, fill=stock_header_fill)
+        else:
+            style_cell(cell, align=center_align, font=header_font, fill=header_fill)
+
+    row_idx = 2
+    s_no = 1
+    grand_total_qty = grand_total_stock_qty = 0
+
+    # Sales Orders
+    so_list = frappe.db.get_all("Sales Order", {
+        "service": "TFP",
+        "status": "To Deliver and Bill"
+    }, ["name", "customer", "custom_packing_on", "delivery_date"])
+
+    for so in so_list:
+        items = frappe.db.get_all("Sales Order Item", {"parent": so.name}, [
+            "item_code", "item_name", "qty", "uom", "stock_qty", "stock_uom", "custom_cover_type", "mrp",
+            "custom_mfg_on", "custom_covers", "custom_packing_type", "custom_per_2p",
+            "custom_2nd_packing", "custom_name_print", "custom_tertiary_packingbox",
+            "custom_bag", "custom_box", "custom_wrd_uom", "custom_wrd_rate","delivered_qty"
+        ])
+        items = [item for item in items if (flt(item.qty) - flt(item.delivered_qty or 0)) > 0]
+        rowspan = len(items)
+        total_qty = total_stock_qty = 0
+        primary = secondary = tertiary = packing_details = ""
+        for idx, item in enumerate(items):
+            row = row_idx
+            if idx == 0:
+                merge_values = [s_no, so.name, '', so.customer, formatdate(so.custom_packing_on), formatdate(so.delivery_date)]
+                for i, val in enumerate(merge_values, start=1):
+                    align = left_align if i == 4 else center_align
+                    style_merged_range(ws, row, row + rowspan - 1, i, val, align=align)
+            
+            ws.cell(row=row, column=7, value=item.item_name or "")
+            ws.cell(row=row, column=8, value=item.qty or 0)
+            ws.cell(row=row, column=9, value=item.uom or "")
+            ws.cell(row=row, column=10, value=item.stock_qty or 0)
+
+            cr_stock = frappe.db.get_value("Bin", {
+                "item_code": item.item_code,
+                "warehouse": "Stores - TFP"
+            }, "actual_qty") or 0
+            ws.cell(row=row, column=11, value=cr_stock)
+
+            status = "In Stock" if flt(item.stock_qty) <= flt(cr_stock) else "Out Of Stock"
+            status_cell = ws.cell(row=row, column=12, value=status)
+            status_font = Font(color="00B050", bold=True) if status == "In Stock" else Font(color="FF0000", bold=True)
+            style_cell(status_cell, align=center_align, font=status_font)
+
+            ws.cell(row=row, column=13, value=item.stock_uom or "")
+            ws.cell(row=row, column=14, value=item.mrp or 0)
+            style_cell(ws.cell(row=row, column=14), align=right_align)
+            if item.custom_cover_type:
+                primary = frappe.db.get_value("Item", item.custom_cover_type, "item_name") or ''
+            if item.custom_packing_type:
+                secondary = frappe.db.get_value("Item", item.custom_packing_type, "item_name") or ''
+            if item.custom_tertiary_packingbox:
+                tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
+            packing_details = f"(C): {primary or 'None'}: {item.custom_covers or 0}\n(B): {secondary or 'None'}: {item.custom_bag or 0}\n(BX): {tertiary or 'None'}: {item.custom_box or 0}"
+            ws.cell(row=row, column=15, value=packing_details)
+
+            wrd_details = f"(W): {item.custom_wrd_uom or 'None'}\n(R): {item.custom_wrd_rate or '0'}\n(D): {formatdate(item.custom_mfg_on) if item.custom_mfg_on else ''}"
+            ws.cell(row=row, column=16, value=wrd_details)
+
+            ws.cell(row=row, column=17, value=item.custom_name_print or "")
+
+            for col_idx in range(7, len(headers) + 1):
+                align = left_align if col_idx in [7, 15, 16, 17] else center_align
+                style_cell(ws.cell(row=row, column=col_idx), align=align)
+
+            total_qty += flt(item.qty)
+            total_stock_qty += flt(item.stock_qty)
+            row_idx += 1
+
+        status_label = "CREATE DN" if all(flt(it.stock_qty) <= (frappe.db.get_value("Bin", {"item_code": it.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0) for it in items) else "CREATE MR"
+
+        ws.cell(row=row_idx, column=7, value="Total")
+        ws.cell(row=row_idx, column=8, value=total_qty)
+        ws.cell(row=row_idx, column=10, value=total_stock_qty)
+        ws.cell(row=row_idx, column=11, value=status_label)
+        ws.merge_cells(start_row=row_idx, start_column=11, end_row=row_idx, end_column=12)
+
+        style_cell(ws.cell(row=row_idx, column=11), align=center_align, font=Font(bold=True), fill=total_fill)
+        for col_idx in list(range(1, 11)) + list(range(13, len(headers) + 1)):
+            style_cell(ws.cell(row=row_idx, column=col_idx), align=center_align, fill=total_fill)
+
+        row_idx += 1
+        s_no += 1
+        grand_total_qty += total_qty
+        grand_total_stock_qty += total_stock_qty
+
+    # VM Stock Register entries
+    stock_entries = frappe.db.get_all("Stock Entry", {
+        "custom_vm_stock_register": ("!=", ""),
+        "docstatus": 0,
+        "stock_entry_type": "Material Transfer"
+    }, ["name", "custom_vm_stock_register"])
+
+    slot_tables = ["slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"]
+
+    for entry in stock_entries:
+        if not entry.custom_vm_stock_register:
+            continue
+        register = frappe.get_doc("VM Stock Register", entry.custom_vm_stock_register)
+        vm_items = [item for table in slot_tables for item in register.get(table) if item.item_code]
+
+        if not vm_items:
+            continue  # Skip if no valid items
+
+        rowspan = len(vm_items)
+        total_vm_qty = total_vm_stock = 0
+        primary = secondary = tertiary = packing_details = ""
+        heading_values = [s_no, register.name, '', "Precision-Employee", formatdate(register.packing_date) if register.packing_date else "", formatdate(register.delivery_date) if register.delivery_date else ""]
+        for i, val in enumerate(heading_values, start=1):
+            align = left_align if i == 4 else center_align
+            style_merged_range(ws, row_idx, row_idx + rowspan - 1, i, val, align=align)
+
+        for item in vm_items:
+            row = row_idx
+            ws.cell(row=row, column=7, value=item.item_name or "")
+            ws.cell(row=row, column=8, value=item.new_stock_qty or 0)
+            ws.cell(row=row, column=9, value=item.new_stockuom or "")
+            ws.cell(row=row, column=10, value=item.stock_qty or 0)
+
+            cr_stock = frappe.db.get_value("Bin", {
+                "item_code": item.item_code,
+                "warehouse": "Stores - TFP"
+            }, "actual_qty") or 0
+            ws.cell(row=row, column=11, value=cr_stock)
+
+            status = "In Stock" if flt(item.stock_qty) <= flt(cr_stock) else "Out Of Stock"
+            status_cell = ws.cell(row=row, column=12, value=status)
+            status_font = Font(color="00B050", bold=True) if status == "In Stock" else Font(color="FF0000", bold=True)
+            style_cell(status_cell, align=center_align, font=status_font)
+
+            ws.cell(row=row, column=13, value=item.stock_uom or "")
+            ws.cell(row=row, column=14, value=item.custom_mrp or 0)
+            style_cell(ws.cell(row=row, column=14), align=right_align)
+            if item.custom_primary_packing_cover:
+                primary = frappe.db.get_value("Item", item.custom_primary_packing_cover, "item_name") or ''
+            if item.custom_secondary_packing_bag:
+                secondary = frappe.db.get_value("Item", item.custom_secondary_packing_bag, "item_name") or ''
+            if item.custom_tertiary_packingbox:
+                tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
+            packing_details = f"(C): {primary or 'None'}: {item.custom_covers or 0}\n(B): {secondary or 'None'}: {item.custom_bag or 0}\n(BX): {tertiary or 'None'}: {item.custom_box or 0}"
+            ws.cell(row=row, column=15, value=packing_details)
+
+            wrd_details = f"(W): {item.custom_weight_w or 'None'}\n(R): {item.custom_mrp_r or '0'}\n(D): {formatdate(item.custom_manufactured_date_d) if item.custom_manufactured_date_d else ''}"
+            ws.cell(row=row, column=16, value=wrd_details)
+
+            ws.cell(row=row, column=17, value=item.custom_name_print or "")
+
+            for col_idx in range(7, len(headers) + 1):
+                align = left_align if col_idx in [7, 15, 16, 17] else center_align
+                style_cell(ws.cell(row=row, column=col_idx), align=align)
+
+            total_vm_qty += flt(item.new_stock_qty or 0)
+            total_vm_stock += flt(item.stock_qty or 0)
+            row_idx += 1
+
+        label = "Submit Stock" if all(flt(i.stock_qty or 0) <= (frappe.db.get_value("Bin", {"item_code": i.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0) for i in vm_items) else "Create MR"
+
+        ws.cell(row=row_idx, column=7, value="Total")
+        ws.cell(row=row_idx, column=8, value=total_vm_qty)
+        ws.cell(row=row_idx, column=10, value=total_vm_stock)
+        ws.cell(row=row_idx, column=11, value=label)
+        ws.merge_cells(start_row=row_idx, start_column=11, end_row=row_idx, end_column=12)
+
+        style_cell(ws.cell(row=row_idx, column=11), align=center_align, font=Font(bold=True), fill=total_fill)
+        for col_idx in list(range(1, 11)) + list(range(13, len(headers) + 1)):
+            style_cell(ws.cell(row=row_idx, column=col_idx), align=center_align, fill=total_fill)
+
+        row_idx += 1
+        s_no += 1
+        grand_total_qty += total_vm_qty
+        grand_total_stock_qty += total_vm_stock
+
+    # Grand Total Row (✅ FIXED)
+    ws.cell(row=row_idx, column=1, value="Grand Total")
+    ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=7)
+    for i in range(1, 8):
+        style_cell(ws.cell(row=row_idx, column=i), align=center_align, font=header_font, fill=header_fill)
+    ws.cell(row=row_idx, column=8, value=grand_total_qty)
+    ws.cell(row=row_idx, column=10, value=grand_total_stock_qty)
+    for col_idx in range(8, len(headers) + 1):
+        style_cell(ws.cell(row=row_idx, column=col_idx), align=center_align, font=header_font, fill=header_fill)
+
+    # Auto-fit column width
+    for col in ws.columns:
+        max_length = max((len(str(cell.value)) if cell.value else 0) for cell in col)
+        ws.column_dimensions[col[0].column_letter].width = min(max_length + 2, 40)
+
+    # Final output
+    file_content = BytesIO()
+    wb.save(file_content)
+    frappe.response['filename'] = "TFP_Packing_Plan.xlsx"
+    frappe.response['filecontent'] = file_content.getvalue()
+    frappe.response['type'] = 'binary'
+
+
+# import frappe
+# import openpyxl
+# from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
+# from frappe.utils import formatdate, flt
+# from io import BytesIO
+
+# @frappe.whitelist()
+# def download_tfp_scheduled_excel_update():
+#     wb = openpyxl.Workbook()
+#     ws = wb.active
+#     ws.title = "TFP Scheduled Plan"
+
+#     headers = [
+#         "Sr", "SO ID", "PRT", "Customer Name", "Packing", "Delivery", "Item Name", "QTY", "UOM",
+#         "St.QTY", "UOM", "MRP", "Packing Details", "WRD Details", "Name Print"
+#     ]
+
+#     # Styles
+#     header_font = Font(bold=True, color="FFFFFF")
+#     stock_header_fill = PatternFill("solid", fgColor="FF0000")
+#     header_fill = PatternFill("solid", fgColor="002060")
+#     center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+#     left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+#     right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+#     thin_border = Border(left=Side(style="thin"), right=Side(style="thin"), top=Side(style="thin"), bottom=Side(style="thin"))
+#     total_fill = PatternFill("solid", fgColor="D9D9D9")
+#     white_font = Font(color="FFFFFF", bold=True)
+
+#     def style_cell(cell, align=center_align, font=None, fill=None):
+#         cell.alignment = align
+#         cell.border = thin_border
+#         if font:
+#             cell.font = font
+#         if fill:
+#             cell.fill = fill
+
+#     def style_merged_range(ws, start_row, end_row, col, value, align=left_align, font=None, fill=None):
+#         cell = ws.cell(row=start_row, column=col, value=value)
+#         style_cell(cell, align=align, font=font, fill=fill)
+#         ws.merge_cells(start_row=start_row, start_column=col, end_row=end_row, end_column=col)
+#         for r in range(start_row + 1, end_row + 1):
+#             style_cell(ws.cell(row=r, column=col), align=align, font=font, fill=fill)
+
+#     # Header row
+#     # for col_num, header in enumerate(headers, 1):
+#     #     cell = ws.cell(row=1, column=col_num, value=header)
+#     #     if header in ["Cr. Stock", "Stock Status"]:
+#     #         style_cell(cell, align=center_align, font=white_font, fill=stock_header_fill)
+#     #     else:
+#     #         style_cell(cell, align=center_align, font=header_font, fill=header_fill)
+
+#     # row_idx = 2
+#     # s_no = 1
+#     grand_total_qty = grand_total_stock_qty = 0
+
+#     # DN
+#     dn_list = frappe.db.get_all("Delivery Note", {
+#         "custom_delivery_status_new": "Schedule","docstatus":1
+#     }, ["name", "customer", "custom_delivery_date","custom_packing_on","custom_priority"], order_by="custom_packing_on asc")
+
+#     for so in dn_list:
+#         items = frappe.db.get_all("Delivery Note Item", {
+#             "parent": dn.name
+#         }, [
+#             "item_name", "qty", "uom", "stock_qty", "stock_uom", "custom_cover_type", "mrp",
+#             "custom_mfg_on", "custom_covers", "custom_packing_type", "custom_per_2p","custom_name_print","custom_tertiary_packingbox","custom_bag","custom_box",
+#             "custom_wrd_uom","custom_wrd_rate","custom_packing_on", "against_sales_order","custom_per_3p",""
+#         ])
+#         items = [item for item in items if (flt(item.qty) - flt(item.delivered_qty or 0)) > 0]
+#         rowspan = len(items)
+#         total_qty = total_stock_qty = 0
+#         primary = secondary = tertiary = packing_details = ""
+#         for idx, item in enumerate(items):
+#             row = row_idx
+#             if idx == 0:
+#                 merge_values = [s_no, so.name, '', so.customer, formatdate(so.custom_packing_on), formatdate(so.delivery_date)]
+#                 for i, val in enumerate(merge_values, start=1):
+#                     align = left_align if i == 4 else center_align
+#                     style_merged_range(ws, row, row + rowspan - 1, i, val, align=align)
+            
+#             ws.cell(row=row, column=7, value=item.item_name or "")
+#             ws.cell(row=row, column=8, value=item.qty or 0)
+#             ws.cell(row=row, column=9, value=item.uom or "")
+#             ws.cell(row=row, column=10, value=item.stock_qty or 0)
+
+#             cr_stock = frappe.db.get_value("Bin", {
+#                 "item_code": item.item_code,
+#                 "warehouse": "Stores - TFP"
+#             }, "actual_qty") or 0
+#             # ws.cell(row=row, column=11, value=cr_stock)
+
+#             status = "In Stock" if flt(item.stock_qty) <= flt(cr_stock) else "Out Of Stock"
+#             status_cell = ws.cell(row=row, column=12, value=status)
+#             status_font = Font(color="00B050", bold=True) if status == "In Stock" else Font(color="FF0000", bold=True)
+#             style_cell(status_cell, align=center_align, font=status_font)
+
+#             ws.cell(row=row, column=11, value=item.stock_uom or "")
+#             ws.cell(row=row, column=12, value=item.mrp or 0)
+#             style_cell(ws.cell(row=row, column=11), align=right_align)
+#             if item.custom_cover_type:
+#                 primary = frappe.db.get_value("Item", item.custom_cover_type, "item_name") or ''
+#             if item.custom_packing_type:
+#                 secondary = frappe.db.get_value("Item", item.custom_packing_type, "item_name") or ''
+#             if item.custom_tertiary_packingbox:
+#                 tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
+#             packing_details = f"(C): {primary or 'None'}: {item.custom_covers or 0}\n(B): {secondary or 'None'}: {item.custom_bag or 0}\n(BX): {tertiary or 'None'}: {item.custom_box or 0}"
+#             ws.cell(row=row, column=13, value=packing_details)
+
+#             wrd_details = f"(W): {item.custom_wrd_uom or 'None'}\n(R): {item.custom_wrd_rate or '0'}\n(D): {formatdate(item.custom_mfg_on) if item.custom_mfg_on else ''}"
+#             ws.cell(row=row, column=14, value=wrd_details)
+
+#             ws.cell(row=row, column=15, value=item.custom_name_print or "")
+
+#             for col_idx in range(7, len(headers) + 1):
+#                 align = left_align if col_idx in [7, 13, 14, 15] else center_align
+#                 style_cell(ws.cell(row=row, column=col_idx), align=align)
+
+#             total_qty += flt(item.qty)
+#             total_stock_qty += flt(item.stock_qty)
+#             row_idx += 1
+
+#         status_label = "CREATE DN" if all(flt(it.stock_qty) <= (frappe.db.get_value("Bin", {"item_code": it.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0) for it in items) else "CREATE MR"
+
+#         ws.cell(row=row_idx, column=7, value="Total")
+#         ws.cell(row=row_idx, column=8, value=total_qty)
+#         ws.cell(row=row_idx, column=10, value=total_stock_qty)
+#         # ws.cell(row=row_idx, column=11, value=status_label)
+#         # ws.merge_cells(start_row=row_idx, start_column=11, end_row=row_idx, end_column=12)
+
+#         # style_cell(ws.cell(row=row_idx, column=11), align=center_align, font=Font(bold=True), fill=total_fill)
+#         # for col_idx in list(range(1, 11)) + list(range(13, len(headers) + 1)):
+#         #     style_cell(ws.cell(row=row_idx, column=col_idx), align=center_align, fill=total_fill)
+
+#         row_idx += 1
+#         s_no += 1
+#         grand_total_qty += total_qty
+#         grand_total_stock_qty += total_stock_qty
+
+#     stock_entry=frappe.db.get_all("VM Stock Register",{"status":"Schedule","docstatus":1},["name"])
+
+
+#     # VM Stock Register entries
+#     # stock_entries = frappe.db.get_all("Stock Entry", {
+#     #     "custom_vm_stock_register": ("!=", ""),
+#     #     "docstatus": 0,
+#     #     "stock_entry_type": "Material Transfer"
+#     # }, ["name", "custom_vm_stock_register"])
+
+#     slot_tables = ["slot_a", "slot_b", "slot_c", "slot_d", "slot_e", "slot_f"]
+
+#     for entry in stock_entry:
+#         stock=frappe.db.get_value("Stock Entry",{"docstatus":1,"custom_vm_stock_register":i.name},["name"])
+#         total_vm_qty=total_vm_stock=0
+#         if not i.name:
+#             continue
+#         register = frappe.get_doc("VM Stock Register", i.name)
+
+    
+#         # if not entry.custom_vm_stock_register:
+#         #     continue
+#         # register = frappe.get_doc("VM Stock Register", entry.custom_vm_stock_register)
+#         vm_items = [item for table in slot_tables for item in register.get(table) if item.item_code]
+
+#         if not vm_items:
+#             continue  # Skip if no valid items
+
+#         rowspan = len(vm_items)
+#         total_vm_qty = total_vm_stock = 0
+#         primary = secondary = tertiary = packing_details = ""
+#         heading_values = [s_no, register.name, '', "Precision-Employee", formatdate(register.packing_date) if register.packing_date else "", formatdate(register.delivery_date) if register.delivery_date else ""]
+#         for i, val in enumerate(heading_values, start=1):
+#             align = left_align if i == 4 else center_align
+#             style_merged_range(ws, row_idx, row_idx + rowspan - 1, i, val, align=align)
+
+#         for item in vm_items:
+#             row = row_idx
+#             ws.cell(row=row, column=7, value=item.item_name or "")
+#             ws.cell(row=row, column=8, value=item.new_stock_qty or 0)
+#             ws.cell(row=row, column=9, value=item.new_stockuom or "")
+#             ws.cell(row=row, column=10, value=item.stock_qty or 0)
+
+#             cr_stock = frappe.db.get_value("Bin", {
+#                 "item_code": item.item_code,
+#                 "warehouse": "Stores - TFP"
+#             }, "actual_qty") or 0
+#             # ws.cell(row=row, column=11, value=cr_stock)
+
+#             status = "In Stock" if flt(item.stock_qty) <= flt(cr_stock) else "Out Of Stock"
+#             status_cell = ws.cell(row=row, column=12, value=status)
+#             status_font = Font(color="00B050", bold=True) if status == "In Stock" else Font(color="FF0000", bold=True)
+#             style_cell(status_cell, align=center_align, font=status_font)
+
+#             ws.cell(row=row, column=13, value=item.stock_uom or "")
+#             ws.cell(row=row, column=14, value=item.custom_mrp or 0)
+#             style_cell(ws.cell(row=row, column=14), align=right_align)
+#             if item.custom_primary_packing_cover:
+#                 primary = frappe.db.get_value("Item", item.custom_primary_packing_cover, "item_name") or ''
+#             if item.custom_secondary_packing_bag:
+#                 secondary = frappe.db.get_value("Item", item.custom_secondary_packing_bag, "item_name") or ''
+#             if item.custom_tertiary_packingbox:
+#                 tertiary = frappe.db.get_value("Item", item.custom_tertiary_packingbox, "item_name") or ''
+#             packing_details = f"(C): {primary or 'None'}: {item.custom_covers or 0}\n(B): {secondary or 'None'}: {item.custom_bag or 0}\n(BX): {tertiary or 'None'}: {item.custom_box or 0}"
+#             ws.cell(row=row, column=15, value=packing_details)
+
+#             wrd_details = f"(W): {item.custom_weight_w or 'None'}\n(R): {item.custom_mrp_r or '0'}\n(D): {formatdate(item.custom_manufactured_date_d) if item.custom_manufactured_date_d else ''}"
+#             ws.cell(row=row, column=16, value=wrd_details)
+
+#             ws.cell(row=row, column=17, value=item.custom_name_print or "")
+
+#             for col_idx in range(7, len(headers) + 1):
+#                 align = left_align if col_idx in [7, 15, 16, 17] else center_align
+#                 style_cell(ws.cell(row=row, column=col_idx), align=align)
+
+#             total_vm_qty += flt(item.new_stock_qty or 0)
+#             total_vm_stock += flt(item.stock_qty or 0)
+#             row_idx += 1
+
+#         label = "Submit Stock" if all(flt(i.stock_qty or 0) <= (frappe.db.get_value("Bin", {"item_code": i.item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0) for i in vm_items) else "Create MR"
+
+#         ws.cell(row=row_idx, column=7, value="Total")
+#         ws.cell(row=row_idx, column=8, value=total_vm_qty)
+#         ws.cell(row=row_idx, column=10, value=total_vm_stock)
+#         # ws.cell(row=row_idx, column=11, value=label)
+#         # ws.merge_cells(start_row=row_idx, start_column=11, end_row=row_idx, end_column=12)
+
+#         # style_cell(ws.cell(row=row_idx, column=11), align=center_align, font=Font(bold=True), fill=total_fill)
+#         # for col_idx in list(range(1, 11)) + list(range(13, len(headers) + 1)):
+#         #     style_cell(ws.cell(row=row_idx, column=col_idx), align=center_align, fill=total_fill)
+
+#         row_idx += 1
+#         s_no += 1
+#         grand_total_qty += total_vm_qty
+#         grand_total_stock_qty += total_vm_stock
+
+#     # Grand Total Row (✅ FIXED)
+#     ws.cell(row=row_idx, column=1, value="Grand Total")
+#     ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=7)
+#     for i in range(1, 8):
+#         style_cell(ws.cell(row=row_idx, column=i), align=center_align, font=header_font, fill=header_fill)
+#     ws.cell(row=row_idx, column=8, value=grand_total_qty)
+#     ws.cell(row=row_idx, column=10, value=grand_total_stock_qty)
+#     for col_idx in range(8, len(headers) + 1):
+#         style_cell(ws.cell(row=row_idx, column=col_idx), align=center_align, font=header_font, fill=header_fill)
+
+#     # Auto-fit column width
+#     for col in ws.columns:
+#         max_length = max((len(str(cell.value)) if cell.value else 0) for cell in col)
+#         ws.column_dimensions[col[0].column_letter].width = min(max_length + 2, 40)
+
+#     # Final output
+#     file_content = BytesIO()
+#     wb.save(file_content)
+#     frappe.response['filename'] = "TFP_Scheduled_Plan.xlsx"
+#     frappe.response['filecontent'] = file_content.getvalue()
+#     frappe.response['type'] = 'binary'
+
+
+@frappe.whitelist()
+def download_tfp_scheduled_excel_update():
+    from frappe.utils import formatdate
+    import openpyxl
+    from openpyxl.styles import Alignment, Font, Border, Side, PatternFill
+    from io import BytesIO
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "TFP Scheduled Plan"
+
+    headers = [
+        "S.No", "SO ID", "PRT", "Customer Name", "Packing", "Delivery", "Item Name", "QTY", "UOM",
+        "St.QTY", "UOM", "MRP", "Packing Details", "WRD Details", "Name Print"
+    ]
+
+    # Styling setup
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="002060")
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    thin_border = Border(left=Side(style="thin"), right=Side(style="thin"),
+                         top=Side(style="thin"), bottom=Side(style="thin"))
+
+    def style_cell(cell, align=center_align, font=None, fill=None):
+        cell.alignment = align
+        cell.border = thin_border
+        if font: cell.font = font
+        if fill: cell.fill = fill
+
+    def style_merged_range(ws, start_row, end_row, col, value, align, font=None, fill=None):
+        cell = ws.cell(row=start_row, column=col, value=value)
+        style_cell(cell, align=align, font=font, fill=fill)
+        ws.merge_cells(start_row=start_row, start_column=col, end_row=end_row, end_column=col)
+        for r in range(start_row + 1, end_row + 1):
+            style_cell(ws.cell(row=r, column=col), align=align, font=font, fill=fill)
+
+    # Header row
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        style_cell(cell, align=center_align, font=header_font, fill=header_fill)
+
+    row_idx = 2
+    s_no = 1
+    grand_total_qty = grand_total_stock_qty = 0
+
+    # FETCH DN
+    dn_list = frappe.db.get_all("Delivery Note", {
+        "custom_delivery_status_new": "Schedule", "docstatus": 1
+    }, ["name", "customer", "custom_delivery_date", "custom_packing_on", "custom_priority"], order_by="custom_packing_on asc")
+
+    # dn_list = frappe.db.get_all("Delivery Note", {
+    #     "docstatus": 1
+    # }, ["name", "customer", "custom_delivery_date", "custom_packing_on", "custom_priority"], order_by="custom_packing_on asc")
+
+    for dn in dn_list:
+        items = frappe.db.get_all("Delivery Note Item", {
+            "parent": dn.name
+        }, [
+            "item_name", "qty", "uom", "stock_qty", "stock_uom", "mrp", "custom_cover_type", "custom_packing_type",
+            "custom_tertiary_packingbox", "custom_covers", "custom_bag", "custom_box",
+            "custom_wrd_uom", "custom_wrd_rate", "custom_mfg_on", "custom_name_print"
+        ])
+
+        rowspan = len(items)
+        total_qty = total_stock_qty = 0
+
+        for idx, item in enumerate(items):
+            row = row_idx
+            if idx == 0:
+                so_id = ""
+                # Try to get Sales Order linked to this Delivery Note
+                sales_orders = frappe.db.get_all("Delivery Note Item", {
+                    "parent": dn.name,
+                    "against_sales_order": ["is", "set"]
+                }, ["against_sales_order"], distinct=True)
+
+                if sales_orders:
+                    so_id = sales_orders[0].against_sales_order
+
+                merge_values = [
+                    s_no, so_id, dn.custom_priority, dn.customer,
+                    formatdate(dn.custom_packing_on, "dd-mm-yyyy") if dn.custom_packing_on else "",
+                    formatdate(dn.custom_delivery_date, "dd-mm-yyyy") if dn.custom_delivery_date else ""
+                ]
+                for i, val in enumerate(merge_values, start=1):
+                    align = left_align if i == 4 else center_align
+                    style_merged_range(ws, row, row + rowspan - 1, i, val, align)
+
+            # Write item row
+            ws.cell(row=row, column=7, value=item.item_name or "")
+            ws.cell(row=row, column=8, value=item.qty or 0)
+            ws.cell(row=row, column=9, value=item.uom or "")
+            ws.cell(row=row, column=10, value=item.stock_qty or 0)
+            ws.cell(row=row, column=11, value=item.stock_uom or "")
+            ws.cell(row=row, column=12, value=item.mrp or 0)
+
+            # Packing & WRD Details
+            packing_details = f"(C): {item.custom_cover_type or 'None'}: {item.custom_covers or 0}\n" \
+                              f"(B): {item.custom_packing_type or 'None'}: {item.custom_bag or 0}\n" \
+                              f"(BX): {item.custom_tertiary_packingbox or 'None'}: {item.custom_box or 0}"
+            ws.cell(row=row, column=13, value=packing_details)
+
+            wrd_details = f"(W): {item.custom_wrd_uom or 'None'}\n(R): {item.custom_wrd_rate or 0}\n" \
+                          f"(D): {formatdate(item.custom_mfg_on, 'dd-mm-yyyy') if item.custom_mfg_on else ''}"
+            ws.cell(row=row, column=14, value=wrd_details)
+
+            ws.cell(row=row, column=15, value=item.custom_name_print or "")
+
+            for col_idx in range(7, 16):
+                align = left_align if col_idx in [7, 13, 14, 15] else center_align
+                style_cell(ws.cell(row=row, column=col_idx), align=align)
+
+            total_qty += flt(item.qty)
+            total_stock_qty += flt(item.stock_qty)
+            row_idx += 1
+            # s_no += 1
+
+        # Total for this block
+        ws.cell(row=row_idx, column=7, value="Total")
+        ws.cell(row=row_idx, column=8, value=total_qty)
+        ws.cell(row=row_idx, column=10, value=total_stock_qty)
+        for col in range(1, 16):
+            font = Font(bold=True) if col in [7, 8, 10] else None
+            align = left_align if col in [7] else center_align
+            style_cell(ws.cell(row=row_idx, column=col), align=align, font=font)
+        row_idx += 1
+        s_no += 1
+        grand_total_qty += total_qty
+        grand_total_stock_qty += total_stock_qty
+
+    # Grand Total
+    ws.cell(row=row_idx, column=1, value="Grand Total")
+    ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=7)
+    ws.cell(row=row_idx, column=8, value=grand_total_qty)
+    ws.cell(row=row_idx, column=10, value=grand_total_stock_qty)
+
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=row_idx, column=col)
+        style_cell(cell, align=center_align, font=header_font, fill=header_fill)
+    # Auto column width
+    for col in ws.columns:
+        max_length = max(len(str(cell.value)) if cell.value else 0 for cell in col)
+        ws.column_dimensions[col[0].column_letter].width = min(max_length + 2, 40)
+
+    # Export
+    file_content = BytesIO()
+    wb.save(file_content)
+    frappe.response['filename'] = "TFP_Scheduled_Plan.xlsx"
+    frappe.response['filecontent'] = file_content.getvalue()
+    frappe.response['type'] = 'binary'

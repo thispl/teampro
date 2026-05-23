@@ -16,36 +16,43 @@
  ],
  "fields": [
   {
+   "allow_on_submit": 1,
    "fieldname": "what_went_well",
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "What Went Well"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "column_break_tbgn",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "what_went_wrong",
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "What Went Wrong"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "column_break_kfcs",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "points_to_improve",
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Points to Improve"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "column_break_zzdg",
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "kudos",
    "fieldtype": "Small Text",
    "in_list_view": 1,
@@ -55,7 +62,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-04-16 11:49:51.826371",
+ "modified": "2025-07-09 13:34:32.651261",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Retro",

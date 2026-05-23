@@ -1,0 +1,22 @@
+{
+ "content": null,
+ "creation": "2025-07-14 15:18:09.582712",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 19,
+ "modified": "2026-04-24 14:13:08.133458",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "relationship-and-sal",
+ "owner": "Administrator",
+ "page_name": "relationship-and-sal",
+ "roles": [
+  {
+   "role": "HOD"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0
+}

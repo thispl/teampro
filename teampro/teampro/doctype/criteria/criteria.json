@@ -17,8 +17,7 @@
   {
    "fieldname": "scheduling_criteria",
    "fieldtype": "Small Text",
-   "label": "Scheduling Criteria",
-   "read_only_depends_on": "eval:doc.parenttype === \"Candidate\""
+   "label": "Scheduling Criteria"
   },
   {
    "fieldname": "scheduling_parameter",
@@ -61,6 +60,7 @@
    "default": "0",
    "fieldname": "updated",
    "fieldtype": "Check",
+   "hidden": 1,
    "in_list_view": 1,
    "in_preview": 1,
    "in_standard_filter": 1,
@@ -70,7 +70,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-05-03 18:45:50.812525",
+ "modified": "2025-10-22 19:12:24.380502",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Criteria",

@@ -1,0 +1,66 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2025-08-21 12:35:50.218458",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "project",
+  "view",
+  "column_break_fprd",
+  "allocated_to",
+  "get_dsr"
+ ],
+ "fields": [
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "view",
+   "fieldtype": "Button",
+   "label": "View"
+  },
+  {
+   "fieldname": "column_break_fprd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "allocated_to",
+   "fieldtype": "Link",
+   "label": "Allocated To",
+   "options": "User"
+  },
+  {
+   "fieldname": "get_dsr",
+   "fieldtype": "Button",
+   "label": "Get DSR"
+  }
+ ],
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2025-10-15 22:34:16.786400",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Daily Status Report",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

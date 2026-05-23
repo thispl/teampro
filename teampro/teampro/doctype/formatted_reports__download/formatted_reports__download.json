@@ -124,9 +124,10 @@
    "fieldname": "report_type",
    "fieldtype": "Select",
    "label": "Report Type",
-   "options": "\nPR: Primary Reports\nMR: Monitoring Report\nDM: Day Monitor"
+   "options": "\nPR: Primary Reports\nMR: Monitoring Report\nDM: Day Monitor\nCR: Closure Report"
   },
   {
+   "depends_on": "eval:doc.report_type !=\"CR: Closure Report\"",
    "fieldname": "section_break_ihvw",
    "fieldtype": "Section Break"
   },
@@ -135,7 +136,7 @@
    "fieldname": "mr_title",
    "fieldtype": "Select",
    "label": "Report Title",
-   "options": "\nMR:01 \u2013 Sales Follow-Up Report\nMR:02 \u2013 Customer Follow-Up Report (CFR)\nMR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\nMR:04 \u2013 Batch Check Status Report (BCSR)\nMR:05 \u2013 Closure Detailed Status Report (CDSR)\nMR:06 \u2013 Project Task Issue Status Report (PTISR)\nMR:07 \u2013 TODO Status Report"
+   "options": "\nMR:01 \u2013 Sales Follow-Up Report\nMR:02 \u2013 Customer Follow-Up Report (CFR)\nMR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\nMR:04 \u2013 Batch Check Status Report (BCSR)\nMR:05 \u2013 Closure Detailed Status Report (CDSR)\nMR:06 \u2013 Project Task Issue Status Report (PTISR)\nMR:07 \u2013 TODO Status Report\nMR:08 - Closure Follow-Up Report (CLFR)\nMR:09 - REC Project Task Planner (RPTP)\nMR:10 - Closure Weekly Status Report (CWSR)"
   },
   {
    "depends_on": "eval:doc.report_type==\"DM: Day Monitor\"",
@@ -174,7 +175,7 @@
    "options": "Services"
   },
   {
-   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\"||doc.mr_title==\"MR:06 \u2013 Project Task Issue Status Report (PTISR)\"",
+   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\"||doc.mr_title==\"MR:06 \u2013 Project Task Issue Status Report (PTISR)\" ||doc.mr_title==\"MR:10 - Closure Weekly Status Report (CWSR)\"",
    "fieldname": "customer",
    "fieldtype": "Link",
    "label": "Customer",
@@ -188,6 +189,7 @@
    "options": "Project"
   },
   {
+   "depends_on": "eval:doc.report_type !=\"CR: Closure Report\"",
    "fieldname": "section_break_0irn",
    "fieldtype": "Section Break"
   },
@@ -207,6 +209,7 @@
    "label": "SO Status"
   },
   {
+   "depends_on": "eval:doc.report_type !=\"CR: Closure Report\"",
    "fieldname": "section_break_ybms",
    "fieldtype": "Section Break"
   },
@@ -314,7 +317,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\" ||doc.mr_title==\"MR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\"",
+   "depends_on": "eval:doc.primary_reports==\"PR:02 \u2013 Project Status Report \u2013(PSR - R)\" ||doc.mr_title==\"MR:03 \u2013 Project Task Status Report \u2013 REC (PTSR - R)\" && doc.report_type !=\"CR: Closure Report\"",
    "fieldname": "services_psr",
    "fieldtype": "Link",
    "label": "Service ",
@@ -390,7 +393,7 @@
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2025-06-17 10:17:35.590380",
+ "modified": "2026-01-29 12:28:26.024132",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Formatted Reports  Download",

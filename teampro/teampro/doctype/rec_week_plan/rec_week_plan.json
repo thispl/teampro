@@ -6,33 +6,99 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "workflow_state",
+  "collapsible_table_tab",
+  "posting_date",
+  "column_break_zqzq",
+  "start_date",
+  "column_break_rwki",
+  "end_date",
+  "section_break_dadw",
+  "customer",
+  "column_break_fcyi",
+  "project_collapsible",
+  "column_break_bwlx",
+  "task_collapsible",
+  "column_break_wnox",
+  "src_s",
+  "section_break_agvg",
+  "client_html",
+  "task_planner_tab",
+  "section_break_lywo",
+  "pa_alpha_completed",
+  "pa_bravo_completed",
+  "pa_charlie_completed",
+  "pa_delta_completed",
+  "column_break_hzvd",
+  "ta_alpha_completed",
+  "ta_bravo_completed",
+  "ta_charlie_completed",
+  "ta_delta_completed",
+  "section_break_hfmr",
+  "project_filter",
+  "column_break_sxnf",
+  "task",
+  "section_break_qjej",
+  "rec_task_planner",
+  "sp_html",
+  "section_break_aekd",
+  "sp_fp_project",
+  "column_break_kcks",
+  "sp_fp_task",
+  "section_break_gkxb",
+  "spfp_html",
+  "section_break_mzub",
+  "fp_project",
+  "column_break_ubcg",
+  "fp_task",
+  "section_break_nkos",
+  "fp_html",
+  "section_break_nbxq",
+  "pnd_project",
+  "column_break_cqsb",
+  "pnd_task",
+  "section_break_ihgh",
+  "pnd_html",
   "project_details_tab",
   "section_break_ej7b",
   "amended_from",
-  "posting_date",
   "column_break_wvkn",
-  "start_date",
   "column_break_wvdw",
-  "end_date",
   "section_break_fezl",
   "project_details",
   "allocated_details_section",
   "details",
   "task_details_tab",
+  "project",
+  "team",
+  "employee",
   "section_break_mkti",
+  "task_allocation_team_wise",
   "task_allocation",
+  "task_allocation_agent",
   "allocation_tab",
+  "team_wise",
   "allocation",
+  "allocation_agent",
   "section_break_qeoo",
   "dsr",
+  "section_break_vmye",
+  "status_transition",
   "monitor_tab",
-  "options",
-  "column_break_qhvs",
   "from_date",
   "column_break_lgau",
   "to_date",
-  "section_break_ugji",
-  "dpr"
+  "column_break_qbnn",
+  "executive",
+  "column_break_wnoo",
+  "team_type",
+  "column_break_8vap",
+  "sams",
+  "section_break_xxjg",
+  "download_button",
+  "dsr_view",
+  "dpr",
+  "options"
  ],
  "fields": [
   {
@@ -62,33 +128,39 @@
   {
    "fieldname": "project_details",
    "fieldtype": "Table",
+   "ignore_user_permissions": 1,
    "label": "Project Details",
    "options": "REC Project Details"
   },
   {
    "fieldname": "task_details_tab",
    "fieldtype": "Tab Break",
-   "label": "Task Details"
+   "label": "Task Planner"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "task_allocation",
    "fieldtype": "Table",
-   "label": "Task Allocation",
+   "ignore_user_permissions": 1,
+   "label": "Task Allocation - Internal",
    "options": "REC Task Details"
   },
   {
    "fieldname": "project_details_tab",
    "fieldtype": "Tab Break",
+   "hidden": 1,
    "label": "Project Details"
   },
   {
    "fieldname": "start_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "Start Date"
   },
   {
    "fieldname": "end_date",
    "fieldtype": "Date",
+   "in_list_view": 1,
    "label": "End Date"
   },
   {
@@ -101,9 +173,11 @@
    "label": "Allocation"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "allocation",
    "fieldtype": "Table",
-   "label": "Allocation",
+   "ignore_user_permissions": 1,
+   "label": "Allocation - Internal",
    "options": "Week Plan Details"
   },
   {
@@ -122,6 +196,7 @@
   {
    "fieldname": "details",
    "fieldtype": "Table",
+   "ignore_user_permissions": 1,
    "label": "Details",
    "options": "Project Details Allocated"
   },
@@ -131,21 +206,21 @@
    "label": "Monitor"
   },
   {
+   "default": "DSR",
    "fieldname": "options",
    "fieldtype": "Select",
+   "hidden": 1,
    "label": "Options",
    "options": "\nDPR\nDSR"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "dpr",
    "fieldtype": "HTML",
    "label": "DPR"
   },
   {
-   "fieldname": "column_break_qhvs",
-   "fieldtype": "Column Break"
-  },
-  {
+   "allow_on_submit": 1,
    "fieldname": "from_date",
    "fieldtype": "Date",
    "label": "From Date"
@@ -155,29 +230,385 @@
    "fieldtype": "Column Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "to_date",
    "fieldtype": "Date",
    "label": "To Date"
   },
   {
-   "fieldname": "section_break_ugji",
-   "fieldtype": "Section Break"
-  },
-  {
    "fieldname": "section_break_qeoo",
-   "fieldtype": "Section Break"
+   "fieldtype": "Section Break",
+   "hidden": 1
   },
   {
    "fieldname": "dsr",
    "fieldtype": "Table",
+   "ignore_user_permissions": 1,
    "label": "DSR",
    "options": "Week Plan Details"
+  },
+  {
+   "fieldname": "column_break_qbnn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "executive",
+   "fieldtype": "Link",
+   "label": "Executive",
+   "options": "User"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "dsr_view",
+   "fieldtype": "HTML",
+   "label": "DSR View"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "HTML",
+   "label": "Project"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "HTML",
+   "label": "Employee"
+  },
+  {
+   "fieldname": "task_allocation_agent",
+   "fieldtype": "Table",
+   "ignore_user_permissions": 1,
+   "label": "Task Allocation - Agent",
+   "options": "REC Agent Task Details"
+  },
+  {
+   "fieldname": "allocation_agent",
+   "fieldtype": "Table",
+   "ignore_user_permissions": 1,
+   "label": "Allocation - Agent",
+   "options": "Agent Week Plan Details"
+  },
+  {
+   "fieldname": "column_break_wnoo",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "sams",
+   "fieldtype": "Link",
+   "label": "Agent",
+   "options": "SAMS"
+  },
+  {
+   "fieldname": "task_planner_tab",
+   "fieldtype": "Tab Break",
+   "hidden": 1,
+   "label": "Project Planner"
+  },
+  {
+   "fieldname": "rec_task_planner",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "REC Task Planner",
+   "options": "REC Task Planner"
+  },
+  {
+   "fieldname": "team",
+   "fieldtype": "HTML",
+   "label": "Team"
+  },
+  {
+   "fieldname": "task_allocation_team_wise",
+   "fieldtype": "Table",
+   "hidden": 1,
+   "label": "Task Allocation Team Wise",
+   "options": "REC Task Team Wise"
+  },
+  {
+   "fieldname": "team_wise",
+   "fieldtype": "Table",
+   "label": "Team Wise",
+   "options": "Week Plan Details Team Wise"
+  },
+  {
+   "fieldname": "sp_html",
+   "fieldtype": "HTML",
+   "label": "SP HTML"
+  },
+  {
+   "fieldname": "spfp_html",
+   "fieldtype": "HTML",
+   "label": "SP/FP HTML"
+  },
+  {
+   "fieldname": "fp_html",
+   "fieldtype": "HTML",
+   "label": "FP HTML"
+  },
+  {
+   "fieldname": "pnd_html",
+   "fieldtype": "HTML",
+   "label": "PND HTML"
+  },
+  {
+   "fieldname": "section_break_gkxb",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_nkos",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_ihgh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "section_break_qjej",
+   "fieldtype": "Section Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Workflow State",
+   "no_copy": 1,
+   "options": "Workflow State"
+  },
+  {
+   "fieldname": "section_break_vmye",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "status_transition",
+   "fieldtype": "Table",
+   "label": "Status Transition",
+   "options": "REC Week Plan Status Transition",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_lywo",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "pa_alpha_completed",
+   "fieldtype": "Check",
+   "label": "PA Alpha Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "pa_bravo_completed",
+   "fieldtype": "Check",
+   "label": "PA Bravo Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "pa_charlie_completed",
+   "fieldtype": "Check",
+   "label": "PA Charlie Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "pa_delta_completed",
+   "fieldtype": "Check",
+   "label": "PA Delta Completed"
+  },
+  {
+   "fieldname": "column_break_hzvd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "ta_alpha_completed",
+   "fieldtype": "Check",
+   "label": "TA Alpha Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "ta_bravo_completed",
+   "fieldtype": "Check",
+   "label": "TA Bravo Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "ta_charlie_completed",
+   "fieldtype": "Check",
+   "label": "TA Charlie Completed"
+  },
+  {
+   "default": "0",
+   "fieldname": "ta_delta_completed",
+   "fieldtype": "Check",
+   "label": "TA Delta Completed"
+  },
+  {
+   "fieldname": "column_break_8vap",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "team_type",
+   "fieldtype": "Link",
+   "label": "Team",
+   "options": "Dev Team"
+  },
+  {
+   "fieldname": "section_break_hfmr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "project_filter",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "column_break_sxnf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Task"
+  },
+  {
+   "fieldname": "section_break_aekd",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "sp_fp_project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "column_break_kcks",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "sp_fp_task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Task"
+  },
+  {
+   "fieldname": "section_break_mzub",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "fp_project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "column_break_ubcg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "fp_task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Task"
+  },
+  {
+   "fieldname": "section_break_nbxq",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "pnd_project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "column_break_cqsb",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pnd_task",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Task"
+  },
+  {
+   "fieldname": "collapsible_table_tab",
+   "fieldtype": "Tab Break",
+   "label": "Project Planner"
+  },
+  {
+   "fieldname": "client_html",
+   "fieldtype": "HTML",
+   "label": "Client Html"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer"
+  },
+  {
+   "fieldname": "column_break_fcyi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "project_collapsible",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "column_break_bwlx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "task_collapsible",
+   "fieldtype": "Link",
+   "label": "Task",
+   "options": "Task"
+  },
+  {
+   "fieldname": "section_break_agvg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_wnox",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "src_s",
+   "fieldtype": "Select",
+   "label": "SRC_S",
+   "options": "\nSP\nFP\nSP/FP\nPND"
+  },
+  {
+   "fieldname": "download_button",
+   "fieldtype": "HTML",
+   "label": "Download Button"
+  },
+  {
+   "fieldname": "section_break_xxjg",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_zqzq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_rwki",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dadw",
+   "fieldtype": "Section Break"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-19 12:45:04.784331",
+ "modified": "2026-05-05 15:35:57.444018",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "REC Week Plan",
@@ -194,7 +625,6 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],

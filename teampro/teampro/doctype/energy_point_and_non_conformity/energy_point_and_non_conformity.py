@@ -6,6 +6,11 @@ from frappe.model.document import Document
 
 
 class EnergyPointAndNonConformity(Document):
+	def autoname(self):
+		if self.action == "Energy Point(EP)":
+			self.naming_series = "EP"
+		else:
+			self.naming_series = "NC"
 	def validate(self):
 		self.ep_reported_by = frappe.get_value('Employee',{'user_id':frappe.session.user},'name')
 		self.name3 = frappe.get_value('Employee',{'user_id':frappe.session.user},'employee_name')

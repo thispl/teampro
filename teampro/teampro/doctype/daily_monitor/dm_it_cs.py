@@ -91,7 +91,7 @@ def dpr_mail_it_cs(name,date,service,type):
     recievers=[]
     if type == "CS":
         emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00023'},['*'])
-        recievers.append('anil.p@groupteampro.com')
+        recievers.append('annie.m@groupteampro.com')
         for i in emp:
             recievers.append(i.user_id)
     recievers.append('dineshbabu.k@groupteampro.com')
@@ -466,7 +466,7 @@ def dpr_mail_it_cs(name,date,service,type):
                     # sender='sarath.v@groupteampro.com',
                     recipients=['sivarenisha.m@groupteampro.com','jeniba.a@groupteampro.com','shylin.j@groupteampro.com'],
                     # recipients=['sarath.v@groupteampro.com','sivarenisha.m@groupteampro.com','jeniba.a@groupteampro.com'],
-                    cc=['dineshbabu.k@groupteampro.com','anil.p@groupteampro.com','abdulla.pi@groupteampro.com'],
+                    cc=['dineshbabu.k@groupteampro.com','abdulla.pi@groupteampro.com'],
                     subject = f'{service} - {type} DPR {formatted_date} -Reg',
                     message = """
                     <b>Dear Team,</b><br><br>

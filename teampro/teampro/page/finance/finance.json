@@ -1,0 +1,22 @@
+{
+ "content": null,
+ "creation": "2025-07-25 11:50:00.979168",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 11,
+ "modified": "2026-04-24 14:17:25.215911",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "finance",
+ "owner": "Administrator",
+ "page_name": "finance",
+ "roles": [
+  {
+   "role": "HR Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0
+}

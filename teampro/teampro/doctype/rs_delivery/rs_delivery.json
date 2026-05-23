@@ -1,0 +1,200 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "RS-DL-.####",
+ "creation": "2026-02-27 09:53:42.087827",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_qlnm",
+  "amended_from",
+  "customer",
+  "customer_warehouse",
+  "delivered_date",
+  "next_delivery_date",
+  "column_break_hurd",
+  "scan_barcode",
+  "dispatch_warehouse",
+  "rc_customer",
+  "letter_head",
+  "section_break_l744",
+  "items",
+  "section_break_etuj",
+  "billable_amount",
+  "column_break_r9iv",
+  "vat_amount",
+  "column_break_emv6",
+  "total_amount",
+  "section_break_oezh",
+  "shop_owner_signature"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_qlnm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Retail Stock Movement",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Shop Name",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:frappe.session.user==\"bhuvaneswari.a@groupteampro.com\"",
+   "fieldname": "customer_warehouse",
+   "fieldtype": "Link",
+   "label": "Customer Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "column_break_hurd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Scan Barcode",
+   "options": "Barcode"
+  },
+  {
+   "default": "WH-Vehicle-001 - TFP",
+   "fieldname": "dispatch_warehouse",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "in_list_view": 1,
+   "label": "Dispatch Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_l744",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Stock Movement Items"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Retail Stock Movement",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "rc_customer",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "RC Customer"
+  },
+  {
+   "fieldname": "shop_owner_signature",
+   "fieldtype": "Signature",
+   "label": "Shop Owner Signature"
+  },
+  {
+   "default": "TFP",
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Letter Head",
+   "options": "Letter Head"
+  },
+  {
+   "fieldname": "section_break_etuj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "billable_amount",
+   "fieldtype": "Currency",
+   "label": "Billable Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_r9iv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vat_amount",
+   "fieldtype": "Currency",
+   "label": "GST Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_emv6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_oezh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "delivered_date",
+   "fieldtype": "Date",
+   "label": "Delivery Date"
+  },
+  {
+   "fieldname": "next_delivery_date",
+   "fieldtype": "Date",
+   "label": "Next Delivery Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "custom_rc_delivery"
+  }
+ ],
+ "modified": "2026-05-19 19:08:06.087364",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "RS Delivery",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,23 @@
+{
+ "content": null,
+ "creation": "2026-02-25 10:28:40.758172",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-02-25 11:32:50.906688",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "tfp-retail-flow",
+ "owner": "Administrator",
+ "page_name": "tfp-retail-flow",
+ "roles": [
+  {
+   "role": "System Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "TFP Retail Flow"
+}

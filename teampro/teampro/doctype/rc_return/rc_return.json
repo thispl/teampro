@@ -1,0 +1,104 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "RC-RN-.####",
+ "creation": "2026-02-27 09:31:32.525152",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_xogw",
+  "amended_from",
+  "customer",
+  "column_break_udzm",
+  "customer_warehouse",
+  "dispatch_warehouse",
+  "section_break_kle5",
+  "return_items"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_xogw",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "RC Return",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Shop Name",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_udzm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_warehouse",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Customer Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_kle5",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "return_items",
+   "fieldtype": "Table",
+   "label": "Return Items",
+   "options": "RC Return Item"
+  },
+  {
+   "default": "WH-Vehicle-001 - TFP",
+   "fieldname": "dispatch_warehouse",
+   "fieldtype": "Link",
+   "label": "Dispatch Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "custom_rc_return"
+  }
+ ],
+ "modified": "2026-03-05 19:14:06.022645",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "RC Return",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

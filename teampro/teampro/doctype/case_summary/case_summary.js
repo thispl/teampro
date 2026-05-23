@@ -2,15 +2,21 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Case Summary", {
-	refresh(frm){
-		frappe.db.get_value("User Permission", {'user': frappe.session.user,'allow':'Customer'}, ['for_value'], (r) => {
-			if (r){
-				frm.set_value('company', r.for_value);
-			}
-		});
-		// frm.trigger('get_data');
-		frm.disable_save();
-	},
+	refresh(frm) {
+        frm.disable_save();
+
+        let today = frappe.datetime.get_today(); 
+
+        let year = frappe.datetime.str_to_obj(today).getFullYear();
+
+        let jan1 = year + "-01-01";
+
+        frm.set_value("from_date", jan1);
+        frm.set_value("to_date", today);
+		setTimeout(() => {
+            frm.trigger('get_data');
+        }, 2000);
+    },
 	onload: function(frm) {
         frm.disable_save(); 
         frappe.call({
@@ -33,7 +39,7 @@ frappe.ui.form.on("Case Summary", {
 			// 		batch: frm.doc.batch,
 			// 		from_date: frm.doc.from_date,
 			// 		to_date: frm.doc.to_date,
-			// 		company: frm.doc.company,
+			// 		customer: frm.doc.customer,
 			// 		case: frm.doc.case_status 
 			// 	},
 			// 	callback: function(r) {
@@ -61,7 +67,7 @@ frappe.ui.form.on("Case Summary", {
 			// 		batch: frm.doc.batch,
 			// 		from_date: frm.doc.from_date,
 			// 		to_date: frm.doc.to_date,
-			// 		company: frm.doc.company,
+			// 		customer: frm.doc.customer,
 			// 		case: frm.doc.case_status 
 			// 	},
 			// 	callback: function(r) {
@@ -81,7 +87,7 @@ frappe.ui.form.on("Case Summary", {
 		
 	},
 	report_status(frm){
-		if (frm.doc.report_status) {
+		// if (frm.doc.report_status) {
 			frm.trigger('get_data');
 			// frappe.call({
 			// 	method: 'teampro.teampro.doctype.case_summary.case_summary.return_report_options',
@@ -89,7 +95,7 @@ frappe.ui.form.on("Case Summary", {
 			// 		batch: frm.doc.batch,
 			// 		from_date: frm.doc.from_date,
 			// 		to_date: frm.doc.to_date,
-			// 		company: frm.doc.company,
+			// 		customer: frm.doc.customer,
 			// 		case: frm.doc.case_status 
 			// 	},
 			// 	callback: function(r) {
@@ -105,7 +111,7 @@ frappe.ui.form.on("Case Summary", {
 			// 		}
 			// 	}
 			// });
-		}
+		// }
 		
 	},
 	case_status(frm){
@@ -117,7 +123,7 @@ frappe.ui.form.on("Case Summary", {
 			// 		batch: frm.doc.batch,
 			// 		from_date: frm.doc.from_date,
 			// 		to_date: frm.doc.to_date,
-			// 		company: frm.doc.company,
+			// 		customer: frm.doc.customer,
 			// 		case: frm.doc.case_status 
 			// 	},
 			// 	callback: function(r) {
@@ -137,16 +143,16 @@ frappe.ui.form.on("Case Summary", {
 		// }
 		
 	},
-	// company(frm) {
-	// 	if (frm.doc.company) {
-	// 		frm.trigger('get_data');
+	customer(frm) {
+		if (frm.doc.customer) {
+			frm.trigger('get_data');
 	// 		frappe.call({
 	// 			method: 'teampro.teampro.doctype.case_summary.case_summary.return_report_options',
 	// 			args: {
 	// 				batch: frm.doc.batch,
 	// 				from_date: frm.doc.from_date,
 	// 				to_date: frm.doc.to_date,
-	// 				company: frm.doc.company,
+	// 				customer: frm.doc.customer,
 	// 				case: frm.doc.case_status 
 	// 			},
 	// 			callback: function(r) {
@@ -163,9 +169,9 @@ frappe.ui.form.on("Case Summary", {
 	// 				}
 	// 			}
 	// 		});
-	// 	}
+		}
 		
-	// },
+	},
 	batch(frm) {
 		if (frm.doc.batch) {
 			frm.trigger('get_data');
@@ -175,7 +181,7 @@ frappe.ui.form.on("Case Summary", {
 					batch: frm.doc.batch,
 					from_date: frm.doc.from_date,
 					to_date: frm.doc.to_date,
-					company: frm.doc.company,
+					customer: frm.doc.customer,
 					case: frm.doc.case_status 
 				},
 				callback: function(r) {
@@ -204,7 +210,7 @@ frappe.ui.form.on("Case Summary", {
 					batch: frm.doc.batch,
 					from_date: frm.doc.from_date,
 					to_date: frm.doc.to_date,
-					company: frm.doc.company,
+					customer: frm.doc.customer,
 					case: frm.doc.case_status 
 				},
 				callback: function(r) {
@@ -231,7 +237,7 @@ frappe.ui.form.on("Case Summary", {
 					batch: frm.doc.batch,
 					from_date: frm.doc.from_date,
 					to_date: frm.doc.to_date,
-					company: frm.doc.company,
+					customer: frm.doc.customer,
 					case: frm.doc.case_status 
 				},
 				callback: function(r) {
@@ -256,7 +262,7 @@ frappe.ui.form.on("Case Summary", {
 			from_date: frm.doc.from_date,
 			to_date: frm.doc.to_date,
 			batch: frm.doc.batch,
-			company:frm.doc.company,
+			customer:frm.doc.customer,
 			case:frm.doc.case_status,
 			report:frm.doc.report_status,
 			empname:frm.doc.employee_name,
@@ -274,12 +280,13 @@ frappe.ui.form.on("Case Summary", {
 				batch: frm.doc.batch,
 				from_date: frm.doc.from_date,
 				to_date: frm.doc.to_date,
-				company: frm.doc.company,
+				customer: frm.doc.customer,
 				case: frm.doc.case_status,
 				report: frm.doc.report_status,
 				empname: frm.doc.employee_name,
 				empid: frm.doc.employee_id,
 			},
+			
 			callback: function (r) {
 				if (r.message) {
 					frappe.require("assets/teampro/js/dataTables.min.js", () => {

@@ -18,9 +18,12 @@
   "column_break_3",
   "designation",
   "department",
+  "service",
   "services",
   "update_target",
   "reportees",
+  "so_pending",
+  "si_pending",
   "column_break_mgqn",
   "service_list",
   "annual_ct",
@@ -32,6 +35,12 @@
   "annual_ft_currency",
   "section_break_5",
   "target_child",
+  "section_break_uavh",
+  "total_ct",
+  "column_break_shkc",
+  "total_ct_achieved",
+  "column_break_rrxl",
+  "total_ct_yta",
   "foundation_target_section",
   "monthly_ft_allocation"
  ],
@@ -174,14 +183,14 @@
    "fieldname": "based_on_account_manager",
    "fieldtype": "Check",
    "label": "Based On Account Manager",
-   "read_only_depends_on": "eval:doc.based_on_service==1"
+   "read_only_depends_on": "eval:doc.based_on_service==1 ||doc.based_on_candidate_owner ==1"
   },
   {
    "default": "0",
    "fieldname": "based_on_service",
    "fieldtype": "Check",
    "label": "Based On Service",
-   "read_only_depends_on": "eval:doc.based_on_account_manager==1"
+   "read_only_depends_on": "eval:doc.based_on_account_manager==1 || doc.based_on_candidate_owner==1"
   },
   {
    "collapsible": 1,
@@ -205,12 +214,68 @@
    "default": "0",
    "fieldname": "based_on_candidate_owner",
    "fieldtype": "Check",
-   "label": "Based On Candidate Owner"
+   "label": "Based On Candidate Owner",
+   "read_only_depends_on": "eval:doc.based_on_service==1 || doc.based_on_account_manager==1"
+  },
+  {
+   "fieldname": "so_pending",
+   "fieldtype": "Currency",
+   "label": "SO Pending",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "si_pending",
+   "fieldtype": "Currency",
+   "label": "SI Pending",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_uavh",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "total_ct",
+   "fieldtype": "Currency",
+   "label": "Total CT",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_shkc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_ct_achieved",
+   "fieldtype": "Currency",
+   "label": "Total CT Achieved",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_rrxl",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_ct_yta",
+   "fieldtype": "Currency",
+   "label": "Total CT YTA",
+   "precision": "2",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.custom_service",
+   "fetch_if_empty": 1,
+   "fieldname": "service",
+   "fieldtype": "Link",
+   "label": "Service",
+   "options": "Services"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2025-06-11 15:55:56.301083",
+ "modified": "2026-05-22 15:20:36.417242",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Target Manager",

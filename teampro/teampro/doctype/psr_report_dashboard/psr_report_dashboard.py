@@ -17,7 +17,7 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.styles import Font, Alignment, NamedStyle, Border, Side
 from io import BytesIO
 from frappe.utils.file_manager import save_file
-from teampro.teampro.doctype.psr_report_dashboard.psr_report_hour import make_xlsx_with_hour
+from teampro.teampro.doctype.psr_report_dashboard.psr_report_hour import make_xlsx_with_hour,get_data_with_hour
 
 
 @frappe.whitelist()
@@ -41,7 +41,7 @@ def make_xlsx(data, sheet_name="Daily PSR Report", wb=None, column_widths=None):
     ws = wb.create_sheet(valid_sheet_name, 0)
 
     # Styles
-    fill_color_total = PatternFill(start_color="4C3B69", end_color="4C3B69", fill_type="solid")  # Total row
+    fill_color_total = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")  # Total row
     fill_color_blue = PatternFill(start_color="ADD8E6", end_color="ADD8E6", fill_type="solid")  # Blue row
     fill_color_white = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")  # White row
 
@@ -155,7 +155,7 @@ def get_data():
         issue_open_count=frappe.db.count("Issue",{"project":project.name,"status":"Open"})
         issue_replied_count=frappe.db.count("Issue",{"project":project.name,"status":"Replied"})
         data.append([
-            s_no,project.project_name, project.project_type,open_count,working_count,code_review_count,pr_count,cr_count,
+            s_no,project.project_name, project.project_type or '',open_count,working_count,code_review_count,pr_count,cr_count,
             issue_open_count,issue_replied_count
         ])
         s_no+=1
@@ -165,9 +165,9 @@ def get_data():
 
 @frappe.whitelist()    
 def send_daily_psr_report():
+    
     frappe.sendmail(
-        recipients=["dineshbabu.k@groupteampro.com","abdulla.pi@groupteampro.com","anil.p@groupteampro.com"],
-        # recipients =['jothi.m@groupteampro.com'],
+        recipients=["dineshbabu.k@groupteampro.com","abdulla.pi@groupteampro.com"],
         subject=f"Daily Project Status Report : {formatdate(frappe.utils.today(), 'dd-mm-yyyy')}",
         message="""Dear Team,<br><br>
         Please find attached the Daily Project Status Report – Count Based and Hour Based, for your kind reference.<br><br>""",
@@ -182,5 +182,161 @@ def send_daily_psr_report():
             }
         ]
     )
+@frappe.whitelist()    
+def send_daily_psr_report_in_htmt_view():
+    html_message = """Dear Team,<br><br>
+    Please find the Daily Project Status Report – Count Based and Hour Based, for your kind reference.<br><br>"""
+    html_message += download_html()
+    html_message +='<br><br>'
+
+    html_message+=download_html_with_hour()
+
+    frappe.sendmail(
+        recipients=["dineshbabu.k@groupteampro.com","abdulla.pi@groupteampro.com","jothi.m@groupteampro.com"],
+        # recipients=['jothi.m@groupteampro.com'],
+        subject=f"Daily PSR Report : {formatdate(frappe.utils.today(), 'dd-mm-yyyy')}",
+        message=html_message,
+        attachments=[
+            {
+                "fname": "Daily PSR Report.xlsx",
+                "fcontent": make_xlsx(data=None, sheet_name="Daily PSR Report", wb=None, column_widths=None).getvalue()
+            },
+            {
+                "fname": "Daily PSR Report(Hour).xlsx",
+                "fcontent": make_xlsx_with_hour(data=None, sheet_name="Daily PSR Report - Hour", wb=None, column_widths=None).getvalue()
+            }
+        ]
+    )
 
 
+    
+@frappe.whitelist()
+def download_html():
+    posting_date = datetime.now().strftime("%d-%m-%Y")
+    title = f"Daily PSR Report-Count ({posting_date})<br><br>"
+    data = get_data()
+    html = make_html_report(title, data)
+    frappe.response["type"] = "text/html"
+    frappe.response["message"] = html
+    return html
+
+@frappe.whitelist()
+def make_html_report(title, data):
+    total_row = ["", "Total", ""] + [0] * 7
+    html = f"""
+        <div style="text-align: center; font-size: 18px; font-weight: bold; padding: 10px;">{title}</div>
+        <table id="psr_count" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; border: 1px solid black;">
+            <thead>
+                <tr>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">S#</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">Project Name</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">Project Type</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#O</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#W</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#CD</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#PR</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#CR</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#IO</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white;">#IR</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+
+    for idx, row in enumerate(data):
+        row_style = "background-color: #ADD8E6;" if idx % 2 == 0 else "background-color: #FFFFFF;"
+        html += f"""<tr style="{row_style}">"""
+        for i, cell in enumerate(row):
+            align = "left" if i in [1, 2] else "center"
+            html += f"""<td style="border: 1px solid black; padding: 8px; text-align: {align};">{cell}</td>"""
+        html += "</tr>"
+
+        # Totals
+        for i in range(3, 10):
+            try:
+                total_row[i] += int(row[i]) if row[i] else 0
+            except (ValueError, TypeError):
+                total_row[i] += 0
+
+    html += """<tr style="background-color: #0F1568; color: white; font-weight: bold;">"""
+    for cell in total_row:
+        html += f"""<td style="border: 1px solid black; padding: 8px; text-align: center;">{cell}</td>"""
+    html += "</tr>"
+
+    html += "</tbody></table>"
+
+    return html
+
+
+@frappe.whitelist()
+def download_html_with_hour():
+    posting_date = datetime.now().strftime("%d-%m-%Y")
+    title = f"Daily PSR Report - Hour ({posting_date})<br><br>"
+    data = get_data_with_hour()
+    html = make_html_report_with_hour(title, data)
+    frappe.response["type"] = "text/html"
+    frappe.response["message"] = html
+    return html
+
+
+
+@frappe.whitelist()
+def make_html_report_with_hour(title, data):
+    total_row = ["", "Total", ""] + [0] * 7
+    html = f"""
+        <div style="text-align: center; font-size: 18px; font-weight: bold; padding: 8px;">{title}</div>
+        <div style="max-height: 600px; overflow-y: auto;">
+        <table id="psr_hour" style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;">
+            <thead>
+                <tr>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">S#</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">Project Name</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">Project Type</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#O</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#W</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#CD</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#PR</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#CR</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#IO</th>
+                    <th style="border: 1px solid black; padding: 8px; text-align: center; background-color: #0F1568; color: white; position: sticky; top: 0; z-index: 2;">#IR</th>
+                </tr>
+            </thead>
+            <tbody>
+    """
+
+    for idx, row in enumerate(data):
+        row_style = "background-color: #ADD8E6;" if idx % 2 == 0 else "background-color: #FFFFFF;"
+        html += f"""<tr style="{row_style}">"""
+        for i, cell in enumerate(row):
+            align = "left" if i in [1, 2] else "center"
+            html += f"""<td style="border: 1px solid black; padding: 8px; text-align: {align};">{cell}</td>"""
+        html += "</tr>"
+
+        for i in range(3, 10):
+            try:
+                total_row[i] += float(row[i]) if row[i] else 0
+            except (ValueError, TypeError):
+                total_row[i] += 0
+
+    html += """<tr style="background-color: #0F1568; color: white; font-weight: bold;">"""
+    for cell in total_row:
+        html += f"""<td style="border: 1px solid black; padding: 8px; text-align: center;">{round(cell, 2) if isinstance(cell, float) else cell}</td>"""
+    html += "</tr>"
+
+    html += "</tbody></table></div>"""  
+
+    return html
+
+
+
+@frappe.whitelist()
+def create_schedule_job_type():
+	job = frappe.db.exists('Scheduled Job Type', 'send_daily_psr_report_in_htmt_view')
+	if not job:
+		sjt = frappe.new_doc("Scheduled Job Type")
+		sjt.update({
+			"method": 'teampro.teampro.doctype.psr_report_dashboard.psr_report_dashboard.send_daily_psr_report_in_htmt_view',
+			"frequency": 'Cron',
+			"cron_format": "0 9 * * *"
+		})
+		sjt.save(ignore_permissions=True)

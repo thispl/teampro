@@ -1,0 +1,316 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "RS-SI-.####",
+ "creation": "2026-03-21 17:27:47.248512",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "invoice_details_tab",
+  "customer",
+  "delivered_date",
+  "rc_customer",
+  "invoice_date",
+  "column_break_plcx",
+  "customer_warehouse",
+  "dispatch_warehouse",
+  "letter_head",
+  "is_return",
+  "section_break_wse2",
+  "invoice_items",
+  "section_break_hxat",
+  "return_items",
+  "return_from",
+  "section_break_mcyj",
+  "billable_amount",
+  "customer_signature_",
+  "invoice_action",
+  "column_break_04e5",
+  "vat_amount",
+  "column_break_fk3b",
+  "total_amount",
+  "payment_details_tab",
+  "outstanding_amount",
+  "column_break_opzi",
+  "paid_amount",
+  "column_break_gplg",
+  "section_break_ywcs",
+  "mode_of_payment",
+  "column_break_vrsn",
+  "bank",
+  "outstanding_invoices_section",
+  "outstanding",
+  "section_break_rujv",
+  "customer_signature",
+  "details_tab",
+  "section_break_y5x9",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "invoice_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Invoice"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Shop Name",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "delivered_date",
+   "fieldtype": "Date",
+   "hidden": 1,
+   "label": "Delivered Date"
+  },
+  {
+   "fieldname": "rc_customer",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "RC Customer"
+  },
+  {
+   "fieldname": "column_break_plcx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer_warehouse",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Customer Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "default": "Dispatch  - TFP",
+   "fieldname": "dispatch_warehouse",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Dispatch Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "default": "TFP",
+   "fieldname": "letter_head",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Letter Head",
+   "options": "Letter Head"
+  },
+  {
+   "default": "0",
+   "depends_on": "is_return",
+   "fieldname": "is_return",
+   "fieldtype": "Check",
+   "label": "Is Return",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_wse2",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.is_return == 0",
+   "fieldname": "invoice_items",
+   "fieldtype": "Table",
+   "label": "Invoice Items",
+   "options": "RC Invoice Items"
+  },
+  {
+   "fieldname": "section_break_hxat",
+   "fieldtype": "Section Break"
+  },
+  {
+   "depends_on": "eval:doc.is_return == 1",
+   "fieldname": "return_items",
+   "fieldtype": "Table",
+   "label": "Return Items",
+   "options": "RC Return Item"
+  },
+  {
+   "fieldname": "return_from",
+   "fieldtype": "Data",
+   "label": "Return From",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_mcyj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "billable_amount",
+   "fieldtype": "Currency",
+   "label": "Billable Amount",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_signature_",
+   "fieldtype": "Signature",
+   "label": "Shop Owner Signature"
+  },
+  {
+   "fieldname": "invoice_action",
+   "fieldtype": "HTML",
+   "label": "Invoice Action"
+  },
+  {
+   "fieldname": "column_break_04e5",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "vat_amount",
+   "fieldtype": "Currency",
+   "label": "GST Amount",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_fk3b",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_amount",
+   "fieldtype": "Currency",
+   "label": "Total Amount",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Payment"
+  },
+  {
+   "fieldname": "outstanding_amount",
+   "fieldtype": "Currency",
+   "label": "Outstanding Amount",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_opzi",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paid_amount",
+   "fieldtype": "Currency",
+   "label": "Paid Amount",
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_gplg",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "outstanding_invoices_section",
+   "fieldtype": "Section Break",
+   "label": "Outstanding Invoices"
+  },
+  {
+   "fieldname": "outstanding",
+   "fieldtype": "Table",
+   "label": "Outstanding",
+   "options": "Outstanding RC Invoice"
+  },
+  {
+   "fieldname": "section_break_rujv",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "customer_signature",
+   "fieldtype": "Signature",
+   "hidden": 1,
+   "label": "Customer Signature"
+  },
+  {
+   "fieldname": "details_tab",
+   "fieldtype": "Tab Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "section_break_y5x9",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "RS Invoice",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "mode_of_payment",
+   "fieldtype": "Select",
+   "label": "Mode of Payment",
+   "options": "Cash\nWire Transfer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_ywcs",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_vrsn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "depends_on": "eval:doc.mode_of_payment==\"Wire Transfer\"",
+   "fieldname": "bank",
+   "fieldtype": "Link",
+   "label": "Company Account",
+   "mandatory_depends_on": "eval:doc.mode_of_payment==\"Wire Transfer\"",
+   "options": "Bank Account"
+  },
+  {
+   "fieldname": "invoice_date",
+   "fieldtype": "Date",
+   "label": "Invoice Date",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "custom_rc_invoice_"
+  },
+  {
+   "link_doctype": "Payment Entry",
+   "link_fieldname": "custom_rc_invoice"
+  }
+ ],
+ "modified": "2026-05-15 11:56:42.384838",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "RS Invoice",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

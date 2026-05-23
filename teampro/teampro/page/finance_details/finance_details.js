@@ -8,10 +8,7 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 	frappe.breadcrumbs.add('TEAMPRO');
 	const style = document.createElement('style');
 	style.innerHTML = `
-	.dashboard-wrapper {
-    background-color: #f5f5f5;
-    background-image: none; /* Remove existing background image if any */
-}
+	
 		@keyframes blink-border {
 			0% { border-color:rgb(151, 158, 153); }
 			50% { border-color: transparent; }
@@ -52,7 +49,7 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 
 		.dashboard-cards {
 			display: flex;
-			gap: 30px;
+			gap: 10px;
 			flex-wrap: wrap;
 			justify-content: space-between;
 		}
@@ -65,21 +62,23 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			gap: 10px;
 		}
 			.dashboard-cards-finaince > div {
-		flex: 1 1 200px;
-		padding: 20px;
-		border-radius: 12px;
-		color: white;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-		text-align: center;
-		font-size: 18px;
-		font-weight: bold;
-		min-width: 200px;
-	}
+	padding: 15px;
+	border-radius: 12px;
+	color: white;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	text-align: center;
+	font-size: 18px;
+	font-weight: bold;
+	min-width: 150px;
+	flex-shrink: 0;
+}
 
 	.order-booking-card {
 		background-color: #0a9396; /* Teal Blue - calm and modern */
 	}
-
+	.todeliverbill-card{
+	background-color: #4169e1;
+	}
 	.turnover-card {
 		background-color: #2e8b57; /* Sea Green */
 	}
@@ -107,8 +106,19 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 	.total-qty-card {
 		background-color: #b8860b; /* Slate Blue */
 	}
-
-
+		.tobill-card {
+		background-color: #006d77; /* Example teal blue, you can change it */
+	}
+	.total-customer-card{
+		background-color: #8a1e56;
+	}
+	.tot-stock-qty-card{
+		background-color: #4b0082;
+	}
+	.opportunity-count-card{
+		background-color: #292cc9;
+	}
+		
 		<style>
 	
 }
@@ -129,7 +139,7 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 		
 <div class="dashboard-wrapper">
 			<div style="position: relative; padding: 10px; text-align: center;">
-				<h2 style="font-weight: bold; margin: 0;">TFP Dashboard</h2>
+				<h2 style="font-weight: bold; margin: 0;">FOOD PRODUCTS</h2>
 				<div class="top-actions">
 					<input type="date" id="tfp-from-date" class="form-control" style="width: 140px;">
 					<input type="date" id="tfp-to-date" class="form-control" style="width: 140px;">
@@ -138,86 +148,82 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 				</div>
 				<div id="current-datetime" style="font-size: 16px; color: #666; margin-top: 5px;"></div>
 			</div>
-
-			<div class="active-customer-wrapper" style="padding: 20px;">
-			<div class="dashboard-cards-finaince" style="display: flex; gap: 55px; flex-wrap: wrap; margin-bottom: 30px;">
-				<div class="order-booking-card"></div>
-				<div class="turnover-card"></div>
-				<div class="collection-card"></div>
-				<div class="payable-card"></div>
-				<div class="receivable-card"></div>
-			</div>
-			<div style="display: flex; gap: 20px; margin-top: 20px; width: 100%;">
-		<div id="tfp-receivable-table" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; flex: 1; box-sizing: border-box; position: relative;">
-		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px 0;text-align:center">RECEIVABLE</h4>
-		<div id="receivable-so-table-content" style="margin-top: 0px;"></div>
-	</div>
-
-	<div id="tfp-payable-table" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; flex: 1; box-sizing: border-box; position: relative;">
-		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px 0;text-align:center">PAYABLE</h4>
-		<div id="payable-so-table-content" style="margin-top: 0px;"></div>
-	</div>
-
-	</div>
 	<br><br>
-	
-				<div class="dashboard-cards-finaince" style="display: flex; gap: 55px; margin-bottom: 30px;">
-					<div class="active-customer-card"></div>
-					<div class="so-qty-card"></div>
+				<div class="dashboard-cards-finaince" style="background-color: #f5f5f5;display: flex; gap: 20px; margin-bottom: 30px;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-right: 15px;margin-left: 15px;">
+					<div class="active-customer-card" style="margin-left:10px;"></div>
+					<div class="so-qty-card" ></div>
+					<div class="tot-stock-qty-card" ></div>
 					<div class="opportunity-card"></div>
+					<div class="opportunity-count-card"></div>
 					<div class="total-qty-card"></div>
+					<div class="total-customer-card" style="margin-right:50px;"></div>
 				</div>
-
-				<!-- Wrapper to hold both tables side by side -->
+<br>
+				<div class="dashboard-cards-finaince" style="background-color: #f5f5f5;display: flex; gap: 60px; margin-bottom: 30px;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-right: 15px;margin-left: 15px;">
+					<div class="packing-card" style="margin-left:400px;"></div>
+					<div class="scheduled-card" ></div>
+					<div class="packed-card" ></div>
+					<div class="dispatched-card"></div>
+				</div>
 	<div style="display: flex; gap: 20px; margin-top: 30px; width: 100%; flex-wrap: wrap;">
 
 	<!-- Customer Last SO Details -->
-	<div id="customer-so-table" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 0px; flex: 1; box-sizing: border-box; position: relative;">
+	<div id="customer-so-table" style="background-color: #f5f5f5;max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding:10px; flex: 1; box-sizing: border-box; position: relative;margin-left: 15px;">
 	
-	<!-- Block 1: Active Customers -->
-
-	<!-- Block 2: All Customers -->
-	
-	<div style="margin-bottom: 30px;">
-		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 10px; padding: 10px;text-align:center">ACTIVE CUSTOMER LAST SO DETAILS</h4>
-		<div id="customer-active-so-table-content" style="margin-top: 20px;"></div>
+	<div style="margin-bottom: 30px;margin-left: 15px;">
+		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px;text-align:center">ACTIVE CUSTOMER LAST SO DETAILS</h4>
+		<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download7-dashboard" class="btn btn-secondary">Download</button>
+					</div>
+		<div id="customer-active-so-table-content" style="margin-top: 10px;"></div>
 	</div>
 
 	</div>
 
 
 	<!-- Opportunity Details -->
-	<div id="opportunity-table" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; flex: 1; box-sizing: border-box; position: relative;">
+	<div id="opportunity-table" style="background-color: #f5f5f5;max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; flex: 1; box-sizing: border-box; position: relative;margin-right: 15px;">
 		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px;text-align:center">OPPORTUNITY DETAILS</h4>
+		<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download6-dashboard" class="btn btn-secondary">Download</button>
+					</div>
 		<div id="opportunity-table-content" style="margin-top: 10px;"></div>
 	</div>
 
 	</div>
 
 	</div>
-				<div id="tfp-so-table" style="max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center">
+				<div id="tfp-so-table" style="background-color: #f5f5f5;max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center;margin-left: 15px;margin-right: 15px;">
 				<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px;text-align:center">PACKING PLAN (SALES ORDER)</h4>
-					<div style="position: absolute; top: 10px; right: 10px; z-index: 1;">
+					<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
 						<button id="download-dashboard" class="btn btn-secondary">Download</button>
 					</div>
 					<div id="tfp-so-table-content" style="margin-top:0px;"></div>
 				</div>
 			</div>
-			<div id="tfp-so-table" style="max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center">
+			<div id="tfp-so-table" style="background-color: #f5f5f5;max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top: 30px; position: relative;text-align:center;margin-left: 15px;margin-right: 15px;">
 			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0px;text-align:center">SCHEDULED DETAILS (PINK SLIP)</h4>
-
+			<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download11-dashboard" class="btn btn-secondary">Download</button>
+					</div>
 			<div id="tfp-so-table-dn-content" style="margin-top: 0px;"></div>
 			</div>
 			<div style="display: flex; gap: 20px; margin-top: 30px; justify-content: center; flex-wrap: nowrap;">
 	<!-- Packed Details -->
-	<div class="table-card" style="max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;">
+	<div class="table-card" style="background-color: #f5f5f5;max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;margin-left: 15px;margin-right: 15px;">
 		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;">PACKED DETAILS</h4>
+		<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download5-dashboard" class="btn btn-secondary">Download</button>
+					</div>
 		<div id="tfp-so-table-dn-packed-content" style="margin-top: 0px; overflow-x: auto; white-space: nowrap;"></div>
 	</div>
 
 	<!-- Dispatched Details -->
-	<div class="table-card" style="max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;">
+	<div class="table-card" style="background-color: #f5f5f5;max-height: 400px; overflow: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; width: 48%; position: relative; text-align: center;margin-left: 15px;margin-right: 15px;">
 		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;">DISPATCHED DETAILS</h4>
+			<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download4-dashboard" class="btn btn-secondary">Download</button>
+					</div>
 		<div id="tfp-so-table-dn-dispatched-content" style="margin-top: 0px; overflow-x: auto; white-space: nowrap;"></div>
 	</div>
 </div>
@@ -225,34 +231,59 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 
 
 			<div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-		<div id="tfp-stock-table" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="tfp-stock-table" style="background-color: #f5f5f5;flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left: 15px;">
 			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">STORES - TFP (PRODUCT)</h4>
+			<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download3-dashboard" class="btn btn-secondary">Download</button>
+					</div>
 			<div id="tfp-stock-table-content" style="margin-top: 20px;"></div>
 		</div>
-		<div id="tfp-stock-table-second" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="tfp-stock-table-second" style="background-color: #f5f5f5;flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-right: 15px;">
 						<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">STORES - TFP (PACKING MATERIAL)</h4>
-			<div id="tfp-stock-table-content-packing" style="margin-top: 20px;"></div>
+						<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download2-dashboard" class="btn btn-secondary">Download</button>
+					</div>	
+						<div id="tfp-stock-table-content-packing" style="margin-top: 20px;"></div>
 		</div>
 		
 	</div>
 	<div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
-		<div id="second-stock-table" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
-			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">VM PRECISION -TFP</h4>
-
+		<div id="second-stock-table" style="background-color: #f5f5f5;flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left: 15px;">
+			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">LSVM STOCK STATUS</h4>
+			<div style="position: absolute; top: 0px; right: 10px; z-index: 1;">
+						<button id="download1-dashboard" class="btn btn-secondary">Download</button>
+					</div>
 			<div id="second-stock-table-content" style="margin-top: 20px;"></div>
 		</div>
-		<div id="second-stock-table-vm" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="second-stock-table-vm" style="background-color: #f5f5f5;flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-right: 15px;">
 			<div id="variation-content" style="margin-top: 20px;"></div>
 		
 		</div>
 		
 		</div>
-		<div id="second-stock-table-vms" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;">
+		<div id="second-stock-table-vms" style="flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-right: 15px;">
 			<div id="tfp-stock-table-content-packing1" style="margin-top: 20px;"></div>
 		
 		</div>
 		
+		<div style="display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap;">
+		<div id="second-stock-table" style="background-color: #f5f5f5;flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-left: 15px;">
+			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">RETAIL SHOP AVAILABILITY</h4>
+			
+			<div id="retail-shop-availability" style="margin-top: 20px;"></div>
 		</div>
+		<div id="retail-payment" style="background-color: #f5f5f5;flex: 1; min-width: 400px; max-height: 400px; overflow-x: auto; border: 1px solid #ddd; border-radius: 8px; padding: 10px; position: relative;margin-right: 15px;">
+			<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 0;text-align:center">RETAIL SHOP PAYMENT OUTSTANDING REPORT</h4>
+			<div id="retail-payment-content" style="margin-top: 20px;"></div>
+		
+		</div>
+		
+		</div>
+		
+		</div>
+
+		
+
 
 		`);
 	// DateTime
@@ -270,13 +301,62 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 
 	// Download
 	$(wrapper).on('click', '#download-dashboard', function () {
-		const path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_plan_excel";
+		// const path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_plan_excel";
+		const path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_plan_excel_update";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+
+	$(wrapper).on('click', '#download1-dashboard', function () {
+		// const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_vm_precision_tfp";
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_vm_precision_tfp_data";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+
+	$(wrapper).on('click', '#download2-dashboard', function () { 
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_stores_tfp";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download3-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_stores_tfp_product";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download4-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_dispatched_details";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download5-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_packed_details";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download6-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_opportunity_details";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download7-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_active_cutomer_last_so_details";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download8-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_receivable_table";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download9-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_tobill_table";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download10-dashboard', function () {
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_payable_table1";
+		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	});
+	$(wrapper).on('click', '#download11-dashboard', function () {
+		// const path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_plan_excel";
+		const path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_scheduled_excel_update";
 		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
 	});
 
 	// Apply filter
 	$(wrapper).on('click', '#apply-tfp-filter', function() {
-		const from_date = $('#tfp-from-date').val();
+		const from_date = $('#tfp-from-date').val();  
 		const to_date = $('#tfp-to-date').val();
 		loadOrderBooking(from_date, to_date);
 		loadturnover(from_date, to_date);
@@ -287,127 +367,893 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 		loadpayabletable(from_date, to_date);
 		loadtotalsoqty(from_date, to_date);
 	});
+	frappe.call({
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_delivery_status_summary",
 
+	callback: function(r) {
+
+		let d = r.message;
+
+		// PACKING
+		$(wrapper).find('.packing-card').html(`
+			<div style="
+				background: linear-gradient(135deg, #42a5f5, #1976d2);
+				color: white;
+				padding: 18px;
+				border-radius: 14px;
+				width: 180px;
+				height: 150px;
+				box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+				position: relative;
+				overflow: hidden;
+			">
+
+				<div style="
+					position:absolute;
+					top:-10px;
+					right:-10px;
+					font-size:60px;
+					opacity:0.12;
+				">
+					📦
+				</div>
+
+				<h4 style="margin:0; font-size:16px;">
+					Packing
+				</h4>
+
+				<div style="
+					font-size:32px;
+					font-weight:bold;
+					margin-top:18px;
+				">
+					${d.packing.count}
+				</div>
+
+				<div style="
+					margin-top:8px;
+					font-size:14px;
+				">
+					Qty : <b>${d.packing.qty}</b>
+				</div>
+
+			</div>
+		`);
+
+		// SCHEDULED
+		$(wrapper).find('.scheduled-card').html(`
+			<div style="
+				background:#fff3e0;
+				border-left:6px solid #ff9800;
+				padding:18px;
+				border-radius:14px;
+				width:180px;
+				height:150px;
+				box-shadow:0 3px 8px rgba(0,0,0,0.08);
+			">
+
+				<div style="
+					font-size:16px;
+					font-weight:600;
+					color:#ff9800;
+				">
+					Scheduled
+				</div>
+
+				<div style="
+					font-size:34px;
+					font-weight:bold;
+					color:#333;
+					margin-top:18px;
+				">
+					${d.scheduled.count}
+				</div>
+
+				<div style="
+					margin-top:8px;
+					font-size:14px;
+					color:#555;
+				">
+					Qty : <b>${d.scheduled.qty}</b>
+				</div>
+
+			</div>
+		`);
+
+		// PACKED
+		$(wrapper).find('.packed-card').html(`
+			<div style="
+				background:#faf5ff;
+				border:2px dashed #9c27b0;
+				padding:18px;
+				border-radius:16px;
+				width:180px;
+				height:150px;
+				text-align:center;
+				position:relative;
+			">
+
+				<div style="
+					width:42px;
+					height:42px;
+					background:#9c27b0;
+					color:white;
+					border-radius:50%;
+					display:flex;
+					align-items:center;
+					justify-content:center;
+					font-size:20px;
+					margin:auto;
+					margin-top:-38px;
+					box-shadow:0 3px 8px rgba(0,0,0,0.2);
+				">
+					✓
+				</div>
+
+				<h4 style="
+					margin-top:12px;
+					color:#9c27b0;
+				">
+					Packed
+				</h4>
+
+				<div style="
+					font-size:32px;
+					font-weight:bold;
+					color:#222;
+					margin-top:8px;
+				">
+					${d.packed.count}
+				</div>
+
+				<div style="
+					margin-top:8px;
+					font-size:14px;
+					color:#666;
+				">
+					Qty : <b>${d.packed.qty}</b>
+				</div>
+
+			</div>
+		`);
+
+		// DISPATCHED
+		$(wrapper).find('.dispatched-card').html(`
+			<div style="
+				background:linear-gradient(135deg,#43a047,#1b5e20);
+				padding:18px;
+				border-radius:14px;
+				width:180px;
+				height:150px;
+				color:white;
+				box-shadow:0 4px 10px rgba(0,0,0,0.15);
+			">
+
+				<div style="
+					display:flex;
+					justify-content:space-between;
+					align-items:center;
+				">
+
+					<h4 style="margin:0;">
+						Dispatched
+					</h4>
+
+					<div style="
+						font-size:20px;
+					">
+						🚚
+					</div>
+
+				</div>
+
+				<div style="
+					font-size:34px;
+					font-weight:bold;
+					margin-top:18px;
+				">
+					${d.dispatched.count}
+				</div>
+
+				<div style="
+					margin-top:8px;
+					font-size:14px;
+				">
+					Qty : <b>${d.dispatched.qty}</b>
+				</div>
+
+			</div>
+		`);
+	}
+});
+	frappe.call({
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_stock_qty_value",
+
+	callback: function(r) {
+
+		const stock_qty = r.message.total_stock_qty || 0;
+		const stock_value = r.message.total_stock_value || 0;
+
+		$(wrapper).find('.tot-stock-qty-card').html(`
+
+			<div class="card blink-border"
+				style="
+					width: 230px;
+					height: 160px;
+					padding: 20px;
+					border-radius: 12px;
+					background:white;
+					display: flex;
+					flex-direction: column;
+					justify-content: center;
+					align-items: center;
+					box-sizing: border-box;
+				">
+
+				<h3 style="
+					margin: 0;
+					text-align: center;
+					white-space: nowrap;
+					font-size: 17px;
+					color: black;
+				">
+					Total Stock Qty & Value
+				</h3>
+
+				<div style="
+					font-size: 24px;
+					font-weight: bold;
+					margin-top: 12px;
+					color: green;
+					text-align: center;
+				">
+					${stock_qty.toFixed(2)}
+				</div>
+
+				<div style="
+					margin-top: 10px;
+					font-size: 16px;
+					text-align: center;
+					color: black;
+					white-space: nowrap;
+				">
+					Value : ${format_currency(stock_value)}
+				</div>
+
+			</div>
+
+		`);
+	}
+});
 
 	// Load Dashboard Cards
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_active_customers_count",
-		callback: function(r) {
-			const count = r.message || 0;
-			$(wrapper).find('.active-customer-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center">Active Customers</h3>
-					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${count}</div>
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_active_customers_count",
+
+	callback: function(r) {
+
+		const count = r.message || 0;
+
+		$(wrapper).find('.active-customer-card').html(`
+			<div class="card blink-border"
+				style="
+					width: 210px;
+					height: 160px;
+					padding: 20px;
+					border-radius: 12px;
+					background:white;
+					display: flex;
+					flex-direction: column;
+					justify-content: center;
+					align-items: center;
+					box-sizing: border-box;
+				">
+
+				<h3 style="
+					margin: 0;
+					text-align: center;
+					white-space: nowrap;
+					color: black;
+					font-size: 20px;
+				">
+					Active Customers
+				</h3>
+
+				<div style="
+					font-size: 24px;
+					font-weight: bold;
+					margin-top: 15px;
+					color: green;
+					text-align: center;
+				">
+					${count}
 				</div>
-			`);
+
+			</div>
+		`);
+	}
+});
+	frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_customer_detalils",
+		callback(r) {
+
+			let data = r.message;
+
+			let card = `
+				<div class="card blink-border" style="
+					width: 250px;
+					padding: 20px;
+					border-radius: 8px;
+					background: white;
+					border: 2px solid #4b0082;
+					box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+				">
+
+					<div style="
+						font-size:30px;
+						font-weight:bold;
+						color:#2490ef;
+						text-align:center;
+						line-height:1;
+					">
+						${data.overall_customer_count}
+					</div>
+
+					<div style="
+						font-size:15px;
+						font-weight:bold;
+						text-align:center;
+						margin-top:5px;
+						margin-bottom:12px;
+						color:#333;
+					">
+						Overall Customers
+					</div>
+
+					<div style="
+						display:flex;
+						justify-content:space-between;
+						gap:6px;
+						font-size:12px;
+					">
+
+						<div style="
+							flex:1;
+							padding:5px;
+							border-left:4px solid #0a9396;
+							background:#f7f7f7;
+							border-radius:4px;
+							text-align:center;
+							color:#444;
+						">
+							<div><b>Corporate</b></div>
+							<div>${data.total_corporate_customers}</div>
+						</div>
+
+						<div style="
+							flex:1;
+							padding:5px;
+							border-left:4px solid #20b2aa;
+							background:#f7f7f7;
+							border-radius:4px;
+							text-align:center;
+							color:#444;
+						">
+							<div><b>Retail</b></div>
+							<div>${data.total_retail_shops}</div>
+						</div>
+
+						<div style="
+							flex:1;
+							padding:5px;
+							border-left:4px solid #b8860b;
+							background:#f7f7f7;
+							border-radius:4px;
+							text-align:center;
+							color:#444;
+						">
+							<div><b>Vending</b></div>
+							<div>${data.total_vending_machines}</div>
+						</div>
+
+					</div>
+
+				</div>
+			`;
+			$(wrapper).find('.total-customer-card').html(card);
 		}
 	});
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking",
-		callback: function(r) {
-			const value = r.message || 0;
-			const formatted = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-				
-			});
-				// const count = r.message || 0;
-			$(wrapper).find('.order-booking-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center">Order Booking</h3>
-					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_opportunity_count",
+
+	callback: function(r) {
+
+		const count = r.message || 0;
+
+		$(wrapper).find('.opportunity-count-card').html(`
+
+			<div class="card blink-border"
+				style="
+					width: 180px;
+					height: 160px;
+					padding: 20px;
+					border-radius: 12px;
+					background:white;
+					display: flex;
+					flex-direction: column;
+					justify-content: center;
+					align-items: center;
+					box-sizing: border-box;
+				">
+
+				<h3 style="
+					margin: 0;
+					text-align: center;
+					font-size: 18px;
+					white-space: nowrap;
+					color: black;
+				">
+					Opp.Count
+				</h3>
+
+				<div style="
+					font-size: 24px;
+					font-weight: bold;
+					margin-top: 15px;
+					color: green;
+					text-align: center;
+				">
+					${count}
 				</div>
-			`);
-		}
-	});
+
+			</div>
+
+		`);
+	}
+});
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover",
-		callback: function(r) {
-			const value = r.message || 0;
-			const formatted = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0 
-				
-			});
-				// const count = r.message || 0;
-			$(wrapper).find('.turnover-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center">Turnover</h3>
-					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-				</div>
-			`);
-		}
-	});
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking",
+	callback: function(r) {
+		const value = r.message || 0;
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+
+        const formattedTotal = parseFloat(value).toLocaleString('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0 
+        });
+
+        // const formattedAvg = parseFloat(avg).toLocaleString('en-IN', {
+        //     style: 'currency',
+        //     currency: 'INR',
+        //     maximumFractionDigits: 0 
+        // });
+		let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+
+		const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+
+
+		// Inject HTML into wrapper
+		$(wrapper).find('.order-booking-card').html(`
+			<div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
+				<h3 style="margin: 0; text-align:center; white-space:nowrap; font-size:17px;">Order Booking</h3>
+				<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
+				<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
+		`);
+		
+	}
+});
+
+	
+	frappe.call({
+    method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover",
+    callback: function(r) {
+        const value = r.message || 0;
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+
+        const formattedTotal = parseFloat(value).toLocaleString('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+
+        // const formattedAvg = parseFloat(avg).toLocaleString('en-IN', {
+        //     style: 'currency',
+        //     currency: 'INR',
+        //     maximumFractionDigits: 0 
+        // });
+		const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+
+
+        // $(wrapper).find('.turnover-card').html(`
+        //     <div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
+        //         <h3 style="margin: 0;text-align:center;font-size:17px;">Turnover</h3>
+        //         <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
+        //         <div style="font-size: 14px; text-align: center; margin-top: 5px;">
+        //             <span style="color:red; font-weight:bold;font-size:13px;">[${formattedAvg}]</span>
+        //             <span style="display:inline-block; vertical-align:middle;">${arrowSvg}</span>
+        //         </div>
+        //     </div>
+        // `);
+		$(wrapper).find('.turnover-card').html(`
+            <div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
+                <h3 style="margin: 0;text-align:center;font-size:17px;">Turnover</h3>
+                <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
+                <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
+        `);
+    }
+});
+
 	frappe.call({
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_collection_value",
 		callback: function(r) {
 			const value = r.message || 0;
-			const formatted = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0 
-				
-			});
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+        const formattedTotal = parseFloat(value).toLocaleString('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0 
+        });
+
+        // const formattedAvg = parseFloat(avg).toLocaleString('en-IN', {
+        //     style: 'currency',
+        //     currency: 'INR',
+        //     maximumFractionDigits: 0 
+        // });
+		const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+
 				// const count = r.message || 0;
 			$(wrapper).find('.collection-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center">Collection</h3>
-					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-				</div>
+				<div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
+					<h3 style="margin: 0;text-align:center;font-size:17px;">Collection</h3>
+					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
+               <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
 			`);
 		}
 	});
 	frappe.call({
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_payable",
 		callback: function(r) {
+			// const value = r.message || 0;
 			const value = r.message || 0;
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+
+        
 			const formatted = parseFloat(value).toLocaleString('en-IN', {
 				style: 'currency',
 				currency: 'INR',
 				maximumFractionDigits: 0 
 				
 			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+			let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
 				// const count = r.message || 0;
 			$(wrapper).find('.payable-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
+				<div class="card blink-border" style="width: 150px; padding: 20px; border-radius: 8px;">
 					<h3 style="margin: 0;text-align:center">Payable</h3>
-					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+				<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
+			`);
+		}
+	});
+	// frappe.call({
+	// 		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_so_qty",
+	// 		callback: function(r) {
+	// 			const qty = r.message || 0;
+	// 			$(wrapper).find('.so-qty-card').html(`
+	// 				<div class="card blink-border" style="width: 250px; padding: 35px; border-radius: 8px;">
+	// 					<h3 style="margin: 0;text-align:center">Total SO Qty</h3>
+	// 					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${qty}</div>
+	// 				</div>
+	// 			`);
+				
+	// 		}
+			
+	// 	});
+	frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_so_qty",
+		callback: function(r) {
+
+			const total_qty = r.message.total_qty || 0;
+			const average_qty = r.message.average_qty || 0;
+
+			$(wrapper).find('.so-qty-card').html(`
+				<div class="card blink-border"
+					style="width: 200px; padding: 25px; border-radius: 10px;">
+
+					<h3 style="margin: 0; text-align:center;font-size:17px;">
+						Total SO Qty
+					</h3>
+
+					<div style="
+						font-size: 24px;
+						font-weight: bold;
+						margin-top: 10px;
+						color: green;
+						text-align: center;
+					">
+						${total_qty}
+					</div>
+
+					<div style="
+						margin-top: 15px;
+						font-size: 16px;
+						text-align: center;
+						color: #fb2c2c;
+					">
+						Avg: <b>${average_qty}</b>
+					</div>
+
 				</div>
 			`);
 		}
 	});
 	frappe.call({
-			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_so_qty",
-			callback: function(r) {
-				const qty = r.message || 0;
-				$(wrapper).find('.so-qty-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-						<h3 style="margin: 0;text-align:center">Total SO Qty</h3>
-						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${qty}</div>
-					</div>
-				`);
-				
-			}
-			
-		});
-	frappe.call({
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_receivable",
 		callback: function(r) {
+			// const value = r.message || 0;
 			const value = r.message || 0;
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+		console.log(avg_value)
 			const formatted = parseFloat(value).toLocaleString('en-IN', {
 				style: 'currency',
 				currency: 'INR',
 				maximumFractionDigits: 0 
 				
 			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
 				// const count = r.message || 0;
 			$(wrapper).find('.receivable-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center">Receivable</h3>
-					<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-				</div>
+				<div class="card blink-border" style="width: 150px; padding: 15px; border-radius: 8px;">
+					<h3 style="margin: 0;text-align:center;font-size:17px;">Receivable</h3>
+					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
+			`);
+		}
+	});
+	frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_to_bill_value",
+		callback: function(r) {
+			const value = r.message || 0;
+			const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+			const formatted = parseFloat(value).toLocaleString('en-IN', {
+				style: 'currency',
+				currency: 'INR',
+				maximumFractionDigits: 0 
+				
+			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+				// const count = r.message || 0;
+			$(wrapper).find('.tobill-card').html(`
+				<div class="card blink-border" style="width: 150px; padding: 15px; border-radius: 8px;">
+					<h3 style="margin: 0;text-align:center;font-size:17px;">To Bill</h3>
+					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
+			`);
+		}
+	});
+	frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_to_deliver_bill_value",
+		callback: function(r) {
+			const value = r.message || 0;
+			const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+			const formatted = parseFloat(value).toLocaleString('en-IN', {
+				style: 'currency',
+				currency: 'INR',
+				maximumFractionDigits: 0 
+				
+			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="60" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+				// const count = r.message || 0;
+			$(wrapper).find('.todeliverbill-card').html(`
+				<div class="card blink-border" style="width: 168px; padding: 15px; border-radius: 8px;">
+					<h3 style="margin: 0;text-align:center;white-space:nowrap;font-size:17px;">To Deliver and Bill</h3>
+					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
 			`);
 		}
 	});
@@ -423,10 +1269,21 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 				maximumFractionDigits: 0
 				
 			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="70" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
 				// const count = r.message || 0;
 				$(wrapper).find('.order-booking-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-						<h3 style="margin: 0;text-align:center">Order Booking</h3>
+					<div class="card blink-border" style="width: 250px; padding: 15px; border-radius: 8px;">
+						<h3 style="margin: 0;text-align:center;font-size:17px;">Order Booking</h3>
 						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 					</div>
 				`);
@@ -447,7 +1304,7 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			});
 				// const count = r.message || 0;
 				$(wrapper).find('.turnover-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
+					<div class="card blink-border" style="width: 250px; padding: 15px; border-radius: 8px;">
 						<h3 style="margin: 0;text-align:center">Turnover</h3>
 						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 					</div>
@@ -482,19 +1339,53 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_payable",
 			// args: { from_date, to_date },
 			callback: function(r) {
+				// const value = r.message || 0;
 				const value = r.message || 0;
+
+        // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+
 			const formatted = parseFloat(value).toLocaleString('en-IN', {
 				style: 'currency',
 				currency: 'INR',
 				maximumFractionDigits: 0
 				
 			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+			let arrowSvg = `
+<svg width="60" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
 				// const count = r.message || 0;
 				$(wrapper).find('.payable-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-						<h3 style="margin: 0;text-align:center">Payable</h3>
-						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-					</div>
+					<div class="card blink-border" style="width: 140px; padding: 15px; border-radius: 8px;">
+						<h3 style="margin: 0;text-align:center;font-size:17px;">Payable</h3>
+						<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+						<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
 				`);
 			}
 		});
@@ -505,24 +1396,54 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			// args: { from_date, to_date },
 			callback: function(r) {
 				const value = r.message || 0;
+				 // Get current month and year
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1; // 1-12
+        const currentYear = now.getFullYear();
+
+        // Calculate current financial month number
+        // April (4) is month 1, March (3) is month 12
+        let financialMonth;
+        if (currentMonth >= 4) {
+            financialMonth = currentMonth - 3;
+        } else {
+            financialMonth = currentMonth + 9;
+        }
+
+        // Calculate average
+        const avg = value / financialMonth;
+		const avg_value=Math.round(avg || 0);
+
 			const formatted = parseFloat(value).toLocaleString('en-IN', {
 				style: 'currency',
 				currency: 'INR',
 				maximumFractionDigits: 0
 				
 			});
+			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+            maximumFractionDigits: 0 
+        });
+		let arrowSvg = `
+<svg width="60" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
 				// const count = r.message || 0;
 				$(wrapper).find('.receivable-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-						<h3 style="margin: 0;text-align:center">Receivable</h3>
-						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-					</div>
+					<div class="card blink-border" style="width: 140px; padding: 15px; border-radius: 8px;">
+						<h3 style="margin: 0;text-align:center;font-size:17px;">Receivable</h3>
+						<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+						<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+            </div>
 				`);
 			}
 		});
-	// }
-	// $('#receivable-so-table-content').html(`<div style="padding: 10px;text-align:center">Loading Receivable details...</div>`);
-	// function loadreceivabletable(from_date = null, to_date = null) {
+
 		frappe.call({
 		method: 'teampro.teampro.page.finance_details.tfp_dashboard.tfp_receivable_table',
 		// args: { from_date, to_date },
@@ -535,10 +1456,20 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			}
 		}
 	});
-	// }
-	// $('#payable-so-table-content').html(`<div style="padding: 10px;text-align:center">Loading Payable details...</div>`);
-	// function loadpayabletable(from_date = null, to_date = null) {
-		frappe.call({
+	frappe.call({
+		method: 'teampro.teampro.page.finance_details.tfp_dashboard.tfp_tobill_table',
+		// args: { from_date, to_date },
+		callback: function(r) {
+			if (r.message) {
+				$('#tobill-so-table-content').html(r.message);
+			}
+			else {
+				$('#tobill-so-table-content').html(`<div style="padding: 10px;text-align:center">No data found</div>`);
+			}
+		}
+	});
+	
+	frappe.call({
 		method: 'teampro.teampro.page.finance_details.tfp_dashboard.tfp_payable_table',
 		// args: { from_date, to_date },
 		callback: function(r) {
@@ -550,57 +1481,165 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			}
 		}
 	});
-	// }
 	function loadtotalsoqty(from_date = null, to_date = null) {
+		// frappe.call({
+		// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_so_qty",
+		// 	args: { from_date, to_date },
+		// 	callback: function(r) {
+		// 		const qty = r.message || 0;
+		// 		$(wrapper).find('.so-qty-card').html(`
+		// 			<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
+		// 				<h3 style="margin: 0;text-align:center">Total SO Qty</h3>
+		// 				<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${qty}</div>
+		// 			</div>
+		// 		`);
+				
+		// 	}
+			
+		// });
 		frappe.call({
 			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_so_qty",
 			args: { from_date, to_date },
 			callback: function(r) {
-				const qty = r.message || 0;
+
+				const total_qty = r.message.total_qty || 0;
+				const average_qty = r.message.average_qty || 0;
+
 				$(wrapper).find('.so-qty-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-						<h3 style="margin: 0;text-align:center">Total SO Qty</h3>
-						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${qty}</div>
+					<div class="card blink-border"
+						style="width: 300px; padding: 35px; border-radius: 8px;">
+
+						<h3 style="margin: 0; text-align:center;">
+							Total SO Qty
+						</h3>
+
+						<div style="
+							font-size: 32px;
+							font-weight: bold;
+							margin-top: 10px;
+							color: green;
+							text-align: center;
+						">
+							${total_qty}
+						</div>
+
+						<div style="
+							margin-top: 15px;
+							font-size: 16px;
+							text-align: center;
+							color: #555;
+						">
+							Average / Month : <b>${average_qty}</b>
+						</div>
+
 					</div>
 				`);
-				
 			}
-			
 		});
 	}
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.total_exp_value",
-		callback: function(r) {
-			const value = r.message || 0;
-			const formatted = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-				
-			});
-			// const value = r.message || 0;
-			$(wrapper).find('.opportunity-card').html(`
-				<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-			<h3 style="margin: 0;text-align:center">Total Expected Value</h3>
-			<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-		</div>
-			`);
-		}
-	});
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.total_exp_value",
+
+	callback: function(r) {
+
+		const value = r.message || 0;
+
+		const formatted = parseFloat(value).toLocaleString('en-IN', {
+			style: 'currency',
+			currency: 'INR',
+			maximumFractionDigits: 0
+		});
+
+		$(wrapper).find('.opportunity-card').html(`
+
+			<div class="card blink-border"
+				style="
+					width: 230px;
+					height: 160px;
+					padding: 20px;
+					border-radius: 12px;
+					background:white;
+					display: flex;
+					flex-direction: column;
+					justify-content: center;
+					align-items: center;
+					box-sizing: border-box;
+				">
+
+				<h3 style="
+					margin: 0;
+					text-align: center;
+					font-size: 18px;
+					white-space: nowrap;
+					color: black;
+				">
+					Total Expected Value
+				</h3>
+
+				<div style="
+					font-size: 24px;
+					font-weight: bold;
+					margin-top: 15px;
+					color: green;
+					text-align: center;
+				">
+					${formatted}
+				</div>
+
+			</div>
+
+		`);
+	}
+});
 
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.total_opp_qty",
-		callback: function(r) {
-			
-			const value = r.message || 0;
-			$(wrapper).find('.total-qty-card').html(`
-					<div class="card blink-border" style="width: 250px; padding: 20px; border-radius: 8px;">
-			<h3 style="margin: 0;text-align:center">Total Qty</h3>
-			<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${value}</div>
-		</div>
-			`);
-		}
-	});
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.total_opp_qty",
+
+	callback: function(r) {
+
+		const value = r.message || 0;
+
+		$(wrapper).find('.total-qty-card').html(`
+
+			<div class="card blink-border"
+				style="
+					width: 180px;
+					height: 160px;
+					padding: 20px;
+					border-radius: 12px;
+					background:white;
+					display: flex;
+					flex-direction: column;
+					justify-content: center;
+					align-items: center;
+					box-sizing: border-box;
+				">
+
+				<h3 style="
+					margin: 0;
+					text-align: center;
+					font-size: 18px;
+					white-space: nowrap;
+					color: black;
+				">
+					Total Qty
+				</h3>
+
+				<div style="
+					font-size: 24px;
+					font-weight: bold;
+					margin-top: 15px;
+					color: green;
+					text-align: center;
+				">
+					${value}
+				</div>
+
+			</div>
+
+		`);
+	}
+});
 	
 	$('#customer-active-so-table-content').html(`<div style="padding: 10px;text-align:center">Loading customer SO details...</div>`);
 
@@ -614,8 +1653,6 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			}
 		}
 	});
-	// Load Customer SO Table
-	// Show loading message before the call
 	$('#customer-so-table-content').html(`<div style="padding: 10px;text-align:center">Loading customer SO details...</div>`);
 
 	frappe.call({
@@ -628,50 +1665,9 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			}
 		}
 	});
+
 	
-
-	// frappe.call({
-	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_customer_last_so_details",
-	// 	callback: function(r) {
-			// const today = new Date();
-			// const rows = (r.message || []).map(row => {
-			// 	const last_so_date = new Date(row.last_so_on);
-			// 	const diff_days = Math.floor((today - last_so_date) / (1000 * 60 * 60 * 24));
-			// 	return `
-			// 		<tr>
-			// 			<td>${row.customer_name}</td>
-			// 			<td style="color: ${diff_days > 15 ? 'red' : 'inherit'};">${frappe.datetime.str_to_user(row.last_so_on)}</td>
-			// 			<td style="text-align: center;">${row.last_so_qty}</td>
-			// 		</tr>`;
-			// }).join('');
-
-			// $(wrapper).find('.customer-so-body').html(rows || `<tr><td colspan="3">No data found</td></tr>`);
-			
-	// 	}
-	// });
-// 	frappe.call({
-// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.opportunity_details",
-// 	callback: function(r) {
-// 		const rows = (r.message || []).map(row => {
-// 			const expectedWeek = row.expected_closing
-// 				? moment(row.expected_closing).isoWeek()
-// 				: '-';
-// 			return `
-// 				<tr>
-// 					<td>${row.opportunity_from || ''}</td>
-// 					<td>${row.organization_name || ''}</td>
-// 					<td style="text-align: right;">${format_currency(row.opportunity_amount || 0)}</td>
-// 					<td style="text-align: center;">${expectedWeek}</td>
-// 					<td style="text-align: center;">${row.custom_expected_quantity || ''}</td>
-// 					<td>${row.remark || ''}</td>
-// 				</tr>
-// 			`;
-// 		}).join('');
-		
-// 		$(wrapper).find('.opportunity-body').html(rows || `<tr><td colspan="6">No data found</td></tr>`);
-
-// 	}
-// });
+	
 $('#opportunity-table-content').html(`<div style="padding: 10px;text-align:center">Loading Opportuntiy details...</div>`);
 
 frappe.call({
@@ -686,19 +1682,19 @@ frappe.call({
 });
 
 
-	// loadreceivabletable();
-	// loadpayabletable();
-	// Load TFP Plan Table
-	frappe.call({
-        //  method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update",
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update_new",
-        callback:function(r) {
-			if (r.message) {
-			 $('#tfp-so-table-content').html(r.message || '<p>No data</p>')
+	function packing_plan_so() {
+		frappe.call({
+			//  method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update",
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_plan_update_new",
+			callback:function(r) {
+				if (r.message) {
+				$('#tfp-so-table-content').html(r.message || '<p>No data</p>')
+				}
 			}
-		}
-    });
-	frappe.call({
+		});
+	}
+	function scheduled_details_pink_slip() {
+		frappe.call({
 		// method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule_opertaions",
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule_opertaions_new",
 		callback: function(r) {
@@ -723,30 +1719,41 @@ frappe.call({
 			}
 		}
 	});
-	// frappe.call({
-	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule",
-	// 	callback: function(r) {
-	// 		if (r.message) {
-	// 			$('#tfp-so-table-dn-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
-	// 		}
-	// 	}
-	// });
-	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_html",
-		callback: function(r) {
-			if (r.message) {
-				$('#tfp-so-table-dn-packed-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+	}
+	packing_plan_so();
+	scheduled_details_pink_slip();
+	
+	function packed_details() {
+		frappe.call({
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_html",
+			callback: function(r) {
+				if (r.message) {
+					$('#tfp-so-table-dn-packed-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+				}
 			}
-		}
-	});
-	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_dispatched_html",
-		callback: function(r) {
-			if (r.message) {
-				$('#tfp-so-table-dn-dispatched-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+		});
+	}
+	function dispatched_details() {
+		frappe.call({
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_packed_dn_summary_dispatched_html",
+			callback: function(r) {
+				if (r.message) {
+					$('#tfp-so-table-dn-dispatched-content').html(r.message || '<p style="color:#888; font-style: italic;">Nothing to show</p>');
+				}
 			}
-		}
-	});
+		});
+	}
+
+	packed_details();
+	dispatched_details();
+
+	setInterval(() => {
+		packing_plan_so();
+		scheduled_details_pink_slip();
+		packed_details();
+		dispatched_details();
+	}, 180000);
+
 	$('#tfp-stock-table-content').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
 	frappe.call({
 		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_stock_html",
@@ -761,13 +1768,40 @@ frappe.call({
 	});
 	$('#second-stock-table-content').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_vm_stock_html",
+		// method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_vm_stock_html",
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_stock_html_data",
 		callback: function(r) {
 			if (r.message) {
 				$('#second-stock-table-content').html(r.message);
 			}
 			else {
 			$('#second-stock-table-content').html(`<p>No data found.</p>`);
+		}
+		}
+	});
+	// Retail
+	$('#retail-shop-availability').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
+	frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_shop_stock_html_data",
+		callback: function(r) {
+			if (r.message) {
+				$('#retail-shop-availability').html(r.message);
+			}
+			else {
+			$('#retail-shop-availability').html(`<p>No data found.</p>`);
+		}
+		}
+	});
+	// RS Invoice
+	$('#retail-payment-content').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
+	frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_payment_outstanding_html_data",
+		callback: function(r) {
+			if (r.message) {
+				$('#retail-payment-content').html(r.message);
+			}
+			else {
+			$('#retail-payment-content').html(`<p>No data found.</p>`);
 		}
 		}
 	});
@@ -783,18 +1817,10 @@ frappe.call({
 		}
 		}
 	});
-	// $('#tfp-stock-table-content-packing1').html(`<div style="padding: 10px;text-align:center">Loading...</div>`);
-	// frappe.call({
-	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_tfp_plan_html_schedule_opertaions_new",
-	// 	callback: function(r) {
-	// 		if (r.message) {
-	// 			$('#tfp-stock-table-content-packing1').html(r.message);
-	// 		}
-	// 		else {
-	// 		$('#tfp-stock-table-content-packing1').html(`<p>No data found.</p>`);
-	// 	}
-	// 	}
-	// });
+	$(wrapper).on('click', '#download-dashboard-stock', function () {
+    window.open("/api/method/teampro.teampro.page.finance_details.tfp_dashboard.download_physical_vs_erp_stock_csv");
+});
+
 frappe.call({
     method: "teampro.custom.get_physical_vs_erp_stock_data",
      callback: function(r) {
@@ -808,41 +1834,52 @@ frappe.call({
         const stockDate = response.date;
         const data = response.data;
 
-       let tableHTML = `
-    <div style="margin-bottom: 10px; font-weight: bold; text-align:center">
-        LAST STOCK COUNTING DATE: <span style="color: #002060;">${frappe.datetime.str_to_user(stockDate)}</span>
-    </div>
-    <div style="max-height: 400px; overflow-y: auto;">
-        <table style="width: 127%; border-collapse: collapse; text-align: center;">
-            <thead style="background-color: #002060; color: white;">
-                <tr>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">S.No</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Item</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Item Name</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Stock Qty</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Physical Qty</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Difference</th>
-                    <th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Status</th>
-                </tr>
-            </thead>
-            <tbody>
-`;
+       	let tableHTML = `
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;margin-top: -23px;">
+			<div style="font-weight: bold; text-align: center; flex: 1;background: white;font-size:16px; ">
+				LAST STOCK COUNTING DATE: 
+				<span style="color: #002060;">
+					${frappe.datetime.str_to_user(stockDate)}
+				</span>
+			</div>
+			<button id="download-dashboard-stock" class="btn btn-secondary btn-sm">
+				Download
+			</button>
+		</div>
+
+		<div style="max-height: 400px; overflow-y: auto;">
+			<table style="width: 127%; border-collapse: collapse; text-align: center;">
+				<thead style="background-color: #002060; color: white;">
+					<tr>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">S.No</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Item</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Item Name</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Item Group</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Stock Qty</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Physical Qty</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Difference</th>
+						<th style="padding: 8px; border: 1px solid #ccc; position: sticky; top: 0; background-color: #002060; z-index: 1;">Status</th>
+					</tr>
+				</thead>
+				<tbody>
+		`;
 
 
-        data.forEach((row, index) => {
-            const statusColor = row.status === "Match" ? "green" : "red";
-            tableHTML += `
-                <tr>
-                    <td style="padding: 8px; border: 1px solid #ccc;text-align:left">${index + 1}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc;;text-align:left">${row.item}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc;;text-align:left">${row.item_name}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc;;text-align:right">${Number(row.stock_qty).toFixed(2)}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc;;text-align:right">${Number(row.physical_qty).toFixed(2)}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc;;text-align:right">${Number(row.difference).toFixed(2)}</td>
-                    <td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; color: ${statusColor};">
-                        ${row.status}
-                    </td>
-                </tr>
+			data.forEach((row, index) => {
+				const statusColor = row.status === "Match" ? "green" : "red";
+				tableHTML += `
+					<tr>
+						<td style="padding: 8px; border: 1px solid #ccc;text-align:left">${index + 1}</td>
+						<td style="padding: 8px; border: 1px solid #ccc;;text-align:left;color: ${statusColor};">${row.item}</td>
+						<td style="padding: 8px; border: 1px solid #ccc;;text-align:left">${row.item_name}</td>
+						<td style="padding: 8px; border: 1px solid #ccc;;text-align:left">${row.item_group}</td>
+						<td style="padding: 8px; border: 1px solid #ccc;;text-align:right">${Number(row.stock_qty).toFixed(2)}</td>
+						<td style="padding: 8px; border: 1px solid #ccc;;text-align:right">${Number(row.physical_qty).toFixed(2)}</td>
+						<td style="padding: 8px; border: 1px solid #ccc;;text-align:right">${Number(row.difference).toFixed(2)}</td>
+						<td style="padding: 8px; border: 1px solid #ccc; font-weight: bold; color: ${statusColor};">
+							${row.status}
+						</td>
+					</tr>
             `;
         });
 
@@ -851,6 +1888,6 @@ frappe.call({
     }
 });
 
-	
+
 };
 

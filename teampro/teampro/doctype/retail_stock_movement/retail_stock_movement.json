@@ -1,0 +1,106 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "RC-  DL-.####",
+ "creation": "2026-02-25 14:23:52.676421",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_qlnm",
+  "amended_from",
+  "customer",
+  "customer_warehouse",
+  "column_break_hurd",
+  "scan_barcode",
+  "dispatch_warehouse",
+  "section_break_l744",
+  "items"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_qlnm",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Retail Stock Movement",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_hurd",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scan_barcode",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Scan Barcode",
+   "options": "Barcode"
+  },
+  {
+   "fieldname": "section_break_l744",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "customer_warehouse",
+   "fieldtype": "Link",
+   "label": "Customer Warehouse",
+   "options": "Warehouse",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dispatch_warehouse",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Dispatch Warehouse",
+   "options": "Warehouse",
+   "reqd": 1
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Stock Movement Items"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-02-27 09:53:05.254375",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Retail Stock Movement",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -15,13 +15,13 @@ def dpr_task_mail_it_dev_update(date,name,service,type,dev_team,sprint):
     date_obj = datetime.strptime(date, '%Y-%m-%d')
     formatted_date = date_obj.strftime('%d/%m/%Y')
     frappe.errprint(formatted_date)
-    u_id = frappe.db.get_value("Employee",{"custom_dev_team":dev_team,"custom_is_tl":1},["user_id"])
+    u_id = frappe.db.get_value("Employee",{"custom_dev_team":dev_team,"custom_is_tl":1,"department":"IT. Development - THIS"},["user_id"])
     frappe.errprint(u_id)
     # u_id = frappe.db.get_value("Employee",{"custom_dev_team":dev_team,"custom_is_tl":1},["user_id"])
     # frappe.errprint(u_id)
     recievers=[]
     if type=="OPS":
-        emp=frappe.db.get_all("Employee",{'status':'Active','custom_dev_team':dev_team},['*'])
+        emp=frappe.db.get_all("Employee",{'status':'Active','custom_dev_team':dev_team,'department':'IT. Development - THIS'},['*'])
         # dev = frappe.db.get_doc("Daily Monitor",name)
             
         recievers.append('abdulla.pi@groupteampro.com')
@@ -277,7 +277,7 @@ def get_tl(date, name=None, service=None, type=None, dev_team=None, sprint=None)
         frappe.throw("Date, Development Team, and Sprint are required fields.")
     u_id = frappe.db.get_value(
         "Employee",
-        {"custom_dev_team": dev_team, "custom_is_tl": 1},
+        {"custom_dev_team": dev_team, "custom_is_tl": 1,'department':'IT. Development - THIS'},
         "user_id"
     )
     tasks = frappe.db.get_all(
@@ -290,7 +290,7 @@ def get_tl(date, name=None, service=None, type=None, dev_team=None, sprint=None)
         fields=[
             "custom_production_date", "custom_sprint", "custom_dev_team",
             "subject", "name", "project_name", "cb", "status", "revisions"
-        ]
+        ],order_by="cb, project_name"
     )
     for task in tasks:
         frappe.errprint(f"Subject: {task.subject}, Name: {task.name}")

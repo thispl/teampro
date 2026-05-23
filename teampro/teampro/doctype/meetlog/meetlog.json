@@ -1,0 +1,353 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "ML-.#####",
+ "creation": "2025-11-14 16:36:20.986941",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "visit_type",
+  "institute",
+  "sales_follow_up",
+  "party_name",
+  "person_to_meet",
+  "contact_number",
+  "mail_id",
+  "column_break_nfob",
+  "address",
+  "visit_remarks",
+  "day_sequence",
+  "distance",
+  "column_break_ucbq",
+  "attachments",
+  "visiting_card",
+  "mark_as_reached",
+  "completed",
+  "section_break_2tfi",
+  "gprs_location",
+  "area_name",
+  "date_and_time",
+  "latitude",
+  "longitude",
+  "amended_from",
+  "column_break_kttv",
+  "reached_location",
+  "reached_area",
+  "reached_time",
+  "reached_latitude",
+  "reached_longitude",
+  "column_break_auxf",
+  "submitted_location",
+  "completed_time",
+  "submitted_area",
+  "submitted_time",
+  "submitted_latitude",
+  "submitted_longitude",
+  "employee_details_section",
+  "employee",
+  "employee_name",
+  "department",
+  "designation",
+  "location_allowed"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.department",
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.visit_type=='Cold call' && doc.visit_type",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Party Name"
+  },
+  {
+   "depends_on": "eval:doc.visit_type!='Purchase'",
+   "fieldname": "person_to_meet",
+   "fieldtype": "Data",
+   "label": "Contact Person"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Data",
+   "label": "Location",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_nfob",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "contact_number",
+   "fieldtype": "Phone",
+   "label": "Contact Number"
+  },
+  {
+   "fieldname": "mail_id",
+   "fieldtype": "Data",
+   "label": "Mail ID",
+   "options": "Email"
+  },
+  {
+   "fieldname": "visit_remarks",
+   "fieldtype": "Small Text",
+   "label": "Visit Remarks",
+   "mandatory_depends_on": "eval:doc.visit_type=='Purchase'"
+  },
+  {
+   "fieldname": "column_break_ucbq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "attachments",
+   "fieldtype": "Attach",
+   "label": "Photo",
+   "mandatory_depends_on": "eval:doc.submitted_location"
+  },
+  {
+   "fieldname": "visiting_card",
+   "fieldtype": "Attach",
+   "label": "Visiting Card"
+  },
+  {
+   "depends_on": "eval:frappe.session.user=='dineshbabu.k@groupteampro.com' || frappe.session.user=='pavithra.s@groupteampro.com'||frappe.session.user==\"Administrator\"",
+   "fieldname": "section_break_2tfi",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "gprs_location",
+   "fieldtype": "Small Text",
+   "label": "Start Location",
+   "print_hide": 1,
+   "read_only": 1,
+   "report_hide": 1
+  },
+  {
+   "fieldname": "date_and_time",
+   "fieldtype": "Datetime",
+   "label": "Date and Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "day_sequence",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Day Sequence",
+   "read_only": 1
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Data",
+   "label": "Start Latitude",
+   "read_only": 1
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Data",
+   "label": "Start Longitude",
+   "read_only": 1
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "MeetLog",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee_details_section",
+   "fieldtype": "Section Break",
+   "label": "Employee Details"
+  },
+  {
+   "fieldname": "visit_type",
+   "fieldtype": "Select",
+   "in_standard_filter": 1,
+   "label": "Visit Type",
+   "options": "\nAppointment\nWalk in\nCold call\nDelivery\nPurchase\nInstitute",
+   "reqd": 1
+  },
+  {
+   "depends_on": "eval:doc.visit_type!='Cold call' && doc.visit_type!='Purchase' && doc.visit_type && doc.visit_type!=\"Institute\"",
+   "fieldname": "sales_follow_up",
+   "fieldtype": "Link",
+   "label": "Sales Follow Up",
+   "mandatory_depends_on": "eval:doc.visit_type!='Cold call' && doc.visit_type!='Purchase' && doc.visit_type!=\"Institute\"",
+   "options": "Sales Follow Up"
+  },
+  {
+   "default": "0",
+   "fieldname": "location_allowed",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Location Allowed"
+  },
+  {
+   "fieldname": "area_name",
+   "fieldtype": "Data",
+   "label": "Area Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_kttv",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reached_area",
+   "fieldtype": "Data",
+   "label": "Reached Area",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reached_time",
+   "fieldtype": "Datetime",
+   "label": "Reached Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reached_location",
+   "fieldtype": "Small Text",
+   "label": "Reached Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reached_latitude",
+   "fieldtype": "Data",
+   "label": "Reached Latitude",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reached_longitude",
+   "fieldtype": "Data",
+   "label": "Reached Longitude",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:!doc.__islocal && !doc.reached_location",
+   "fieldname": "mark_as_reached",
+   "fieldtype": "Button",
+   "label": "Reached"
+  },
+  {
+   "default": "0",
+   "fieldname": "distance",
+   "fieldtype": "Float",
+   "label": "Distance",
+   "precision": "3",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_auxf",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "submitted_location",
+   "fieldtype": "Small Text",
+   "label": "Completed Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submitted_area",
+   "fieldtype": "Data",
+   "label": "Completed Area",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submitted_time",
+   "fieldtype": "Datetime",
+   "label": "Completed Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submitted_latitude",
+   "fieldtype": "Data",
+   "label": "Completed Latitude",
+   "read_only": 1
+  },
+  {
+   "fieldname": "submitted_longitude",
+   "fieldtype": "Data",
+   "label": "Completed Longitude",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.reached_location && !doc.submitted_location",
+   "fieldname": "completed",
+   "fieldtype": "Button",
+   "label": "Completed"
+  },
+  {
+   "fieldname": "completed_time",
+   "fieldtype": "Datetime",
+   "label": "Completed Time",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval:doc.visit_type==\"Institute\" && doc.visit_type",
+   "fieldname": "institute",
+   "fieldtype": "Link",
+   "label": "Institute",
+   "mandatory_depends_on": "eval:doc.visit_type==\"Institute\" && doc.visit_type",
+   "options": "Institutes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-05-18 10:00:18.556620",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "MeetLog",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -19,6 +19,7 @@
   "section_break_1fzk",
   "dsr_check",
   "dm_status",
+  "approver",
   "column_break_su2g",
   "dpr_submitted_on",
   "column_break_mody",
@@ -40,8 +41,7 @@
    "fieldtype": "Link",
    "in_list_view": 1,
    "label": "Service",
-   "options": "Services",
-   "read_only": 1
+   "options": "Services"
   },
   {
    "fieldname": "column_break_ybbc",
@@ -53,7 +53,6 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Production Date",
-   "read_only": 1,
    "reqd": 1
   },
   {
@@ -67,7 +66,7 @@
   },
   {
    "allow_bulk_edit": 1,
-   "depends_on": "eval:doc.service == \"IT-SW\"",
+   "depends_on": "eval:doc.service == \"IT-SW\" || doc.service == \"CMN\"",
    "fieldname": "task_details",
    "fieldtype": "Table",
    "label": "Task Details",
@@ -164,8 +163,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "DM Status",
-   "options": "\nDraft\nDPR Pending\nDPR Completed\nDSR Pending\nDSR Completed\nSubmitted",
-   "read_only": 1
+   "options": "\nDraft\nDPR Pending\nDPR Completed\nDSR Pending\nDSR Completed\nSubmitted"
   },
   {
    "fieldname": "dm_sales_details",
@@ -200,28 +198,34 @@
    "fieldname": "dev_team",
    "fieldtype": "Link",
    "label": "Dev Team",
-   "options": "Dev Team",
-   "read_only": 1
+   "options": "Dev Team"
   },
   {
    "depends_on": "eval:doc.service==\"IT-SW\"",
    "fieldname": "sprint",
    "fieldtype": "Link",
    "label": "Sprint",
-   "options": "Task Sprint",
-   "read_only": 1
+   "options": "Task Sprint"
   },
   {
-   "depends_on": "eval:doc.service == \"IT-SW\"",
+   "depends_on": "eval:doc.service == \"IT-SW\" || doc.service =='CMN'",
    "fieldname": "sprint_avl_time",
    "fieldtype": "Table",
    "options": "Sprint Avl Time"
+  },
+  {
+   "default": "abdulla.pi@groupteampro.com",
+   "depends_on": "eval:frappe.session.user == \"bhuvaneswari.a@groupteampro.com\"",
+   "fieldname": "approver",
+   "fieldtype": "Link",
+   "label": "Approver",
+   "options": "User"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2025-06-04 20:00:08.050169",
+ "modified": "2026-04-09 15:41:10.155831",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Daily Monitor",

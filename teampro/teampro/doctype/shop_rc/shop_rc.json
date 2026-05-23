@@ -1,0 +1,271 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:customer_id",
+ "creation": "2026-03-06 16:27:05.473163",
+ "default_view": "List",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_isi6",
+  "amended_from",
+  "customer_name",
+  "shop_owner",
+  "whatsapp_no",
+  "wp",
+  "margin_percentage",
+  "territory",
+  "customer_id",
+  "column_break_eaoj",
+  "status",
+  "contact_person",
+  "contact_person_number",
+  "wp_",
+  "has_gst",
+  "gst_no",
+  "location_image",
+  "section_break_l2jr",
+  "latitude",
+  "longitude",
+  "date_and_time",
+  "address_details_section",
+  "address_line_1",
+  "street",
+  "city",
+  "state",
+  "column_break_0omu",
+  "country",
+  "postal_code",
+  "gprs_location",
+  "phone"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_isi6",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Customer RC",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "customer_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Shop Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "shop_owner",
+   "fieldtype": "Data",
+   "label": "Shop Owner"
+  },
+  {
+   "fieldname": "whatsapp_no",
+   "fieldtype": "Phone",
+   "label": "Shop Owner Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "wp",
+   "fieldtype": "Button",
+   "hidden": 1,
+   "label": "WP"
+  },
+  {
+   "default": "India",
+   "fieldname": "territory",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Territory",
+   "options": "Territory"
+  },
+  {
+   "fieldname": "customer_id",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Customer ID",
+   "unique": 1
+  },
+  {
+   "fieldname": "column_break_eaoj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "allow_on_submit": 1,
+   "default": "Active",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nActive\nInactive"
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Data",
+   "label": "Contact Person"
+  },
+  {
+   "fieldname": "contact_person_number",
+   "fieldtype": "Phone",
+   "label": "Contact Person Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "wp_",
+   "fieldtype": "Button",
+   "hidden": 1,
+   "label": "WP"
+  },
+  {
+   "default": "0",
+   "fieldname": "has_gst",
+   "fieldtype": "Check",
+   "label": "Has GST"
+  },
+  {
+   "depends_on": "eval:doc.has_gst ==1",
+   "fieldname": "gst_no",
+   "fieldtype": "Data",
+   "label": "GST Number",
+   "mandatory_depends_on": "eval:doc.has_gst ==1"
+  },
+  {
+   "fieldname": "location_image",
+   "fieldtype": "Attach",
+   "label": "Location Image",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_l2jr",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Data",
+   "label": "Latitude"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Data",
+   "label": "Longitude"
+  },
+  {
+   "fieldname": "date_and_time",
+   "fieldtype": "Datetime",
+   "label": "Date and Time"
+  },
+  {
+   "fieldname": "address_details_section",
+   "fieldtype": "Section Break",
+   "label": "Address Details"
+  },
+  {
+   "depends_on": "gprs_location",
+   "fieldname": "address_line_1",
+   "fieldtype": "Data",
+   "label": "Address Line 1",
+   "reqd": 1
+  },
+  {
+   "depends_on": "gprs_location",
+   "fieldname": "street",
+   "fieldtype": "Data",
+   "label": "Street"
+  },
+  {
+   "depends_on": "gprs_location",
+   "fieldname": "city",
+   "fieldtype": "Data",
+   "label": "City",
+   "reqd": 1
+  },
+  {
+   "default": "Tamil Nadu",
+   "depends_on": "gprs_location",
+   "fieldname": "state",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "State",
+   "options": "State",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_0omu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "India",
+   "fieldname": "country",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Country",
+   "options": "Country"
+  },
+  {
+   "depends_on": "gprs_location",
+   "fieldname": "postal_code",
+   "fieldtype": "Data",
+   "label": "Postal Code",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gprs_location",
+   "fieldtype": "Small Text",
+   "label": "GPRS Location",
+   "read_only": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Phone"
+  },
+  {
+   "fieldname": "margin_percentage",
+   "fieldtype": "Percent",
+   "label": "Margin Percentage",
+   "reqd": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "RS Delivery",
+   "link_fieldname": "rc_customer"
+  }
+ ],
+ "modified": "2026-05-21 12:12:07.786871",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Shop RC",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name"
+}

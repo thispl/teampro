@@ -48,14 +48,14 @@ class CustomLeaveApplication(LeaveApplication):
             else:
                 from_date = self.from_date
             if from_date < current_date:
-                # if current_date.day == 1:
-                #     # from_date = datetime.datetime.strptime(self.from_date, "%Y-%m-%d")
-                #     if from_date.year == previous_month_year and from_date.month == previous_month:
-                #         if current_time.hour >= 10 and current_time.minute > 0:
-                #             frappe.throw("Leave applications for the previous month are not allowed.")
-                # else:
-                #     if current_date.day > 1 and from_date.year == previous_month_year and from_date.month == previous_month:
-                #         frappe.throw("Leave applications for the previous month are not allowed.")
+                if current_date.day == 1:
+                    # from_date = datetime.datetime.strptime(self.from_date, "%Y-%m-%d")
+                    if from_date.year == previous_month_year and from_date.month == previous_month:
+                        if current_time.hour >= 10 and current_time.minute > 0:
+                            frappe.throw("Leave applications for the previous month are not allowed.")
+                else:
+                    if current_date.day > 1 and from_date.year == previous_month_year and from_date.month == previous_month:
+                        frappe.throw("Leave applications for the previous month are not allowed.")
                 first_date = datetime.date(current_year, current_month, 1)
                 check_date = first_date
                 while check_holiday(check_date, self.employee):
@@ -90,13 +90,13 @@ class CustomAttendanceRequest(AttendanceRequest):
             else:
                 from_date = self.from_date
             if from_date < current_date:
-                # if current_date.day == 1:
-                #     if from_date.year == previous_month_year and from_date.month == previous_month:
-                #         if current_time.hour >= 10 and current_time.minute > 0:
-                #             frappe.throw("Attendance Request for the previous month are not allowed.")
-                # else:
-                #     if current_date.day > 1 and from_date.year == previous_month_year and from_date.month == previous_month:
-                #         frappe.throw("Attendance Request for the previous month are not allowed")
+                if current_date.day == 1:
+                    if from_date.year == previous_month_year and from_date.month == previous_month:
+                        if current_time.hour >= 10 and current_time.minute > 0:
+                            frappe.throw("Attendance Request for the previous month are not allowed.")
+                else:
+                    if current_date.day > 1 and from_date.year == previous_month_year and from_date.month == previous_month:
+                        frappe.throw("Attendance Request for the previous month are not allowed")
                 first_date = datetime.date(current_year, current_month, 1)
                 check_date = first_date
                 while check_holiday(check_date, self.employee):

@@ -78,3 +78,68 @@ def update_task_priority(tasks):
         frappe.log_error(title="Task Priority Update Error", message=str(e))
         return f"Error: {str(e)}"
 
+
+@frappe.whitelist()
+def get_ptsr_data_project_wise():
+    data = []
+    total_counts = {
+        "vac": 0,
+        "sp": 0,
+        "fp": 0,
+        "sl": 0,
+        "psl": 0,
+        "custom_lp": 0
+    }
+
+    projects = frappe.get_all("Project", {
+        "status": ("in", ['Open', 'Enquiry']),
+        "service": ("in", ['REC-I', 'REC-D'])
+    }, ['*'], order_by="priority ASC")
+
+    for p in projects:
+        task_list = frappe.get_all("Task", {
+            "status": ("in", ['Working', 'Open', 'Overdue', 'Pending Review']),
+            "project": p.name
+        }, ['*'], order_by="priority ASC")
+
+        tasks = []
+        for t in task_list:
+            tasks.append({
+                "name": t['name'],
+                "task_name": t['subject'],
+                "task_priority": t['priority'],
+                "vac": t['vac'],
+                "sp": t['sp'],
+                "fp": t['fp'],
+                "sl": t['sl'],
+                "psl": t['psl'],
+                "custom_lp": t['custom_lp']
+            })
+
+            # Accumulate totals
+            total_counts['vac'] += t['vac'] or 0
+            total_counts['sp'] += t['sp'] or 0
+            total_counts['fp'] += t['fp'] or 0
+            total_counts['sl'] += t['sl'] or 0
+            total_counts['psl'] += t['psl'] or 0
+            total_counts['custom_lp'] += t['custom_lp'] or 0
+
+        data.append({
+            "name": p['name'],
+            "project_name": p['project_name'],
+            "priority": p['priority'],
+            "remark": p['remark'],
+            "account_manager_remark": p['account_manager_remark'],
+            "custom_spoc_remark": p['custom_spoc_remark'],
+            "sourcing_statu": p['sourcing_statu'],
+            "territory": p['territory'],
+            "expected_value": p['expected_value'],
+            "expected_psl": p['expected_psl'],
+            "customer": p['customer'],
+            "tasks": tasks
+        })
+
+    return {
+        "projects": data,
+        "counts": total_counts
+    }

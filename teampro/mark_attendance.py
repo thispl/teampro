@@ -12,8 +12,8 @@ from frappe.utils import time_diff
 
 @frappe.whitelist()
 def mark_att_manual():
-    from_date='2025-05-02'
-    to_date='2025-05-31'
+    from_date='2026-05-07'
+    to_date='2026-05-13'
     # employee ='TC00039'
     dates = get_dates(from_date,to_date)
     for date in dates:
@@ -412,3 +412,7 @@ def mark_late_in_att(from_date, to_date,employee):
 #                         print(count)
 #                         frappe.db.set_value("Attendance", att.name, "status", "Half Day")
 
+def update_att_as_present(doc,method):
+    if not doc.leave_application and doc.docstatus==0:
+        if doc.employee in ['TI00002','TI00001','TI00225']:
+            doc.status="Present"

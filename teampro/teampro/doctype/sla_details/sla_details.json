@@ -53,8 +53,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "Active\nExpired",
-   "read_only": 1
+   "options": "Active\nExpired"
   },
   {
    "columns": 1,
@@ -87,7 +86,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2025-03-22 10:54:47.580399",
+ "modified": "2025-10-10 15:55:40.958465",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "SLA Details",

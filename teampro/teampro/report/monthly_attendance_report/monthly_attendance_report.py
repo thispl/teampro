@@ -120,8 +120,8 @@ def get_data(filters):
 							present += 0.5
 							unpaid_leave += 0.5
 						if att.status== "Half Day" and not att.leave_type:
-							present += 0.5
-							unpaid_leave += 0.5
+							present += 1
+							# unpaid_leave += 0.5
 						if att.status== "On Leave":
 							on_leave +=1 
 						if att.status== "On Leave" and att.leave_type != "Leave Without Pay":

@@ -1,0 +1,363 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "DSM - .####",
+ "creation": "2026-03-31 15:39:03.820354",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_yrvf",
+  "employee",
+  "employee_name",
+  "column_break_vifz",
+  "dsm_date",
+  "department",
+  "designation",
+  "expected_business_oic_section",
+  "order_booking",
+  "column_break_dcms",
+  "invoice",
+  "column_break_8wwc",
+  "collection",
+  "todo_section",
+  "todo_details",
+  "sales_follow_up_section",
+  "lead",
+  "open",
+  "replied",
+  "opportunity",
+  "column_break_a7ro",
+  "quotation",
+  "lost_quotation",
+  "interested",
+  "converted",
+  "column_break_agfu",
+  "customer",
+  "do_not_contact",
+  "opportunity_section",
+  "opportunity_with_sf",
+  "project_section",
+  "it",
+  "column_break_poa4",
+  "rec",
+  "task_section",
+  "it_task",
+  "column_break_0pup",
+  "rec_task",
+  "candidate_section",
+  "ip",
+  "column_break_2anj",
+  "fp",
+  "column_break_zbzm",
+  "cp",
+  "closure_section",
+  "candidate_count",
+  "agent",
+  "column_break_xvhs",
+  "supplier",
+  "internal"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_yrvf",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fetch_if_empty": 1,
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_vifz",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "dsm_date",
+   "fieldtype": "Date",
+   "label": "DSM Date"
+  },
+  {
+   "fetch_from": "employee.department",
+   "fetch_if_empty": 1,
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "employee.designation",
+   "fetch_if_empty": 1,
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "label": "Designation",
+   "options": "Designation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "expected_business_oic_section",
+   "fieldtype": "Section Break",
+   "label": "Expected Business (OIC)"
+  },
+  {
+   "fieldname": "order_booking",
+   "fieldtype": "Currency",
+   "label": "Order Booking"
+  },
+  {
+   "fieldname": "column_break_dcms",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "invoice",
+   "fieldtype": "Currency",
+   "label": "Invoice"
+  },
+  {
+   "fieldname": "column_break_8wwc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "collection",
+   "fieldtype": "Currency",
+   "label": "Collection"
+  },
+  {
+   "fieldname": "todo_section",
+   "fieldtype": "Section Break",
+   "label": "TODO"
+  },
+  {
+   "fieldname": "todo_details",
+   "fieldtype": "Table",
+   "options": "TODO Status"
+  },
+  {
+   "fieldname": "sales_follow_up_section",
+   "fieldtype": "Section Break",
+   "label": "Sales Follow Up"
+  },
+  {
+   "fieldname": "lead",
+   "fieldtype": "Int",
+   "label": "Lead",
+   "read_only": 1
+  },
+  {
+   "fieldname": "open",
+   "fieldtype": "Int",
+   "label": "Open",
+   "read_only": 1
+  },
+  {
+   "fieldname": "replied",
+   "fieldtype": "Int",
+   "label": "Replied",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_a7ro",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "opportunity",
+   "fieldtype": "Int",
+   "label": "Opportunity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "quotation",
+   "fieldtype": "Int",
+   "label": "Quotation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lost_quotation",
+   "fieldtype": "Int",
+   "label": "Lost Quotation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "interested",
+   "fieldtype": "Int",
+   "label": "Interested",
+   "read_only": 1
+  },
+  {
+   "fieldname": "converted",
+   "fieldtype": "Int",
+   "label": "Converted",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_agfu",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Int",
+   "label": "Customer",
+   "read_only": 1
+  },
+  {
+   "fieldname": "do_not_contact",
+   "fieldtype": "Int",
+   "label": "Do Not Contact",
+   "read_only": 1
+  },
+  {
+   "fieldname": "opportunity_section",
+   "fieldtype": "Section Break",
+   "label": "Opportunity"
+  },
+  {
+   "fieldname": "opportunity_with_sf",
+   "fieldtype": "Table",
+   "options": "Opportunity Details",
+   "read_only": 1
+  },
+  {
+   "fieldname": "project_section",
+   "fieldtype": "Section Break",
+   "label": "Project"
+  },
+  {
+   "fieldname": "it",
+   "fieldtype": "Int",
+   "label": "IT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_poa4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rec",
+   "fieldtype": "Int",
+   "label": "REC",
+   "read_only": 1
+  },
+  {
+   "fieldname": "task_section",
+   "fieldtype": "Section Break",
+   "label": "Task"
+  },
+  {
+   "fieldname": "it_task",
+   "fieldtype": "Int",
+   "label": "IT",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_0pup",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "rec_task",
+   "fieldtype": "Int",
+   "label": "REC",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip",
+   "fieldtype": "Int",
+   "label": "IP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "fp",
+   "fieldtype": "Int",
+   "label": "FP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2anj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_zbzm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cp",
+   "fieldtype": "Int",
+   "label": "CP",
+   "read_only": 1
+  },
+  {
+   "fieldname": "candidate_section",
+   "fieldtype": "Section Break",
+   "label": "Candidate"
+  },
+  {
+   "fieldname": "candidate_count",
+   "fieldtype": "Int",
+   "label": "Candidate ",
+   "read_only": 1
+  },
+  {
+   "fieldname": "closure_section",
+   "fieldtype": "Section Break",
+   "label": "Closure"
+  },
+  {
+   "fieldname": "agent",
+   "fieldtype": "Int",
+   "label": "Agent",
+   "read_only": 1
+  },
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Int",
+   "label": "Supplier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xvhs",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "internal",
+   "fieldtype": "Int",
+   "label": "Internal",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-04-03 17:42:37.370169",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Daily Status Meeting - DSM",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

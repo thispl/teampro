@@ -7,30 +7,41 @@
  "engine": "InnoDB",
  "field_order": [
   "details_section",
+  "workflow_state",
+  "service",
   "team",
   "from_date",
   "to_date",
+  "phone",
   "column_break_ekeb",
   "sprint_id",
   "sprint_hours",
   "allocated_hours",
   "status",
+  "section_break_8ckr",
+  "employee",
   "section_break_ytuy",
   "sprint_avl_time",
   "section_break_vaxi",
   "sprint_task",
   "retro_tab",
+  "section_break_0mld",
+  "get_retro_summary",
+  "retro_html",
+  "section_break_dmyu",
+  "retro_table",
+  "section_break_ieu8",
   "summary",
   "retro_section",
   "retro",
   "section_break_yjcw",
   "table_cusg",
   "section_break_r9q0",
-  "get_retro_summary",
   "retro_summary",
   "assessments_tab",
   "sprint_assessment_section",
-  "sprint_assessment"
+  "sprint_assessment",
+  "amended_from"
  ],
  "fields": [
   {
@@ -44,8 +55,11 @@
    "label": "To Date"
   },
   {
+   "depends_on": "eval:doc.service !='CMN'",
    "fieldname": "team",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Team",
    "options": "Dev Team"
   },
@@ -54,23 +68,29 @@
    "fieldtype": "Column Break"
   },
   {
+   "depends_on": "eval:doc.service !='CMN'",
    "fieldname": "sprint_id",
    "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Sprint ID",
    "options": "Task Sprint"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "sprint_hours",
    "fieldtype": "Float",
    "label": "Sprint Hours",
    "read_only": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "Draft",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nDraft\nPlanned\nIn Progress\nClosed"
+   "options": "\nDraft\nPlanned\nIn Progress\nClosed",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_ytuy",
@@ -78,6 +98,7 @@
    "label": "Sprint Avl Time"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "sprint_avl_time",
    "fieldtype": "Table",
    "options": "Sprint Avl Time"
@@ -89,6 +110,7 @@
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "sprint_task",
    "fieldtype": "Table",
    "options": "Sprint Task"
@@ -104,6 +126,7 @@
    "label": "Retro"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "retro",
    "fieldtype": "Table",
    "label": "Retro",
@@ -117,6 +140,7 @@
   {
    "fieldname": "assessments_tab",
    "fieldtype": "Tab Break",
+   "hidden": 1,
    "label": "Assessments"
   },
   {
@@ -125,12 +149,14 @@
    "label": "Sprint Assessment"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "sprint_assessment",
    "fieldtype": "Table",
    "label": "Sprint Assessment",
    "options": "Sprint Assessment"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "allocated_hours",
    "fieldtype": "Float",
    "label": "Allocated Hours",
@@ -141,6 +167,7 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_on_submit": 1,
    "fieldname": "table_cusg",
    "fieldtype": "Table",
    "label": "Tasks Moved to Next Working Date",
@@ -158,40 +185,101 @@
    "fieldtype": "Section Break"
   },
   {
+   "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "retro_summary",
    "fieldtype": "Table",
+   "hidden": 1,
    "label": "Retro Summary",
    "options": "Retro summary"
   },
   {
    "fieldname": "get_retro_summary",
    "fieldtype": "Button",
+   "hidden": 1,
    "label": "Get Retro Summary"
+  },
+  {
+   "fieldname": "section_break_0mld",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "retro_html",
+   "fieldtype": "HTML",
+   "label": "RETRO HTML"
+  },
+  {
+   "fieldname": "section_break_dmyu",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Workflow State"
+  },
+  {
+   "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
+   "fieldname": "retro_table",
+   "fieldtype": "Table",
+   "ignore_user_permissions": 1,
+   "label": "Retro Table",
+   "options": "Retro Summary Table"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "section_break_ieu8",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Sprint",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "section_break_8ckr",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "HTML",
+   "label": "Employee"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Phone",
+   "options": "Phone"
+  },
+  {
+   "fieldname": "service",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Service",
+   "options": "Services"
   }
  ],
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [],
- "modified": "2025-06-19 14:32:59.561712",
+ "modified": "2026-04-10 14:38:30.229551",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sprint",
  "naming_rule": "Expression (old style)",
  "owner": "Administrator",
- "permissions": [
-  {
-   "create": 1,
-   "delete": 1,
-   "email": 1,
-   "export": 1,
-   "print": 1,
-   "read": 1,
-   "report": 1,
-   "role": "System Manager",
-   "share": 1,
-   "write": 1
-  }
- ],
+ "permissions": [],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "title_field": "sprint_id"
 }

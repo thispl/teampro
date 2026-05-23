@@ -140,7 +140,7 @@ $(wrapper).html(`
     <div class="total-qty-card"></div>
   </div>
   <div class="col">
-    <div class="tfp-sales-value-card"></div>
+    <div class="total-customer-card"></div>
   </div>
 </div>
 

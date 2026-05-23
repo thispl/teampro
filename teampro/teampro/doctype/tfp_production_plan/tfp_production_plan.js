@@ -12,7 +12,7 @@ frappe.ui.form.on("TFP Production Plan", {
 		// 			+ "&format=" + print_format
 		// 			+ "&no_letterhead=0"
 		// 		));
-		var path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_production_plan_excel"
+		var path = "teampro.teampro.doctype.tfp_production_plan.tfp_production_plan.download_tfp_plan_excel_update"
             if (path) {
 				window.location.href = repl(frappe.request.url +
 					'?cmd=%(cmd)s', {

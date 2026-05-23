@@ -4,15 +4,1598 @@
 import frappe
 from frappe.model.document import Document
 import frappe
+import io
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment
+from collections import defaultdict
+import frappe
 import openpyxl
 from openpyxl.utils import get_column_letter
 from openpyxl.styles import Font, Alignment, NamedStyle, Border, Side
 from io import BytesIO
 from frappe.utils.file_manager import save_file
-
+from datetime import datetime
+import frappe, io, json, base64
+import frappe
+from collections import defaultdict
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+import io
+from datetime import date
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Alignment, Font, Border, Side
+import frappe, io
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
+from datetime import date
+import frappe, io
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font
+from openpyxl.utils import get_column_letter
+from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
 class FormattedReportsDownload(Document):
     pass
+@frappe.whitelist()
+def project_status_summ():
+    from collections import defaultdict
+
+    grouped_data = defaultdict(list)
+
+    
+    details = frappe.db.sql("""
+        SELECT 
+            name,
+            priority,
+            project_name,
+            sourcing_statu,
+            tvac,
+            tfp,
+            tsp,
+            tpsl
+        FROM `tabProject`
+        WHERE status NOT IN ('Cancelled', 'Completed', 'Hold')
+          AND service IN ('REC-I', 'REC-D')
+    """, as_dict=True)
+
+    
+    for entry in details:
+        if entry.priority:
+            grouped_data[entry.priority].append({
+                "ID": entry.name,
+                "project_name": entry.project_name,
+                "sourcing_statu": entry.sourcing_statu,
+                "tvac": entry.tvac,
+                "tfp": entry.tfp,
+                "tsp": entry.tsp,
+                "tpsl": entry.tpsl
+            })
+
+    return {'grouped_data': grouped_data}
+
+
+@frappe.whitelist()
+def download_all_closures_excel(status=None):
+    
+
+    wb = Workbook()
+    ws1 = wb.active
+    ws1.title = "DIRECT CLOSURE"
+    ws2 = wb.create_sheet("DIRECT FOLLOW UP CLOSURE")
+    ws3 = wb.create_sheet("SUPPLIER FOLLOW UP CLOSURE")
+    ws4 = wb.create_sheet("CLIENT CLOSURE")
+    ws5 = wb.create_sheet("NEPAL CLOSURE")
+    ws6 = wb.create_sheet("SRILANKA CLOSURE")
+
+    
+    thin = Side(border_style="thin", color="000000")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal="center", vertical="center")
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+
+    
+    def get_closures(nationality=None):
+        filters = {}
+        # Handle status
+        if status:
+            if isinstance(status, str):
+                try:
+                    s = json.loads(status)
+                except json.JSONDecodeError:
+                    s = [status]
+            else:
+                s = status if isinstance(status, list) else [status]
+            filters["status"] = ["in", s]
+
+        if nationality:
+            filters["nationality"] = nationality
+
+        closures = frappe.db.get_all(
+            "Closure",
+            filters=filters,
+            fields=[
+                "name", "given_name", "passport_no", "customer", "territory",
+                "status", "remark", "last_updated_on",
+                "sa_name", "sa_mobile_number", "associate", "nationality"
+            ],
+            order_by="last_updated_on asc"
+        )
+
+        for c in closures:
+            history = frappe.get_all(
+                "Closure Status History",
+                filters={
+                    "parent": c["name"],
+                    "parenttype": "Closure",
+                    "parentfield": "custom_history"
+                },
+                fields=["date"]
+            )
+            c["custom_history"] = history
+            c["age"] = calculate_age_from_history(c.get("custom_history"))
+
+        def safe_int(value):
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return 0
+
+        closures.sort(key=lambda x: safe_int(x.get("age")), reverse=True)
+        return closures
+
+    
+    
+    
+    
+    def write_sheet(ws, title, headers, rows, merge_range, col_widths):
+        ws.merge_cells(merge_range)
+        ws["A1"] = title
+        ws["A1"].font = Font(bold=True, size=14, color="FFFFFF")
+        ws["A1"].alignment = center
+        ws["A1"].fill = header_fill
+
+        for idx, h in enumerate(headers, start=1):
+            cell = ws.cell(row=3, column=idx, value=h)
+            cell.font = Font(bold=True, size=12, color="FFFFFF")
+            cell.alignment = center
+            cell.fill = header_fill
+
+        for i, w in enumerate(col_widths, start=1):
+            ws.column_dimensions[chr(64 + i)].width = w
+
+        for row_data in rows:
+            ws.append(row_data)
+
+        # Apply borders, alignment, wrap text
+        center_cols = ["A", "B", "D", "G", "H"]  # S.No=A, CLID=B, PP Number=D, Age=G, Last Update On=H
+        contact_col_index = headers.index("Contact") + 1 if "Contact" in headers else None
+        latest_remark_col_index = headers.index("Latest Remark") + 1 if "Latest Remark" in headers else None
+
+        for r in ws.iter_rows(min_row=4, max_row=ws.max_row, min_col=1, max_col=len(headers)):
+            for c_idx, cell in enumerate(r, start=1):
+                cell.border = border
+                col_letter = get_column_letter(c_idx)
+
+                if col_letter in center_cols or (contact_col_index and c_idx == contact_col_index):
+                    cell.alignment = Alignment(horizontal="center", vertical="center")
+                if latest_remark_col_index and c_idx == latest_remark_col_index:
+                    cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+
+    # -------------------- Headers & Column Widths --------------------
+    headers_basic = ["S.No", "CLID", "Name", "PP Number", "Client", "Status", "Age", "Last Update On", "Latest Remark"]
+    headers_followup = headers_basic + ["Agent", "Contact"]
+    headers_supplier = headers_basic + ["Supplier", "Contact"]
+
+    col_widths_basic = [10, 12, 35, 20, 40, 18, 10, 15, 40]
+    col_widths_followup = [10, 12, 35, 20, 40, 18, 10, 15, 20, 20, 12]
+    col_widths_supplier = [10, 12, 35, 20, 40, 18, 10, 15, 40, 20, 12]
+
+    # -------------------- 1. DIRECT CLOSURE --------------------
+    closures_direct = get_closures("Indian")
+    rows_direct = [
+        [idx + 1, c.get("name"), c.get("given_name"), c.get("passport_no"), c.get("customer"),
+         c.get("status"), c.get("age"), frappe.format(c.get("last_updated_on"), {"fieldtype": "Date"}), c.get("remark")]
+        for idx, c in enumerate(closures_direct)
+    ]
+    write_sheet(ws1, "DIRECT CLOSURE", headers_basic, rows_direct, "A1:I2", col_widths_basic)
+
+    # -------------------- 2. DIRECT FOLLOW UP CLOSURE --------------------
+    closures_followup = get_closures("Indian")
+    rows_followup = [
+        [idx + 1, c.get("name"), c.get("given_name"), c.get("passport_no"), c.get("customer"),
+         c.get("status"), c.get("age"), frappe.format(c.get("last_updated_on"), {"fieldtype": "Date"}),
+         c.get("remark"), c.get("sa_name"), c.get("sa_mobile_number")]
+        for idx, c in enumerate(closures_followup)
+    ]
+    write_sheet(ws2, "DIRECT FOLLOW UP CLOSURE", headers_followup, rows_followup, "A1:K2", col_widths_followup)
+
+    # -------------------- 3. SUPPLIER FOLLOW UP CLOSURE --------------------
+    closures_supplier = get_closures("Indian")
+    rows_supplier = []
+    for idx, c in enumerate(closures_supplier, start=1):
+        mob = frappe.db.get_value("Supplier", {"name": c.get("associate", "")}, "mobile_no")
+        row_data = [
+            idx,
+            c.get("name", ""),
+            c.get("given_name", ""),
+            c.get("passport_no", ""),
+            c.get("customer", ""),
+            c.get("status", ""),
+            c.get("age", ""),
+            frappe.format(c.get("last_updated_on"), {"fieldtype": "Date"}),
+            c.get("remark", ""),
+            c.get("associate", ""),  # Supplier
+            mob,                     # Contact
+        ]
+        rows_supplier.append(row_data)
+    write_sheet(ws3, "SUPPLIER FOLLOW UP CLOSURE", headers_supplier, rows_supplier, "A1:K2", col_widths_supplier)
+
+    # -------------------- 4. CLIENT CLOSURE --------------------
+    closures_client = get_closures("Indian")
+    rows_client = [
+        [idx + 1, c.get("name"), c.get("given_name"), c.get("passport_no"), c.get("customer"),
+         c.get("status"), c.get("age"), frappe.format(c.get("last_updated_on"), {"fieldtype": "Date"}), c.get("remark")]
+        for idx, c in enumerate(closures_client)
+    ]
+    write_sheet(ws4, "CLIENT CLOSURE", headers_basic, rows_client, "A1:I2", col_widths_basic)
+
+    # -------------------- 5. NEPAL CLOSURE --------------------
+    closures_nepal = get_closures("Nepali")
+    rows_nepal = [
+        [idx + 1, c.get("name"), c.get("given_name"), c.get("passport_no"), c.get("customer"),
+         c.get("status"), c.get("age"), frappe.format(c.get("last_updated_on"), {"fieldtype": "Date"}), c.get("remark")]
+        for idx, c in enumerate(closures_nepal)
+    ]
+    write_sheet(ws5, "NEPAL CLOSURE", headers_basic, rows_nepal, "A1:I2", col_widths_basic)
+
+    # -------------------- 6. SRILANKA CLOSURE --------------------
+    closures_srilanka = get_closures("Srilankan")
+    rows_srilanka = [
+        [idx + 1, c.get("name"), c.get("given_name"), c.get("passport_no"), c.get("customer"),
+         c.get("status"), c.get("age"), frappe.format(c.get("last_updated_on"), {"fieldtype": "Date"}), c.get("remark")]
+        for idx, c in enumerate(closures_srilanka)
+    ]
+    write_sheet(ws6, "SRILANKA CLOSURE", headers_basic, rows_srilanka, "A1:I2", col_widths_basic)
+
+    # -------------------- Save & Return --------------------
+    file_data = io.BytesIO()
+    wb.save(file_data)
+    file_data.seek(0)
+
+    frappe.response["filename"] = "All_Closures_Report.xlsx"
+    frappe.response["filecontent"] = file_data.getvalue()
+    frappe.response["type"] = "binary"
+
+
+
+
+from datetime import datetime
+
+def calculate_age_from_history(history):
+    if not history:
+        return "-"
+    try:
+        # Get the latest date instead of the oldest
+        valid_dates = [h["date"] for h in history if h.get("date")]
+        if not valid_dates:
+            return "-"
+        
+        # Sort and pick the latest date
+        latest_date = max(valid_dates)
+        
+        # If the date is in string format, parse it
+        if isinstance(latest_date, str):
+            latest_date = datetime.strptime(latest_date, "%Y-%m-%d").date()
+        else:
+            latest_date = latest_date.date() if isinstance(latest_date, datetime) else latest_date
+        
+        age = (datetime.now().date() - latest_date).days
+        return age
+    except Exception as e:
+        print("Error calculating age:", e)
+        return "-"
+
+
+
+@frappe.whitelist()
+def download_rptp_report():
+    
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "REC Project Task Planner"
+
+    
+    fill_color = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    alignment_center = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    alignment_left = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    even_row_fill = PatternFill(start_color="FDE9D9", end_color="FDE9D9", fill_type="solid")
+    red_font = Font(size=11, color="FF0000")
+    total_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    total_font = Font(bold=True, color="FFFFFF")
+    total_red_font = Font(bold=True, color="FF0000")
+    alignment_bottom_center = Alignment(horizontal="center", vertical="bottom", wrap_text=True)
+    alignment_bottom_right = Alignment(horizontal="right", vertical="bottom", wrap_text=True)
+
+    title_font = Font(bold=True, size=12, color="FFFFFF")
+    body_font = Font(size=11)
+
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin")
+    )
+    
+    thin_border_first_row = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        
+    )
+    
+    thin_border_sec_row = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+       
+    )
+    
+    thin_border_third_row = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        bottom=Side(style="thin")
+    )
+    
+    
+    ws.merge_cells("A1:P1")
+    ws["A1"] = ""
+    ws["A1"].alignment = alignment_bottom_center
+    ws["A1"].font = Font(bold=True, size=12, color="FFFFFF")
+    ws["A1"].fill = fill_color
+    ws["A1"].border = thin_border_first_row
+    ws.row_dimensions[1].height = 10
+    
+    ws.merge_cells("A2:P2")
+    ws["A2"] = "REC Project Task Planner"
+    ws["A2"].alignment = alignment_center
+    ws["A2"].font = Font(bold=True, size=20, color="FFFFFF")
+    ws["A2"].fill = fill_color
+    ws["A2"].border = thin_border_sec_row
+    ws.row_dimensions[2].height = 25
+    
+    ws.merge_cells("A3:P3")
+    today = date.today().strftime("%d-%m-%Y")
+    ws["A3"] = f"Date : {today}"
+    ws["A3"].alignment = alignment_bottom_right
+    ws["A3"].font = title_font
+    ws["A3"].fill = fill_color
+    ws["A3"].border = thin_border_third_row
+    ws.row_dimensions[3].height = 10
+    
+    column_widths = {
+        'A': 5, 'B': 8, 'C': 38, 'D': 15, 'E': 55, 'F': 10,
+        'G': 8, 'H': 8, 'I': 7, 'J': 7, 'K': 7, 'L': 7,
+        'M': 8, 'N': 9, 'O': 7, 'P': 7
+    }
+
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+
+    
+    headers = [
+        "S#", "SRC_S", "CUSTOMER / PROJECT NAME", "Territory", "TASK",
+        "PRC", "SPOC", "#VAC", "#SP", "#FP", "#SL",
+        "#LP", "#PSL", "SRC", "MOI", "CC#"
+    ]
+
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=4, column=col_num, value=header)
+        cell.font = title_font
+        cell.alignment = alignment_center
+        cell.fill = fill_color
+        cell.border = thin_border
+    
+    task_data = frappe.db.sql("""
+    SELECT
+        t.custom_task_sourcing_status,
+        t.project,
+        p.project_name,
+        t.territory,
+        t.subject,
+        t.priority,
+        t.spoc,
+        t.vac,
+        t.sp,
+        t.fp,
+        t.sl,
+        t.custom_lp,
+        t.psl,
+        t.custom_sourcing_method,
+        t.mode_of_interview
+    FROM `tabTask` t
+    INNER JOIN `tabProject` p ON p.name = t.project
+    WHERE t.status IN ('Open','Working','Pending Review','Overdue')
+      AND t.service IN ('REC-I','REC-D')
+      AND p.status NOT IN ('Draft','Enquiry','Hold','Completed','Cancelled')
+    ORDER BY p.project_name ASC
+""", as_dict=True)
+
+    
+    
+    totals = {
+    "vac": 0,
+    "sp": 0,
+    "fp": 0,
+    "sl": 0,
+    "lp": 0,
+    "psl": 0
+    }
+
+    
+    row_num = 5
+    for idx, row in enumerate(task_data, start=1):
+
+        spoc_short_code = frappe.db.get_value(
+            "Employee", {"user_id": row.spoc}, "short_code"
+        ) or ""
+        
+        # if row.project:
+        #     project_name = frappe.db.get_value("Project",{"name":row.project},"project_name") or ""
+        moi=''
+        if row.mode_of_interview:
+            if row.mode_of_interview =="Direct":
+                moi="DCI"
+            elif row.mode_of_interview == "Direct Internal Interview":
+                moi="DII"
+            elif row.mode_of_interview == "CV Selection":
+                moi="CVS"
+            elif row.mode_of_interview == "Wire Selection":
+                moi="WS"           
+
+        values = [
+            idx,
+            row.custom_task_sourcing_status or "NA",
+            row.project_name,
+            row.territory,
+            row.subject,
+            row.priority,
+            spoc_short_code,
+            row.vac,  
+            row.sp,
+            row.fp,
+            row.sl,
+            row.custom_lp,
+            row.psl,
+            row.custom_sourcing_method,
+            moi,
+            ""  
+        ]
+        
+        totals["vac"] += int(row.vac or 0)
+        totals["sp"]  += int(row.sp or 0)
+        totals["fp"]  += int(row.fp or 0)
+        totals["sl"]  += int(row.sl or 0)
+        totals["lp"]  += int(row.custom_lp or 0)
+        totals["psl"] += int(row.psl or 0)
+
+
+        is_even_row = row_num % 2 == 0
+
+        for col_num, value in enumerate(values, start=1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+
+            
+            if col_num == 8 and value:  
+                cell.font = red_font
+            else:
+                cell.font = body_font
+
+            
+            cell.alignment = (
+                alignment_left
+                if col_num not in (1,2,4,6,7,8,9,10,11,12,13,14,15,16)
+                else alignment_center
+            )
+
+            
+            cell.border = thin_border
+
+            
+            if is_even_row:
+                cell.fill = even_row_fill
+
+        row_num += 1
+       
+    total_row = row_num
+
+    
+    ws.merge_cells(start_row=total_row, start_column=1, end_row=total_row, end_column=7)
+    total_cell = ws.cell(row=total_row, column=1, value="Total")
+    total_cell.font = total_font
+    total_cell.alignment = alignment_center
+    total_cell.fill = total_fill
+    total_cell.border = thin_border
+
+    
+    # for col in range(8, 14):
+    #     col_letter = ws.cell(row=1, column=col).column_letter
+    #     formula = f"SUM({col_letter}2:{col_letter}{total_row - 1})"
+
+    #     cell = ws.cell(row=total_row, column=col, value=f"={formula}")
+    #     cell.alignment = alignment_center
+    #     cell.fill = total_fill
+    #     cell.border = thin_border
+
+        
+    #     if col == 8:
+    #         cell.font = total_red_font
+    #     else:
+    #         cell.font = total_font
+
+    total_values = [
+    totals["vac"],
+    totals["sp"],
+    totals["fp"],
+    totals["sl"],
+    totals["lp"],
+    totals["psl"]
+    ]
+
+    for idx, col in enumerate(range(8, 14)):
+        cell = ws.cell(row=total_row, column=col, value=total_values[idx])
+        cell.alignment = alignment_center
+        cell.fill = total_fill
+        cell.border = thin_border
+
+        if col == 8:  # #VAC
+            cell.font = total_red_font
+        else:
+            cell.font = total_font
+
+    
+    for col in range(14, 17):
+        cell = ws.cell(row=total_row, column=col)
+        cell.fill = total_fill
+        cell.border = thin_border
+    
+   
+    file_data = io.BytesIO()
+    wb.save(file_data)
+    file_data.seek(0)
+
+    frappe.response["filename"] = "rec_project_task_planner.xlsx"
+    frappe.response["filecontent"] = file_data.getvalue()
+    frappe.response["type"] = "binary"
+    
+
+
+STATUS_SHORT_CODES = {
+    "Client Offer Letter": "COL",
+    "Signed Offer Letter": "SOL",
+    "Visa": "VISA",
+    "Premedical": "PM",
+    "PCC": "PCC",
+    "Trade Test": "TT",
+    "Final Medical": "FM",
+    "Biometric": "BIO",
+    "Visa Stamping": "VS",
+    "Emigration": "POE",
+    "Ticket": "TKT",
+    "Onboarding": "OB",
+    "Onboarded": "OBD"
+}
+
+STATUS_ATTACHMENTS = {
+    "Client Offer Letter": ["offer_letter"],
+    "Signed Offer Letter": ["sol"],
+    "Pre-Medical": ["premedical"],
+    "PCC": ["pcc"],
+    "Visa": ["visa"],
+
+    "Final Medical": ["final_medical"],
+    "Biometric": ["custom_vfs_slip", "final_medical"],
+
+    "Trade Test": ["custom_attachment"],
+    "Visa Stamping": ["visa_stamping"],
+
+    "Emigration": [
+        "emigration",
+        "declaration",
+        "attach_insurance",
+        "employment_contract"
+    ],
+
+    "Ticket": ["ticket"]
+    
+}
+
+
+ATTACHMENT_SHORTCODES = {
+    "offer_letter": "COL",
+    "sol": "SOL",
+    "premedical": "PM",
+    "pcc": "PCC",
+    "visa": "VISA",
+
+    "custom_medical_proof": "MP",
+    "final_medical": "FM",
+
+    "custom_vfs_slip": "VFS",
+
+    "custom_attachment": "TT",
+
+    "visa_stamping": "VS",
+
+    "emigration": "EMI",
+    "declaration": "DEC",
+    "attach_insurance": "INS",
+    "employment_contract": "EC",
+
+    "ticket": "TKT"
+    
+}
+
+ATTACHMENT_LABELS = {
+    "offer_letter": "Client Offer Letter",
+    "sol": "Signed Offer Letter",
+    "premedical": "Pre-Medical",
+    "pcc": "PCC",
+    "visa": "Entry Visa",
+
+    "custom_medical_proof": "Medical Proof",
+    "final_medical": "Final Medical",
+
+    "custom_vfs_slip": "VFS Slip",
+
+    "custom_attachment": "Trade Test",
+
+    "visa_stamping": "Stamped Visa",
+
+    "emigration": "Emigration",
+    "declaration": "Declaration",
+    "attach_insurance": "Insurance",
+    "employment_contract": "Employment Contract",
+
+    "ticket": "Ticket"
+    
+}
+
+
+# def build_status_value_not_applicable(row, fields):
+    
+#     parts = []
+
+#     for field in fields:
+#         if getattr(row, field, None):
+#             date = get_attachment_date("Closure", row.closure_id, field)
+#             if date:
+#                 shortcode = ATTACHMENT_SHORTCODES.get(field, field.upper())
+#                 parts.append(f"{shortcode}-{date}")
+
+#     if parts:
+#         return f"Y [{', '.join(parts)}]"
+
+#     return "Y"
+
+# def build_status_value(row, status_list):
+    
+#     parts = []
+
+#     for status in status_list:
+#         if getattr(row, status, None):
+#             date = get_status_date("Closure", row.closure_id, status)
+#             if date:
+#                 shortcode = STATUS_SHORT_CODES.get(status, status.upper())
+#                 parts.append(f"{shortcode}-{date}")
+
+#     if parts:
+#         return f"Y [{', '.join(parts)}]"
+
+#     return "Y"
+
+def build_status_value(row, status):
+    """
+    Returns 'Y [SHORTCODE-dd/mm]' if a date exists for the status,
+    otherwise just 'Y'.
+    """
+    date = get_status_date("Closure", row.closure_id, status)
+    shortcode = STATUS_SHORT_CODES.get(status, status.upper())
+
+    if date:
+        if status == "Premedical":
+            not_applicable = frappe.db.get_value("Closure",{"name":row.closure_id}, "premedical_not_applicable")
+            if not_applicable:
+                return "NA"
+        elif status == "PCC":
+            not_applicable = frappe.db.get_value("Closure",{"name":row.closure_id},"pcc_not_applicable")
+            if not_applicable:
+                return "NA"
+        elif status == "Biometric":
+            not_applicable = frappe.db.get_value("Closure",{"name":row.closure_id},"custom_skip_biometric")
+            if not_applicable:
+                return "NA"
+        elif status == "Emigration":
+            not_applicable = frappe.db.get_value("Closure",{"name":row.closure_id},"emigration_not_applicable")
+            if not_applicable:
+                return "NA"
+        else:        
+
+            return f"Y [{shortcode}-{date}]"
+    
+    # If date not found, just return Y
+    return "Y"
+
+
+
+# def get_status_date(doctype, docname, status):
+#     # file = frappe.db.get_value(
+#     #     "File",
+#     #     {
+#     #         "attached_to_doctype": doctype,
+#     #         "attached_to_name": docname,
+#     #         "attached_to_field": fieldname
+#     #     },
+#     #     ["creation"],
+#     #     as_dict=True
+#     # )
+#     # if file and file.creation:
+#     #     return file.creation.strftime("%d/%m")
+#     # return None
+#     clo_doc = frappe.db.get_doc("Closure",  docname)
+#     if clo_doc.custom_history:
+#         for i in clo_doc.custom_history:
+#             if i.status == status:
+#                 return i.date.strftime("%d/%m")
+#     return None
+
+
+
+import frappe
+from datetime import datetime
+
+def get_status_date(doctype, docname, status):
+    
+    from frappe.utils import flt
+    from datetime import datetime
+
+    
+    res = frappe.db.sql("""
+        SELECT date
+        FROM `tabClosure Status History`
+        WHERE parent = %s AND status = %s
+        ORDER BY date DESC
+        LIMIT 1
+    """, (docname, status), as_dict=True)
+
+    if res and res[0].get("date"):
+        return res[0].date.strftime("%d/%m")
+
+    return None
+
+def is_status_completed(row, status, territory=None, nationality=None):
+
+    
+    if status == "Client Offer Letter":
+        return bool(row.offer_letter)
+
+    
+    if status == "Signed Offer Letter":
+        return bool(row.sol)
+
+    
+    if status == "Premedical":
+        return bool(row.premedical) or bool(row.premedical_not_applicable)
+
+    
+    if status == "PCC":
+        return bool(
+            row.pcc
+            or row.pcc_not_applicable
+        )
+
+    
+    if status == "Visa":
+        return bool(
+            row.visa
+            and row.so_created
+        )
+
+    
+    if status == "Final Medical":
+        
+        if territory == "KSA":
+            return bool(
+                row.custom_medical_proof
+                or row.custom_update_checkbox
+            )
+
+        
+        if row.custom_medical_proof and row.final_medical is None:
+            return bool(row.custom_medical_proof)
+
+       
+        return bool(
+            row.final_medical
+            or row.custom_medical_proof
+        )
+
+    
+    if status == "Biometric":
+        
+        if territory == "KSA":
+            return bool(
+                row.final_medical
+                or (
+                    row.custom_vfs_slip
+                    and row.custom_skip_biometric != 1
+                )
+            )
+
+        
+        if row.final_medical:
+            return True
+
+        
+        return bool(
+            row.custom_vfs_slip
+            or row.custom_skip_biometric
+        )
+
+    
+    if status == "Trade Test":
+        return (
+            row.custom_closure_status == "Initiated"
+            and row.custom_attachment
+            and row.custom_closure_initiated_date
+            and row.custom_closure_location
+        )
+
+    
+    if status == "Visa Stamping":
+        return bool(row.visa_stamping)
+
+    
+    if status == "Emigration":
+        return (
+            row.ecr_status != "ECNR"
+            and (
+                row.emigration
+                and row.declaration
+                and row.attach_insurance
+                and row.employment_contract
+            )
+            or row.emigration_not_applicable
+        )
+
+    
+    if status == "Ticket":
+        return bool(row.ticket)
+
+   
+    if status == "Onboarding":
+        return bool(row.onboarded)
+
+    
+    if status == "Onboarded":
+        return bool(row.onboarded)
+
+    return False
+
+
+
+    
+
+@frappe.whitelist()
+def download_cwsr_report():
+    customer = frappe.form_dict.get("customer")
+
+    wb = Workbook()
+    wb.remove(wb.active)
+
+    
+    territories = frappe.db.get_all(
+        "Closure",
+        filters={"status": ["not in", ['PSL','Dropped','Arrived']]},
+        pluck="territory",
+        distinct=True
+    )
+
+    customer_so = frappe.db.get_value("Customer", {"name": customer}, "custom_so_not_needed") or 0
+
+    
+    
+    
+    
+
+    # def write_sheet(ws, data, all_statuses):
+        
+    #     statuses = [s for s in all_statuses if s not in ("PSL", "Arrived")]
+
+    #     thin_border = Border(
+    #         left=Side(style='thin'),
+    #         right=Side(style='thin'),
+    #         top=Side(style='thin'),
+    #         bottom=Side(style='thin')
+    #     )
+
+    #     headers = (
+    #         ["S#", "ID", "Passport No", "Name", "Position / Task Subject","Customer"] +
+    #         [STATUS_SHORT_CODES.get(s, s) for s in statuses] +
+    #         ["Remark"]
+    #     )
+
+        
+    #     for col, h in enumerate(headers, start=1):
+    #         cell = ws.cell(row=1, column=col, value=h)
+    #         cell.font = Font(bold=True, color="FFFFFF")
+    #         cell.fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    #         cell.alignment = Alignment(horizontal="center", vertical="center")
+    #         cell.border = thin_border
+
+        
+    #     ws.column_dimensions["A"].width = 6    
+    #     ws.column_dimensions["B"].width = 14   
+    #     ws.column_dimensions["C"].width = 16   
+    #     ws.column_dimensions["D"].width = 35   
+    #     ws.column_dimensions["E"].width = 32   
+    #     ws.column_dimensions["F"].width = 48   
+
+        
+        
+    #     # for col in range(7, 7 + len(statuses)):
+    #     #     ws.column_dimensions[get_column_letter(col)].width = 8
+    #     max_col_len = defaultdict(int)
+    #     ws.column_dimensions[get_column_letter(7 + len(statuses))].width = 85 
+        
+    #     max_col_length = {7 + i: 0 for i in range(len(statuses))}
+        
+    #     row_num = 2
+    #     for idx, row in enumerate(data, start=1):
+    #         try:
+    #             current_index = all_statuses.index(row.custom_current_status)
+    #         except ValueError:
+    #             current_index = -1
+
+    #         col = 1
+
+            
+    #         for v in [idx, row.closure_id, row.passport_no]:
+    #             cell = ws.cell(row=row_num, column=col, value=v)
+    #             cell.alignment = Alignment(horizontal="center", vertical="center")
+    #             cell.border = thin_border
+    #             col += 1
+
+            
+    #         for v in [row.candidate_name, row.task_subject,row.customer]:
+    #             cell = ws.cell(row=row_num, column=col, value=v)
+    #             cell.alignment = Alignment(horizontal="left", vertical="center")
+    #             cell.border = thin_border
+    #             col += 1
+
+            
+            
+            
+            
+    #         for status in statuses:
+
+                
+    #             if row.territory == "Kuwait":
+    #                 if customer_so == 1 and status in ("Emigration", "Ticket"):
+    #                     value = "NA"
+    #                     font_color = None
+
+    #                 elif customer_so == 0 and status == "Biometric":
+    #                     value = "NA"
+    #                     font_color = None
+
+    #                 else:
+    #                     completed = is_status_completed(
+    #                         row,
+    #                         status,
+    #                         territory=row.territory,
+    #                         nationality=row.nationality
+    #                     )
+
+    #                     if status in ("Pre-Medical", "Final Medical"):
+    #                         # if completed:
+    #                         #     value = "FIT"
+    #                         #     font_color = "00B050"
+    #                         if completed:
+                               
+
+    #                             value = build_status_value(row, status)
+    #                             if value != "NA":
+    #                                 font_color = "00B050"
+    #                             else:
+    #                                 font_color = None   
+    #                         else:
+    #                             if status == "Emigration":
+    #                                 ecr_status = frappe.db.get_value("Closure",{"name":row.closure_id},"ecr_status")
+    #                                 if ecr_status == "ECNR":
+    #                                     value = "NA"
+    #                                     font_color = None
+    #                                 else:
+    #                                     value = "YTS"
+    #                                     font_color = None    
+
+
+    #                             else:    
+    #                                 value = "YTS"
+    #                                 font_color = None
+    #                     else:
+    #                         # if completed:
+    #                         #     value = "Y"
+    #                         #     font_color = "00B050"
+    #                         if completed:
+                               
+
+    #                             value = build_status_value(row, status)
+    #                             if value != "NA":
+    #                                 font_color = "00B050"
+    #                             else:
+    #                                 font_color = None 
+    #                         else:
+    #                             if status == "Emigration":
+    #                                 ecr_status = frappe.db.get_value("Closure",{"name":row.closure_id},"ecr_status")
+    #                                 if ecr_status == "ECNR":
+    #                                     value = "NA"
+    #                                     font_color = None
+    #                                 else:
+    #                                     value = "YTS"
+    #                                     font_color = None    
+
+
+    #                             else:    
+    #                                 value = "YTS"
+    #                                 font_color = None
+    #             else:
+    #                 completed = is_status_completed(
+    #                     row,
+    #                     status,
+    #                     territory=row.territory,
+    #                     nationality=row.nationality
+    #                 )
+
+    #                 if status in ("Pre-Medical", "Final Medical"):
+    #                     # if completed:
+    #                     #     value = "FIT"
+    #                     #     font_color = "00B050"
+    #                     if completed:
+                               
+    #                         value = build_status_value(row, status)
+    #                         if value != "NA":
+    #                             font_color = "00B050"
+    #                         else:
+    #                             font_color = None 
+    #                     else:
+    #                         if status == "Emigration":
+    #                                 ecr_status = frappe.db.get_value("Closure",{"name":row.closure_id},"ecr_status")
+    #                                 if ecr_status == "ECNR":
+    #                                     value = "NA"
+    #                                     font_color = None
+    #                                 else:
+    #                                     value = "YTS"
+    #                                     font_color = None    
+
+
+    #                         else:    
+    #                             value = "YTS"
+    #                             font_color = None
+    #                 else:
+    #                     # if completed:
+    #                     #     value = "Y"
+    #                     #     font_color = "00B050"
+    #                     if completed:
+                               
+    #                         value = build_status_value(row, status)
+    #                         if value != "NA":
+    #                             font_color = "00B050"
+    #                         else:
+    #                             font_color = None 
+    #                     else:
+    #                         if status == "Emigration":
+    #                                 ecr_status = frappe.db.get_value("Closure",{"name":row.closure_id},"ecr_status")
+    #                                 if ecr_status == "ECNR":
+    #                                     value = "NA"
+    #                                     font_color = None
+    #                                 else:
+    #                                     value = "YTS"
+    #                                     font_color = None    
+
+
+    #                         else:    
+    #                             value = "YTS"
+    #                             font_color = None
+
+
+                        
+                        
+
+    #             cell = ws.cell(row=row_num, column=col, value=value)
+    #             cell.alignment = Alignment(horizontal="center", vertical="center")
+    #             cell.border = thin_border
+    #             if font_color:
+    #                 cell.font = Font(color=font_color)
+                    
+                
+                
+    #             val_len = len(str(value)) if value else 0
+    #             if val_len > max_col_length.get(col, 0):
+    #                 max_col_length[col] = val_len   
+                    
+    #             col += 1
+
+            
+    #         cell = ws.cell(row=row_num, column=col, value=row.remark)
+    #         cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+    #         cell.border = thin_border
+
+    #         row_num += 1
+
+        
+        
+    #     # for col_idx, max_len in max_col_len.items():
+    #     #     adjusted_width = min(max(max_len + 2, 8), 25)
+    #     #     ws.column_dimensions[get_column_letter(col_idx)].width = adjusted_width
+        
+    #     for col_idx, max_len in max_col_length.items():
+            
+    #         width = max_len + 4 
+            
+            
+    #         status_index = col_idx - 7
+    #         status_name = statuses[status_index]
+
+            
+    #         if status_name == "Emigration":
+    #             width = min(max(width, 8), 40) 
+    #         else:
+    #             width = min(max(width, 8), 25)  
+
+    #         ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+        
+    #     row_num += 2
+
+    #     legend_cell = ws.cell(row=row_num, column=1, value="Abbreviations:")
+    #     legend_cell.font = Font(bold=True)
+
+    #     row_num += 1
+
+    #     legend_items = []
+    #     for field, shortcode in ATTACHMENT_SHORTCODES.items():
+    #         label = ATTACHMENT_LABELS.get(field)
+    #         if label:
+    #             legend_items.append(f"{shortcode} = {label}")
+
+    #     legend_text = " | ".join(legend_items)
+
+    #     cell = ws.cell(row=row_num, column=1, value=legend_text)
+    #     cell.alignment = Alignment(wrap_text=True, vertical="top")
+
+    #     ws.merge_cells(
+    #         start_row=row_num,
+    #         start_column=1,
+    #         end_row=row_num,
+    #         end_column=7 + len(statuses)
+    #     )
+
+  
+    def write_sheet(ws, data, all_statuses):
+        """
+        Writes the Closure Weekly Status Report into the worksheet `ws`.
+        Adds Current Status and Next Action columns.
+        Maintains customer grouping and merged cells.
+        """
+        statuses = [s for s in all_statuses if s not in ("PSL", "Arrived")]
+
+
+        if data and data[0].territory == "Kuwait":
+            if "PCC" in statuses and "Visa" in statuses:
+                pcc_index = statuses.index("PCC")
+                statuses.pop(statuses.index("Visa"))
+                statuses[pcc_index] = "PCC / VISA"
+
+        thin_border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+
+        # Headers with new columns: Current Status, Next Action
+        headers = (
+            ["S#", "ID", "Passport No", "Name", "Position / Task Subject", "Current Status"] +
+            [
+                    "PCC/Visa" if s == "PCC / VISA"
+                    else STATUS_SHORT_CODES.get(s, s)
+                    for s in statuses
+                ] +
+            ["Next Action", "Remark"]
+        )
+
+        # Write headers
+        for col, h in enumerate(headers, start=1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+            cell.alignment = Alignment(horizontal="center", vertical="center")
+            cell.border = thin_border
+
+        # Set initial column widths
+        ws.column_dimensions["A"].width = 6
+        ws.column_dimensions["B"].width = 14
+        ws.column_dimensions["C"].width = 16
+        ws.column_dimensions["D"].width = 35
+        ws.column_dimensions["E"].width = 32
+        ws.column_dimensions["F"].width = 18
+        
+
+        row_num = 2
+        prev_customer = None
+
+        for idx, row in enumerate(data, start=1):
+            # If customer changes, add a merged row for the customer
+            if row.customer != prev_customer:
+                prev_customer = row.customer
+                ws.merge_cells(start_row=row_num, start_column=1, end_row=row_num, end_column=4)
+                cell = ws.cell(row=row_num, column=1, value=row.customer)
+                cell.font = Font(bold=True)
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+                cell.border = thin_border
+                row_num += 1  # move to next row for actual closures
+
+            col = 1
+            # Numeric columns (S#, ID, Passport No)
+            for v in [idx, row.closure_id, row.passport_no]:
+                cell = ws.cell(row=row_num, column=col, value=v)
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+                cell.border = thin_border
+                col += 1
+
+            # Candidate info + Current Status
+            for v in [row.candidate_name, row.task_subject, getattr(row, "custom_current_status", "")]:
+                cell = ws.cell(row=row_num, column=col, value=v)
+                cell.alignment = Alignment(horizontal="left", vertical="center")
+                cell.border = thin_border
+                col += 1
+
+            # Status columns
+            for status in statuses:
+
+                if status == "PCC / VISA":
+                    pcc_completed = is_status_completed(row, "PCC", territory=row.territory, nationality=row.nationality)
+                    visa_completed = is_status_completed(row, "Visa", territory=row.territory, nationality=row.nationality)
+
+                    pcc_value = build_status_value(row, "PCC") if pcc_completed else "YTS"
+                    visa_value = build_status_value(row, "Visa") if visa_completed else "YTS"
+
+                    value = f"{pcc_value} / {visa_value}"
+                    font_color = "00B050" if pcc_completed or visa_completed else None
+                else:
+                    completed = is_status_completed(row, status, territory=row.territory, nationality=row.nationality)
+                    if completed:
+                        value = build_status_value(row, status)
+                        font_color = "00B050" if value != "NA" else None
+                    else:
+                        if status == "Emigration":
+                            ecr_status = frappe.db.get_value("Closure", {"name": row.closure_id}, "ecr_status")
+                            value = "NA" if ecr_status == "ECNR" else "YTS"
+                            font_color = None
+                        else:
+                            value = "YTS"
+                            font_color = None
+
+                cell = ws.cell(row=row_num, column=col, value=value)
+                cell.alignment = Alignment(horizontal="center", vertical="center")
+                cell.border = thin_border
+                if font_color:
+                    cell.font = Font(color=font_color)
+                ws.column_dimensions[get_column_letter(col)].width = 14        
+                col += 1
+
+            # Next Action
+            cell = ws.cell(row=row_num, column=col, value=row.get("standard_remarks") if isinstance(row, dict) else getattr(row, "standard_remarks", ""))
+            cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+            cell.border = thin_border
+            ws.column_dimensions[get_column_letter(col)].width = 30
+            col += 1
+
+            # Remark
+            cell = ws.cell(row=row_num, column=col, value=row.remark)
+            cell.alignment = Alignment(horizontal="left", vertical="top", wrap_text=True)
+            cell.border = thin_border
+            ws.column_dimensions[get_column_letter(col)].width = 85
+
+            row_num += 1
+
+    
+    for territory in territories:
+        
+        if territory == "UAE":
+            for visa_state in ["Abudhabi", "Dubai"]:
+                sheet_name = f"UAE-{visa_state}"
+                
+
+                filters = {"territory": "UAE", "visa_state": visa_state}
+                if customer:
+                    filters["customer"] = customer
+
+                data = frappe.db.sql("""
+                    SELECT
+                        c.name AS closure_id,
+                        c.passport_no,
+                        c.given_name AS candidate_name,
+                        c.task_subject,
+                        c.customer,
+                        c.territory,
+                        c.visa_state,
+                        c.nationality,
+                        c.remark,
+                        c.status AS custom_current_status,
+                        c.offer_letter,
+                        c.sol,
+                        c.so_created,
+                        c.premedical,
+                        c.premedical_not_applicable,
+                        c.pcc,
+                        c.pcc_not_applicable,
+                        c.visa,
+                        c.visa_stamping,
+                        c.final_medical,
+                        c.custom_medical_proof,
+                        c.custom_update_checkbox,
+                        c.custom_vfs_slip,
+                        c.custom_skip_biometric,
+                        c.custom_closure_status,
+                        c.custom_attachment,
+                        c.custom_closure_initiated_date,
+                        c.custom_closure_location,
+                        c.ecr_status,
+                        c.emigration,
+                        c.declaration,
+                        c.attach_insurance,
+                        c.employment_contract,
+                        c.emigration_not_applicable,
+                        c.standard_remarks,
+                        c.ticket,
+                        c.onboarded
+
+                        
+                        
+                        
+                    FROM `tabClosure` c
+                    WHERE c.territory = %(territory)s
+                    AND c.visa_state = %(visa_state)s
+                    AND c.status NOT IN ('PSL','Dropped','Arrived')
+                    {customer_filter}
+                """.format(customer_filter="AND c.customer = %(customer)s" if customer else ""),
+                    filters, as_dict=True
+                )
+
+                if not data:
+                    continue
+
+                all_statuses = get_statuses_by_territory(
+                    territory="UAE",
+                    visa_state=visa_state,
+                    nationality=data[0].nationality,
+                    customer_so=customer_so
+                )
+                
+                ws = wb.create_sheet(title=sheet_name[:31])
+
+                write_sheet(ws, data, all_statuses)
+
+        
+        
+        
+        elif territory == "KSA":
+            ksa_variants = [("Indian", "KSA"), ("Non-Indian", "KSA")]
+
+            for nat, sheet_name in ksa_variants:
+                
+                filters = {"territory": "KSA"}
+                if customer:
+                    filters["customer"] = customer
+
+                if nat == "Indian":
+                    nat_condition = "c.nationality = 'Indian'"
+                else:
+                    nat_condition = "c.nationality != 'Indian'"
+
+                data = frappe.db.sql(f"""
+                    SELECT
+                        c.name AS closure_id,
+                        c.passport_no,
+                        c.given_name AS candidate_name,
+                        c.task_subject,
+                        c.customer,
+                        c.territory,
+                        c.visa_state,
+                        c.nationality,
+                        c.remark,
+                        c.status AS custom_current_status,
+                        c.offer_letter,
+                        c.sol,
+                        c.so_created,
+                        c.premedical,
+                        c.premedical_not_applicable,
+                        c.pcc,
+                        c.pcc_not_applicable,
+                        c.visa,
+                        c.visa_stamping,
+                        c.final_medical,
+                        c.custom_medical_proof,
+                        c.custom_update_checkbox,
+                        c.custom_vfs_slip,
+                        c.custom_skip_biometric,
+                        c.custom_closure_status,
+                        c.custom_attachment,
+                        c.custom_closure_initiated_date,
+                        c.custom_closure_location,
+                        c.ecr_status,
+                        c.emigration,
+                        c.declaration,
+                        c.attach_insurance,
+                        c.employment_contract,
+                        c.emigration_not_applicable,
+                        c.standard_remarks,
+                        c.ticket,
+                        c.onboarded
+
+                        
+                        
+                    FROM `tabClosure` c
+                    WHERE c.territory = 'KSA'
+                    AND c.status NOT IN ('PSL','Dropped','Arrived')
+                    AND {nat_condition}
+                    { 'AND c.customer = %(customer)s' if customer else '' }
+                """, filters, as_dict=True)
+
+                if not data:
+                    continue
+
+                all_statuses = get_statuses_by_territory(
+                    territory="KSA",
+                    visa_state=data[0].visa_state,
+                    nationality=nat,
+                    customer_so=customer_so
+                )
+                ws = wb.create_sheet(title=sheet_name[:31])
+
+                write_sheet(ws, data, all_statuses)
+
+        
+        else:
+            
+            filters = {"territory": territory}
+            if customer:
+                filters["customer"] = customer
+
+            data = frappe.db.sql("""
+                SELECT
+                    c.name AS closure_id,
+                    c.passport_no,
+                    c.given_name AS candidate_name,
+                    c.task_subject,
+                    c.customer,
+                    c.territory,
+                    c.visa_state,
+                    c.nationality,
+                    c.remark,
+                    c.status AS custom_current_status,
+                    c.offer_letter,
+                    c.sol,
+                    c.so_created,
+                    c.premedical,
+                    c.premedical_not_applicable,
+                    c.pcc,
+                    c.pcc_not_applicable,
+                    c.visa,
+                    c.visa_stamping,
+                    c.final_medical,
+                    c.custom_medical_proof,
+                    c.custom_update_checkbox,
+                    c.custom_vfs_slip,
+                    c.custom_skip_biometric,
+                    c.custom_closure_status,
+                    c.custom_attachment,
+                    c.custom_closure_initiated_date,
+                    c.custom_closure_location,
+                    c.ecr_status,
+                    c.emigration,
+                    c.declaration,
+                    c.attach_insurance,
+                    c.employment_contract,
+                    c.emigration_not_applicable,
+                    c.standard_remarks,
+                    c.ticket,
+                    c.onboarded
+
+                    
+                FROM `tabClosure` c
+                WHERE c.territory = %(territory)s
+                AND c.status NOT IN ('PSL','Dropped','Arrived')
+                {customer_filter}
+            """.format(customer_filter="AND c.customer = %(customer)s" if customer else ""),
+                filters, as_dict=True
+            )
+
+            if not data:
+                continue
+
+            all_statuses = get_statuses_by_territory(
+                territory=territory,
+                visa_state=data[0].visa_state,
+                nationality=data[0].nationality,
+                customer_so=customer_so
+            )
+            ws = wb.create_sheet(title=territory[:31])
+
+            write_sheet(ws, data, all_statuses)
+
+    
+    file_data = io.BytesIO()
+    wb.save(file_data)
+    file_data.seek(0)
+
+    frappe.response["filename"] = "Closure_Weekly_Status_Report.xlsx"
+    frappe.response["filecontent"] = file_data.getvalue()
+    frappe.response["type"] = "binary"
+
+
+
+def get_statuses_by_territory(territory, visa_state=None, nationality=None, customer_so=0):
+    if territory == "Qatar":
+        return ["PSL","Client Offer Letter","Signed Offer Letter","PCC","Visa",
+                "Emigration","Ticket","Onboarding","Onboarded","Arrived"]
+    elif territory == "UAE":
+        if visa_state == "Abudhabi":
+            return ["PSL","Client Offer Letter","Signed Offer Letter","Visa","PCC",
+                    "Final Medical","Visa Stamping","Emigration","Ticket",
+                    "Onboarding","Onboarded","Arrived"]
+        else:
+            return ["PSL","Client Offer Letter","Signed Offer Letter","Visa","PCC",
+                    "Final Medical","Emigration","Ticket",
+                    "Onboarding","Onboarded","Arrived"]
+    elif territory == "Oman":
+        return ["PSL","Client Offer Letter","Signed Offer Letter","PCC",
+                "Final Medical","Visa","Emigration","Ticket",
+                "Onboarding","Onboarded","Arrived"]
+    
+    
+    elif territory == "Kuwait":
+        return [
+            "PSL","Client Offer Letter","Signed Offer Letter","Pre-Medical",
+            "PCC","Visa","Final Medical","Visa Stamping",
+            "Emigration","Ticket","Onboarding","Onboarded","Arrived"
+        ]
+    
+    elif territory == "KSA":
+        if nationality == "Indian":
+            return ["PSL","Client Offer Letter","Signed Offer Letter","Visa","PCC",
+                    "Final Medical","Biometric","Trade Test","Visa Stamping",
+                    "Emigration","Ticket","Onboarding","Onboarded","Arrived"]
+        else:
+            return ["PSL","Client Offer Letter","Signed Offer Letter","Visa","PCC",
+                    "Final Medical","Biometric","Visa Stamping",
+                    "Emigration","Ticket","Onboarding","Onboarded","Arrived"]
+    elif territory == "Iraq":
+        return ["PSL","Visa","Emigration","Onboarding","Onboarded","Arrived"]
+    elif territory == "Bahrain":
+        return ["PSL","Client Offer Letter","Signed Offer Letter","Final Medical",
+                "Visa","Emigration","Ticket","Onboarding","Onboarded","Arrived"]
+    elif territory in ["Dammam","Jeddah","Riyadh"]:
+        return ["PSL","Client Offer Letter","Signed Offer Letter","Visa","PCC",
+                "Final Medical","Biometric","Visa Stamping",
+                "Emigration","Ticket","Onboarding","Onboarded","Arrived"]
+    return ["PSL","Client Offer Letter","Signed Offer Letter","PCC","Visa",
+            "Emigration","Ticket","Onboarding","Onboarded","Arrived"]
+
+
+    
 
 @frappe.whitelist()
 def batch_status_report(batch_customer=None,batch=None):
@@ -116,6 +1699,162 @@ from io import BytesIO
 from datetime import datetime
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
+
+
+@frappe.whitelist()
+def download_cr_report():
+    posting_date = datetime.now().strftime("%d-%m-%Y")
+    filename_cr = f"Closure Report {posting_date}"
+    build_xlsx_response_cr(filename_cr)
+    
+def build_xlsx_response_cr(filename_cr):
+    xlsx_file = make_xlsx_cr(filename_cr)
+    frappe.response["filename"] = f"{filename_cr}.xlsx"
+    frappe.response["filecontent"] = xlsx_file.getvalue()
+    frappe.response["type"] = "binary" 
+    
+def make_xlsx_cr(data, sheet_name="Closure Report", wb=None, column_widths=None):
+    
+    column_widths = column_widths or []
+    if wb is None:
+        wb = openpyxl.Workbook()
+
+    
+    valid_sheet_name = sheet_name.replace(":", "-")
+    ws = wb.create_sheet(valid_sheet_name, 0)
+    
+    fill_color = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    alignment_center = Alignment(horizontal="center", vertical="center")  
+    alignment_left = Alignment(horizontal="left", vertical="center")      
+    text_wrap = Alignment(wrap_text=True, horizontal="left", vertical="center")  
+    title_font = Font(bold=True, size=14)
+    header_font = Font(color="FFFFFF", bold=True)  
+    thin_border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin")
+    )
+    
+    # Set column widths
+    column_widths = {
+        'A': 5, 'B': 20, 'C': 30, 'D': 20, 'E': 20, 'F': 20,
+        'G': 40, 'H': 40 
+    }
+    for col, width in column_widths.items():
+        ws.column_dimensions[col].width = width
+    
+    posting_date = datetime.now().strftime("%d-%m-%Y")
+    title = "Closure Report(" + posting_date + ")"
+    ws.merge_cells("A1:H1")
+    ws["A1"].value = title
+    ws["A1"].font = title_font
+    ws["A1"].alignment = alignment_center
+    ws["A1"].border = thin_border
+    
+    ws.row_dimensions[1].height = 28
+    
+    
+    header = [
+        "S NO", "Closure ID", "Candidate Name", "Passport Number", "Current Status", "Age",
+        "Customer","Latest Remark"
+    ]
+    ws.append(header)
+    
+    for cell in ws[2]:  
+        cell.fill = fill_color
+        cell.font = header_font
+        cell.alignment = alignment_center  
+        cell.border = thin_border
+    ws.row_dimensions[2].height = 28    
+        
+    data1 = get_data_of_cr()
+    for row in data1:
+        ws.append(row)
+
+        
+        for idx, cell in enumerate(ws[ws.max_row], start=1):
+            if idx in [1,2,4,6]:  
+                cell.alignment = alignment_center 
+                cell.border = thin_border
+            elif idx in[7,8]:
+                cell.alignment = text_wrap 
+                cell.border = thin_border      
+            else:
+                cell.alignment = alignment_left  
+                cell.border = thin_border
+        
+        # ws.row_dimensions[ws.max_row].height = 40        
+    
+
+
+    
+    
+    
+    xlsx_file = BytesIO()
+    wb.save(xlsx_file)
+    xlsx_file.seek(0)
+    return xlsx_file
+
+
+
+def get_data_of_cr():
+    data = []
+    s_no = 1
+
+    closure_data = frappe.db.sql("""
+        SELECT 
+            c.name AS name, 
+            c.given_name AS cand_name, 
+            c.passport_no AS pp_no, 
+            c.status AS curr_status,  
+            c.customer AS customer, 
+            c.remark AS remark
+        FROM 
+            `tabClosure` c
+        WHERE
+            c.status NOT IN ('Arrived', 'Dropped')
+    """, as_dict=True)
+
+    for i in closure_data:
+        
+        latest_date = frappe.db.sql("""
+            SELECT date 
+            FROM `tabClosure Status History`
+            WHERE parent = %s
+            ORDER BY date DESC
+            LIMIT 1
+        """, (i.name,), as_dict=True)
+
+        
+        if latest_date and latest_date[0].get("date"):
+            dt = latest_date[0]["date"]
+
+            
+            if isinstance(dt, datetime):
+                dt = dt.date()
+
+            
+            today = datetime.now().date()
+            age = (today - dt).days
+        else:
+            dt = None
+            age = None  
+
+        data.append([
+            s_no,
+            i.name,
+            i.cand_name,
+            i.pp_no,
+            i.curr_status,
+            age,
+            i.customer,
+            i.remark
+        ])
+        s_no += 1
+
+    return data
+        
 
 @frappe.whitelist()
 def download_bcs_report():
@@ -838,10 +2577,12 @@ def opportunity_report(opportunity_owner=None, opp_am=None, opp_service=None):
 
 
 from datetime import datetime
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill, Font, Alignment
 from io import BytesIO
+from itertools import groupby
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 import frappe
+
 
 @frappe.whitelist()
 def opportunity_excel_report():
@@ -849,28 +2590,26 @@ def opportunity_excel_report():
     filename_opp = "PR:01 – Opportunity Status Report (OSR)_" + posting_date
     build_xlsx_response_opp(filename_opp)
 
+
 def build_xlsx_response_opp(filename_opp):
     xlsx_file = make_xlsx_opp(filename_opp)
     frappe.response['filename'] = filename_opp + '.xlsx'
     frappe.response['filecontent'] = xlsx_file.getvalue()
     frappe.response['type'] = 'binary'
 
-def make_xlsx_opp(data, sheet_name="PR:01 – Opportunity Status Report (OSR)", wb=None, column_widths=None):
-    default_column_widths = [7, 7, 10, 13, 10, 40, 13, 7, 10, 7, 13, 20]
-    column_widths = column_widths or default_column_widths
 
+def make_xlsx_opp(data, sheet_name="PR:01 – Opportunity Status Report (OSR)", wb=None, column_widths=None):
     args = frappe.local.form_dict
 
+    # Create workbook and sheet
     if wb is None:
         wb = Workbook()
     valid_sheet_name = sheet_name.replace(":", "-")
     ws = wb.create_sheet(valid_sheet_name, 0)
 
-    # Define styles
+    # === Styles ===
     text_wrap_left = Alignment(wrap_text=True, vertical="center", horizontal="left")
     fill_color = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
-    bold_font = Font(bold=True)
-    # bg_fill = PatternFill(start_color="F79646", end_color="F79646", fill_type="solid")
     header_font = Font(color="FFFFFF", bold=True)
     title_font = Font(bold=True, size=14)
     thin_border = Border(
@@ -881,77 +2620,66 @@ def make_xlsx_opp(data, sheet_name="PR:01 – Opportunity Status Report (OSR)", 
     )
     center_alignment = Alignment(horizontal="center", vertical="center")
 
-    # Set column widths
-    columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L']
-    column_widths = [6, 8, 10, 20, 10, 35, 15, 6, 13, 13, 15, 45]
+    # === Column widths ===
+    columns = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L','M','N']
+    column_widths = [6, 8, 10, 20, 10, 35, 15,10 ,15 ,6, 13, 13, 15, 45]
     for i, width in enumerate(column_widths):
         ws.column_dimensions[columns[i]].width = width
 
-    # Title
+    # === Title ===
     posting_date = datetime.now().strftime("%d-%m-%Y")
-    title = "PR:01 – Opportunity Status Report (OSR) (" + posting_date + ")"
-    ws.merge_cells("A1:L1")
+    title = f"PR:01 – Opportunity Status Report (OSR) ({posting_date})"
+    ws.merge_cells("A1:N1")
     ws["A1"].value = title
     ws["A1"].font = title_font
-    ws["A1"].alignment = center_alignment  # Center the title
+    ws["A1"].alignment = center_alignment
 
-    # Headers
-    header = ["S NO", "Owner", "Service", "From", "Status", "Organization Name",
+    # === Header row ===
+    header = ["S NO", "Owner", "Service", "From", "Status", "Organization Name","Territory","Grade",
               "Date", "Age", "Amount", "PB%", "ECD", "Remark"]
     ws.append(header)
 
     for cell in ws[2]:
         cell.fill = fill_color
         cell.font = header_font
-        cell.alignment = center_alignment  # Center the headers
+        cell.alignment = center_alignment
         cell.border = thin_border
 
-    # Data
+    # === Data ===
     data1 = get_data_of_opp(args)
+
+    # Sort only for stable grouping (without disturbing data)
+    data1.sort(key=lambda x: x[1] or "")
+
     current_row = 3
-    start_row = current_row
-    last_owner = data1[0][1] if data1 else None
 
-    for row in data1:
-        ws.append(row)
-        owner = row[1]
+    # Group by exact owner to avoid merging similar codes like AP and API
+    for owner, group in groupby(data1, key=lambda x: x[1]):
+        group_rows = list(group)
+        start_row = current_row
 
-        if owner != last_owner and start_row < current_row - 1:
+        # Write each row
+        for row in group_rows:
+            ws.append(row)
+            for cell in ws[ws.max_row]:
+                cell.alignment = text_wrap_left
+                cell.border = thin_border
+            current_row += 1
+
+        # Merge owner cells only if multiple rows belong to the same owner
+        if len(group_rows) > 1:
             ws.merge_cells(start_row=start_row, start_column=2, end_row=current_row - 1, end_column=2)
             ws.cell(row=start_row, column=2).alignment = Alignment(horizontal="left", vertical="center")
-            start_row = current_row
 
-        last_owner = owner
-        for cell in ws[ws.max_row]:
-            cell.alignment = text_wrap_left
-            cell.border = thin_border
-
-        current_row += 1
-
-    if start_row < current_row - 1:
-        ws.merge_cells(start_row=start_row, start_column=2, end_row=current_row - 1, end_column=2)
-        ws.cell(row=start_row, column=2).alignment = Alignment(horizontal="left", vertical="center")
-
-    for row in ws.iter_rows(min_row=3, max_row=ws.max_row, min_col=1, max_col=len(header)):
-        for cell in row:
-            cell.alignment = text_wrap_left
-            cell.border = thin_border
-
-    # Adjust row heights for added vertical spacing
+    # Adjust row height for readability
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
-        ws.row_dimensions[row[0].row].height = 50  # Adjust height for spacing
+        ws.row_dimensions[row[0].row].height = 45
 
-    # for cell in ws[ws.max_row]:
-    #     cell.font = bold_font
-        # cell.fill = bg_fill
-        # cell.border = thin_border
-        # cell.alignment = text_wrap_left
-
+    # Save workbook
     xlsx_file = BytesIO()
     wb.save(xlsx_file)
     xlsx_file.seek(0)
     return xlsx_file
-
 
 def get_data_of_opp(args):
 
@@ -961,7 +2689,10 @@ def get_data_of_opp(args):
 
     data = []
     s_no = 1
-    filters = {"status": ["in", ["Open", "Quotation", "Replied"]]}
+    filters = {
+    "status": ["in", ["Open", "Quotation", "Replied"]],
+    "opportunity_owner": ["not in", [None, ""]]  # exclude empty/null
+}
 
     if own:
         filters["opportunity_owner"] = own
@@ -972,28 +2703,33 @@ def get_data_of_opp(args):
     if ser:
         filters["service"] = ser
 
-    opportunity_data = frappe.db.get_all("Opportunity", filters if (own or am or ser) else {}, "*")
+    opportunity_data = frappe.db.get_all("Opportunity", filters, "*")
     grouped_data = {}
     
     for opportunity in opportunity_data:
         owner = opportunity.get("opportunity_owner")
-        if owner not in grouped_data:
+        if owner not in grouped_data and owner:
             grouped_data[owner] = []
         grouped_data[owner].append(opportunity)
+        
 
     
-    for owner, opportunities in grouped_data.items():
+    for j, opportunities in grouped_data.items():
         for i in opportunities:
-            employee_short_code = frappe.db.get_value("Employee", {"user_id": owner}, "short_code")
+            employee_short_code = frappe.db.get_value("Employee", {"user_id": j}, "short_code")
             formatted_transaction_date = frappe.utils.formatdate(i.transaction_date, 'dd-mm-yyyy')
             formatted_ecd_date = frappe.utils.formatdate(i.expected_closing, 'dd-mm-yyyy')
+            terr = frappe.db.get_value("Sales Follow Up",{"name":i.custom_sales_follow_up},"sfp_territory") or ""
+            market_segment = frappe.db.get_value("Sales Follow Up",{"name":i.custom_sales_follow_up},"market_segment") or ""
             data.append([
                 s_no, 
-                employee_short_code, 
+                employee_short_code or '', 
                 i.service, 
                 i.opportunity_from, 
                 i.status, 
-                i.organization_name, 
+                i.organization_name,
+                terr,
+                market_segment,
                 formatted_transaction_date,
                 i.custom_opportunity_age, 
                 i.opportunity_amount, 
@@ -1238,8 +2974,11 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
                 task_totals['sl'] +=t['sl']
                 task_totals['psl'] += t['psl']
                 task_totals['custom_lp'] += t['custom_lp']
-            task_totals['exp_value'] += float(p['expected_value']) if p['expected_value'] not in (None, '') else 0
-            task_totals['exp_psl'] += float(p['expected_psl']) if p['expected_psl'] not in (None, '') else 0
+            # task_totals['exp_value'] += float(p['expected_value']) if p['expected_value'] not in (None, '') else 0
+            # task_totals['exp_psl'] += float(p['expected_psl']) if p['expected_psl'] not in (None, '') else 0
+            task_totals['exp_value'] += safe_float(p['expected_value'])
+            task_totals['exp_psl']   += safe_float(p['expected_psl'])
+
             project_data.append({
                 'project_name': p['project_name'],'priority': p['priority'],
                 'remark': p['remark'],'account_manager_remark': p['account_manager_remark'],'custom_spoc_remark':p['custom_spoc_remark'],'sourcing_statu': p['sourcing_statu'],'territory': p['territory'],
@@ -1338,6 +3077,12 @@ def make_xlsx_PTSR(sheet_name="MR:03 – Project Task Status Report – REC (PTS
     xlsx_file.seek(0)
     return xlsx_file
 
+@frappe.whitelist()
+def safe_float(val):
+    try:
+        return float(val)
+    except (TypeError, ValueError):
+        return 0
 
 
 import openpyxl
@@ -1477,8 +3222,17 @@ def make_xlsx_PSR(sheet_name="PR:02 - Project Status Report - REC (PSR - R)", wb
             cust_sl += project_sl
             cust_lp += project_lp
             cust_psl += project_psl
-            cust_ev += float(p.get('expected_value', 0) or 0)
-            cust_ex_psl += float(p.get('expected_psl', 0) or 0)
+            expected_value = p.get('expected_value', 0)
+            expected_psl= p.get('expected_psl', 0)
+            try:
+                cust_ev += float(expected_value)
+                cust_ex_psl+=float(expected_psl)
+            except (ValueError, TypeError):
+                cust_ev += 0
+                cust_ex_psl+=0
+
+            # cust_ev += float(p.get('expected_value', 0) or 0)
+            # cust_ex_psl += float(p.get('expected_psl', 0) or 0)
 
 
             task_data = [
@@ -4260,7 +6014,6 @@ def print_closure_count_report():
                         <li>Client.</li>
                     </ol>
                 </div>"""
-    print(data)
     return data
 
 @frappe.whitelist()
@@ -4435,7 +6188,6 @@ def print_closure_count_report_so_true(doc):
                         <li>Client.</li>
                     </ol>
                 </div>"""
-    print(data)
     return data
 
 @frappe.whitelist()
@@ -4610,7 +6362,6 @@ def print_closure_count_report_so(doc):
                         <li>Client.</li>
                     </ol>
                 </div>"""
-    print(data)
     return data
 
 from openpyxl import Workbook
@@ -5266,3 +7017,239 @@ def get_nationalities():
     return []
 
 
+from openpyxl import Workbook
+from openpyxl.styles import Alignment, Font, PatternFill, Border, Side
+from io import BytesIO
+import frappe
+from frappe.utils import nowdate
+from openpyxl.utils import get_column_letter
+
+@frappe.whitelist()
+def download_closure_status_report_test(posting_date=None):
+    if not posting_date:
+        posting_date = datetime.now().strftime("%d-%m-%Y")
+    filename = f"PR:03 – Closure Status Report (CSR) {posting_date}"
+    build_xlsx_response_clsr(filename, posting_date)
+
+def build_xlsx_response_clsr(filename, posting_date):
+    xlsx_file = make_xlsx_clsr(filename, posting_date)
+    frappe.response['filename'] = filename + '.xlsx'
+    frappe.response['filecontent'] = xlsx_file.getvalue()
+    frappe.response['type'] = 'binary'
+
+def make_xlsx_clsr(sheet_name="PR:03 – Closure Status Report (CSR)", posting_date=None, wb=None):
+    if wb is None:
+        wb = Workbook()
+
+    valid_sheet_name = sheet_name.replace(":", "-")
+    ws = wb.create_sheet(valid_sheet_name, 0)
+    ws.sheet_view.showGridLines = False
+
+    # Styles
+    fill_color = PatternFill(start_color="dce6f1", end_color="dce6f1", fill_type="solid")
+    white_color = PatternFill(start_color="ffffff", end_color="ffffff", fill_type="solid")
+    font = Font(bold=True, color="000000")
+    alignment = Alignment(horizontal="center")
+    alignment_right = Alignment(horizontal="right")
+    alignment_left = Alignment(horizontal="left")
+    title_font = Font(bold=True, size=14)
+    bottom_border = Border(bottom=Side(style="thin", color="dce6f1"))
+    light_ash_fill = PatternFill(start_color="f2f2f2", end_color="f2f2f2", fill_type="solid")
+
+    # Get nationalities
+    nationalities = get_nationalities()
+    total_columns = 2 + (len(nationalities) * 3) + 3
+
+    # Title
+    title_text = f"PR:03 – Closure Status Report (CSR)- {posting_date}"
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=total_columns)
+    ws.cell(row=1, column=1, value=title_text).font = title_font
+    ws.cell(row=1, column=1).alignment = alignment
+
+    ws.row_dimensions[1].height = 25
+    ws.row_dimensions[2].height = 20
+
+    # Column widths
+    col_widths = [50, 30] + [12] * (len(nationalities) * 3 + 3)
+    for i, width in enumerate(col_widths):
+        ws.column_dimensions[get_column_letter(i + 1)].width = width
+
+    # Header rows
+    # ws.merge_cells("A2:B3")
+    ws["A2"].value = "Row Labels"
+    ws["A2"].alignment = alignment
+    ws["A2"].font = font
+
+    col_idx = 3
+    for nat in nationalities:
+        start = get_column_letter(col_idx)
+        end = get_column_letter(col_idx + 2)
+        ws.merge_cells(f"{start}2:{end}2")
+        ws[f"{start}2"].value = nat
+        ws[f"{start}2"].alignment = alignment
+        ws[f"{start}2"].font = font
+        ws[f"{start}3"].value = "Count"
+        ws[f"{get_column_letter(col_idx+1)}3"].value = "Cand."
+        ws[f"{get_column_letter(col_idx+2)}3"].value = "Client."
+        for i in range(3):
+            ws[f"{get_column_letter(col_idx + i)}3"].alignment = alignment
+            ws[f"{get_column_letter(col_idx + i)}3"].font = font
+        col_idx += 3
+
+    # Total header
+    total_headers = ["Count", "Cand.", "Client."]
+    for i, label in enumerate(total_headers):
+        ws[f"{get_column_letter(col_idx+i)}3"].value = label
+        ws[f"{get_column_letter(col_idx+i)}3"].alignment = alignment
+        ws[f"{get_column_letter(col_idx+i)}3"].font = font
+
+    ws.merge_cells(f"{get_column_letter(col_idx)}2:{get_column_letter(col_idx+2)}2")
+    ws[f"{get_column_letter(col_idx)}2"].value = "Total"
+    ws[f"{get_column_letter(col_idx)}2"].alignment = alignment
+    ws[f"{get_column_letter(col_idx)}2"].font = font
+
+    # Data block
+    row_idx = 4
+    for so_created in [0, 1]:
+        # Add header row for so_created group (light ash row)
+        so_header = f"{so_created}"
+        row = [so_header, ""]
+        for nat in nationalities:
+            data = frappe.db.sql("""
+                SELECT COUNT(customer) AS count,
+                       SUM(candidate_payment_company_currenc) AS cand,
+                       SUM(client_payment_company_currency) AS client
+                FROM `tabClosure`
+                WHERE status NOT IN ("Dropped", "Arrived")
+                  AND so_created = %s
+                  AND nationality = %s
+            """, (so_created, nat), as_dict=True)[0]
+            row += [data.count or 0, data.cand or 0, data.client or 0]
+
+        total = frappe.db.sql("""
+            SELECT COUNT(customer) AS count,
+                   SUM(candidate_payment_company_currenc) AS cand,
+                   SUM(client_payment_company_currency) AS client
+            FROM `tabClosure`
+            WHERE status NOT IN ("Dropped", "Arrived")
+              AND so_created = %s
+        """, (so_created,), as_dict=True)[0]
+        row += [total["count"] or 0, total["cand"] or 0, total["client"] or 0]
+
+        # Append the row
+        current_row = ws.max_row
+        ws.append(row)
+        for col in range(1, len(row) + 1):
+            cell = ws.cell(row=current_row + 1, column=col)
+            cell.fill = light_ash_fill
+            cell.font = Font(bold=True)
+        
+        row_idx += 1
+        # Apply light grey fill to the entire row (SO Created summary row)
+
+        # Now group by customer and status
+        customers = frappe.db.sql("""
+            SELECT DISTINCT customer
+            FROM `tabClosure`
+            WHERE so_created = %s AND status NOT IN ("Dropped", "Arrived")
+        """, (so_created,), as_dict=True)
+
+        status_list = frappe.db.sql("""
+            SELECT DISTINCT status
+            FROM `tabClosure`
+            WHERE so_created = %s AND status NOT IN ("Dropped", "Arrived")
+        """, (so_created,), as_dict=True)
+
+        for cust in customers:
+            # Add customer name row (bold and left-aligned)
+            ws.append([cust.customer, ""])
+            current_row = ws.max_row  # Get the row that was just added
+            cell = ws.cell(row=current_row, column=1)
+            cell.font = Font(bold=True)
+            cell.alignment = alignment_left
+            row_idx += 1
+
+            for stat in status_list:
+                # Fetch customer+status+nationality-wise row
+                rows = frappe.db.sql("""
+                    SELECT nationality,
+                           COUNT(*) AS count,
+                           SUM(candidate_payment_company_currenc) AS cand,
+                           SUM(client_payment_company_currency) AS client
+                    FROM `tabClosure`
+                    WHERE so_created = %s
+                      AND status = %s
+                      AND customer = %s
+                    GROUP BY nationality
+                """, (so_created, stat.status, cust.customer), as_dict=True)
+
+                if not rows:
+                    continue
+
+                nat_map = {r.nationality: r for r in rows}
+                row = ["", stat.status]
+                total_count = total_cand = total_client = 0
+
+                for nat in nationalities:
+                    r = nat_map.get(nat, {})
+                    count = r.get("count", "")
+                    cand = r.get("cand", "")
+                    client = r.get("client", "")
+                    row += [count, cand, client]
+                    total_count += count if isinstance(count, (int, float)) else 0
+                    total_cand += cand if isinstance(cand, (int, float)) else 0
+                    total_client += client if isinstance(client, (int, float)) else 0
+
+                row += [total_count, total_cand, total_client]
+                ws.append(row)
+                row_idx += 1
+                for col in range(1, len(row) + 1):
+                    cell = ws.cell(row=row_idx, column=col)
+                    cell.fill = white_color
+
+    # Grand Total
+    row = ["", "Grand Total"]
+    for nat in nationalities:
+        r = frappe.db.sql("""
+            SELECT COUNT(customer) AS count,
+                   SUM(candidate_payment_company_currenc) AS cand,
+                   SUM(client_payment_company_currency) AS client
+            FROM `tabClosure`
+            WHERE status NOT IN ("Dropped", "Arrived")
+              AND nationality = %s
+        """, (nat,), as_dict=True)[0]
+        row += [r.count or 0, r.cand or 0, r.client or 0]
+
+    total = frappe.db.sql("""
+        SELECT COUNT(customer) AS count,
+               SUM(candidate_payment_company_currenc) AS cand,
+               SUM(client_payment_company_currency) AS client
+        FROM `tabClosure`
+        WHERE status NOT IN ("Dropped", "Arrived")
+    """, as_dict=True)[0]
+    row += [total["count"], total["cand"], total["client"]]
+    ws.append(row)
+    row_idx += 1
+    for col in range(1, len(row) + 1):
+        cell = ws.cell(row=row_idx, column=col)
+        cell.fill = fill_color
+        cell.font = font
+        cell.alignment = alignment_right
+
+    # Apply header formatting
+    for row in ws.iter_rows(min_row=2, max_row=3, max_col=total_columns):
+        for cell in row:
+            cell.fill = fill_color
+            cell.font = font
+            cell.alignment = alignment
+    for col in range(1, len(row) + 1):
+        cell = ws.cell(row=row_idx, column=col)
+        cell.fill = light_ash_fill  # use ash color for so_created rows
+        cell.font = font
+        cell.border = bottom_border
+
+
+    xlsx_file = BytesIO()
+    wb.save(xlsx_file)
+    xlsx_file.seek(0)
+    return xlsx_file

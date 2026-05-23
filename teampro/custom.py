@@ -15,9 +15,10 @@ from frappe import throw, _
 from frappe.utils import getdate, today
 today = date.today()
 from frappe.model.document import Document
-import datetime 
+import datetime
 import frappe,erpnext
 from frappe.utils import cint
+from frappe.utils import validate_email_address
 import json
 from frappe.utils import date_diff, add_months,today,add_days,add_years,nowdate,flt
 from frappe.model.mapper import get_mapped_doc
@@ -30,7 +31,7 @@ from openpyxl import Workbook
 import openpyxl
 import xlrd
 import re
-
+from frappe.utils import today
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 from openpyxl.utils import get_column_letter
@@ -50,104 +51,17 @@ from frappe.utils import time_diff
 from frappe.utils.csvutils import read_csv_content
 from erpnext.buying.doctype.purchase_order.purchase_order import update_status
 from frappe.utils.file_manager import get_file
-from jobpro.jobpro.doctype.closure.closure import create_sale_order
 from urllib.parse import urlencode
-
-
-
-# @frappe.whitelist()
-# def skip_dn_so(doc, method):
-# 	skip_delivery_note = 0
-
-# 	for i in doc.items:
-# 		maintain_stock = frappe.get_value("Item", i.item_code, "is_stock_item")
-# 		if maintain_stock:
-# 			skip_delivery_note = 0
-# 		else:
-# 			skip_delivery_note = 1
-
-# 	doc.skip_delivery_note = skip_delivery_note
-# @frappe.whitelist()
-# def skip_dn_so(doc, method):
-# 	skip_delivery_note = 0
-
-# 	for i in doc.items:
-# 		maintain_stock = frappe.get_value("Item", i.item_code, "is_stock_item")
-# 		if not maintain_stock:
-# 			skip_delivery_note = 1
-# 			break
-# 	else:
-# 		skip_delivery_note = 0
-
-# 	doc.skip_delivery_note = skip_delivery_note
-
-
-@frappe.whitelist()
-def create_project_completion_task(doc, method):
-    if doc.service == 'IT-SW':
-        task = frappe.db.exists('Task', {'project': doc.name, "subject": (
-            "like", 'Project Completion Certificate')})
-        if not task:
-            task_id = frappe.new_doc('Task')
-            task_id.update({
-                "subject": "Project Completion Certificate",
-                "customer": doc.customer,
-                "project": doc.name,
-                "service": 'IT-SW',
-                "description":"Project Completion Certificate",
-                "type":"Others",
-                "priority":"Low",
-                "custom_dev_team":"Others",
-                "account_manager": doc.account_manager,
-                "project_manager": doc.project_manager,
-
-            })
-            task_id.save(ignore_permissions=True)
-
-@frappe.whitelist()
-def fetch_start_time(doc,method):
-    min_time = frappe.db.sql("""select min(from_time) as min_time from `tabTimesheet Detail` where parent='%s'""" % doc.name,as_dict=1)[0]
-    if not doc.start_time:
-        frappe.db.set_value("Timesheet",doc.name,"start_time",min_time['min_time'])
-
-@frappe.whitelist()
-def intimate_task_pr(task):
-    taskid = frappe.get_doc('Task', task)
-    message = frappe.render_template(
-        "teampro/templates/intimate_task_pr.html",
-        {"doc": taskid},
-    )
-    frappe.sendmail(
-        recipients=[taskid.account_manager],
-        cc=[taskid.spoc,taskid.custom_allocated_to],
-        message=message,
-        subject=_("Task Pending Review - Intimation"),
-    )
-
-
-@frappe.whitelist()
-def intimate_task_completion(task):
-    taskid = frappe.get_doc('Task', task)
-    message = frappe.render_template(
-        "teampro/templates/intimate_task_completion.html",
-        {"doc": taskid},
-    )
-    frappe.sendmail(
-        recipients=[taskid.account_manager,
-                    taskid.project_manager, taskid.custom_allocated_to],
-        cc=[taskid.spoc],
-        message=message,
-        subject=_("Task Pending Review - Intimation"),
-    )
-
-
-@frappe.whitelist()
-def get_task_name(task):
-    task_name = frappe.db.sql(
-        """select name from `tabTask` where status = 'Open' and name = '%s'  """ % (task), as_dict=1)[0]
-    return task_name['name']
-
-
+from frappe.model.rename_doc import rename_doc
+from datetime import datetime
+from frappe.utils import today
+import os
+import fitz  
+from io import BytesIO
+from PyPDF2 import PdfReader, PdfMerger
+from docx import Document  
+import pandas as pd  
+import pypdf
 
 def remove_private():
     cand = frappe.db.sql(
@@ -213,43 +127,6 @@ def update_lead():
         doc.organization_lead = 1
         doc.save(ignore_permissions=True)
         frappe.db.commit()
-
-
-@frappe.whitelist()
-def add_project_id(project):
-    projects = frappe.db.sql(
-        """select project_id from `tabProject` where project_id is not null order by creation""", as_dict=True)
-    project_id = projects[-1].project_id
-    return 'PRO' + str(int(project_id.strip('PRO'))+1)
-
-
-@frappe.whitelist()
-def update_task_fields(project):
-    tasks = frappe.get_all('Task', {'project': project}, [
-                           'name', 'project_manager', 'account_manager', 'service'])
-    proj = frappe.get_doc('Project', {'name': project})
-    for t in tasks:
-        if t.project_manager != proj.project_manager:
-            frappe.db.set_value(
-                'Task', t.name, 'project_manager', proj.project_manager)
-        if t.account_manager != proj.account_manager:
-            frappe.db.set_value(
-                'Task', t.name, 'account_manager', proj.account_manager)
-        if t.service != proj.service:
-            frappe.db.set_value('Task', t.name, 'service', proj.service)
-
-
-@frappe.whitelist()
-def opportunity_send_mail(self, method):
-    if self.service == 'TGT':
-        link = get_url_to_form("Opportunity", self.name)
-        subject = 'Reg.Opportunity- %s' % self.name
-        content = """Dear Mam<br>Kindly find the new Opportunity.
-        Click on <a href='%s'>View</a> to open the opportunity.<br>Thanks & Regards,<br>ERP
-        """ % link
-        frappe.sendmail(recipients=['saraswathi.p@groupteampro.com'],
-                        subject=subject,
-                        message=content)
 
 
 @frappe.whitelist()
@@ -327,81 +204,105 @@ def lwp_alert():
             lp.save()
             frappe.db.commit()
 
+@frappe.whitelist()
+def update_project_count_cron():
+    project=frappe.get_all("Project",{'status':'Open','service':('in',['REC-D','REC-I'])},['*'])
+    for doc in project:
+        if doc.name:
+            tot_fp=frappe.db.sql("""SELECT sum(fp) as fp from `tabTask` where project=%s """,(doc.name),as_dict=True)[0]
+            tot_psl=frappe.db.sql("""SELECT sum(psl) as psl from `tabTask` where project=%s """,(doc.name),as_dict=True)[0]
+            tot_sl=frappe.db.sql("""SELECT sum(sl) as sl from `tabTask` where project=%s """,(doc.name),as_dict=True)[0]
+            tot_sp=frappe.db.sql("""SELECT sum(sp) as sp from `tabTask` where project=%s """,(doc.name),as_dict=True)[0]
+            tot_lp=frappe.db.sql("""SELECT sum(custom_lp) as lp from `tabTask` where project=%s""",(doc.name),as_dict=True)[0]
+            tot_rp=frappe.db.sql("""SELECT sum(custom_rp) as rp from `tabTask` where project=%s""",(doc.name),as_dict=True)[0]
+            if tot_fp['fp'] is not None:
+                frappe.db.set_value("Project",doc.name,'tfp',tot_fp['fp'])
+            if tot_psl['psl'] is not None:
+                frappe.db.set_value("Project",doc.name,'tpsl',tot_psl['psl'])
+            if tot_sl['sl'] is not None:
+                frappe.db.set_value("Project",doc.name,'tsl',tot_sl['sl'])
+            if tot_sp['sp'] is not None:
+                frappe.db.set_value("Project",doc.name,'tsp',tot_sp['sp'])
+            if tot_lp['lp'] is not None:
+                frappe.db.set_value("Project",doc.name,'custom_t_lp',tot_lp['lp'])
+            if tot_rp['rp'] is not None:
+                frappe.db.set_value("Project",doc.name,'custom_t_rp',tot_rp['rp'])
+@frappe.whitelist()
+def update_proj_positions_count():
+    frappe.enqueue(
+        update_project_count_cron,
+        queue="long",
+        timeout=36000,
+        is_async=True,
+        now=False,
+        job_name='Project Update',
+        enqueue_after_commit=False,
+    )
+    
+@frappe.whitelist()
+def update_proj_positions_count_hourly():
+    frappe.enqueue(
+        update_project_count_cron,
+        queue="long",
+        timeout=36000,
+        is_async=True,
+        now=False,
+        job_name='Project Update',
+        enqueue_after_commit=False,
+    )
 
 @frappe.whitelist()
-def update_task_count(doc, method):
-    if doc.task:
-        submit_spoc = frappe.db.count(
-            'Candidate', {'task': doc.task, 'pending_for': 'Submit(SPOC)'}) or 0
-        submit_client = frappe.db.count(
-            'Candidate', {'task': doc.task, 'pending_for': 'Submitted(Client)'}) or 0
-        psl = frappe.db.count('Candidate', {'task': doc.task, 'pending_for': (
-            'in', ('Client Offered', 'Proposed PSL'))}) or 0
-        shortlisted = frappe.db.count(
-            'Candidate', {'task': doc.task, 'pending_for':'Shortlisted'}) or 0
-        # linedup = frappe.db.count(
-        # 	'Candidate', {'task': doc.task, 'pending_for': 'Linedup'}) or 0
-        linedup = frappe.db.count(
-            'Candidate', {'task': doc.task, 'pending_for':('in', ('Linedup','Linedup Confirmed'))}) or 0
-        interviewed = frappe.db.count(
-            'Candidate', {'task': doc.task, 'pending_for': 'Interviewed'}) or 0
-        result_pending =frappe.db.count('Candidate',{'task':doc.task,'pending_for':'Result Pending'}) or 0
-        # submit_interviewed=(submitted + interviewed)
-        frappe.db.set_value('Task', doc.task, 'psl', psl)
-        frappe.db.set_value('Task', doc.task, 'fp',(submit_spoc + interviewed + submit_client))
-        frappe.db.set_value('Task',doc.task,'custom_rp',result_pending)
-        frappe.db.set_value('Task', doc.task, 'sl', shortlisted)
-        frappe.db.set_value('Task', doc.task, 'custom_lp',linedup)
+def update_task_psotions_count_hourly():
+    frappe.enqueue(
+        update_candidate_tcount,
+        queue="long",
+        timeout=36000,
+        is_async=True,
+        now=False,
+        job_name='Task Update',
+        enqueue_after_commit=False,
+    )
 
-        task_status = frappe.db.get_value('Task', doc.task, 'status')
 
-        if task_status in ('Completed', 'Cancelled'):
-            # if pps == 0:
-            frappe.db.set_value('Task', doc.task, 'sp', 0)
 
-        else:
-            vac = frappe.db.get_value('Task', doc.task, 'vac')
-            prop = frappe.db.get_value('Task', doc.task, 'prop')
-            pps = (vac - psl) * prop - (submit_spoc + submit_client+
-                                        interviewed + shortlisted +linedup)
-            frappe.db.set_value('Task', doc.task, 'sp', pps)
-
+@frappe.whitelist()
 def update_candidate_tcount():
-    tasks = frappe.get_all('Task',{'service':('in',('REC-I', 'REC-D'))})
+    tasks = frappe.get_all('Task',{'service':('in',('REC-I', 'REC-D')),"status":("in", ['Working', 'Open', 'Overdue', 'Pending Review'])},["name"])
     for task in tasks:
         # task = task.name
 #         print(task)
-        shortlisted = frappe.db.count('Candidate',{'task':task.name,'pending_for':'Shortlisted'}) or 0
-        linedup = frappe.db.count('Candidate',{'task':task.name,'pending_for':'Linedup'}) or 0
-        # interviewed = frappe.db.count('Candidate',{'task':task,'pending_for':'Interviewed'}) or 0
-        print(task.name)
-        print(shortlisted)
-        print(linedup)
-        frappe.db.sql(""" update `tabTask` set sl='%s' 
-                    where name = '%s' """%(shortlisted,task.name),as_dict=True)
-        # frappe.db.update('Task',task,'custom_lp',linedup)
-        # frappe.db.update('Task',task,'fp',submitted + interviewed)
-        # frappe.db.update('Task',task,'sl',shortlisted)
+        submit_spoc = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for': 'Submit(SPOC)'}) or 0
+        submit_client = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for': 'Submitted(Client)'}) or 0
+        psl = frappe.db.count('Candidate', {'task': task.name, 'pending_for': (
+            'in', ('Client Offered', 'Proposed PSL'))}) or 0
+        shortlisted = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for':'Shortlisted'}) or 0
+        linedup = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for':('in', ('Linedup','Linedup Confirmed'))}) or 0
+        interviewed = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for': 'Interviewed'}) or 0
+        result_pending =frappe.db.count('Candidate',{'task':task.name,'pending_for':'Result Pending'}) or 0
 
-        # print([psl,submitted,interviewed,shortlisted,linedup])
+        frappe.db.set_value('Task', task.name, 'psl', psl)
+        frappe.db.set_value('Task', task.name, 'fp',(submit_spoc + interviewed + submit_client))
+        frappe.db.set_value('Task',task.name,'custom_rp',result_pending)
+        frappe.db.set_value('Task', task.name, 'sl', shortlisted)
+        frappe.db.set_value('Task', task.name, 'custom_lp',linedup)
 
-        # task_status = frappe.db.get_value('Task',task,'status')
-        # if task_status in ('Completed','Cancelled'):
-        #     frappe.db.update('Task',task,'sp',0)
-        # else:
-        #     vac = frappe.db.get_value('Task',task,'vac')
-        #     prop = frappe.db.get_value('Task',task,'prop')
-        #     pps = (vac - psl) * prop - (submitted + interviewed + shortlisted + linedup)
-        #     frappe.db.update('Task',task,'sp',pps)
+        task_status = frappe.db.get_value('Task', task.name, 'status')
 
+        if task_status in ('Completed', 'Cancelled'):
+            frappe.db.set_value('Task', task.name, 'sp', 0)
+            frappe.db.set_value('Task', task.name, 'custom_lp', 0)
+        else:
+            vac = frappe.db.get_value('Task', task.name, 'vac')
+            prop = frappe.db.get_value('Task', task.name, 'prop')
+            pps = (vac - psl) * prop - (submit_spoc + submit_client+
+                                        interviewed + shortlisted +linedup)
+            frappe.db.set_value('Task', task.name, 'sp', pps)
 
-def test_hook():
-    frappe.log_error(title='hi', message='ok')
-
-
-# def update_submission_date(doc, method):
-# 	frappe.db.set_value("Sales Invoice", doc.name, "posting_date", nowdate())
-# 	frappe.db.commit()
 
 
 @frappe.whitelist()
@@ -524,7 +425,7 @@ def get_item_codes(company_name):
     )
     item_codes.extend(item_defaults)
     return item_codes
-# update route number 
+# update route number
 @frappe.whitelist()
 def update_route_no():
     route = frappe.db.get_all('Customer',{'customer_group':'Retail Shops'},['*'])
@@ -571,32 +472,6 @@ def update_route_no():
 #         dnr.save(ignore_permissions = True)
 #         dnr.submit()
 
-@frappe.whitelist()
-def address(lead):
-    if frappe.db.exists('Address',{'address_title':lead}):
-        ad = frappe.get_doc('Address',{'address_title':lead})
-        ad.address_title = lead
-        ad.address_type = frappe.db.get_value('Lead',{'name':lead},['address_type'])
-        ad.address_line1 = frappe.db.get_value('Lead',{'name':lead},['address_line_1'])
-        ad.address_line2 = frappe.db.get_value('Lead',{'name':lead},['address_line_2'])
-        ad.city = frappe.db.get_value('Lead',{'name':lead},['city_town'])
-        ad.state = frappe.db.get_value('Lead',{'name':lead},['state__province'])
-        ad.country = frappe.db.get_value('Lead',{'name':lead},['country__'])
-        ad.pincode = frappe.db.get_value('Lead',{'name':lead},['postal_code'])
-        ad.save(ignore_permissions=True)
-        frappe.db.commit()
-    else:
-        ad = frappe.new_doc('Address')
-        ad.address_title = lead
-        ad.address_type = frappe.db.get_value('Lead',{'name':lead},['address_type'])
-        ad.address_line1 = frappe.db.get_value('Lead',{'name':lead},['address_line_1'])
-        ad.address_line2 = frappe.db.get_value('Lead',{'name':lead},['address_line_2'])
-        ad.city = frappe.db.get_value('Lead',{'name':lead},['city_town'])
-        ad.state = frappe.db.get_value('Lead',{'name':lead},['state__province'])
-        ad.country = frappe.db.get_value('Lead',{'name':lead},['country__'])
-        ad.pincode = frappe.db.get_value('Lead',{'name':lead},['postal_code'])
-        ad.save(ignore_permissions=True)
-        frappe.db.commit()
 
 
 @frappe.whitelist()
@@ -639,44 +514,7 @@ def contact(lead):
                 })
             cn.save(ignore_permissions=True)
             frappe.db.commit()
-    
-    
-@frappe.whitelist()
-def calc_cut_off_prize(doc,method):
-    for f in doc.items:
-        tfp_item = frappe.db.sql("""select tfp from `tabItem` where name = '%s' """%(f.item_code),as_dict=1)[0]
-        tfp = tfp_item['tfp']
-        if tfp == 1:
-            price_list = frappe.db.sql("""select price_list_rate from `tabItem Price` where price_list = 'Cut Off Price' and item_code = '%s' """%(f.item_code),as_dict=1)
-            for p in price_list:
-                if f.uom == 'Gram':
-                    item_price = (p.price_list_rate / 1000)
-                    item_rate = round((item_price),2)
-                    if f.rate < item_rate:
-                        frappe.throw(_(' %s Rate is lesser than Cut Off Price')%(f.item_name))
-                elif f.uom == 'Kg':
-                    if f.rate < p.price_list_rate:
-                        frappe.throw(_(' %s Rate is lesser than Cut Off Price')%(f.item_name))	
 
-@frappe.whitelist()
-def calc_cost_prize(doc,method):
-    if doc.workflow_state!="Approved":
-        for f in doc.items:
-            tfp_item = frappe.db.sql("""select tfp from `tabItem` where name = '%s' """%(f.item_code),as_dict=1)[0]
-            tfp = tfp_item['tfp']
-            if tfp == 1:
-                price_list = frappe.db.sql("""select price_list_rate from `tabItem Price` where price_list = 'Cost Price TFP' and item_code = '%s' """%(f.item_code),as_dict=1)
-                for p in price_list:
-                    if f.uom == 'Gram':
-                        item_price = (p.price_list_rate / 1000)
-                        item_rate = round((item_price),2)
-                        if f.rate > item_rate:
-                            frappe.msgprint(_(' %s Rate is Greater than Cost Price')%(f.item_name))
-                    elif f.uom == 'Kg':
-                        if f.rate > p.price_list_rate:
-                            frappe.msgprint(_(' %s Rate is Greater than Cost Price')%(f.item_name))	
-
-    
 @frappe.whitelist()
 def file_list(candidate):
     url_ls =[]
@@ -818,7 +656,7 @@ def child_table_calc(doc,method):
     # timesheet = frappe.db.sql(""" select `tabTimesheet Detail`.task,`tabTimesheet Detail`.subject,`tabTimesheet Detail`.project,sum(`tabTimesheet Detail`.hours) as hours, GROUP_CONCAT(`tabTimesheet Detail`.description separator ', ') as description from `tabTimesheet`
     # left join `tabTimesheet Detail` on `tabTimesheet`.name = `tabTimesheet Detail`.parent where `tabTimesheet`.name = '%s' group by `tabTimesheet Detail`.task"""%(timesheet),as_dict = 1)
 #     return timesheet
-    
+
 # @frappe.whitelist()
 # def return_detailed_ts(timesheet):
 #     task = frappe.db.sql(""" select `tabTimesheet Detail`.task,`tabTimesheet Detail`.subject,`tabTimesheet Detail`.project,sum(`tabTimesheet Detail`.hours) as hours, GROUP_CONCAT(`tabTimesheet Detail`.description separator ', ') as description from `tabTimesheet`
@@ -829,102 +667,6 @@ def child_table_calc(doc,method):
 #     issue = frappe.db.sql(""" select `tabTimesheet Detail`.custom_issue,`tabTimesheet Detail`.custom_subject_issue,`tabTimesheet Detail`.project,sum(`tabTimesheet Detail`.hours) as hours from `tabTimesheet`
 #     left join `tabTimesheet Detail` on `tabTimesheet`.name = `tabTimesheet Detail`.parent where tabTimesheet Detail`.custom_issue is not null and `tabTimesheet`.name = '%s' group by `tabTimesheet Detail`.custom_issue"""%(timesheet),as_dict = 1)
 #     return task,meeting,issue
-@frappe.whitelist()
-def return_detailed_ts(timesheet):
-    # Parameterized query for tasks
-    tdoc=frappe.get_doc('Timesheet',timesheet)
-    alloc=frappe.db.get_value('Employee',{'name':tdoc.employee},['user_id'])
-    task_query ="""
-        SELECT `tabTimesheet Detail`.task,
-               `tabTimesheet Detail`.subject,
-               `tabTimesheet Detail`.project,
-               SUM(`tabTimesheet Detail`.hours) AS hours,
-               `tabTimesheet Detail`.task_status,
-               GROUP_CONCAT(`tabTimesheet Detail`.description SEPARATOR ', ') AS description
-        FROM `tabTimesheet`
-        LEFT JOIN `tabTimesheet Detail` 
-        ON `tabTimesheet`.name = `tabTimesheet Detail`.parent
-        WHERE `tabTimesheet Detail`.task IS NOT NULL 
-          AND `tabTimesheet`.name = %s
-        GROUP BY `tabTimesheet Detail`.task
-    """
-    task = frappe.db.sql(task_query, (timesheet,), as_dict=True)
-    task_list = [t["task"] for t in task]  
-
-    emp = frappe.db.get_value('Timesheet', {'name': timesheet}, 'employee')
-    start_date = frappe.db.get_value('Timesheet', {'name': timesheet}, 'start_date')
-    alloc = frappe.db.get_value('Employee', {'employee': emp}, 'user_id')
-
-    additional_task_query = """
-        SELECT 
-            task.name,
-            task.subject,
-            task.project,
-            task.status
-        FROM `tabTask` task
-        WHERE task.custom_allocated_to = %s
-        AND task.custom_production_date = %s
-        AND task.name NOT IN (
-            SELECT `tabTimesheet Detail`.task
-            FROM `tabTimesheet`
-            LEFT JOIN `tabTimesheet Detail`
-            ON `tabTimesheet`.name = `tabTimesheet Detail`.parent
-            WHERE `tabTimesheet Detail`.task IS NOT NULL
-                AND `tabTimesheet`.name = %s
-        )
-    """
-    additional_tasks = frappe.db.sql(additional_task_query, (alloc, start_date, timesheet), as_dict=True)
-
-    for t in additional_tasks:
-        tstatus=frappe.db.get_all('Task',{'name':t['name']},['status'])
-        task.append({
-            'task': t['name'],
-            'subject': t.get('subject', ''),
-            'project': t.get('project', ''),
-            'hours': 0,
-            'task_status': t.get('status', ''),
-            'description': ''
-        })
-    # Parameterized query for meetings
-    meeting_query = """
-        SELECT `tabTimesheet Detail`.custom_meeting,
-               `tabTimesheet Detail`.custom_subject_meeting,
-               `tabTimesheet Detail`.project,
-               SUM(`tabTimesheet Detail`.hours) AS hours
-        FROM `tabTimesheet`
-        LEFT JOIN `tabTimesheet Detail`
-        ON `tabTimesheet`.name = `tabTimesheet Detail`.parent
-        WHERE `tabTimesheet Detail`.custom_meeting IS NOT NULL 
-          AND `tabTimesheet`.name = %s
-        GROUP BY `tabTimesheet Detail`.custom_meeting
-    """
-    meeting = frappe.db.sql(meeting_query, (timesheet,), as_dict=True)
-    
-    # Parameterized query for issues
-    issue_query = """
-        SELECT `tabTimesheet Detail`.custom_issue,
-               `tabTimesheet Detail`.custom_subject_issue,
-               `tabTimesheet Detail`.project,
-               SUM(`tabTimesheet Detail`.hours) AS hours
-        FROM `tabTimesheet`
-        LEFT JOIN `tabTimesheet Detail`
-        ON `tabTimesheet`.name = `tabTimesheet Detail`.parent
-        WHERE `tabTimesheet Detail`.custom_issue IS NOT NULL 
-          AND `tabTimesheet`.name = %s
-        GROUP BY `tabTimesheet Detail`.custom_issue
-    """
-    issue = frappe.db.sql(issue_query, (timesheet,), as_dict=True)
-    # task_list = [t["task"] for t in task]
-    # emp=frappe.db.get_value('Timesheet',{'name':timesheet},['employee'])
-    # sd=frappe.db.get_value('Timesheet',{'name':timesheet},['start_date'])
-    # alloc=frappe.db.get_value('Employee',{'employee':emp},['user_id'])
-    # tasks=frappe.db.get_all('Task',{'custom_allocated_to':alloc,'custom_production_date':sd},['name'])
-    # for t in tasks:
-    #     if t.name not in task_list:
-            
-    
-
-    return task, meeting, issue
 
 
 
@@ -945,7 +687,7 @@ def make_xlsx(filename, sheet_name=None, column_widths=None):
     ws = wb.active
     ws.title = sheet_name or 'Sheet1'
     column_widths = column_widths or []
-    
+
     # Fetching document data
     doc = frappe.get_doc("Timesheet", filename)
     if not doc:
@@ -953,10 +695,10 @@ def make_xlsx(filename, sheet_name=None, column_widths=None):
 
     # Fetching the Purchase Order short code
     cb = frappe.db.get_value("Purchase Order", doc.name, 'short_code')
-    
+
     # Adding headers
     ws.append(["Task", "Subject", "Project Name", "CB", "Status", "TU", "Description"])
-    
+
     # Adding data rows
     for i in doc.timesheet_summary:
         ws.append([i.task, i.subject, i.project, cb, i.status, round(i.tu, 2), i.description])
@@ -970,36 +712,36 @@ def make_xlsx(filename, sheet_name=None, column_widths=None):
 def build_xlsx_response(filename):
     return make_xlsx(filename)
 
-import bleach
-from frappe.utils import strip
-@frappe.whitelist()
-def make_minutes_for_mom_points():
-    args = frappe.local.form_dict
-    filename = args.name
-    test = build_xlsx_response_mom(filename)
+# import bleach
+# from frappe.utils import strip
+# @frappe.whitelist()
+# def make_minutes_for_mom_points():
+#     args = frappe.local.form_dict
+#     filename = args.name
+#     test = build_xlsx_response_mom(filename)
 
-def make_xlsx_mom(data, sheet_name=None, wb=None, column_widths=None):
-    args = frappe.local.form_dict
-    column_widths = column_widths or []
-    if wb is None:
-        wb = openpyxl.Workbook()
-    ws = wb.create_sheet(sheet_name, 0)
-    doc = frappe.get_doc("Meeting",args.name)
-    if doc:
-        ws.append(["Description","Action","Task"])
-        for i in doc.minutes:
-            description_without_html = bleach.clean(i.description, tags=[], strip=True)
-            ws.append([description_without_html, i.custom_action, i.custom_id])
-            # ws.append([i.description,i.custom_action,i.custom_id])
-    xlsx_file = BytesIO()
-    wb.save(xlsx_file)
-    return xlsx_file
+# def make_xlsx_mom(data, sheet_name=None, wb=None, column_widths=None):
+#     args = frappe.local.form_dict
+#     column_widths = column_widths or []
+#     if wb is None:
+#         wb = openpyxl.Workbook()
+#     ws = wb.create_sheet(sheet_name, 0)
+#     doc = frappe.get_doc("Meeting",args.name)
+#     if doc:
+#         ws.append(["Description","Action","Task"])
+#         for i in doc.minutes:
+#             description_without_html = bleach.clean(i.description, tags=[], strip=True)
+#             ws.append([description_without_html, i.custom_action, i.custom_id])
+#             # ws.append([i.description,i.custom_action,i.custom_id])
+#     xlsx_file = BytesIO()
+#     wb.save(xlsx_file)
+#     return xlsx_file
 
-def build_xlsx_response_mom(filename):
-    xlsx_file = make_xlsx_mom(filename)
-    frappe.response['filename'] = filename + '.xlsx'
-    frappe.response['filecontent'] = xlsx_file.getvalue()
-    frappe.response['type'] = 'binary' 	
+# def build_xlsx_response_mom(filename):
+#     xlsx_file = make_xlsx_mom(filename)
+#     frappe.response['filename'] = filename + '.xlsx'
+#     frappe.response['filecontent'] = xlsx_file.getvalue()
+#     frappe.response['type'] = 'binary'
 
 @frappe.whitelist()
 def get_all_quot(doc,method):
@@ -1013,7 +755,7 @@ def get_all_quot(doc,method):
                 if i.item_code == j.item_code:
                     j.amount = i.amount
 
-            
+
 @frappe.whitelist()
 def get_all_so(name):
     so = frappe.get_doc("Sales Order",name)
@@ -1036,16 +778,7 @@ def update_pi():
    for u in uni:
        doc=frappe.delete_doc('University',u.name)
        doc.delete()
-@frappe.whitelist()
-def update_custodian(doc,method):
-    if doc.status == "Left":
-        asset = frappe.get_all("Asset",{"custodian":doc.name},["name"])
-        for i in asset:
-            cust = frappe.get_doc("Asset",i.name)
-            cust.custodian = ''
-            cust.custodian_name = ''
-            cust.department = ''
-            cust.save(ignore_permissions = True)
+
 
 @frappe.whitelist()
 def create_food_count():
@@ -1062,7 +795,7 @@ def create_food_count():
                 doc.food_type="Veg"
                 doc.date = nowdate()
                 doc.save(ignore_permissions=True)
-    
+
 @frappe.whitelist()
 def delete_document(name,checks_list):
     checks_list = json.loads(checks_list)
@@ -1072,13 +805,6 @@ def delete_document(name,checks_list):
         doc = frappe.get_doc(i["checks"],i["check_id"])
         doc.delete()
 
-
-@frappe.whitelist()
-def update_batch_status(doc,method):
-    if doc.get("batch"):
-        batch_doc = frappe.get_doc("Batch", doc.get("batch"))
-        batch_doc.batch_status = "Proposed SO"
-        batch_doc.save()
 
 @frappe.whitelist()
 def sales_order_batch(doc, method):
@@ -1098,18 +824,6 @@ def get_po_qty(item,company):
         new_po['d_qty'] = 0
     ppoc_total = new_po['qty'] - new_po['d_qty']
     return ppoc_total
-
-
-@frappe.whitelist()
-def get_salesorder_qty(item,company):
-    new_so = frappe.db.sql("""select sum(`tabSales Order Item`.qty *`tabSales Order Item`.conversion_factor) as qty,sum(`tabSales Order Item`.delivered_qty *`tabSales Order Item`.conversion_factor) as d_qty from `tabSales Order` left join `tabSales Order Item` on `tabSales Order`.name = `tabSales Order Item`.parent where `tabSales Order Item`.item_code = '%s' and `tabSales Order`.docstatus = 1 and `tabSales Order`.company = '%s' and status != 'Closed' """ % (item,company), as_dict=True)[0]
-    if not new_so['qty']:
-        new_so['qty'] = 0
-    if not new_so['d_qty']:
-        new_so['d_qty'] = 0
-    frappe.errprint([new_so['qty'], new_so['d_qty']])
-    del_total = new_so['qty'] - new_so['d_qty']
-    return del_total
 
 
 @frappe.whitelist()
@@ -1133,7 +847,7 @@ def set_values(name):
     pending_bill = row- billed
     return row,billed,pending_bill
 
-    
+
 @frappe.whitelist()
 def create_so(doctype,batch,case_id):
     batch=frappe.get_doc("Batch",batch)
@@ -1172,14 +886,14 @@ def create_so(doctype,batch,case_id):
     so.customer = batch.customer
     so.service = "BCS"
     so.order_type = "Sales"
-    so.delivery_date = today()  
-    so.transaction_date = today() 
+    so.delivery_date = today()
+    so.transaction_date = today()
     so.po_no = batch.customers_purchase_order
     # so.delivery_manager = batch.delivery_manager
     so.posa_notes:case.case_report
     so.tc_name="Account Details - THIS"
     rate = frappe.db.get_value("Check Package", {"name":batch.check_package},["total_sp"])
-    
+
     so.append('items', {
         'item_code': case_id,
         'item_name':case.case_name,
@@ -1194,7 +908,7 @@ def create_so(doctype,batch,case_id):
         frappe.set_value("Case",case_id,"billing_status","Billed")
     if case_status=="Generate Report with insuff":
         frappe.set_value("Case",case_id,"billing_status","Partially Billed")
-    
+
     so.insert()
     so.save(ignore_permissions=True)
 
@@ -1214,34 +928,9 @@ def on_task_save(doc, method):
                 issue.status = "Closed"
                 issue.save()
 
-        
 
-@frappe.whitelist()
-def issue_status(doc,method):
-    if doc.service == 'IT-SW':
-        if doc.issue is not None:
-            if doc.status in ["Open","Working"]:
-                issue = frappe.get_doc("Issue", doc.issue)
-                if issue and issue.status != "Replied":
-                    issue.status = "Replied"
-                    issue.task = doc.name
-                    issue.assigned_to = doc.completed_by
-                    issue.project = doc.project
-                    issue.save()
-            if doc.status == "Pending Review":
-                issue = frappe.get_doc("Issue", doc.issue)
-                if issue and issue.status != "Resolved":
-                    issue.status ="Resolved"
-                    issue.assigned_to = doc.completed_by
-                    issue.project = doc.project
-                    issue.save()
-            if doc.status == "Completed":
-                issue = frappe.get_doc("Issue", doc.issue)
-                if issue and issue.status != "Closed":
-                    issue.status ="Closed"
-                    issue.assigned_to = doc.completed_by
-                    issue.project = doc.project
-                    issue.save()
+
+
 
 @frappe.whitelist()
 def update_cb(doc,method):
@@ -1252,7 +941,7 @@ def update_cb(doc,method):
 @frappe.whitelist()
 def return_val():
     total_expected_time= frappe.db.sql(""" select sum(expected_time) as et from `tabTask` where project = '%s' """%("GOTRADEPRO"),as_dict=1)
-    
+
 
 @frappe.whitelist()
 def update_actual_tat(date1,date2,date3,date4,pac_tat):
@@ -1285,7 +974,7 @@ def case_drop_status(name,remark):
     frappe.db.set_value("Case",name,"case_status","Drop")
     frappe.db.set_value("Case",name,"reason_of_drop",remark)
     frappe.db.set_value("Case",name,"dropped",1)
-    frappe.db.set_value("Case",name,"case_report","Drop")  
+    frappe.db.set_value("Case",name,"case_report","Drop")
 
 @frappe.whitelist()
 def drop_status(name,date,remark):
@@ -1472,33 +1161,14 @@ def update_status_issue():
                 # if i.status == "Completed":
                 # 	frappe.db.set_value("Issue",i.issue,"status","Closed")
 
-@frappe.whitelist()
-def meeting_mom_mail(meet):
-    data = ''
-    meet_doc = frappe.get_doc("Meeting",meet)
-    data += 'Dear Sir,<br><br>Kindly Find the below List of MOM points against the meeting happened at %s' % formatdate(meet_doc.date)
-    for i in meet_doc.minutes:
-        data += '<tr><td>%s . %s </td></tr>' % (i.idx,i.description)
-    for j in meet_doc.attendees:
-        frappe.sendmail(
-            recipients=[j.attendee],
-            message=data,
-            subject=_("Minutes of Meeting -  %s on %s " %(meet_doc.title,formatdate(meet_doc.date))),
-        )
-    for j in meet_doc.persons_to_be_informed:
-        frappe.sendmail(
-            recipients=[j.attendee],
-            message=data,
-            subject=_("Minutes of Meeting -  %s on %s " %(meet_doc.title,formatdate(meet_doc.date))),
-        )
 
 @frappe.whitelist()
 def update_insuff_days(date1,date2):
     date=(date_diff(date2,date1))
     sql_query = f"""
-        SELECT COUNT(*) 
-        FROM `tabHoliday` 
-        WHERE parent = 'TEAMPRO 2023 - Checkpro' 
+        SELECT COUNT(*)
+        FROM `tabHoliday`
+        WHERE parent = 'TEAMPRO 2023 - Checkpro'
         AND holiday_date BETWEEN '{date1}' AND '{date2}'
     """
     count = frappe.db.sql(sql_query, as_list=True)[0][0]
@@ -1507,43 +1177,17 @@ def update_insuff_days(date1,date2):
 
 @frappe.whitelist()
 def holidays(date1, date2):
-    
+
     sql_query = f"""
-        SELECT COUNT(*) 
-        FROM `tabHoliday` 
-        WHERE parent = 'TEAMPRO 2023 - Checkpro' 
+        SELECT COUNT(*)
+        FROM `tabHoliday`
+        WHERE parent = 'TEAMPRO 2023 - Checkpro'
         AND holiday_date BETWEEN '{date1}' AND '{date2}'
     """
 
     count = frappe.db.sql(sql_query, as_list=True)[0][0]
 
     return count
-# @frappe.whitelist()
-# def holidays(date1, date2,name):
-#     doc=frappe.get_doc("Case",name)
-#     if doc.date_of_initiating:
-#         from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
-#         holiday_list_name = 'TEAMPRO 2023 - Checkpro'
-#         start_date = doc.date_of_initiating
-#         working_days = int(frappe.db.get_value("Check Package",{'name':doc.check_package},['package_tat']))
-#         current_date = start_date
-#         holiday = []
-#         while working_days > 0:
-#             if not is_holiday(holiday_list_name, current_date):
-#                 holiday.append(current_date)
-#                 working_days -= 1
-#             current_date = add_days(current_date, 1)
-#         sql_query = f"""
-#             SELECT COUNT(*) 
-#             FROM `tabHoliday` 
-#             WHERE parent = 'TEAMPRO 2023 - Checkpro' 
-#             AND holiday_date BETWEEN '{date1}' AND '{date2}'
-#         """
-
-#         count = frappe.db.sql(sql_query, as_list=True)[0][0]
-
-#         # return count
-#         return holiday[-1],count
 
 @frappe.whitelist()
 def tat_calculation(date1,date2,date3,date4,pac_tat):
@@ -1584,7 +1228,7 @@ def update_case_status(case):
     # insuff=""
     insuff=[]
     for i in list:
-        doc=frappe.get_all(i,{"case_id":case},["name","workflow_state","detailsof_insufficiency","check_type"])        
+        doc=frappe.get_all(i,{"case_id":case},["name","workflow_state","detailsof_insufficiency","check_type"])
         for j in doc:
             case_sts.append(j.workflow_state)
             if j.workflow_state =="Insufficient Data":
@@ -1716,46 +1360,6 @@ def case_status_update_from_csv(filename):
 
     print(i)
 
-@frappe.whitelist()
-def inactive_employee(doc,method):
-    if doc.status=="Active":
-        if doc.relieving_date:
-            throw(_("Please remove the relieving date for the Active Employee."))
-
-@frappe.whitelist()
-def ops_mail(project):
-    data = ''
-    project_doc = frappe.get_doc("Project",project)
-    data += 'New Project %s has been created  and Pending for Approval'%(project_doc.name)
-    frappe.sendmail(
-        recipients=['dineshbabu.k@groupteampro.com','sangeetha.s@groupteampro.com','sangeetha.a@groupteampro.com'],
-        # recipients=["gifty.p@groupteampro.com"],
-        message=data,
-        subject=_("New Project Created -  %s" %(project_doc.project_name)),
-    )
-
-@frappe.whitelist()
-def rns_mail(project):
-    data = ''
-    project_doc = frappe.get_doc("Project",project)
-    data += 'Project %s has been returned to R&S'%(project_doc.name)
-    created_by=project_doc.owner
-    frappe.sendmail(
-        recipients=created_by,
-        message=data,
-        subject=_("Project Returned -  %s" %(project_doc.project_name)),
-    )
-
-@frappe.whitelist()
-def confirm_mail(project):
-    data = ''
-    project_doc = frappe.get_doc("Project",project)
-    data += 'Project %s has been confirmed to OPS'%(project_doc.name)
-    frappe.sendmail(
-        recipients=['dineshbabu.k@groupteampro.com',"sangeetha.s@groupteampro.com","sangeetha.a@groupteampro.com","sams@groupteampro.com","dm@groupteampro.com"],
-        message=data,
-        subject=_("Project Confirmed -  %s" %(project_doc.project_name)),
-    )
 
 # @frappe.whitelist()
 # def update_lead():
@@ -1776,9 +1380,9 @@ def update_batch_age():
             if i.expected_start_date:
                 date=(date_diff(nowdate(),i.expected_start_date))+1
                 sql_query = f"""
-                    SELECT COUNT(*) 
-                    FROM `tabHoliday` 
-                    WHERE parent = 'TEAMPRO 2023 - Checkpro' 
+                    SELECT COUNT(*)
+                    FROM `tabHoliday`
+                    WHERE parent = 'TEAMPRO 2023 - Checkpro'
                     AND holiday_date BETWEEN '{i.expected_start_date}' AND '{nowdate()}'
                 """
                 count = frappe.db.sql(sql_query, as_list=True)[0][0]
@@ -1818,13 +1422,13 @@ def update_case_age():
     tat_sts=''
     doc=frappe.db.get_list("Case",["name","date_of_initiating","case_status",'insufficiency_days','package_tat'],order_by='date_of_initiating ASC')
     for i in doc:
-        if i.case_status not in ("Case Completed","Drop","Generate Report with Insuff",'',"Drop"):
+        if i.case_status not in ("Case Completed","Drop","Generate Report with Insuff",'',"Drop","Billed","To be Billed","SO Created"):
             if i.date_of_initiating:
                 date=(date_diff(nowdate(),i.date_of_initiating))+1
                 sql_query = f"""
-                    SELECT COUNT(*) 
-                    FROM `tabHoliday` 
-                    WHERE parent = 'TEAMPRO 2023 - Checkpro' 
+                    SELECT COUNT(*)
+                    FROM `tabHoliday`
+                    WHERE parent = 'TEAMPRO 2023 - Checkpro'
                     AND holiday_date BETWEEN '{i.date_of_initiating}' AND '{nowdate()}'
                 """
                 count = frappe.db.sql(sql_query, as_list=True)[0][0]
@@ -1839,7 +1443,7 @@ def update_case_age():
                 elif age >10:
                     cl = '#EC864B'
                 elif age >5:
-                    
+
                     cl = '#449CF0'
                 else:
                     cl = '#000000'
@@ -1866,7 +1470,7 @@ def update_case_age():
 @frappe.whitelist()
 def update_check_age():
     list = ["Education Checks","Employment","Address Check","Criminal","Reference Check","Court","Identity Aadhar","Family","Social Media"]
-    
+
     age=0
     tat_var=0
     tat_mon=''
@@ -1878,9 +1482,9 @@ def update_check_age():
                 if j.check_creation_date:
                     date=(date_diff(nowdate(),j.check_creation_date))+1
                     sql_query = f"""
-                        SELECT COUNT(*) 
-                        FROM `tabHoliday` 
-                        WHERE parent = 'TEAMPRO 2023 - Checkpro' 
+                        SELECT COUNT(*)
+                        FROM `tabHoliday`
+                        WHERE parent = 'TEAMPRO 2023 - Checkpro'
                         AND holiday_date BETWEEN '{j.check_creation_date}' AND '{nowdate()}'
                     """
                     count = frappe.db.sql(sql_query, as_list=True)[0][0]
@@ -1935,11 +1539,6 @@ def get_workflow_state(doctype):
     return states
 
 @frappe.whitelist()
-def update_lead_status(doc,method):
-    if doc.status=="Lost":
-        frappe.db.set_value("Lead", doc.party_name, {"disabled": 0, "docstatus": 0})
-
-@frappe.whitelist()
 def update_att():
     att = frappe.db.sql("""update `tabAttendance` set docstatus = 0  where attendance_date between "2023-12-01" and "2023-12-31" """)
     print(att)
@@ -1961,60 +1560,21 @@ def update_mandatory(doctype,status):
 
     return key_value_pairs_list
 
-@frappe.whitelist()
-def update_meeting_id(meet):
-    meeting=frappe.get_doc("Meeting",meet)
-    for i in meeting.minutes:
-        if i.custom_action == "Task":
-            frappe.db.set_value("Task",i.custom_id,'custom_meeting_id',meet)
-        elif i.custom_action == "To Do":
-            frappe.db.set_value("ToDo",i.custom_id,'custom_meeting_id',meet)
-
-from frappe import _
-
-@frappe.whitelist()
-def meeting_mail(meet):
-    meet_doc = frappe.get_doc("Meeting",meet)
-    data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-    data += '''
-<tr style="background-color: #063970;">
-    <td width="5%" style="text-align:center;">S.No</td>
-    <td width="75%" style="text-align:center;">Description</td>
-    <td width="10%" style="text-align:center;">Action</td>
-    <td width="10%" style="text-align:center;">ID</td>
-</tr>
-'''
-
-    ind = 1
-    recipients = []
-    cc = []
-    for i in meet_doc.minutes:
-        data += '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>'%(ind, i.description, i.custom_action or '', i.custom_id)
-        ind += 1
-    data += '</table>'
-    for j in meet_doc.attendees:
-        if j.attended == '1':
-            recipients.append(j.attendee)
-        else:
-            cc.append(j.attendee)
-    frappe.sendmail(
-        recipients=recipients,
-        cc=cc,
-        subject=_("Minutes of Meeting -  %s on %s " % (meet_doc.title, formatdate(meet_doc.date))),
-        message="""
-            Dear Sir/Madam,<br>Kindly Find the below List of MOM points against the meeting happened at {} {}<br>
-            Thanks & Regards,<br>TEAM ERP<br>"This email has been automatically generated. Please do not reply"
-            """.format(formatdate(meet_doc.date), data)
-    )
-    return "Ok"
-
+# @frappe.whitelist()
+# def update_meeting_id(meet):
+#     meeting=frappe.get_doc("Meeting",meet)
+#     for i in meeting.minutes:
+#         if i.custom_action == "Task" and i.custom_id:
+#             frappe.db.set_value("Task",i.custom_id,'custom_meeting_id',meet)
+#         elif i.custom_action == "To Do" and i.custom_id:
+#             frappe.db.set_value("ToDo",i.custom_id,'custom_meeting_id',meet)
 
 @frappe.whitelist()
 def get_task_details(name):
     data = ''
     data += "<table width=100% style='border:1px solid black' ><tr><td colspan=6 style='text-align:center;background-color:#009dd1;font-size:17px;border:1px solid black'><b>Task Details</b></td></tr>"
     data += "<tr style='font-size:17px;border:1px solid black'><td style='border:1px solid black'><b>Position</b></td><td style='border:1px solid black'><b># Vac</b></td><td style='border:1px solid black'><b># SP</b></td><td style='border:1px solid black'><b># FP</b></td><td style='border:1px solid black'><b>#SL</b></td><td style='border:1px solid black'><b>#PSL</b></td>"
-    
+
     tasks = frappe.get_all("Task",{"project":name},['*'])
     for i in tasks:
         data += "<tr style='font-size:17px'><td style='border:1px solid black'>%s - %s</td><td style='border:1px solid black'>%s</td><td style='border:1px solid black'>%s</td><td style='border:1px solid black'>%s</td><td style='border:1px solid black'>%s</td><td style='border:1px solid black'>%s</td></tr>"%(i.name,i.subject,i.vac,i.sp,i.fp,i.sl,i.psl)
@@ -2034,16 +1594,16 @@ def get_task_details(name):
 
 
 @frappe.whitelist(allow_guest=True)
-def val_pass(passcode,email):	
+def val_pass(passcode,email):
     if frappe.db.exists("BG Entry Passcode",{'passcode':passcode,'email_id':email}):
         return "Yes"
     else:
         return "No"
-    
+
 @frappe.whitelist(allow_guest=True)
 def submission_mail(email,name):
     frappe.sendmail(
-        recipients=['anil.p@groupteampro.com'],
+        recipients=['annie.m@groupteampro.com'],
         subject=_("Proceed BGV"),
         message="""
             Dear Sir/madam,<br>Candidate %s with the Email ID %s has been applied for BGV. Kindly initate the BGV<br><br><br>
@@ -2054,7 +1614,7 @@ def submission_mail(email,name):
 @frappe.whitelist(allow_guest=True)
 def submission_mail2(email,name):
     frappe.sendmail(
-        recipients=['anil.p@groupteampro.com'],
+        recipients=['annie.m@groupteampro.com'],
         subject=_("Applied for BGV"),
         message="""
             Dear ,<br>Candidate %s with the Email ID %s has submitted the documents successfully. BGV initiated for the Candidate<br><br>
@@ -2063,25 +1623,13 @@ def submission_mail2(email,name):
         )
 
 @frappe.whitelist()
-def update_pi_workflow(doc,method):
-    pi=frappe.get_all("Purchase Invoice",{'sales_order':doc.name},['workflow_state','name'])
-    for i in pi:
-        frappe.db.sql("update `tabPurchase Invoice` set workflow_state='Cancelled' where name=%s",(i.name))
-
-@frappe.whitelist()
-def check_supplier(supplier):
-    supp=frappe.get_doc("Supplier",supplier)
-    if supp.custom_is_lead == 1:
-        return "OK"
-    
-@frappe.whitelist()
 def update_workflow_state(doc,method):
     if doc.workflow_state:
         frappe.db.sql("""update `tabPurchase Invoice` set custom_status = %s where name = %s""",(doc.workflow_state,doc.name))
 
 @frappe.whitelist()
 def update_bg_entry():
-    
+
     frappe.db.sql("""update `tabEmployment` set entry_allocation_date = '2024-03-21' where name = 'Employment-2500'""")
 
 
@@ -2119,14 +1667,14 @@ def make_xlsx_closure(filename, sheet_name=None, wb=None, column_widths=None):
     action = add_days(nowdate(), 1)
     if wb is None:
         wb = openpyxl.Workbook()
-    ws = wb.create_sheet(sheet_name or filename, 0)  
+    ws = wb.create_sheet(sheet_name or filename, 0)
     default_column_widths = [15, 25, 25, 15, 25, 20]
-    column_widths = column_widths or default_column_widths    
+    column_widths = column_widths or default_column_widths
     for i, width in enumerate(column_widths, start=1):
-        ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = width  
+        ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = width
     header_fill = PatternFill(start_color="87CEFA", end_color="87CEFA", fill_type="solid")
     ws.append(["ID", "Candidate Name", "Customer", "Status", "Next Action", "Remark", "Next Action Date"])
-    for cell in ws[1]: 
+    for cell in ws[1]:
         cell.fill = header_fill
     closures = frappe.get_all("Closure", {"custom_next_follow_up_on":action,'status':["Not In", ['Onboarded','Dropped']]}, ['*'])
     if closures:
@@ -2134,7 +1682,7 @@ def make_xlsx_closure(filename, sheet_name=None, wb=None, column_widths=None):
             ws.append([closure.name, closure.given_name, closure.customer, closure.status, closure.std_remarks, closure.remark, closure.custom_next_follow_up_on])
     xlsx_file = BytesIO()
     wb.save(xlsx_file)
-    xlsx_file.seek(0)    
+    xlsx_file.seek(0)
     return xlsx_file
 
 def closure_next_action():
@@ -2153,7 +1701,7 @@ def closure_next_action():
     table += '<tr style="background-color: #87CEFA"><td style="width: 45%; font-weight: bold; text-align: center;">Customer</td><td style="width: 30%; font-weight: bold; text-align: center;">Status</td><td style="width: 25%; font-weight: bold; text-align: center;">Count</td></tr>'
     for customer, statuses in customer_status_count.items():
         total_counts = sum(statuses.values())
-        table += '<tr><td><b>%s</b></td><td></td><td><b>%s</b></td></tr>' % (customer, total_counts)        
+        table += '<tr><td><b>%s</b></td><td></td><td><b>%s</b></td></tr>' % (customer, total_counts)
         for status, count in statuses.items():
             table += '<tr><td></td><td>%s</td><td>%s</td></tr>' % (status, count)
     table += '</table>'
@@ -2233,11 +1781,11 @@ def make_xlsx_project(filename, sheet_name=None, wb=None, column_widths=None):
         if not pname:
             continue
         task_totals = {'vac':0,'sp':0,'fp':0,'sl':0,'psl':0,'custom_lp':0}
-        project_data = []      
+        project_data = []
         for p in pname:
             pdata = []
-            print(p.project_name)        
-            taskid = frappe.get_all("Task", {"status": ("in",('Working', 'Open', 'Overdue', 'Pending Review')), "project": p.name}, ['*'],order_by= "priority ASC")              
+            print(p.project_name)
+            taskid = frappe.get_all("Task", {"status": ("in",('Working', 'Open', 'Overdue', 'Pending Review')), "project": p.name}, ['*'],order_by= "priority ASC")
             # print(p['project_name'])
             # for tn in taskid:
                 # print(tn.name)
@@ -2385,7 +1933,7 @@ def ep_mail():
     for i in ep:
         s_no+=1
         j+=1
-        data = """<table class='table table-bordered' style='border-collapse: collapse; width: 100%;'><tr style='border: 1px solid black; background-color: #0f1568; color: white;'><th>S No</th><th>Employee ID</th><th>Employee Name</th><th>Energy Score</th><th>NC Score</th></tr>""" 
+        data = """<table class='table table-bordered' style='border-collapse: collapse; width: 100%;'><tr style='border: 1px solid black; background-color: #0f1568; color: white;'><th>S No</th><th>Employee ID</th><th>Employee Name</th><th>Energy Score</th><th>NC Score</th></tr>"""
 
         data += """<tr style='border: 1px solid black;'><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>""" %( s_no,i.emp,i.emp_name,i['total'] or "-",i['total_nc'] or "-" )
         data += "</table>"
@@ -2401,7 +1949,7 @@ def ep_mail():
             recipients=[i.reporting_manager_mail,i.employee_mail],
             subject=subject,
             message=message,
-        
+
         )
 
 
@@ -2433,11 +1981,11 @@ def epnc_send_mail():
         """
         SELECT sum(total) as total,sum(total_nc) as total_nc, emp_name as emp_name,emp,employee_mail,reporting_manager_mail from `tabEnergy Point  Non Conformity` where date(creation) BETWEEN %s AND %s AND docstatus=1 group by emp""",(first_date, last_date), as_dict=True)
     s_no=0
-    data = """<table class='table table-bordered' style='border-collapse: collapse; width: 100%;'><tr style='border: 1px solid black; background-color: #0f1568; color: white;'><th>S No</th><th>Employee ID</th><th>Employee Name</th><th>Energy Score</th><th>NC Score</th></tr>""" 
+    data = """<table class='table table-bordered' style='border-collapse: collapse; width: 100%;'><tr style='border: 1px solid black; background-color: #0f1568; color: white;'><th>S No</th><th>Employee ID</th><th>Employee Name</th><th>Energy Score</th><th>NC Score</th></tr>"""
     for i in ep:
         s_no+=1
         j+=1
-    # data = """<table class='table table-bordered' style='border-collapse: collapse; width: 100%;'><tr style='border: 1px solid black; background-color: #0f1568; color: white;'><th>S No</th><th>Employee ID</th><th>Employee Name</th><th>Energy Score</th><th>NC Score</th></tr>""" 
+    # data = """<table class='table table-bordered' style='border-collapse: collapse; width: 100%;'><tr style='border: 1px solid black; background-color: #0f1568; color: white;'><th>S No</th><th>Employee ID</th><th>Employee Name</th><th>Energy Score</th><th>NC Score</th></tr>"""
         data += """<tr style='border: 1px solid black;'><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>""" %( s_no,i.emp,i.emp_name,i['total'] or "-",i['total_nc'] or "-" )
     data += "</table>"
     subject = "Energy Point(EP) And Non Conformity(NC) List-  %s" % nowdate()
@@ -2455,54 +2003,8 @@ def epnc_send_mail():
 
         )
 
-@frappe.whitelist()
-def closure_mail(subject,id,action_taken,live,et,at,revision,service,proof,allocated=None,project=None,issue=None,domain=None,spoc=None,reason=None,dev_spoc=None):
-    if service=='IT-SW':
-        percentage=et_at_calculation(id, et, at, allocated,subject)
-        reports=frappe.db.get_value("Employee",{'user_id':allocated},['reports_to'])
-        reports_to=frappe.db.get_value("Employee",{'name':reports},['user_id'])
-        tl=frappe.db.get_value("Employee",{'user_id':allocated},["custom_tl"])
-        tl_mail=frappe.db.get_value("Employee",{'name':tl},['user_id'])
-        et_rate= 'ET : %s and AT : %s'%(et,round(percentage,2))
-        if issue:
-            raised_by=frappe.db.get_value("Issue",{'name':issue},['raised_by'])
-        else:
-            raised_by='None'
-        data = ''
-        data += f"<table width='100%' style='border-collapse: collapse; border: 1px solid black; text-align: center;'>\
-        <tr><td colspan='2' style='text-align: center; background-color: #0f1568;color: white; font-size: 17px; border: 1px solid black;'><b>Task / Issue Pending Review Note</b></td></tr>\
-        <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Task ID</b></td><td style='border: 1px solid black;'><a href='https://erp.teamproit.com/app/task/{id}' target='_blank'>{id}</a></td></tr>\
-        <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Project</b></td><td style='border: 1px solid black;'>{project}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task Raised By</b></td><td style='border: 1px solid black;'>{reports_to}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue ID</b></td><td style='border: 1px solid black;'>{issue}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue Raised By</b></td><td style='border: 1px solid black;'>{raised_by}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task / Issue Statement</b></td><td style='border: 1px solid black;'>{subject}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task / Issue Action Taken</b></td><td style='border: 1px solid black;'>{action_taken}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Live At</b></td><td style='border: 1px solid black;'>{live}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Domain</b></td><td style='border: 1px solid black;'>{domain}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Proof</b></td><td style='border: 1px solid black;'><a href='https://erp.teamproit.com/{proof}' target='_blank'>Link to Proof</a></td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>ET & AT</b></td><td style='border: 1px solid black;'>{et_rate}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Re-Open Count</b></td><td style='border: 1px solid black;'>{revision}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Cause of Re-Open</b></td><td style='border: 1px solid black;'>{reason}</td></tr></table>"
-        cc = [reports_to, allocated,spoc,'anil.p@groupteampro.com'] + ([dev_spoc] if dev_spoc else []) +([tl_mail] if tl_mail else [])
-        frappe.sendmail(
-            sender=allocated,
-            # recipients=allocated,
-            # recipients='divya.p@groupteampro.com',
-            recipients=spoc,
-            # cc=[reports_to,allocated,'anil.p@groupteampro.com'],
-            cc=cc,
-            subject='Task : %s Pending Review : Forward for Review to Mark Completion or Re-Open' % id,
-            message = """
-            <b>Dear Patron,<br><br>Greeting !!!</b><br><br>
-           The attached Task has been completed by Development and forwarded for your kind review, please confirm if it satisfies all your requirement and Mark the Task Status as Client Review / Completed or if you feel it is still pending for some action please change the status as “OPEN” and give your remark for Re-open <br><br>
-           {}<br><br>
-            Thanks & Regards,<br>TEAM ERP<br>
-            
-            <i>This email has been automatically generated. Please do not reply</i>
-            """.format(data)
-        )
-        
+
+
 
 
 @frappe.whitelist()
@@ -2561,74 +2063,6 @@ def et_at_calculation(id, et, at, allocated,subject):
     return overall_at
 
 
-# @frappe.whitelist()
-# def dpr_mail():
-#     current_date = datetime.now().strftime("%Y-%m-%d")
-    
-#     data = '''
-#     <html>
-#     <body>
-#         <table border="1" cellpadding="5" cellspacing="0">
-#             <thead>
-#                 <tr>
-#                     <th>S.NO</th>
-#                     <th>Task Name</th>
-#                     <th>Project Name</th>
-#                     <th>Subject</th>
-#                     <th>CB</th>
-#                     <th>Priority</th>
-#                     <th>Status</th>
-#                     <th>Revisions</th>
-#                     <th>Actual Time</th>
-#                     <th>Expected Time</th>
-#                     <th>RT</th>
-#                     <th>Custom Allocated On</th>
-#                 </tr>
-#             </thead>
-#             <tbody>
-#                 <tr>
-#                     <td>DPR ({})</td>
-#                     <td colspan="10"></td>
-#                 </tr>
-#     '''.format(current_date)
-    
-#     tasks = frappe.db.get_all("Task", filters={'status': 'Working', 'service': 'IT-SW'}, fields=["name", "project_name", "subject", "cb", "status", "revisions", "actual_time", "expected_time", "rt", "priority", "custom_allocated_on"])
-    
-#     # Sort tasks by cb, project_name, and priority
-#     tasks_sorted = sorted(tasks, key=lambda x: (x.get('cb', ''), x.get('project_name', ''), x.get('priority', '')))
-    
-#     for idx, task in enumerate(tasks_sorted, start=2):
-#         data += '<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-#             idx, task.get('name', ''), task.get('project_name', ''), task.get('subject', ''), task.get('cb', ''), 
-#             task.get('priority', ''), task.get('status', ''), task.get('revisions', ''), task.get('actual_time', ''), 
-#             task.get('expected_time', ''), task.get('rt', ''), task.get('custom_allocated_on', '')
-#         )
-    
-#     data += '''
-#             </tbody>
-#         </table>
-#     </body>
-#     </html>
-#     '''
-    
-#     frappe.sendmail(
-#         recipients='siva.m@groupteampro.com',
-#         message=data
-#     )
-
-
-# @frappe.whitelist()
-# def send_dsr_report():
-#     total_open=0
-#     total_working=0
-#     total_pr=0
-#     total_cr=0
-#     total_overdue=0
-#     mail = frappe.get_all("Project",{'spoc':"sivarenisha.m@groupteampro.com"},["name"])
-#     for i in mail:
-#         task_status=['Open','Working','Pending Review','Overdue','Client Review']
-#         for a in task_status:
-#             task_priority=['High','Low','Medium']
 
 
 @frappe.whitelist()
@@ -2648,7 +2082,7 @@ def dnd_report(filename,file_content):
             indx=closure_status.index(i.status)
             next_indx=closure_status[indx-1]
         table += """<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>""" % (i.name,i.given_name,i.project,next_indx,i.status)
-        count+=1        
+        count+=1
     table += '</table>'
     subject = "DND Transition -  %s" % nowdate()
     message = """
@@ -2711,47 +2145,8 @@ def make_xlsx_dnd(filename, sheet_name=None, wb=None, column_widths=None):
     return xlsx_file
 
 
-@frappe.whitelist()
-def closure_mail_client(client_email,subject,id,action_taken,live,et,at,revision,service,proof,allocated=None,project=None,issue=None,domain=None,spoc=None,reason=None):
-    if service=='IT-SW':
-        percentage=et_at_calculation(id, et, at, allocated,subject)
-        reports=frappe.db.get_value("Employee",{'user_id':allocated},['reports_to'])
-        reports_to=frappe.db.get_value("Employee",{'name':reports},['user_id'])
-        if issue:
-            raised_by=frappe.db.get_value("Issue",{'name':issue},['raised_by'])
-        else:
-            raised_by='None'
-        data = ''
-        data += f"<table width='100%' style='border-collapse: collapse; border: 1px solid black; text-align: center;'>\
-        <tr><td colspan='2' style='text-align: center; background-color: #0f1568;color: white; font-size: 17px; border: 1px solid black;'><b>Task / Issue Client Review Note</b></td></tr>\
-        <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Task ID</b></td><td style='border: 1px solid black;'>{id}</td></tr>\
-        <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Project</b></td><td style='border: 1px solid black;'>{project}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task Raised By</b></td><td style='border: 1px solid black;'>{reports_to}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue ID</b></td><td style='border: 1px solid black;'>{issue}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue Raised By</b></td><td style='border: 1px solid black;'>{raised_by}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task / Issue Statement</b></td><td style='border: 1px solid black;'>{subject}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task / Issue Action Taken</b></td><td style='border: 1px solid black;'>{action_taken}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Live At</b></td><td style='border: 1px solid black;'>{live}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Domain</b></td><td style='border: 1px solid black;'>{domain}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Proof</b></td><td style='border: 1px solid black;'><a href='https://erp.teamproit.com/{proof}' target='_blank'>Link to Proof</a></td></tr>\
-        </table>"
 
-        frappe.sendmail(
-            sender=allocated,
-            # recipients=client_email,
-            recipients=client_email,
-            cc=[spoc,allocated,reports_to,'anil.p@groupteampro.com','dineshbabu.k@groupteampro.com'],
-            subject='Task : %s Client Review : Forward for Review to Mark Completion or Re-Open' % id,
-            message = """
-            <b>Dear Patron,<br><br>Greeting !!!</b><br><br>
-           The attached Task has been completed by Development and forwarded for your kind review, please confirm if it satisfies all your requirement and Mark the Task Status as Completed or if you feel it is still pending for some action please give your remark for Re-open <br><br>
-           {}<br><br>
-            Thanks & Regards,<br>TEAM ERP<br>
-            
-            <i>This email has been automatically generated. Please do not reply</i>
-            """.format(data)
-        )
-        
+
 
 @frappe.whitelist()
 def get_allocated_tasks(date,name,service,type):
@@ -2802,7 +2197,7 @@ def update_dsr(date, name,service,type):
         task_id_list = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"type":type}, ['*'], order_by='custom_allocated_to asc, project asc, priority asc')
     else:
         task_id_list = frappe.db.get_all("Task", {"custom_production_date": date,"service":service}, ['*'], order_by='custom_allocated_to asc, project asc, priority asc')
-       
+
     task_list = frappe.db.get_all("Task", {"custom_production_date":date}, ['*'], order_by='cb asc, project asc, priority asc',group_by='custom_allocated_to asc')
     issues = []
     meetings = []
@@ -2813,8 +2208,8 @@ def update_dsr(date, name,service,type):
     for task in task_id_list:
         emp_id = frappe.db.get_value("Employee", {'user_id': task.custom_allocated_to}, ['name'])
         emp_short_code= frappe.db.get_value("Employee", {'name': emp_id},['short_code'])
-        timesheet = frappe.db.get_value("Timesheet", {'start_date':date, 'employee': emp_id},['name'])   
-        task_hours_total = 0.0 
+        timesheet = frappe.db.get_value("Timesheet", {'start_date':date, 'employee': emp_id},['name'])
+        task_hours_total = 0.0
         if timesheet:
             issue_logs = frappe.get_all("Timesheet Detail", filters={'parent': timesheet, 'custom_issue': ['!=', '']}, fields=['*'])
             i_taken=0.0
@@ -2833,7 +2228,7 @@ def update_dsr(date, name,service,type):
                         'cb':short_code,
                         'priority':prior
                     })
-                    appended_issues.add(issue.custom_issue)            
+                    appended_issues.add(issue.custom_issue)
             meeting_logs = frappe.get_all("Timesheet Detail", filters={'parent': timesheet, 'custom_meeting': ['!=', '']}, fields=['*'])
             for meeting in meeting_logs:
                 if meeting.custom_meeting not in appended_meetings:
@@ -2845,10 +2240,10 @@ def update_dsr(date, name,service,type):
                         'subject':meeting.custom_subject_meeting,
                         'cb':short_code
                     })
-                    appended_meetings.add(meeting.custom_meeting)  
+                    appended_meetings.add(meeting.custom_meeting)
             # task_hours_total = 0.0
             task_logs = frappe.get_all("Timesheet Detail", filters={'parent': timesheet, 'task': task.name}, fields=['hours'])
-            # timesheet = frappe.db.get_value("Timesheet", {'start_date': date, 'employee':emp_id}, ['total_hours'])      
+            # timesheet = frappe.db.get_value("Timesheet", {'start_date': date, 'employee':emp_id}, ['total_hours'])
             for log in task_logs:
                 task_hours_total += log.hours
         tasks.append({
@@ -2868,7 +2263,7 @@ def update_dsr(date, name,service,type):
     for j in task_list:
             employee_id=frappe.db.get_value('Employee',{'user_id':j.custom_allocated_to},['name'])
             emp_cb=frappe.db.get_value('Employee',{'user_id':j.custom_allocated_to},['short_code'])
-            timesheet = frappe.db.get_value("Timesheet", {'start_date': date, 'employee':employee_id}, ['total_hours'])      
+            timesheet = frappe.db.get_value("Timesheet", {'start_date': date, 'employee':employee_id}, ['total_hours'])
             actual_aph=frappe.db.get_value('Employee',{'name':employee_id},['custom_aph'])
             sum_et=frappe.db.sql("""select sum(rt) as et from `tabTask` where custom_allocated_to=%s and custom_production_date=%s group by custom_allocated_to""",(j.custom_allocated_to,date), as_dict=True)
             if timesheet and actual_aph is not None:
@@ -2879,230 +2274,6 @@ def update_dsr(date, name,service,type):
     parent_doc.save()
     frappe.db.commit()
     frappe.db.set_value('Daily Monitor',name,'dm_status','DSR Pending')
-
-@frappe.whitelist()
-def dpr_task_mail(name,date,service,task_type):
-    total=0
-    total_count=0
-    percent=0
-    or_count=0
-    pr_count=0
-    date_obj = datetime.strptime(date, '%Y-%m-%d')
-    formatted_date = date_obj.strftime('%d/%m/%Y')
-    emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00005'},['*'])
-    recievers=[]
-    for i in emp:
-        recievers.append(i.user_id)
-    recievers.append('abdulla.pi@groupteampro.com')
-    recievers.append('dineshbabu.k@groupteampro.com')
-    task_data=frappe.get_doc("Daily Monitor",name)
-    # # priority = {"High": 1, "Medium": 2, "Low": 3}
-    task=frappe.db.get_all("Task",{"custom_production_date":date},['*'],group_by='custom_allocated_to asc',order_by='cb asc, project asc, priority asc')
-    total_at=0
-    if task_data.dsr_check==1:
-        count=1
-        aph_totals=0
-        data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-        data += '''
-        <tr style="background-color: #0f1568 ;color: white;text-align:center;font-size: 12px;">
-            <td style='width:4%'><b>SI NO</b></td>
-            <td style='width:6%'><b>Task/Issue ID</b></td>
-            <td style='width:12%'><b>Project </b></td>
-            <td style='width:18%'><b>Subject</b></td>
-            <td style='width:4%'><b>CB</b></td>
-            <td style='width:7%'><b>Status</b></td>
-            <td style='width:4%'><b>Revision</b></td>
-            <td style='width:4%'><b>AT</b></td>
-            <td style='width:4%'><b>ET</b></td>
-            <td style='width:4%'><b>RT</b></td>
-            <td style='width:6%'><b>Priority</b></td>
-           <td style='width:8%'><b>Allocated On</b></td>
-           <td style='width:4%'><b>Time Taken</b></td>
-           <td style='width:10%'><b>Remarks</b></td>
-           <td style='width:9%'><b>TL Remarks</b></td>
-        </tr>
-        '''
-        table = '<table border="1" width="70%" style="border-collapse: collapse;text-align:center;">'
-        table += '''
-        <tr style="background-color: #0f1568 ;color: white;text-align:center;font-size: 12px;">
-            <td style='width:1%'><b>CB</b></td>
-            <td style='width:1%'><b>APH</b></td>
-            <td style='width:1%'><b>RT</b></td>
-            <td style='width:1%'><b>Actual Time Taken</b></td>
-            <td style='width:1%'><b>RT Vs APH %</b></td>
-            <td style='width:1%'><b>OR</b></td>
-            <td style='width:1%'><b>PR</b></td>
-        </tr>
-        '''
-        sorted_task_details = sorted(task_data.task_details, key=lambda i: i.cb)
-        count = 1
-        for i in sorted_task_details:
-    #         # emp_cb=frappe.db.get_value('Employee',)
-            vtaken = float(i.at)
-            value_taken = round(vtaken, 3)
-            if i.at_taken:
-                t_taken = float(i.at_taken)
-                today_taken = round(t_taken, 3)
-            else:
-                t_taken='0'
-                today_taken='0'
-            remark = '-' if i.remark is None else i.remark
-            tl_remark = '-' if i.tl_remark is None else i.tl_remark
-            if i.id is not None:
-                id=i.id
-            elif i.issue is not None:
-                id=i.issue
-            elif i.meeting is not None:
-                id=i.meeting
-            else:
-                id='-'
-            data += '<tr style="font-size: 14px;"><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'% (count,id, i.project_name, i.subject, i.cb, i.status, i.revisions, value_taken,i.et, i.rt, i.priority, i.allocated_on, today_taken, remark, tl_remark)
-            count += 1
-        data += '</table>'
-        for j in task:
-            employee_id=frappe.db.get_value('Employee',{'user_id':j.custom_allocated_to},['name'])
-            emp_cb=frappe.db.get_value('Employee',{'user_id':j.custom_allocated_to},['short_code'])
-            timesheet = frappe.db.get_value("Timesheet", {'start_date': date, 'employee':employee_id}, ['total_hours'])  
-            actual_aph=frappe.db.get_value('Employee',{'short_code':emp_cb},['custom_aph'])
-            sum_et=frappe.db.sql("""select sum(rt) as et from `tabTask` where custom_allocated_to=%s and custom_production_date=%s and service="IT-SW" group by custom_allocated_to""",(j.custom_allocated_to,date), as_dict=True)
-            if sum_et:
-                total+=sum_et[0].et
-            if actual_aph is not None:
-                aph_totals+=float(actual_aph)
-            if timesheet is not None:
-                total_at+=float(timesheet)
-            if actual_aph and timesheet:
-                percent=(float(timesheet)/float(actual_aph))*100
-                value=actual_aph
-                total_count=float(total)/float(aph_totals)*100
-                or_count=float(timesheet)/float(value)*100
-                pr_count=float(sum_et[0].et)/float(timesheet)*100
-                or_total=float(total_at)/float(aph_totals)*100
-                pr_total=float(total)/float(total_at)*100
-            if percent:
-                table+='<tr style="font-size: 14px;"><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' %(emp_cb,actual_aph or '8',sum_et[0].et if sum_et else '0',round(timesheet,2) if timesheet is not None else '0',round(percent,2) if timesheet is not None else '0',round(or_count) if timesheet is not None else '0',round(pr_count) if timesheet is not None else '0')
-            else:
-                table+='<tr style="font-size: 14px;"><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' %(emp_cb,actual_aph or '8',sum_et[0].et if sum_et else '0',round(timesheet,2) if timesheet is not None else'0','0',round(or_count,2) or '0',round(pr_count,2) or '0')
-        table+='<tr style="font-size: 14px;" ><td colspan=1>Total</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'%(aph_totals,total,round(total_at,2),round(total_count,2),round(or_total),round(pr_total))
-        table += "</table>"
-           
-        
-        frappe.sendmail(
-                # sender='abdulla.pi@groupteampro.com',
-                # recipients='dineshbabu.k@groupteampro.com',
-                # cc='abdulla.pi@groupteampro.com',
-                # recipients='divya.p@groupteampro.com',
-                subject='DSR %s -Reg' % formatted_date,
-                message = """
-               <b>Dear Team,</b><br><br>
-                Please find the below DSR for {} for your kind reference.<br><br>
-                {}<br><br>
-                {}<br><br>
-                Thanks & Regards,<br>TEAM ERP<br>
-                <i>This email has been automatically generated. Please do not reply</i>
-                """.format(formatted_date,table,data)
-            )
-        frappe.msgprint("DSR mail has been successfully sent.")
-        frappe.db.set_value('Daily Monitor',name,'dm_status','Submitted')
-        frappe.db.set_value("Daily Monitor",name,'dsr_submitted_on',today())
-    else:
-        count=1
-        aph_total=0
-        data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-        data += '''
-        <tr style="background-color: #0f1568 ;text-align:center;color: white;"><b>
-            <td style='width:5%'><b>SI NO</b></td>
-            <td style='width:10%'><b>ID</b></td>
-            <td style='width:15%'><b>Project </b></td>
-            <td style='width:20%'><b>Subject</b></td>
-            <td style='width:5%'><b>CB</b></td>
-            <td style='width:10%'><b>Status</b></td>
-            <td style='width:5%'><b>Revision</b></td>
-            <td style='width:5%'><b>AT</b></td>
-            <td style='width:5%'><b>ET</b></td>
-            <td style='width:5%'><b>RT</b></td>
-            <td style='width:7%'><b>Priority</b></td>
-            <td style='width:13%'><b>Allocated On</b></td>
-        </b></tr>
-        '''
-        table = '<table border="1" width="50%" style="border-collapse: collapse;text-align:center;">'
-        table += '''
-        <tr style="background-color: #0f1568 ;color: white;text-align:center;font-size: 12px;">
-            <td style='width:1%'><b>CB</b></td>
-            <td style='width:1%'><b>APH</b></td>
-            <td style='width:1%'><b>RT</b></td>
-            <td style='width:1%'><b>RT Vs APH%</b></td>
-        </tr>
-        '''
-        for i in task_data.task_details:
-            value_taken = round(i.at, 3)
-            data+='<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'%(count,i.id or i.issue,i.project_name or '-',i.subject,i.cb,i.status,i.revisions,value_taken,i.et,i.rt,i.priority,i.allocated_on or '')
-            count+=1
-        data += '</table>'
-        task_det=frappe.db.get_all("Task",{"custom_production_date":date,"type":task_type,"service":service},['*'],order_by='cb asc',group_by='custom_allocated_to asc')
-        for k in task_det:
-            employee_id=frappe.db.get_value('Employee',{'user_id':k.custom_allocated_to},['user_id'])
-            emp_cb=frappe.db.get_value('Employee',{'user_id':k.custom_allocated_to},['short_code'])
-            actual_aph=frappe.db.get_value('Employee',{'short_code':emp_cb},['custom_aph'])
-            sum_et=frappe.db.sql("""select sum(rt) as et from `tabTask` where custom_allocated_to=%s and custom_production_date=%s and service="IT-SW" group by custom_allocated_to""",(k.custom_allocated_to,date), as_dict=True)
-            if sum_et:
-                total+=sum_et[0].et
-            if actual_aph is not None and sum_et:
-                percent=(float(sum_et[0].et)/float(actual_aph))*100
-                value=actual_aph
-                aph_total+=float(value)
-            total_count=float(total)/float(aph_total)*100
-            # print(employee_id)
-            if percent:
-                table+='<tr style="font-size: 14px;"><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' %(emp_cb,value or '8',sum_et[0].et if sum_et else '0',round(percent,2) or '-')
-            else:
-                table+='<tr style="font-size: 14px;"><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' %(emp_cb,actual_aph or '',sum_et[0].et if sum_et else '0',round(percent,2) or '-')
-        table+='<tr style="font-size: 14px;" ><td colspan=1>Total</td><td>%s</td><td>%s</td><td>%s</td>'%(aph_total,total,round(total_count,2))
-        table+='</table>'
-        frappe.sendmail(
-                # sender='abdulla.pi@groupteampro.com',
-                # recipients=recievers,
-                # recipients='divya.p@groupteampro.com',
-                subject='DPR %s -Reg' % formatted_date,
-                message = """
-                <b>Dear Team,</b><br><br>
-Please find the below DPR for {} for your kind reference and action, ensure all the Tasks allocated on time and as per the requirement, for each Revision and AT going beyond 150% there will be NC applied and accumulated NC will be reviewed every week and directly affects your Performance.<br><br>
-
-            {}<br><br>
-            {}<br><br>
-                Thanks & Regards,<br>TEAM ERP<br>
-                
-                <i>This email has been automatically generated. Please do not reply</i>
-                """.format(formatted_date,table,data)
-            )
-        frappe.msgprint("DPR mail has been successfully sent")
-        frappe.db.set_value('Daily Monitor',name,'dm_status','DPR Completed')
-        frappe.db.set_value('Daily Monitor',name,'dpr_submitted_on',today())
-
-
-@frappe.whitelist()
-def reverse_revision(user):
-    role = frappe.db.sql("""
-        SELECT `tabUser`.name as name
-        FROM `tabUser`
-        LEFT JOIN `tabHas Role` ON `tabHas Role`.parent = `tabUser`.name
-        WHERE `tabHas Role`.role = 'Customer Executive'
-        AND `tabUser`.enabled = 1
-        AND `tabUser`.name = %s
-    """, (user,), as_dict=True)
-
-    if role:
-        return role[0].get('name')
-    else:
-        return None
-
-@frappe.whitelist()
-def reverse_revision_nc(name):
-    reason = frappe.db.get_value("Energy Point And Non Conformity", {'reason_of_ep': ['like', '%'+name+'%']}, "name")
-
-    if reason:
-        nc = frappe.get_doc("Energy Point And Non Conformity", reason)
-        nc.delete()
 
 @frappe.whitelist()
 def task_type_updates(name,id):
@@ -3131,7 +2302,6 @@ def dpr_send_alert():
                 Thanks & Regards,<br>TEAM ERP<br>"""
             )
     else:
-        print("hello")
         hod_mail=frappe.db.get_value("Services",{"name":"IT-SW"},['hod'])
         frappe.sendmail(
             recipients=[hod_mail,"divya.p@groupteampro.com"],
@@ -3180,56 +2350,14 @@ def update_tat_completion_date(name):
                 working_days -= 1
             current_date = add_days(current_date, 1)
         sql_query = f"""
-            SELECT COUNT(*) 
-            FROM `tabHoliday` 
-            WHERE parent = 'TEAMPRO 2023 - Checkpro' 
+            SELECT COUNT(*)
+            FROM `tabHoliday`
+            WHERE parent = 'TEAMPRO 2023 - Checkpro'
             AND holiday_date BETWEEN '{doc.insufficiency_closed}' AND '{holiday[-1]}'
         """
         count = frappe.db.sql(sql_query, as_list=True)[0][0]
         return holiday[-1],count
 
-@frappe.whitelist()
-def update_issue_type(doc,method):
-    frappe.db.set_value("Issue",doc.issue,"custom_issue_status",doc.status)
-    frappe.db.set_value("Issue",doc.issue,"issue_type",doc.custom_issue_type)
-    if doc.status=="Open" or doc.status=="Overdue":
-        frappe.db.set_value("Issue",doc.issue,"status","Open")
-    elif doc.status=="Hold":
-        frappe.db.set_value("Issue",doc.issue,"status","On Hold")
-    elif doc.status=="Working":
-        frappe.db.set_value("Issue",doc.issue,"status","Replied")
-    elif doc.status=="Pending Review" or doc.status=="Client Review":
-        frappe.db.set_value("Issue",doc.issue,"status","Resolved")
-    elif doc.status=="Completed" or doc.status=="Cancelled":
-        frappe.db.set_value("Issue",doc.issue,"status","Closed")
-
-
-    # if doc.status in ["Open","Overdue","Hold"]:
-    #     frappe.db.set_value("Issue",doc.issue,"status","Open")
-    # elif doc.status in ["Working"]:
-    #     frappe.db.set_value("Issue",doc.issue,"status","Replied")
-    # elif doc.status in ["Pending Review","Client Review"]:
-    #     frappe.db.set_value("Issue",doc.issue,"status","Resolved")
-    # elif doc.status in ["Completed","Cancelled"]:
-    #     frappe.db.set_value("Issue",doc.issue,"status","Closed")
-
-       
-
-@frappe.whitelist()
-def update_issue_typein_issue(doc,method):
-    frappe.db.set_value("Issue",doc.issue,"task",doc.name)  
-    
-@frappe.whitelist()
-def update_country_flag(doc, method):
-    mobile_no = frappe.db.get_value("Employee", {"user_id":doc.custom_allocated_to}, ["company_mobile_number"])
-    if mobile_no:
-        if doc.service in ["REC-I", "REC-D"]:
-            if doc.territory:
-                flag_url = frappe.db.get_value("Territory", {"name": doc.territory}, ["custom_country_flag"])
-                doc.custom_country_flag = flag_url
-            if doc.custom_allocated_to:
-                doc.custom_recruiter_contact = mobile_no
-                
 from datetime import datetime
 @frappe.whitelist()
 def update_issue_status():
@@ -3238,46 +2366,12 @@ def update_issue_status():
         if issue.custom_expected_end_date < datetime.now().date():
             frappe.db.set_value("Issue",issue.name,"custom_issue_status","Overdue")
 
-
-@frappe.whitelist()
-def client_reviwew_mail(client_email,subject,created_by,action_taken,issue,live,proof,project=None,domain=None):
-    data = ''
-    data += f"<table width='100%' style='border-collapse: collapse; border: 1px solid black; text-align: center;'>\
-    <tr><td colspan='2' style='text-align: center; background-color: #0f1568;color: white; font-size: 17px; border: 1px solid black;'><b>Issue Client Review Note</b></td></tr>\
-    <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Issue ID</b></td><td style='border: 1px solid black;'>{issue}</td></tr>\
-    <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Project</b></td><td style='border: 1px solid black;'>{project}</td></tr>\
-    <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue Raised By</b></td><td style='border: 1px solid black;'>{created_by}</td></tr>\
-    <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue Statement</b></td><td style='border: 1px solid black;'>{subject}</td></tr>\
-    <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue Action Taken</b></td><td style='border: 1px solid black;'>{action_taken}</td></tr>\
-    <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Live At</b></td><td style='border: 1px solid black;'>{live}</td></tr>\
-    <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Domain</b></td><td style='border: 1px solid black;'>{domain}</td></tr>\
-    <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Proof</b></td><td style='border: 1px solid black;'><a href='https://erp.teamproit.com/{proof}' target='_blank'>Link to Proof</a></td></tr>\
-    </table>"
-
-    frappe.sendmail(
-        sender=created_by,
-        # recipients=["divya.p@groupteampro.com"],
-        recipients=client_email,
-        # cc=[allocated,reports_to,'anil.p@groupteampro.com','dineshbabu.k@groupteampro.com'],
-        subject='Task : %s Client Review : Forward for Review to Mark Completion' % issue,
-        message = """
-        <b>Dear Patron,<br><br>Greeting !!!</b><br><br>
-        The attached Issue has been completed by Development and forwarded for your kind review, please confirm if it satisfies all your requirement and Mark the Issue Status as Completed  <br><br>
-        {}<br><br>
-        Thanks & Regards,<br>TEAM ERP<br>
-        
-        <i>This email has been automatically generated. Please do not reply</i>
-        """.format(data)
-    )
-
-
-
 @frappe.whitelist()
 def purchase_invoice_due_above():
     purchase_invoices = frappe.get_all("Purchase Invoice",{"status": ("in", ["Partly Paid", "Unpaid", "Overdue"]),"docstatus": ("!=",2),"due_date": (">=", nowdate())},["*"])
     # print(purchase_invoices)
     # purchase_invoices = frappe.get_all("Purchase Invoice",{"status": "Paid","docstatus": ("!=",2),"due_date": (">=", nowdate())},["*"])
-    
+
     count = 1
     f_count=0
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
@@ -3374,11 +2468,11 @@ def sales_dpr():
     data=[]
     for i in emp:
         recievers.append(i.user_id)
-    recievers.append('anil.p@groupteampro.com')
+    recievers.append('annie.m@groupteampro.com')
     emp_list=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00007','user_id':('not in',['dm@groupteampro.com'])},['*'])
     for j in emp_list:
         recievers.append(j.user_id)
-    recievers.append('annie.m@groupteampro.com') 
+    recievers.append('annie.m@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="8"><b>R&S DPR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -3397,14 +2491,14 @@ def sales_dpr():
     appointments = frappe.get_all("Appointment", filters={"scheduled_time": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]]}, fields=["*"])
 
     appointment_count = 0
-    
+
     for user_email in recievers:
         for appointment in appointments:
         # Get the distinct user count for each appointment
             user_counts = frappe.db.sql("""
-                SELECT DISTINCT c.user, COUNT(c.user) AS count 
-                FROM `tabAppointment` p 
-                INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+                SELECT DISTINCT c.user, COUNT(c.user) AS count
+                FROM `tabAppointment` p
+                INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
                 WHERE c.user like %s and p.name = %s
             """, (user_email, appointment.name), as_dict=True)
             if user_counts:
@@ -3416,18 +2510,18 @@ def sales_dpr():
         short_code = frappe.db.get_value("Employee", {"user_id": user_email}, "short_code")
         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Customer"})
-        
+
         # appointment_count = frappe.db.count("Appointment",{"scheduled_time": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":user_email})
         # appointment_count=frappe.db.count("Sales Follow Up",{"appointment_date":["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]]})
         todo_count=frappe.db.count("ToDo",{"allocated_to":user_email,"custom_production_date":formatted_next_date})
         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
                 short_code,appointment_count if appointment_count else '0' , lead_count if lead_count else '0' , open_count if open_count else '0', replied_count if replied_count else '0', interested_count if interested_count else '0', opportunity_count if opportunity_count else '0', customer_count if customer_count else'0',todo_count if todo_count else '0'
             )
-    
+
     todo_list=frappe.db.get_all("ToDo",{"custom_production_date":formatted_next_date},["*"])
     if todo_list:
         data += '''
@@ -3441,8 +2535,8 @@ def sales_dpr():
             s_no+=1
             short_code = frappe.db.get_value("Employee", {"user_id": i.allocated_to}, "short_code")
             data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="7" style="text-align: left; padding-left: 50px;">{}</td></tr>'.format(short_code,i.name,i.custom_subject)
-    
-    
+
+
     appointment_list = frappe.db.sql("""select p.scheduled_time as time, p.name as name, c.user as user from `tabAppointment` p inner join `tabDPR Mail Users` c on c.parent = p.name where p.scheduled_time between '%s' and '%s'""" %(formatted_next_date + " 00:00:00", formatted_next_date + " 23:59:59"),as_dict=1)
     if appointment_list:
         data += '''
@@ -3454,7 +2548,7 @@ def sales_dpr():
         for i in appointment_list:
             short_code = frappe.db.get_value("Employee", {"user_id": i.user}, "short_code")
             data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="7" style="text-align: left; padding-left: 50px;">{}</td></tr>'.format(short_code,i.time,i.name)
-            
+
     data += '</table>'
 
 
@@ -3462,7 +2556,7 @@ def sales_dpr():
     frappe.sendmail(
                 # recipients=recievers,
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['anil.p@groupteampro.com','annie.m@groupteampro.com'],
+                recipients=['annie.m@groupteampro.com'],
                 cc='dineshbabu.k@groupteampro.com',
                 subject='R&S DPR %s -Reg' % formatted_date,
                 message = """
@@ -3471,11 +2565,11 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
-    
+
     recievers = ['harish.g@groupteampro.com', 'aarthi.e@groupteampro.com', 'vijiyalakshmi.k@groupteampro.com']
 
     for user_email in recievers:
@@ -3529,9 +2623,9 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
 
         # Appointment Section
         appointment_list = frappe.db.sql("""
-            SELECT p.scheduled_time AS time, p.name AS name, c.user AS user 
-            FROM `tabAppointment` p 
-            INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+            SELECT p.scheduled_time AS time, p.name AS name, c.user AS user
+            FROM `tabAppointment` p
+            INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
             WHERE p.scheduled_time BETWEEN %s AND %s AND c.user = %s
         """, (formatted_next_date + " 00:00:00", formatted_next_date + " 23:59:59", user_email), as_dict=True)
 
@@ -3561,7 +2655,7 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
             """.format(user=user_email.split('@')[0], date=formatted_date, table=data)
         )
 
-    
+
 @frappe.whitelist()
 def send_sales_dsr_daily():
     emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00023','user_id':('not in',['sivarenisha.m@groupteampro.com','jeniba.a@groupteampro.com'])},['*'])
@@ -3576,11 +2670,11 @@ def send_sales_dsr_daily():
 
     for i in emp:
         emp_emails.append(i.user_id)
-    emp_emails.append('anil.p@groupteampro.com')
+    emp_emails.append('annie.m@groupteampro.com')
     emp_list=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00007','user_id':('not in',['dm@groupteampro.com'])},['*'])
     for j in emp_list:
         emp_emails.append(j.user_id)
-    emp_emails.append('annie.m@groupteampro.com') 
+    emp_emails.append('annie.m@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="8"><b>R&S DSR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -3588,7 +2682,7 @@ def send_sales_dsr_daily():
             <td width="25%" colspan="1"><b>Exe</b></td>
             <td width="25%" colspan="1"><b>Effective</b></td>
             <td width="25%" colspan="1"><b>Non Effective</b></td>
-            <td width="25%" colspan="1"><b>Appointment</b></td>    
+            <td width="25%" colspan="1"><b>Appointment</b></td>
             <td width="25%" colspan="1"><b>Total</b></td>
         </tr>
     '''
@@ -3596,9 +2690,9 @@ def send_sales_dsr_daily():
         for appointment in appointments:
         # Get the distinct user count for each appointment
             user_counts = frappe.db.sql("""
-                SELECT DISTINCT c.user, COUNT(c.user) AS count 
-                FROM `tabAppointment` p 
-                INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+                SELECT DISTINCT c.user, COUNT(c.user) AS count
+                FROM `tabAppointment` p
+                INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
                 WHERE c.user like %s and p.name = %s
             """, (c, appointment.name), as_dict=True)
             if user_counts:
@@ -3638,13 +2732,13 @@ def send_sales_dsr_daily():
             short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
             data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 10px;">{}</td><td colspan="2">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
 
-    
+
     data += '</table>'
     frappe.sendmail(
                 # sender='sangeetha.a@groupteampro.com',
                 # recipients=recievers,
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['anil.p@groupteampro.com','annie.m@groupteampro.com'], 
+                recipients=['annie.m@groupteampro.com'],
                 cc='dineshbabu.k@groupteampro.com',
                 subject='R&S DSR %s -Reg' % formatted_date,
                 message = """
@@ -3653,7 +2747,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -3701,7 +2795,7 @@ def send_mail_with_attachment_spoc_project(spoc, filename, file_content):
         "This email has been automatically generated. Please do not reply"
     )
     attachments = [{"fname": filename + '.xlsx', "fcontent": file_content}]
-    
+
     # Send the email for each SPOC
     frappe.sendmail(
         recipients=[spoc],  # Assuming spoc is the email ID of the SPOC
@@ -3737,7 +2831,7 @@ def make_xlsx_spoc_project(spoc, filename):
     border = Border(left=Side(border_style='thin', color='000000'),
             right=Side(border_style='thin', color='000000'),
             top=Side(border_style='thin', color='000000'),
-            bottom=Side(border_style='thin', color='000000')) 
+            bottom=Side(border_style='thin', color='000000'))
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=17):
         for cell in row:
             cell.border = thin_border
@@ -3772,7 +2866,7 @@ def make_xlsx_spoc_project(spoc, filename):
     for col in range(1, len(headers) + 1):
         cell = ws.cell(row=2, column=col)
         cell.fill = head_fill
-        cell.font = Font(bold=True, color="FFFFFF")  
+        cell.font = Font(bold=True, color="FFFFFF")
         cell.alignment = Alignment(horizontal="center")
         cell.border = thin_border
     for col in range(1, len(sub_headers) + 1):
@@ -3810,7 +2904,7 @@ def make_xlsx_spoc_project(spoc, filename):
     total_cr_issues=0
     total_all_tasks=0
     total_all_issues=0
-    current_row = 4 
+    current_row = 4
     s_row=4
     for c in cust:
         total_task_count = 0
@@ -3828,22 +2922,22 @@ def make_xlsx_spoc_project(spoc, filename):
         h_pr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Pending Review","project":c.project_name,"priority":"High"})
         h_cr_taskcount=frappe.db.count("Task",{"status":"Client Review","spoc":spoc,"project_name":c.project_name,"priority":"High"})
         h_cr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Client Review","project":c.project_name,"priority":"High"})
-        high_task_count = h_open_taskcount + h_working_taskcount + h_overdue_taskcount + h_pr_taskcount + h_cr_taskcount 
+        high_task_count = h_open_taskcount + h_working_taskcount + h_overdue_taskcount + h_pr_taskcount + h_cr_taskcount
         high_issue_count = h_open_issuecount + h_working_issuecount + h_overdue_issuecount + h_pr_issuecount + h_cr_issuecount
         e_high_task_count = h_open_taskcount + h_working_taskcount + h_overdue_taskcount + h_pr_taskcount + h_cr_taskcount
         e_high_issue_count = h_open_issuecount + h_working_issuecount + h_overdue_issuecount + h_pr_issuecount + h_cr_issuecount
 
-        total_new_tasks += h_new_taskcount 
-        total_new_issues += h_new_issuecount 
-        total_open_tasks += h_open_taskcount 
-        total_open_issues += h_open_issuecount 
-        total_working_tasks += h_working_taskcount 
-        total_working_issues += h_working_issuecount 
-        total_overdue_tasks += h_overdue_taskcount 
-        total_overdue_issues += h_overdue_issuecount 
-        total_pr_tasks += h_pr_taskcount 
+        total_new_tasks += h_new_taskcount
+        total_new_issues += h_new_issuecount
+        total_open_tasks += h_open_taskcount
+        total_open_issues += h_open_issuecount
+        total_working_tasks += h_working_taskcount
+        total_working_issues += h_working_issuecount
+        total_overdue_tasks += h_overdue_taskcount
+        total_overdue_issues += h_overdue_issuecount
+        total_pr_tasks += h_pr_taskcount
         total_pr_issues += h_pr_issuecount
-        total_cr_tasks += h_cr_taskcount 
+        total_cr_tasks += h_cr_taskcount
         total_cr_issues += h_cr_issuecount
         total_all_tasks += e_high_task_count
         total_all_issues += e_high_issue_count
@@ -3852,7 +2946,7 @@ def make_xlsx_spoc_project(spoc, filename):
         total_issue_count += high_issue_count
         # Initialize row data
         row_data = [serial_number, c['project_name'], "High"] + [""] * 14
-        
+
         # Prepare the row data, excluding the project name
         row_data[3] = '' if h_new_taskcount == 0 else h_new_taskcount  # Open Task Count (High)
         row_data[4] = '' if h_new_issuecount == 0 else h_new_issuecount  # Open Issue Count (High)
@@ -3871,7 +2965,7 @@ def make_xlsx_spoc_project(spoc, filename):
 
 
         ws.append(row_data)
- 
+
         priority_cell = ws.cell(row=ws.max_row, column=3)  # Column C for "High"
         priority_cell.font = Font(color="FF0000")
         for idx in [3,4,5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15, 16,17]:
@@ -3884,7 +2978,7 @@ def make_xlsx_spoc_project(spoc, filename):
             if cell.value and cell.value.strip() == "High":  # Check for "High"
                 cell.font = Font(color="FF0000")  # Set the font color to red
  # Change font color to red
-        for priority in priority_rows[1:]: 
+        for priority in priority_rows[1:]:
             total_mediumtask_count = 0
             total_mediumissue_count = 0
      # Start from Medium to avoid duplicating 'High'
@@ -3906,26 +3000,26 @@ def make_xlsx_spoc_project(spoc, filename):
                 m_pr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Pending Review","project":c.project_name,"priority":"Medium"})
                 m_cr_taskcount=frappe.db.count("Task",{"status":"Client Review","spoc":spoc,"project_name":c.project_name,"priority":"Medium"})
                 m_cr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Client Review","project":c.project_name,"priority":"Medium"})
-                medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount 
+                medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount
                 medium_issue_count = m_open_issuecount + m_working_issuecount + m_overdue_issuecount + m_pr_issuecount + m_cr_issuecount
-                e_medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount 
-                e_medium_issue_count = m_open_issuecount + m_working_issuecount + m_overdue_issuecount + m_pr_issuecount + m_cr_issuecount 
-                total_new_tasks +=  m_new_taskcount 
-                total_new_issues +=m_new_issuecount 
-                total_open_tasks += m_open_taskcount 
+                e_medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount
+                e_medium_issue_count = m_open_issuecount + m_working_issuecount + m_overdue_issuecount + m_pr_issuecount + m_cr_issuecount
+                total_new_tasks +=  m_new_taskcount
+                total_new_issues +=m_new_issuecount
+                total_open_tasks += m_open_taskcount
                 total_open_issues +=  m_open_issuecount
-                total_working_tasks +=  m_working_taskcount 
-                total_working_issues +=  m_working_issuecount 
-                total_overdue_tasks +=  m_overdue_taskcount 
-                total_overdue_issues +=  m_overdue_issuecount 
-                total_pr_tasks += m_pr_taskcount 
-                total_pr_issues +=m_pr_issuecount 
-                total_cr_tasks += m_cr_taskcount 
+                total_working_tasks +=  m_working_taskcount
+                total_working_issues +=  m_working_issuecount
+                total_overdue_tasks +=  m_overdue_taskcount
+                total_overdue_issues +=  m_overdue_issuecount
+                total_pr_tasks += m_pr_taskcount
+                total_pr_issues +=m_pr_issuecount
+                total_cr_tasks += m_cr_taskcount
                 total_cr_issues += m_cr_issuecount             # Accumulate to total task/issue counts
                 total_mediumtask_count += medium_task_count
                 total_mediumissue_count += medium_issue_count
                 total_all_tasks += e_medium_task_count
-                total_all_issues += e_medium_issue_count 
+                total_all_issues += e_medium_issue_count
                 priority_row_data[3] = '' if m_new_taskcount == 0 else m_new_taskcount  # Open Task Count (High)
                 priority_row_data[4] = '' if m_new_issuecount == 0 else m_new_issuecount  # Open Issue Count (High)
                 priority_row_data[5] = '' if m_open_taskcount == 0 else m_open_taskcount  # Open Task Count (Medium)
@@ -3955,9 +3049,9 @@ def make_xlsx_spoc_project(spoc, filename):
                 l_pr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Pending Review","project":c.project_name,"priority":"Low"})
                 l_cr_taskcount=frappe.db.count("Task",{"status":"Client Review","spoc":spoc,"project_name":c.project_name,"priority":"Low"})
                 l_cr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Client Review","project":c.project_name,"priority":"Low"})
-                low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount 
-                low_issue_count = l_open_issuecount + l_working_issuecount + l_overdue_issuecount + l_pr_issuecount + l_cr_issuecount 
-                e_low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount 
+                low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount
+                low_issue_count = l_open_issuecount + l_working_issuecount + l_overdue_issuecount + l_pr_issuecount + l_cr_issuecount
+                e_low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount
                 e_low_issue_count = l_open_issuecount + l_working_issuecount + l_overdue_issuecount + l_pr_issuecount + l_cr_issuecount
                 total_new_tasks += l_new_taskcount
                 total_new_issues += l_new_issuecount
@@ -3975,7 +3069,7 @@ def make_xlsx_spoc_project(spoc, filename):
                 total_mediumtask_count += low_task_count
                 total_mediumissue_count += low_issue_count
                 total_all_tasks += e_low_task_count
-                total_all_issues += e_low_issue_count 
+                total_all_issues += e_low_issue_count
                 priority_row_data[3] = '' if l_new_taskcount == 0 else l_new_taskcount  # Open Task Count (Low)
                 priority_row_data[4] = '' if l_new_issuecount == 0 else l_new_issuecount  # Open Issue Count (Low)
                 priority_row_data[5] = '' if l_open_taskcount == 0 else l_open_taskcount  # Open Task Count (Low)
@@ -3991,9 +3085,9 @@ def make_xlsx_spoc_project(spoc, filename):
                 priority_row_data[15] = '' if total_mediumtask_count == 0 else total_mediumtask_count  # Total Task Count
                 priority_row_data[16] = '' if total_mediumissue_count == 0 else total_mediumissue_count  # Total Issue Count
 
-            ws.append(priority_row_data)  
+            ws.append(priority_row_data)
             # ws.merge_cells(start_row=current_row, start_column=2, end_row=current_row+2, end_column=2)
- 
+
             for idx in [3,4,5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15, 16,17]:
                 cell = ws.cell(row=ws.max_row, column=idx)
                 cell.font = Font(color="000000")
@@ -4041,7 +3135,7 @@ def make_xlsx_spoc_project(spoc, filename):
     xlsx_file = BytesIO()
     wb.save(xlsx_file)
     xlsx_file.seek(0)
-    
+
     return xlsx_file
 
 @frappe.whitelist()
@@ -4059,8 +3153,8 @@ def rec_update_dsr_test():
         AND c.candidate_created_by = %s
         AND c.task = %s
         AND cs.status IN (%s, %s, %s, %s, %s, %s)
-        """, ("2024-10-07", j.allocated_to, j.id, 
-            "Submitted(Internal)", "Submitted(Client)", 
+        """, ("2024-10-07", j.allocated_to, j.id,
+            "Submitted(Internal)", "Submitted(Client)",
             "Submit(SPOC)", "Linedup", "QC Cleared", "Shortlisted"))
 
         # Ensure to fetch the count correctly
@@ -4075,8 +3169,8 @@ def rec_update_dsr_test():
         INNER JOIN `tabCandidate status` cs ON c.name = cs.parent
         WHERE DATE(cs.sourced_date) = %s
         AND cs.status IN (%s, %s, %s, %s, %s, %s)
-    """, ("2024-10-07", 
-            "Submitted(Internal)", "Submitted(Client)", 
+    """, ("2024-10-07",
+            "Submitted(Internal)", "Submitted(Client)",
             "Submit(SPOC)", "Linedup", "QC Cleared", "Shortlisted"))
 
     for i in candidate_tasks:
@@ -4093,20 +3187,20 @@ def rec_update_dsr_test():
                 AND c.candidate_created_by = %s
                 AND c.task = %s
                 AND cs.status IN (%s, %s, %s, %s, %s, %s)
-            """, ("2024-10-07", owner, task_id, 
-                "Submitted(Internal)", "Submitted(Client)", 
+            """, ("2024-10-07", owner, task_id,
+                "Submitted(Internal)", "Submitted(Client)",
                 "Submit(SPOC)", "Linedup", "QC Cleared", "Shortlisted"))
 
             # Get the count value from the add_count query
             add_count_value = add_count[0][0] if add_count else 0
-            
+
             # Append the details to the child table
             parent_doc.append("dm_rec_task_details", {
                 "id": task_id,
                 "allocated_to": owner,
                 "actual_count": add_count_value
             })
-            task_ids.add((task_id, owner))  # Add to task_ids after appending
+            task_ids.add((task_id, owner)) 
 
     parent_doc.dsr_check = 1
     parent_doc.save()
@@ -4114,73 +3208,29 @@ def rec_update_dsr_test():
 
 
 # @frappe.whitelist()
-# def update_so_st():
-#     frappe.db.set_value("Education Checks",{"name":"Education Checks-20179"},"check_status","Draft")
-#     frappe.db.set_value("Education Checks",{"name":"Education Checks-20179"},"workflow_state","Draft")
+# def update_service_in_payment_entries(ref_doc,ref_name):
+#     if ref_doc=="Sales Order":
+#         if ref_doc and ref_name:
+#             reference_doc = frappe.get_doc(ref_doc, ref_name)
+#             if hasattr(reference_doc, 'service'):
+#                 service_value = reference_doc.service
+#     elif ref_doc=="Sales Invoice":
+#         if ref_doc and ref_name:
+#             reference_doc = frappe.get_doc(ref_doc, ref_name)
+#             if hasattr(reference_doc, 'services'):
+#                 service_value = reference_doc.services
+#     elif ref_doc=="Purchase Invoice":
+#         if ref_doc and ref_name:
+#             reference_doc = frappe.get_doc(ref_doc, ref_name)
+#             if hasattr(reference_doc, 'services'):
+#                 service_value = reference_doc.services
+#     elif ref_doc=="Purchase Order":
+#         if ref_doc and ref_name:
+#             reference_doc = frappe.get_doc(ref_doc, ref_name)
+#             if hasattr(reference_doc, 'custom_service'):
+#                 service_value = reference_doc.custom_service
 
-
-# @frappe.whitelist()
-# def update_service_in_payment_entries():
-#     payment_entries = frappe.get_all("Payment Entry", filters={"docstatus": 1},fields=["name"])
-#     ind=0
-#     for entry in payment_entries:
-#         ind+=1
-#         doc = frappe.get_doc("Payment Entry", entry.name)
-#         print(doc)
-#         for i in doc.references:
-#             reference_doctype = i.reference_doctype
-#             reference_name = i.reference_name
-#             if reference_doctype=="Sales Order":
-#                 print("Inside of sales order")
-#                 if reference_doctype and reference_name:
-#                     reference_doc = frappe.get_doc(reference_doctype, reference_name)
-#                     if hasattr(reference_doc, 'service'):
-#                         print(reference_doc.service)
-#                         service_value = reference_doc.service
-#                         i.service = service_value
-#             elif reference_doctype=="Sales Invoice":
-#                 print("Inside of sales invoice")
-#                 if reference_doctype and reference_name:
-#                     reference_doc = frappe.get_doc(reference_doctype, reference_name)
-#                     if hasattr(reference_doc, 'services'):
-#                         print(reference_doc.services)
-#                         service_value = reference_doc.services
-#                         i.service = service_value
-#             elif reference_doctype=="Purchase Invoice":
-#                 print("Inside of Purchase invoice")
-#                 if reference_doctype and reference_name:
-#                     reference_doc = frappe.get_doc(reference_doctype, reference_name)
-#                     if hasattr(reference_doc, 'services'):
-#                         print(reference_doc.services)
-#                         service_value = reference_doc.services
-#                         i.service = service_value
-#         doc.save()
-#     print(ind)
-
-@frappe.whitelist()
-def update_service_in_payment_entries(ref_doc,ref_name):
-    if ref_doc=="Sales Order":
-        if ref_doc and ref_name:
-            reference_doc = frappe.get_doc(ref_doc, ref_name)
-            if hasattr(reference_doc, 'service'):
-                service_value = reference_doc.service
-    elif ref_doc=="Sales Invoice":
-        if ref_doc and ref_name:
-            reference_doc = frappe.get_doc(ref_doc, ref_name)
-            if hasattr(reference_doc, 'services'):
-                service_value = reference_doc.services
-    elif ref_doc=="Purchase Invoice":
-        if ref_doc and ref_name:
-            reference_doc = frappe.get_doc(ref_doc, ref_name)
-            if hasattr(reference_doc, 'services'):
-                service_value = reference_doc.services
-    elif ref_doc=="Purchase Order":
-        if ref_doc and ref_name:
-            reference_doc = frappe.get_doc(ref_doc, ref_name)
-            if hasattr(reference_doc, 'custom_service'):
-                service_value = reference_doc.custom_service
-
-    return service_value
+#     return service_value
 
 
 
@@ -4199,13 +3249,6 @@ def update_lead_as_converted(doc,method):
             lead.status='Converted'
             lead.save(ignore_permissions=True)
 
-@frappe.whitelist()
-def update_lead_as_qualified(doc,method):
-    if doc.lead_name:
-        if frappe.db.exists("Lead",doc.lead_name):
-            lead=frappe.get_doc("Lead",doc.lead_name)
-            lead.status='Converted'
-            lead.save(ignore_permissions=True)
 
 @frappe.whitelist()
 def update_existing_lead(doc,method):
@@ -4220,7 +3263,7 @@ from frappe.utils import flt, fmt_money
 @frappe.whitelist()
 def dashboard_data_receivable(from_date, to_date):
     query = """
-    SELECT 
+    SELECT
         SUM(COALESCE(CASE WHEN so.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN so.base_total ELSE 0 END, 0)) AS `THIS`,
         SUM(COALESCE(CASE WHEN so.company = 'TEAMPRO Food Products' THEN so.base_total ELSE 0 END, 0)) AS `TFP`,
         SUM(COALESCE(CASE WHEN so.company = 'TEAMPRO General Trading Pvt. Ltd.' THEN so.base_total ELSE 0 END, 0)) AS `TGTP`,
@@ -4232,8 +3275,8 @@ def dashboard_data_receivable(from_date, to_date):
     AND so.transaction_date <= %s;
     """
     result = frappe.db.sql(query, (from_date, to_date), as_dict=True)
-    
-    query2 = """SELECT 
+
+    query2 = """SELECT
             SUM(COALESCE(CASE WHEN si.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN si.base_total ELSE 0 END, 0)) AS `THIS`,
             SUM(COALESCE(CASE WHEN si.company = 'TEAMPRO Food Products' THEN si.base_total ELSE 0 END, 0)) AS `TFP`,
             SUM(COALESCE(CASE WHEN si.company = 'TEAMPRO General Trading Pvt. Ltd.' THEN si.base_total ELSE 0 END, 0)) AS `TGTP`,
@@ -4265,19 +3308,19 @@ def dashboard_data_receivable(from_date, to_date):
     data += f'<tr><td width=20% >Collection(Grand Total)</td><td width=20% >{fmt_money(result3[0]["THIS"])}</td><td width=20% >{fmt_money(result3[0]["TFP"])}</td><td width=20% >{fmt_money(result3[0]["TGTP"])}</td><td width=20% >{fmt_money(result3[0]["MFAL"])}</td><td width=20% >{fmt_money(result3[0]["Total"])}</td></tr>'
     data += '</table>'
 
-    
+
     return data
 
 @frappe.whitelist()
 def count_sfp():
     import frappe
     count = frappe.db.sql("""
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
         FROM `tabSales Follow Up` AS sf
         WHERE sf.lead IS NOT NULL
         AND NOT EXISTS (
-            SELECT 1 
-            FROM `tabLead Contacts` AS lc 
+            SELECT 1
+            FROM `tabLead Contacts` AS lc
             WHERE lc.parent = sf.name
         )
     """)[0][0]
@@ -4288,7 +3331,7 @@ def count_sfp():
 @frappe.whitelist()
 def dashboard_data_payable(from_date, to_date):
     query = """
-    SELECT 
+    SELECT
        SUM(COALESCE(CASE WHEN so.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN so.grand_total ELSE 0 END, 0)) AS `THIS`,
        SUM(COALESCE(CASE WHEN so.company = 'TEAMPRO Food Products' THEN so.grand_total ELSE 0 END, 0)) AS `TFP`,
        SUM(COALESCE(CASE WHEN so.company = 'TEAMPRO General Trading Pvt. Ltd.' THEN so.grand_total ELSE 0 END, 0)) AS `TGTP`,
@@ -4300,7 +3343,7 @@ def dashboard_data_payable(from_date, to_date):
    AND so.transaction_date <= %s
     """
     result = frappe.db.sql(query, (from_date, to_date), as_dict=True)
-    
+
     query2 = """SELECT
         SUM(COALESCE(CASE WHEN si.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN si.grand_total ELSE 0 END, 0)) AS `THIS`,
         SUM(COALESCE(CASE WHEN si.company = 'TEAMPRO Food Products' THEN si.grand_total ELSE 0 END, 0)) AS `TFP`,
@@ -4332,14 +3375,14 @@ def dashboard_data_payable(from_date, to_date):
     data += f'<tr><td width=20% >Payment</td><td width=20% >{fmt_money(result3[0]["THIS"])}</td><td width=20% >{fmt_money(result3[0]["TFP"])}</td><td width=20% >{fmt_money(result3[0]["TGTP"])}</td><td width=20% >{fmt_money(result3[0]["MFAL"])}</td><td width=20% >{fmt_money(result3[0]["Total"])}</td></tr>'
     data += '</table>'
 
-    
+
     return data
 
 
 @frappe.whitelist()
 def dashboard_data_financial_status(from_date, to_date):
     query = """
-    SELECT 
+    SELECT
        CAST(FORMAT(SUM(CASE WHEN si.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN si.outstanding_amount ELSE 0 END), 2) AS CHAR) AS `THIS`,
        CAST(FORMAT(SUM(CASE WHEN si.company = 'TEAMPRO Food Products' THEN si.outstanding_amount ELSE 0 END), 2) AS CHAR) AS `TFP`,
        CAST(FORMAT(SUM(CASE WHEN si.company = 'TEAMPRO General Trading Pvt. Ltd.' THEN si.outstanding_amount ELSE 0 END), 2) AS CHAR) AS `TGTP`,
@@ -4349,8 +3392,8 @@ def dashboard_data_financial_status(from_date, to_date):
     WHERE si.status NOT IN ('Paid', 'Cancelled', 'Return', 'Credit Note Issued')
     """
     result = frappe.db.sql(query, as_dict=True)
-    
-    query2 = """SELECT 
+
+    query2 = """SELECT
         CAST(FORMAT(SUM(CASE WHEN so.company = 'TEAMPRO Food Products' THEN so.base_grand_total - ((so.base_grand_total * so.amount_billed) + so.advance_paid) ELSE 0 END), 2) AS CHAR) AS `TFP`,
         CAST(FORMAT(SUM(CASE WHEN so.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN so.base_grand_total - ((so.base_grand_total * so.amount_billed) + so.advance_paid) ELSE 0 END), 2) AS CHAR) AS `THIS`,
         CAST(FORMAT(SUM(CASE WHEN so.company = 'TEAMPRO General Trading Pvt. Ltd.' THEN so.base_grand_total - ((so.base_grand_total * so.amount_billed) + so.advance_paid) ELSE 0 END), 2) AS CHAR) AS `TGTP`,
@@ -4360,7 +3403,7 @@ def dashboard_data_financial_status(from_date, to_date):
      WHERE so.status NOT IN ('On Hold', 'To Deliver', 'Closed', 'Cancelled', 'Completed')
     """
     result2 = frappe.db.sql(query2, as_dict=True)
-    query3 = """SELECT 
+    query3 = """SELECT
        CAST(FORMAT(SUM(CASE WHEN pi.company = 'TEAMPRO HR & IT Services Pvt. Ltd.' THEN pi.outstanding_amount ELSE 0 END), 2) AS CHAR) AS `THIS`,
        CAST(FORMAT(SUM(CASE WHEN pi.company = 'TEAMPRO Food Products' THEN pi.outstanding_amount ELSE 0 END), 2) AS CHAR) AS `TFP`,
        CAST(FORMAT(SUM(CASE WHEN pi.company = 'TEAMPRO General Trading Pvt. Ltd.' THEN pi.outstanding_amount ELSE 0 END), 2) AS CHAR) AS `TGTP`,
@@ -4383,7 +3426,7 @@ def dashboard_data_financial_status(from_date, to_date):
     result4 = frappe.db.sql(query4,  as_dict=True)
 
     query5 = """
-    SELECT 
+    SELECT
        CAST(FORMAT((IFNULL(g2.opening_debit, 0) + IFNULL(SUM(sq2.debit), 0)) - (IFNULL(g2.opening_credit, 0) + IFNULL(SUM(sq2.credit), 0)), 2) AS CHAR) AS `THIS`,
        CAST(FORMAT((IFNULL(g.opening_debit, 0) + IFNULL(SUM(sq.debit), 0)) - (IFNULL(g.opening_credit, 0) + IFNULL(SUM(sq.credit), 0)), 2) AS CHAR) AS `TFP`,
        CAST(FORMAT((IFNULL(g3.opening_debit, 0) + IFNULL(SUM(sq3.debit), 0)) - (IFNULL(g3.opening_credit, 0) + IFNULL(SUM(sq3.credit), 0)), 2) AS CHAR) AS `TGTP`,
@@ -4586,7 +3629,7 @@ def dashboard_data_financial_status(from_date, to_date):
         ON c.name = sq4.company
     WHERE c.name IN ('TEAMPRO HR & IT Services Pvt. Ltd.','TEAMPRO Food Products', 'TEAMPRO General Trading Pvt. Ltd.', 'MUSISA FERIK AL-MAHTARVIN LALAMAGALAT')"""
     result6 = frappe.db.sql(query6,  as_dict=True)
-        
+
     query7 = """SELECT
        CAST(FORMAT((IFNULL(g2.opening_debit, 0) + IFNULL(SUM(sq2.debit), 0)) - (IFNULL(g2.opening_credit, 0) + IFNULL(SUM(sq2.credit), 0)), 2) AS CHAR) AS `THIS`,
        CAST(FORMAT((IFNULL(g.opening_debit, 0) + IFNULL(SUM(sq.debit), 0)) - (IFNULL(g.opening_credit, 0) + IFNULL(SUM(sq.credit), 0)), 2) AS CHAR) AS `TFP`,
@@ -4802,7 +3845,7 @@ def dashboard_data_financial_status(from_date, to_date):
 
     data += '</table>'
 
-    
+
     return data
 
 def move_to_sfp():
@@ -4860,9 +3903,6 @@ def get_road_distance_graphhopper(origin_lat, origin_lon, destination_lat, desti
 
 @frappe.whitelist()
 def set_quotation(doc,method):
-    # opportunity = frappe.get_all("Quotation",{"docstatus":("!=",2)},["name","opportunity"])
-    # for i in opportunity:
-    #     if i.opportunity:
     frappe.db.set_value("Opportunity",doc.opportunity,"custom_quotation",doc.name)
 
 # @frappe.whitelist()
@@ -4900,7 +3940,7 @@ def sales_app_team_dpr_daily():
         reciever.append(j.user_id)
     for i in emp:
         recievers.append(i.user_id)
-    recievers.append('anil.p@groupteampro.com')
+    recievers.append('annie.m@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="9"><b>APP & Team DPR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -4923,20 +3963,20 @@ def sales_app_team_dpr_daily():
     for user_email in recievers:
         print(user_email)
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user=%s AND p.scheduled_time BETWEEN %s AND %s
         """, (user_email, f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"), as_dict=True)[0].count or 0
-        
+
         short_code = frappe.db.get_value("Employee", {"user_id": user_email}, "short_code")
         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Customer"})
-        
+
         # appointment_count = frappe.db.count("Appointment",{"scheduled_time": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":user_email})
         todo_count=frappe.db.count("ToDo",{"allocated_to":user_email,"custom_production_date":formatted_next_date})
         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
@@ -4974,17 +4014,17 @@ def sales_app_team_dpr_daily():
     '''
     for user in recievers:
         appointment_day_beforecount = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user=%s AND p.scheduled_time BETWEEN %s AND %s
         """, (user, f"{formatted_before_date} 00:00:00", f"{formatted_before_date} 23:59:59"), as_dict=True)[0].count or 0
         short_code = frappe.db.get_value("Employee", {"user_id": user}, "short_code")
         lead_day_bforecount = frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
         open_day_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_day_befor_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Customer"})
         todo_day_before_count=frappe.db.count("ToDo",{"allocated_to":user,"custom_production_date":formatted_before_date})
         data += '<tr style="text-align:center;"><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
@@ -5002,7 +4042,7 @@ def sales_app_team_dpr_daily():
                 user_email = i['user']
                 short_code = frappe.db.get_value("Employee", {"user_id":i.user }, "short_code")
                 data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="7" style="text-align: left; padding-left: 50px;">{}</td></tr>'.format(short_code,i.time,i.name)
-            
+
     data += '</table>'
 
 
@@ -5010,7 +4050,7 @@ def sales_app_team_dpr_daily():
     frappe.sendmail(
                 # recipients=recievers,
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['anil.p@groupteampro.com'],
+                recipients=['annie.m@groupteampro.com'],
                 cc='dineshbabu.k@groupteampro.com',
                 subject='APP & Team DPR %s -Reg' % formatted_date,
                 message = """
@@ -5019,7 +4059,7 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -5040,9 +4080,9 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
             </tr>
         '''
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user = %s AND p.scheduled_time BETWEEN %s AND %s
     """, (user_email, f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"), as_dict=True)[0].count or 0
         # Other counts
@@ -5092,17 +4132,17 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
     '''
     for users in reciever:
         appointment_day_beforecount = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user=%s AND p.scheduled_time BETWEEN %s AND %s
         """, (users, f"{formatted_before_date} 00:00:00", f"{formatted_before_date} 23:59:59"), as_dict=True)[0].count or 0
         short_code = frappe.db.get_value("Employee", {"user_id": users}, "short_code")
         lead_day_bforecount = frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
         open_day_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_day_befor_count=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Customer"})
         todo_day_before_count=frappe.db.count("ToDo",{"allocated_to":users,"custom_production_date":formatted_before_date})
         data += '<tr style="text-align:center;"><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
@@ -5155,11 +4195,11 @@ def sales_ami_team_dpr_daily():
     formatted_before_date=before_dates.strftime('%Y-%m-%d')
     data=[]
     for i in emp:
-        recievers.append(i.user_id) 
+        recievers.append(i.user_id)
 
     for j in emp:
         reciever.append(j.user_id)
-    recievers.append('annie.m@groupteampro.com') 
+    recievers.append('annie.m@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="9"><b>ANI & Team DPR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -5179,18 +4219,18 @@ def sales_ami_team_dpr_daily():
         short_code = frappe.db.get_value("Employee", {"user_id": user_email}, "short_code")
         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Customer"})
-        
+
         # appointment_count = frappe.db.count("Appointment",{"scheduled_time": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":user_email})
         todo_count=frappe.db.count("ToDo",{"allocated_to":user_email,"custom_production_date":formatted_next_date})
         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
                 short_code,'3' , lead_count if lead_count else '0' , open_count if open_count else '0', replied_count if replied_count else '0', interested_count if interested_count else '0', opportunity_count if opportunity_count else '0', customer_count if customer_count else'0',todo_count if todo_count else '0'
             )
-        
-    for todo in  recievers:  
+
+    for todo in  recievers:
         todo_list=frappe.db.get_all("ToDo",{"custom_production_date":formatted_next_date,"allocated_to":todo},["*"])
         if todo_list:
             data += '''
@@ -5224,9 +4264,9 @@ def sales_ami_team_dpr_daily():
         short_code = frappe.db.get_value("Employee", {"user_id": user}, "short_code")
         lead_day_bforecount = frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
         open_day_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_day_befor_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Customer"})
         todo_day_before_count=frappe.db.count("ToDo",{"allocated_to":user,"custom_production_date":formatted_before_date})
         data += '<tr style="text-align:center;"><td>{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
@@ -5249,14 +4289,14 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
     for user_email in reciever:
         # Start of the table
         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-        
+
         # Header for ANI & Team DPR
         data += '<tr style="text-align:center;"><td colspan="9"><b>ANI & Team DPR, {}</b></td></tr>'.format(formatted_date)
         data += '''
@@ -5272,7 +4312,7 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
                 <td style="width:10%;"><b>ToDo</b></td>
             </tr>
         '''
-        
+
         # Populate ANI & Team DPR rows
         short_code = frappe.db.get_value("Employee", {"user_id": user_email}, "short_code")
         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user_email, "next_contact_date": formatted_next_date, "follow_up_to": "Lead", "status": "Lead"})
@@ -5384,20 +4424,20 @@ def sales_jss_team_dpr_daily():
     for user_email in recievers:
         print(user_email)
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user=%s AND p.scheduled_time BETWEEN %s AND %s
         """, (user_email, f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"), as_dict=True)[0].count or 0
-        
+
         short_code = frappe.db.get_value("Employee", {"user_id": user_email}, "short_code")
         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Customer"})
-        
+
         # appointment_count = frappe.db.count("Appointment",{"scheduled_time": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":user_email})
         todo_count=frappe.db.count("ToDo",{"allocated_to":user_email,"custom_production_date":formatted_next_date})
         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
@@ -5434,17 +4474,17 @@ def sales_jss_team_dpr_daily():
     '''
     for user in recievers:
         appointment_day_beforecount = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user=%s AND p.scheduled_time BETWEEN %s AND %s
         """, (user, f"{formatted_before_date} 00:00:00", f"{formatted_before_date} 23:59:59"), as_dict=True)[0].count or 0
         short_code = frappe.db.get_value("Employee", {"user_id": user}, "short_code")
         lead_day_bforecount = frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
         open_day_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_day_befor_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Customer"})
         todo_day_before_count=frappe.db.count("ToDo",{"allocated_to":user,"custom_production_date":formatted_before_date})
         data += '<tr style="text-align:center;"><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
@@ -5462,7 +4502,7 @@ def sales_jss_team_dpr_daily():
                 user_email = i['user']
                 short_code = frappe.db.get_value("Employee", {"user_id":i.user }, "short_code")
                 data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="7" style="text-align: left; padding-left: 50px;">{}</td></tr>'.format(short_code,i.time,i.name)
-            
+
     data += '</table>'
 
 
@@ -5479,7 +4519,7 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -5500,9 +4540,9 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
             </tr>
         '''
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user = %s AND p.scheduled_time BETWEEN %s AND %s
     """, (user_email, f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"), as_dict=True)[0].count or 0
         # Other counts
@@ -5552,17 +4592,17 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
     '''
     for users in reciever:
         appointment_day_beforecount = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user=%s AND p.scheduled_time BETWEEN %s AND %s
         """, (users, f"{formatted_before_date} 00:00:00", f"{formatted_before_date} 23:59:59"), as_dict=True)[0].count or 0
         short_code = frappe.db.get_value("Employee", {"user_id": users}, "short_code")
         lead_day_bforecount = frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
         open_day_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_day_befor_count=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"next_contact_date": formatted_before_date,"follow_up_to":"Customer"})
         todo_day_before_count=frappe.db.count("ToDo",{"allocated_to":users,"custom_production_date":formatted_before_date})
         data += '<tr style="text-align:center;"><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
@@ -5595,500 +4635,7 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
             """.format(user=user_email.split('@')[0], date=formatted_date, table=data)
         )
 
-# @frappe.whitelist()
-# def sales_app_team_dsr_daily():
-#     emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00023','user_id':('not in',['sivarenisha.m@groupteampro.com','jeniba.a@groupteampro.com'])},['*'])
-#     emp_emails=[]
-#     date_obj = datetime.strptime(str(date.today()), '%Y-%m-%d')
-#     formatted_date = date_obj.strftime('%d/%m/%Y')
-#     next_date=today()
-#     # next_date="2024-11-16"
-#     # next_date=add_days(nowdate(),1)
-#     next_dates=datetime.strptime(next_date, '%Y-%m-%d')
-#     formatted_next_date=next_dates.strftime('%Y-%m-%d')
-#     print(formatted_next_date)
-#     appointments = frappe.get_all("Appointment", filters={"custom_completed_date":formatted_next_date}, fields=["*"])
-#     user_mails=[]
-#     for i in emp:
-#         emp_emails.append(i.user_id)
-#     for j in emp:
-#         user_mails.append(j.user_id)
 
-#     emp_emails.append('anil.p@groupteampro.com')
-#     # emp_list=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00007','user_id':('not in',['dm@groupteampro.com'])},['*'])
-#     # for j in emp_list:
-#     #     emp_emails.append(j.user_id)
-#     # emp_emails.append('annie.m@groupteampro.com') 
-#     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-#     data += '<tr style="text-align:center;"><td colspan="9"><b>APP & Team DSR, {}</b></td></tr>'.format(formatted_date)
-#     data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td width="10%" colspan="1"><b>Exe</b></td>
-#             <td width="25%" colspan="1"><b>Effective</b></td>
-#             <td width="25%" colspan="1"><b>Non Effective</b></td>
-#             <td width="25%" colspan="1"><b>Appointment</b></td>
-#             <td width="25%" colspan="1"><b>TODO</b></td>     
-#             <td width="25%" colspan="1"><b>Total</b></td>
-#         </tr>
-#     '''
-#     appointment_lists = []
-#     app_individual=[]
-#     todo_lists=[]
-#     for c in emp_emails:
-#         appointment_count = frappe.db.sql("""
-#         SELECT COUNT(DISTINCT p.name) AS count 
-#         FROM `tabAppointment` p 
-#         INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
-#         WHERE c.user = %s AND p.custom_completed_date=%s
-#     """, (c,formatted_next_date), as_dict=True)[0].count or 0
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
-
-#         short_code=frappe.db.get_value("Employee",{"user_id":c},["short_code"])
-#         effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"call_status": "Effective"})
-#         non_effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"call_status": "Non Effective"})
-#         total_calls = effective_call + non_effective_call
-#         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-#                 short_code,effective_call if effective_call else '0' , non_effective_call if non_effective_call else '0',appointment_count if appointment_count else '0',todo_count if todo_count else '0',total_calls if total_calls else '0'
-#             )
-#         app = frappe.db.sql("""select p.status as status, p.name as name,p.custom_remarks as custom_remarks, c.user as user from `tabAppointment` p inner join `tabDPR Mail Users` c on c.parent = p.name where p.custom_completed_date = '%s' and c.user='%s'""" %(formatted_next_date,c),as_dict=1)
-#         todo_list = frappe.db.get_all("ToDo", {"custom_production_date": formatted_next_date, "allocated_to": c, "status": ('not in',['Cancelled'])}, ["*"])
-#         if app:
-#             appointment_lists.append(app)
-#         if todo_list:
-#             todo_lists.append(todo_list)
-#     if appointment_lists:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="9";"><b>Appointment</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td style="text-align:left;"colspan="1">Exe</td><td colspan="1" style="text-align:center; ">Customer</td><td colspan="1">Status</td><td colspan="3">Remarks</td></tr>
-#         '''
-#         for appt_group in appointment_lists:
-#             for i in appt_group:  # each 'i' is a dictionary with appointment details
-#                 user_email = i['user']
-#                 short_code = frappe.db.get_value("Employee", {"user_id": i.user}, "short_code")
-#                 data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 50px;">{}</td><td colspan="1">{}</td><td colspan="3">{}</td></tr>'.format(short_code,i.name,i.status,i.custom_remarks)
-#     if todo_lists:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="9";"><b>ToDo</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td  style="text-align:left;" colspan="1" width="">Exe</td><td colspan="1">ID</td><td colspan="1" style=" text-align: center;">Subject</td><td colspan="3">Remarks</td></tr>
-#         '''
-#         for k in todo_lists:
-#             for m in k:
-#                 short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
-#                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 10px;">{}</td><td colspan="3">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
-
-    
-#     data += '</table>'
-#     frappe.sendmail(
-#                 # recipients=recievers,
-#                 # recipients=['divya.p@groupteampro.com'],
-#                 recipients=['anil.p@groupteampro.com'], 
-#                 cc='dineshbabu.k@groupteampro.com',
-#                 subject='APP & Team DSR %s -Reg' % formatted_date,
-#                 message = """
-#                 <b>Dear Team,</b><br><br>
-# Please find the below DSR for {} for your kind reference and action.<br><br>
-
-#             {}<br><br>
-#                 Thanks & Regards,<br>TEAM ERP<br>
-                
-#                 <i>This email has been automatically generated. Please do not reply</i>
-#                 """.format(formatted_date,data)
-#             )
-#     for c in user_mails:
-#         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-#         data += '<tr style="text-align:center;"><td colspan="9"><b>APP & Team DSR, {}</b></td></tr>'.format(formatted_date)
-#         data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td width="25%" colspan="1"><b>Exe</b></td>
-#             <td width="25%" colspan="1"><b>Effective</b></td>
-#             <td width="25%" colspan="1"><b>Non Effective</b></td>
-#             <td width="25%" colspan="1"><b>Appointment</b></td>
-#             <td width="25%" colspan="1"><b>TODO</b></td>     
-#             <td width="25%" colspan="1"><b>Total</b></td>
-#         </tr>
-#         '''
-#         appointment_count = frappe.db.sql("""
-#         SELECT COUNT(DISTINCT p.name) AS count 
-#         FROM `tabAppointment` p 
-#         INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
-#         WHERE c.user = %s AND p.custom_completed_date=%s
-#     """, (c,formatted_next_date), as_dict=True)[0].count or 0
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
-
-#         short_code=frappe.db.get_value("Employee",{"user_id":c},["short_code"])
-#         effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"call_status": "Effective"})
-#         non_effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"call_status": "Non Effective"})
-#         total_calls = effective_call + non_effective_call
-#         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-#                 short_code,effective_call if effective_call else '0' , non_effective_call if non_effective_call else '0',appointment_count if appointment_count else '0',todo_count if todo_count else '0',total_calls if total_calls else '0'
-#             )
-#         app_i = frappe.db.sql("""select p.status as status, p.name as name,p.custom_remarks as custom_remarks, c.user as user from `tabAppointment` p inner join `tabDPR Mail Users` c on c.parent = p.name where p.custom_completed_date = '%s' and c.user='%s'""" %(formatted_next_date,c),as_dict=1)
-#         todo_lists = frappe.db.get_all("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])}, ["*"])
-
-#         if app_i:
-#             app_individual.append(app_i)
-#     if app_individual:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="9";"><b>Appointment</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;"><td colspan="1">Exe</td><td colspan="1" style="text-align:center; ">Customer</td><td colspan="1">Status</td><td colspan="3">Remarks</td></tr>
-#         '''
-#         for appt_group in app_individual:
-#             for i in appt_group:  # each 'i' is a dictionary with appointment details
-#                 user_email = i['user']
-#                 short_code = frappe.db.get_value("Employee", {"user_id": i.user}, "short_code")
-#                 data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 50px;">{}</td><td colspan="1">{}</td><td colspan="3">{}</td></tr>'.format(short_code,i.name,i.status,i.custom_remarks)
-
-#     if todo_lists:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="9";"><b>ToDo</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;"><td colspan="1" width="">Exe</td><td colspan="1">ID</td><td colspan="1" style=" text-align: center;">Subject</td><td colspan="3">Remarks</td></tr>
-#         '''
-#         for todo in todo_lists:
-#             short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
-#             data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 10px;">{}</td><td colspan="3">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
-
-    
-#     data += '</table>'
-#     frappe.sendmail(
-#                 recipients=[c],
-#                 # recipients=recievers,
-#                 # recipients=['divya.p@groupteampro.com'],
-#                 # recipients=['anil.p@groupteampro.com'], 
-#                 # cc='dineshbabu.k@groupteampro.com',
-#                 subject='APP & Team DSR  %s -Reg' % formatted_next_date,
-#                 message = """
-#                 <b>Dear Team,</b><br><br>
-# Please find the below DSR for {} for your kind reference and action.<br><br>
-
-#             {}<br><br>
-#                 Thanks & Regards,<br>TEAM ERP<br>
-                
-#                 <i>This email has been automatically generated. Please do not reply</i>
-#                 """.format(formatted_date,data)
-#             )
-# @frappe.whitelist()
-# def sales_app_team_dsr_daily():
-#     emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00023','user_id':('not in',['sivarenisha.m@groupteampro.com','jeniba.a@groupteampro.com'])},['*'])
-#     emp_emails=[]
-#     date_obj = datetime.strptime(str(date.today()), '%Y-%m-%d')
-#     # date_obj = datetime.strptime(add_days(today(), -1), '%Y-%m-%d')
-#     formatted_date = date_obj.strftime('%d/%m/%Y')
-#     # next_date=add_days(today(),-1)
-#     next_date=today()
-#     next_dates=datetime.strptime(next_date, '%Y-%m-%d')
-#     formatted_next_date=next_dates.strftime('%Y-%m-%d')
-#     before_date=add_days(today(),-1)
-#     before_dates=datetime.strptime(before_date, '%Y-%m-%d')
-#     formatted_before_date=before_dates.strftime('%Y-%m-%d')
-#     user_mails=[]
-#     for i in emp:
-#         emp_emails.append(i.user_id)
-#     for j in emp:
-#         user_mails.append(j.user_id)
-
-#     emp_emails.append('anil.p@groupteampro.com') 
-#     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-#     data += '<tr style="text-align:center;"><td colspan="11"><b>APP & Team DSR, {}</b></td></tr>'.format(formatted_date)
-#     data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td style="width:10%;"><b>Exe</b></td>
-#             <td style="width:15%;"><b>Apt</b></td>
-#             <td style="width:20%;"><b>Lead</b></td>
-#             <td style="width:13%;"><b>Open</b></td>
-#             <td style="width:10%;"><b>Replied</b></td>
-#             <td style="width:7%;"><b>Interested</b></td>
-#             <td style="width:13%;"><b>Oppr</b></td>
-#             <td style="width:13%;"><b>Cust</b></td>
-#             <td style="width:10%;"><b>ToDo</b></b></td>
-#             <td style="width:10%;"><b>OR%</b></b></td>
-#             <td style="width:10%;"><b>PR%</b></b></td>
-#         </tr>
-#     '''
-#     appointment_lists = []
-#     app_individual=[]
-#     todo_lists=[]
-    
-#     for c in emp_emails:
-#         appointment = frappe.db.get_all("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]]},["*"])
-#         appointment_count = frappe.db.sql("""
-#         SELECT COUNT(DISTINCT p.name) AS count 
-#         FROM `tabAppointment` p 
-#         INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
-#         WHERE c.user = %s AND p.custom_completed_date=%s
-#     """, (c,formatted_next_date), as_dict=True)[0].count or 0
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
-#         short_code=frappe.db.get_value("Employee",{"user_id":c},["short_code"])
-#         # effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"call_status": "Effective"})
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":c,"custom_production_date":formatted_next_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-#         app = frappe.db.sql("""select p.status as status, p.name as name,p.custom_remarks as custom_remarks, c.user as user from `tabAppointment` p inner join `tabDPR Mail Users` c on c.parent = p.name where p.custom_completed_date = '%s' and c.user='%s'""" %(formatted_next_date,c),as_dict=1)
-
-#         todo_list = frappe.db.get_all("ToDo", {"custom_production_date": formatted_next_date, "allocated_to": c, "status": ('not in',['Cancelled'])}, ["*"])
-#         if app:
-#             appointment_lists.append(app)
-#         if todo_list:
-#             todo_lists.append(todo_list)
-#     if appointment_lists:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";"><b>Appointment Taken</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td style="text-align:left;"colspan="1">Exe</td><td colspan="1" style="text-align:center; ">Customer</td><td colspan="2">Status</td><td colspan="7">Remarks</td></tr>
-#         '''
-#         for appt_group in appointment_lists:
-#             for i in appt_group:  # each 'i' is a dictionary with appointment details
-#                 user_email = i['user']
-#                 short_code = frappe.db.get_value("Employee", {"user_id": i.user}, "short_code")
-#                 data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 50px;">{}</td><td colspan="2">{}</td><td colspan="7">{}</td></tr>'.format(short_code,i.name,i.status,i.custom_remarks)
-#     data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";"><b>Appointment Fixed</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td colspan="3" style="text-align:center; ">Customer</td><td colspan="1">Status</td><td colspan="7">Remarks</td></tr>
-#         '''
-#     for j in appointment:
-#         data+='<tr style="text-align:center;"><td colspan="3" style="text-align: left; padding-left: 50px;">{}</td><td colspan="1">{}</td><td colspan="7">{}</td></tr>'.format(j.name,j.status,j.custom_remarks)
-#     data += '<tr style="text-align:center;"><td colspan="11"><b>Non Updated Followup</b></td></tr>'
-#     data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td style="width:10%;"><b>Exe</b></td>
-#             <td style="width:15%;"><b>Apt</b></td>
-#             <td style="width:20%;"><b>Lead</b></td>
-#             <td style="width:13%;"><b>Open</b></td>
-#             <td style="width:10%;"><b>Replied</b></td>
-#             <td style="width:7%;"><b>Interested</b></td>
-#             <td style="width:13%;"><b>Oppr</b></td>
-#             <td style="width:13%;"><b>Cust</b></td>
-#             <td style="width:10%;"><b>ToDo</b></b></td>
-#             <td style="width:10%;"><b>OR%</b></b></td>
-#             <td style="width:10%;"><b>PR%</b></b></td>
-#         </tr>
-#     '''
-#     for user in emp_emails:
-#         appointment_count = frappe.db.sql("""
-#         SELECT COUNT(DISTINCT p.name) AS count 
-#         FROM `tabAppointment` p 
-#         INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
-#         WHERE c.user = %s AND p.custom_completed_date=%s
-#     """, (user,formatted_before_date), as_dict=True)[0].count or 0
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":user, "status": ('not in',['Cancelled'])})
-#         short_code=frappe.db.get_value("Employee",{"user_id":user},["short_code"])
-#         # effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_before_date,"call_status": "Effective"})
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":c,"custom_production_date":formatted_before_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td style="color: red;">{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-
-#     if todo_lists:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";"><b>ToDo</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td  style="text-align:left;" colspan="1" width="">Exe</td><td colspan="1">ID</td><td colspan="2" style=" text-align: center;">Subject</td><td colspan="7">Remarks</td></tr>
-#         '''
-#         for k in todo_lists:
-#             for m in k:
-#                 short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
-#                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
-
-    
-#     data += '</table>'
-#     frappe.sendmail(
-#                 # recipients=recievers,
-#                 # recipients=['divya.p@groupteampro.com'],
-#                 recipients=['anil.p@groupteampro.com'], 
-#                 cc='dineshbabu.k@groupteampro.com',
-#                 subject='APP & Team DSR %s -Reg' % formatted_date,
-#                 message = """
-#                 <b>Dear Team,</b><br><br>
-# Please find the below DSR for {} for your kind reference and action.<br><br>
-
-#             {}<br><br>
-#                 Thanks & Regards,<br>TEAM ERP<br>
-                
-#                 <i>This email has been automatically generated. Please do not reply</i>
-#                 """.format(formatted_date,data)
-#             )
-#     for d in user_mails:
-#         print(d)
-#         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-        
-#         data += '<tr style="text-align:center;"><td colspan="11"><b>APP & Team DSR, {}</b></td></tr>'.format(formatted_date)
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td style="width:10%;"><b>Exe</b></td>
-#                 <td style="width:15%;"><b>Appt</b></td>
-#                 <td style="width:20%;"><b>Lead</b></td>
-#                 <td style="width:13%;"><b>Open</b></td>
-#                 <td style="width:10%;"><b>Replied</b></td>
-#                 <td style="width:7%;"><b>Interested</b></td>
-#                 <td style="width:13%;"><b>Oppr</b></td>
-#                 <td style="width:13%;"><b>Cust</b></td>
-#                 <td style="width:10%;"><b>ToDo</b></td>
-#                 <td style="width:10%;"><b>OR%</b></b></td>
-#                 <td style="width:10%;"><b>PR%</b></b></td>
-#             </tr>
-#         '''
-#         appointment_ind = frappe.db.get_all("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]]},["*"])
-#         appointment_count = frappe.db.sql("""
-#         SELECT COUNT(DISTINCT p.name) AS count 
-#         FROM `tabAppointment` p 
-#         INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
-#         WHERE c.user = %s AND p.custom_completed_date=%s
-#     """, (d,formatted_next_date), as_dict=True)[0].count or 0
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":d, "status": ('not in',['Cancelled'])})
-#         short_code=frappe.db.get_value("Employee",{"user_id":d},["short_code"])
-#         # effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"call_status": "Effective"})
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":d,"custom_production_date":formatted_next_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}</td><td>{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-#         app = frappe.db.sql("""select p.status as status, p.name as name,p.custom_remarks as custom_remarks, c.user as user from `tabAppointment` p inner join `tabDPR Mail Users` c on c.parent = p.name where p.custom_completed_date = '%s' and c.user='%s'""" %(formatted_next_date,d),as_dict=1)
-
-#         todo_list = frappe.db.get_all("ToDo", {"custom_production_date": formatted_next_date, "allocated_to": d, "status": ('not in',['Cancelled'])}, ["*"])
-#         if app:
-#             app_individual.append(app)
-#         if todo_list:
-#             todo_lists.append(todo_list)
-#     if app_individual:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";><b>Appointment Taken</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td style="text-align:left;"colspan="1">Exe</td><td colspan="1" style="text-align:center; ">Customer</td><td colspan="2">Status</td><td colspan="7">Remarks</td></tr>
-#         '''
-#         for appt_group in app_individual:
-#             for i in appt_group:  # each 'i' is a dictionary with appointment details
-#                 user_email = i['user']
-#                 short_code = frappe.db.get_value("Employee", {"user_id": i.user}, "short_code")
-#                 data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 50px;">{}</td><td colspan="2">{}</td><td colspan="7">{}</td></tr>'.format(short_code,i.name,i.status,i.custom_remarks)
-#     data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";"><b>Appointment Fixed</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td colspan="3" style="text-align:center; ">Customer</td><td colspan="2">Status</td><td colspan="7">Remarks</td></tr>
-#         '''
-#     for j in appointment_ind:
-#         data+='<tr style="text-align:center;"><td colspan="3" style="text-align: left; padding-left: 50px;">{}</td><td colspan="2">{}</td><td colspan="7">{}</td></tr>'.format(j.name,j.status,j.custom_remarks)
-
-#     data += '<tr style="text-align:center;"><td colspan="11"><b>Non Updated Followup</b></td></tr>'
-#     data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td style="width:10%;"><b>Exe</b></td>
-#             <td style="width:15%;"><b>Apt</b></td>
-#             <td style="width:20%;"><b>Lead</b></td>
-#             <td style="width:13%;"><b>Open</b></td>
-#             <td style="width:10%;"><b>Replied</b></td>
-#             <td style="width:7%;"><b>Interested</b></td>
-#             <td style="width:13%;"><b>Oppr</b></td>
-#             <td style="width:13%;"><b>Cust</b></td>
-#             <td style="width:10%;"><b>ToDo</b></b></td>
-#             <td style="width:10%;"><b>OR%</b></b></td>
-#             <td style="width:10%;"><b>PR%</b></b></td>
-#         </tr>
-#     '''
-#     for users in user_mails:
-#         appointment_count = frappe.db.sql("""
-#         SELECT COUNT(DISTINCT p.name) AS count 
-#         FROM `tabAppointment` p 
-#         INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
-#         WHERE c.user = %s AND p.custom_completed_date=%s
-#     """, (users,formatted_before_date), as_dict=True)[0].count or 0
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":users, "status": ('not in',['Cancelled'])})
-#         short_code=frappe.db.get_value("Employee",{"user_id":users},["short_code"])
-#         # effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_before_date,"call_status": "Effective"})
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":users,"custom_production_date":formatted_before_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td style="color: red;">{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-
-#         if todo_lists:
-#             data += '''
-#                 <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                     <td colspan="11";><b>ToDo</b></b></td>
-#                 </tr>
-#                 <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td  style="text-align:left;" colspan="1" width="">Exe</td><td colspan="1">ID</td><td colspan="2" style=" text-align: center;">Subject</td><td colspan="7">Remarks</td></tr>
-#             '''
-#             for k in todo_lists:
-#                 for m in k:
-#                     short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
-#                     data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
-
-    
-#         data += '</table>'
-#         frappe.sendmail(
-#                     recipients=[d],
-#                     # recipients=recievers,
-#                     # recipients=['divya.p@groupteampro.com'],
-#                     subject='APP & Team DSR  %s -Reg' % formatted_next_date,
-#                     message = """
-#                     <b>Dear Team,</b><br><br>
-#     Please find the below DSR for {} for your kind reference and action.<br><br>
-
-#                 {}<br><br>
-#                     Thanks & Regards,<br>TEAM ERP<br>
-                    
-#                     <i>This email has been automatically generated. Please do not reply</i>
-#                     """.format(formatted_date,data)
-#                 )
 @frappe.whitelist()
 def sales_app_team_dsr_daily():
     emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00023','user_id':('not in',['sivarenisha.m@groupteampro.com','jeniba.a@groupteampro.com'])},['*'])
@@ -6109,7 +4656,7 @@ def sales_app_team_dsr_daily():
     for j in emp:
         user_mails.append(j.user_id)
 
-    emp_emails.append('anil.p@groupteampro.com') 
+    emp_emails.append('annie.m@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="11"><b>APP & Team DSR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -6130,13 +4677,13 @@ def sales_app_team_dsr_daily():
     appointment_lists = []
     app_individual=[]
     todo_lists=[]
-    
+
     for c in emp_emails:
         appointment = frappe.db.get_all("Sales Follow Up",{"appointment_created_on":formatted_next_date},["*"])
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabSales Follow Up` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabSales Follow Up` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE (c.user = %s OR p.visted_by = %s) AND p.visted_date=%s
     """, (c,c,formatted_next_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
@@ -6146,11 +4693,11 @@ def sales_app_team_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6230,9 +4777,9 @@ def sales_app_team_dsr_daily():
     '''
     for user in emp_emails:
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabSales Follow Up` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabSales Follow Up` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE (c.user = %s OR p.visted_by = %s) AND p.visted_date=%s
     """, (user,user,formatted_before_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":user, "status": ('not in',['Cancelled'])})
@@ -6242,11 +4789,11 @@ def sales_app_team_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6267,12 +4814,12 @@ def sales_app_team_dsr_daily():
                 short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
 
-    
+
     data += '</table>'
     frappe.sendmail(
                 # recipients=recievers,
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['anil.p@groupteampro.com'], 
+                recipients=['annie.m@groupteampro.com'],
                 cc='dineshbabu.k@groupteampro.com',
                 subject='APP & Team DSR %s -Reg' % formatted_date,
                 message = """
@@ -6281,14 +4828,14 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
     for d in user_mails:
         print(d)
         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-        
+
         data += '<tr style="text-align:center;"><td colspan="11"><b>APP & Team DSR, {}</b></td></tr>'.format(formatted_date)
         data += '''
             <tr style="background-color: #0f1568; color: white; text-align:center;">
@@ -6307,9 +4854,9 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         '''
         appointment_ind = frappe.db.get_all("Sales Follow Up",{"appointment_created_on":formatted_next_date},["*"])
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabSales Follow Up` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabSales Follow Up` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE (c.user = %s OR p.visted_by = %s) AND p.visted_date=%s
     """, (d,d,formatted_next_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":d, "status": ('not in',['Cancelled'])})
@@ -6319,11 +4866,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6396,9 +4943,9 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
     '''
     for users in user_mails:
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabSales Follow Up` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabSales Follow Up` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE (c.user = %s OR p.visted_by = %s) AND p.visted_date=%s
     """, (users,users,formatted_before_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":users, "status": ('not in',['Cancelled'])})
@@ -6408,11 +4955,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6433,7 +4980,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
                     short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
                     data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
 
-    
+
         data += '</table>'
         frappe.sendmail(
                     recipients=[d],
@@ -6446,266 +4993,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
                 {}<br><br>
                     Thanks & Regards,<br>TEAM ERP<br>
-                    
+
                     <i>This email has been automatically generated. Please do not reply</i>
                     """.format(formatted_date,data)
                 )
-# @frappe.whitelist()
-# def sales_ami_team_dsr_daily():
-#     emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00007','user_id':('not in',['dm@groupteampro.com']),"name":('!=',("TC00058"))},['*'])
-#     emp_emails=[]
-#     date_obj = datetime.strptime(str(date.today()), '%Y-%m-%d')
-#     formatted_date = date_obj.strftime('%d/%m/%Y')
-#     next_date=nowdate()
-#     next_dates=datetime.strptime(next_date, '%Y-%m-%d')
-#     # next_date=add_days(nowdate(),1)
-#     formatted_next_date=next_dates.strftime('%Y-%m-%d')
-#     before_date=add_days(today(),-1)
-#     before_dates=datetime.strptime(before_date, '%Y-%m-%d')
-#     formatted_before_date=before_dates.strftime('%Y-%m-%d')
-#     user_mails=[]
-#     for i in emp:
-#         emp_emails.append(i.user_id)
-#     for j in emp:
-#         user_mails.append(j.user_id)
 
-#     emp_emails.append('annie.m@groupteampro.com')
-#     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-#     data += '<tr style="text-align:center;"><td colspan="11"><b>ANI & Team DSR, {}</b></td></tr>'.format(formatted_date)
-#     data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td style="width:10%;"><b>Exe</b></td>
-#             <td style="width:15%;"><b>Apt</b></td>
-#             <td style="width:20%;"><b>Lead</b></td>
-#             <td style="width:13%;"><b>Open</b></td>
-#             <td style="width:10%;"><b>Replied</b></td>
-#             <td style="width:7%;"><b>Interested</b></td>
-#             <td style="width:13%;"><b>Oppr</b></td>
-#             <td style="width:13%;"><b>Cust</b></td>
-#             <td style="width:10%;"><b>ToDo</b></b></td>
-#             <td style="width:10%;"><b>OR%</b></b></td>
-#             <td style="width:10%;"><b>PR%</b></b></td>
-#         </tr>
-#     '''
-#     for c in emp_emails:
-        
-#         # appointment_count = frappe.db.count("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":c})
-#         appointment_count = frappe.db.count("Sales Follow Up",{"next_contact_by": c,"appointment_created_on":formatted_next_date})
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
-
-#         short_code=frappe.db.get_value("Employee",{"user_id":c},["short_code"])
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":c,"custom_production_date":formatted_next_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-#     appointment_list = frappe.db.get_all("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":["in",emp_emails]},["*"])
-#     if appointment_list:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";"><b>Appointment Fixed</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td colspan="1">Exe</td><td colspan="2" style="text-align:center;">Customer</td><td colspan="2">Status</td><td colspan="7">Remarks</td></tr>
-#         '''
-#         for i in appointment_list:
-#             short_code = frappe.db.get_value("Employee", {"user_id": i.owner}, "short_code")
-#             data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 50px;">{}</td><td colspan="2">{}</td><td colspan="7">{}</td></tr>'.format(short_code,i.name,i.status,i.custom_remarks)
-#     data += '<tr style="text-align:center;"><td colspan="11"><b>Non Updated Followup</b></td></tr>'
-#     data += '''
-#         <tr style="background-color: #0f1568; color: white; text-align:center;">
-#             <td style="width:10%;"><b>Exe</b></td>
-#             <td style="width:15%;"><b>Apt</b></td>
-#             <td style="width:20%;"><b>Lead</b></td>
-#             <td style="width:13%;"><b>Open</b></td>
-#             <td style="width:10%;"><b>Replied</b></td>
-#             <td style="width:7%;"><b>Interested</b></td>
-#             <td style="width:13%;"><b>Oppr</b></td>
-#             <td style="width:13%;"><b>Cust</b></td>
-#             <td style="width:10%;"><b>ToDo</b></b></td>
-#             <td style="width:10%;"><b>OR%</b></b></td>
-#             <td style="width:10%;"><b>PR%</b></b></td>
-            
-#         </tr>
-#     '''
-#     for user in emp_emails:
-#         appointment_count = frappe.db.count("Appointment",{"creation": ["between", [f"{formatted_before_date} 00:00:00", f"{formatted_before_date} 23:59:59"]],"owner":user})
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":user, "status": ('not in',['Cancelled'])})
-#         short_code=frappe.db.get_value("Employee",{"user_id":user},["short_code"])
-#         # effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_before_date,"call_status": "Effective"})
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":c,"custom_production_date":formatted_before_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td style="color: red;">{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else '0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-
-#     todo_list = frappe.db.get_all("ToDo", {"custom_production_date": formatted_next_date, "allocated_to": ["in", emp_emails], "status": ('not in',['Cancelled'])}, ["*"])
-#     if todo_list:
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td colspan="11";"><b>ToDo</b></b></td>
-#             </tr>
-#             <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td colspan="1" width="">Exe</td><td colspan="1">ID</td><td colspan="2" style=" text-align: center;">Subject</td><td colspan="7">Remarks</td></tr>
-#         '''
-#         for todo in todo_list:
-#             short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
-#             data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
-
-    
-#     data += '</table>'
-#     frappe.sendmail(
-#                 # recipients=['divya.p@groupteampro.com'],
-#                 recipients=['annie.m@groupteampro.com'], 
-#                 cc='dineshbabu.k@groupteampro.com',
-#                 subject='ANI & Team DSR %s -Reg' % formatted_date,
-#                 message = """
-#                 <b>Dear Team,</b><br><br>
-# Please find the below DSR for {} for your kind reference and action.<br><br>
-
-#             {}<br><br>
-#                 Thanks & Regards,<br>TEAM ERP<br>
-                
-#                 <i>This email has been automatically generated. Please do not reply</i>
-#                 """.format(formatted_date,data)
-#             )
-#     for d in user_mails:
-#         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-#         data += '<tr style="text-align:center;"><td colspan="11"><b>ANI & Team DSR, {}</b></td></tr>'.format(formatted_date)
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td style="width:10%;"><b>Exe</b></td>
-#                 <td style="width:15%;"><b>Apt</b></td>
-#                 <td style="width:20%;"><b>Lead</b></td>
-#                 <td style="width:13%;"><b>Open</b></td>
-#                 <td style="width:10%;"><b>Replied</b></td>
-#                 <td style="width:7%;"><b>Interested</b></td>
-#                 <td style="width:13%;"><b>Oppr</b></td>
-#                 <td style="width:13%;"><b>Cust</b></td>
-#                 <td style="width:10%;"><b>ToDo</b></b></td>
-#                 <td style="width:10%;"><b>OR%</b></b></td>
-#                 <td style="width:10%;"><b>PR%</b></b></td>
-#             </tr>
-#         '''
-#         appointment_count = frappe.db.count("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":d})
-
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":d, "status": ('not in',['Cancelled'])})
-
-#         short_code=frappe.db.get_value("Employee",{"user_id":d},["short_code"])
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":c,"custom_production_date":formatted_next_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}/{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' ,effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-#         appointment_list = frappe.db.get_all("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":d},["*"])
-#         if appointment_list:
-#             data += '''
-#                 <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                     <td colspan="11";><b>Appointment Fixed</b></b></td>
-#                 </tr>
-#                 <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td colspan="1">Exe</td><td colspan="1" style="text-align:center;">Customer</td><td colspan="2">Status</td><td colspan="7">Remarks</td></tr>
-#             '''
-#         for i in appointment_list:
-#             short_code = frappe.db.get_value("Employee", {"user_id": i.owner}, "short_code")
-#             data+='<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1" style="text-align: left; padding-left: 50px;">{}</td><td colspan="2">{}</td><td colspan="7">{}</td></tr>'.format(short_code,i.name,i.status,i.custom_remarks)
-#         data += '<tr style="text-align:center;"><td colspan="11"><b>Non Updated Followup</b></td></tr>'
-#         data += '''
-#             <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                 <td style="width:10%;"><b>Exe</b></td>
-#                 <td style="width:15%;"><b>Apt</b></td>
-#                 <td style="width:20%;"><b>Lead</b></td>
-#                 <td style="width:13%;"><b>Open</b></td>
-#                 <td style="width:10%;"><b>Replied</b></td>
-#                 <td style="width:7%;"><b>Interested</b></td>
-#                 <td style="width:13%;"><b>Oppr</b></td>
-#                 <td style="width:13%;"><b>Cust</b></td>
-#                 <td style="width:10%;"><b>ToDo</b></b></td>
-#                 <td style="width:10%;"><b>OR%</b></b></td>
-#                 <td style="width:10%;"><b>PR%</b></b></td>
-#             </tr>
-#         '''
-#         appointment_count = frappe.db.count("Appointment",{"creation": ["between", [f"{formatted_before_date} 00:00:00", f"{formatted_before_date} 23:59:59"]],"owner":d})
-
-#         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":d, "status": ('not in',['Cancelled'])})
-#         short_code=frappe.db.get_value("Employee",{"user_id":d},["short_code"])
-#         # effective_call=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_before_date,"call_status": "Effective"})
-#         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
-#         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
-#         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-#         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-#         replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-#         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-#         interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-#         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-#         opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
-#         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
-#         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
-#         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
-#         todo_count=frappe.db.count("ToDo",{"allocated_to":c,"custom_production_date":formatted_before_date})
-#         data += '<tr style="text-align:center;"><td>{}</td><td style="color: red;">{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}/{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
-#                 short_code,appointment_count if appointment_count else '0' , effective_call_lead if effective_call_lead else '0',lead_count if lead_count else '0', effective_call_open if effective_call_open else '0',open_count if open_count else '0', effective_call_replied if effective_call_replied else '0',replied_count if replied_count else '0', effective_call_interested if effective_call_interested else '0',interested_count if interested_count else '0', effective_call_oppr if effective_call_oppr else '0',opportunity_count if opportunity_count else '0',effective_call_cust if effective_call_cust else'0',customer_count if customer_count else '0',todo_count if todo_count else '0','',''
-#             )
-
-#         todo_list = frappe.db.get_all("ToDo", {"custom_production_date": formatted_next_date, "allocated_to": d, "status": ('not in',['Cancelled'])}, ["*"])
-#         if todo_list:
-#             data += '''
-#                 <tr style="background-color: #0f1568; color: white; text-align:center;">
-#                     <td colspan="11";"><b>ToDo</b></b></td>
-#                 </tr>
-#                 <tr style="text-align:center; font-weight: 500;background-color: #87CEEB;"><td colspan="1" width="">Exe</td><td colspan="1">ID</td><td colspan="2" style=" text-align: center;">Subject</td><td colspan="7">Remarks</td></tr>
-#             '''
-#             for todo in todo_list:
-#                 short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
-#                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
-
-    
-#         data += '</table>'
-
-#         frappe.sendmail(
-#                 recipients=[d],
-#                 # recipients=['divya.p@groupteampro.com'],
-#                 subject='ANI & Team DSR  %s -Reg' % formatted_date,
-#                 message = """
-#                 <b>Dear Team,</b><br><br>
-# Please find the below DSR for {} for your kind reference and action.<br><br>
-
-#             {}<br><br>
-#                 Thanks & Regards,<br>TEAM ERP<br>
-                
-#                 <i>This email has been automatically generated. Please do not reply</i>
-#                 """.format(formatted_date,data)
-#             )
 @frappe.whitelist()
 def sales_ami_team_dsr_daily():
     emp=frappe.db.get_all("Employee",{'status':'Active','reports_to':'TI00007','user_id':('not in',['dm@groupteampro.com']),"name":('!=',("TC00058"))},['*'])
@@ -6744,7 +5036,7 @@ def sales_ami_team_dsr_daily():
         </tr>
     '''
     for c in emp_emails:
-        
+
         # appointment_count = frappe.db.count("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":c})
         appointment_count = frappe.db.count("Sales Follow Up",{"next_contact_by": c,"appointment_created_on":formatted_next_date})
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
@@ -6754,11 +5046,11 @@ def sales_ami_team_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6791,7 +5083,7 @@ def sales_ami_team_dsr_daily():
             <td style="width:10%;"><b>ToDo</b></b></td>
             <td style="width:10%;"><b>OR%</b></b></td>
             <td style="width:10%;"><b>PR%</b></b></td>
-            
+
         </tr>
     '''
     for user in emp_emails:
@@ -6804,11 +5096,11 @@ def sales_ami_team_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6829,11 +5121,11 @@ def sales_ami_team_dsr_daily():
             short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
             data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
 
-    
+
     data += '</table>'
     frappe.sendmail(
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['annie.m@groupteampro.com'], 
+                recipients=['annie.m@groupteampro.com'],
                 cc='dineshbabu.k@groupteampro.com',
                 subject='ANI & Team DSR %s -Reg' % formatted_date,
                 message = """
@@ -6842,7 +5134,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -6874,11 +5166,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6927,11 +5219,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -6952,7 +5244,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
                 short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
 
-    
+
         data += '</table>'
 
         frappe.sendmail(
@@ -6965,7 +5257,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -6990,7 +5282,7 @@ def sales_ss_team_dsr_daily():
     for j in emp:
         user_mails.append(j.user_id)
 
-    emp_emails.append('jayaraman.s@groupteampro.com') 
+    emp_emails.append('jayaraman.s@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="11"><b>JSS & Team DSR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -7011,13 +5303,13 @@ def sales_ss_team_dsr_daily():
     appointment_lists = []
     app_individual=[]
     todo_lists=[]
-    appointment_ind = [] 
+    appointment_ind = []
     for c in emp_emails:
         appointment = frappe.db.get_all("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]]},["*"])
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user = %s AND p.custom_completed_date=%s
     """, (c,formatted_next_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":c, "status": ('not in',['Cancelled'])})
@@ -7027,11 +5319,11 @@ def sales_ss_team_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -7084,9 +5376,9 @@ def sales_ss_team_dsr_daily():
     '''
     for user in emp_emails:
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user = %s AND p.custom_completed_date=%s
     """, (user,formatted_before_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":user, "status": ('not in',['Cancelled'])})
@@ -7096,11 +5388,11 @@ def sales_ss_team_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -7121,12 +5413,12 @@ def sales_ss_team_dsr_daily():
                 short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
 
-    
+
     data += '</table>'
     frappe.sendmail(
                 # recipients=recievers,
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['jayaraman.s@groupteampro.com'], 
+                recipients=['jayaraman.s@groupteampro.com'],
                 cc='dineshbabu.k@groupteampro.com',
                 subject='JSS & Team DSR %s -Reg' % formatted_date,
                 message = """
@@ -7135,13 +5427,13 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
     for d in user_mails:
         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
-        
+
         data += '<tr style="text-align:center;"><td colspan="11"><b>JSS & Team DSR, {}</b></td></tr>'.format(formatted_date)
         data += '''
             <tr style="background-color: #0f1568; color: white; text-align:center;">
@@ -7159,11 +5451,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
             </tr>
         '''
         appointment_ind = frappe.db.get_all("Appointment",{"creation": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]]},["*"]) or []
-        
+
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user = %s AND p.custom_completed_date=%s
     """, (d,formatted_next_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_next_date, "allocated_to":d, "status": ('not in',['Cancelled'])})
@@ -7173,11 +5465,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": d,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -7232,9 +5524,9 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
     '''
     for users in user_mails:
         appointment_count = frappe.db.sql("""
-        SELECT COUNT(DISTINCT p.name) AS count 
-        FROM `tabAppointment` p 
-        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name 
+        SELECT COUNT(DISTINCT p.name) AS count
+        FROM `tabAppointment` p
+        INNER JOIN `tabDPR Mail Users` c ON c.parent = p.name
         WHERE c.user = %s AND p.custom_completed_date=%s
     """, (users,formatted_before_date), as_dict=True)[0].count or 0
         todo_count = frappe.db.count("ToDo", {"custom_production_date": formatted_before_date, "allocated_to":users, "status": ('not in',['Cancelled'])})
@@ -7244,11 +5536,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": users,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -7269,7 +5561,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
                 short_code = frappe.db.get_value("Employee", {"user_id": m.allocated_to}, "short_code")
                 data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, m.name, m.custom_subject, m.current_status_ or '')
 
-    
+
         data += '</table>'
         frappe.sendmail(
                     recipients=[d],
@@ -7282,11 +5574,11 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
                 {}<br><br>
                     Thanks & Regards,<br>TEAM ERP<br>
-                    
+
                     <i>This email has been automatically generated. Please do not reply</i>
                     """.format(formatted_date,data)
                 )
-    
+
 @frappe.whitelist()
 def todo_report(allocated_to):
     s_no = 1
@@ -7322,7 +5614,7 @@ def download_todo_report():
     posting_date = datetime.now().strftime("%d-%m-%Y")
     filename_todo = "ToDo Report"+ posting_date
     build_xlsx_response_todo(filename_todo)
-    
+
 def build_xlsx_response_todo(filename_todo):
     xlsx_file = make_xlsx_todo(filename_todo)
     frappe.response['filename'] = filename_todo + '.xlsx'
@@ -7341,7 +5633,7 @@ def make_xlsx_todo(data, sheet_name=None, wb=None, column_widths=None):
     ws.column_dimensions['C'].width = 20
     ws.column_dimensions['D'].width = 20
     ws.column_dimensions['E'].width = 20
-    ws.column_dimensions['F'].width = 20 
+    ws.column_dimensions['F'].width = 20
     black_border = Border(
         left=Side(border_style="thin", color="000000"),
         right=Side(border_style="thin", color="000000"),
@@ -7349,13 +5641,13 @@ def make_xlsx_todo(data, sheet_name=None, wb=None, column_widths=None):
         bottom=Side(border_style="thin", color="000000")
     )
     header = ["ToDo Report"]
-    ws.append(header) 
+    ws.append(header)
 
     ws.append(["S NO", "ID", "Subject", "Current Status", "Date", "Status"])
 
-    for cell in ws[2]: 
+    for cell in ws[2]:
         cell.fill = fill_color
-        cell.font = header_font  # Apply white font to each header cell 
+        cell.font = header_font  # Apply white font to each header cell
         cell.border = black_border
         cell.alignment = Alignment(horizontal="center", vertical="center")
     ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=6)
@@ -7379,23 +5671,6 @@ def get_data_of_todo(args):
         data.append([s_no, i.name, i.custom_subject, i.current_status_, i.created_on, i.status])
         s_no+=1
     return data
-
-
-@frappe.whitelist()
-def so_creation_mail_it_sw(doc,method):
-    if doc.service=="IT-SW":
-        subject = f"New Sales Order Created: {doc.name}"
-        message = f"""
-            <p>Dear Sir/Mam,</p>
-            <p>A new Sales Order <strong>{doc.name}</strong> has been created for the service <strong>IT-SW</strong>.</p>
-            """
-        frappe.sendmail(
-            # recipients=['divya.p@groupteampro.com'],
-            recipients=['sarath.v@groupteampro.com'],
-            cc=['sangeetha.s@groupteampro.com','dineshbabu.k@groupteampro.com'],
-            subject=subject,
-            message=message
-        )
 
 @frappe.whitelist()
 def create_hooks_expense():
@@ -7429,7 +5704,7 @@ def send_mail_for_expenseapproval_weekly_hod():
                 '<td style="text-align:center; font-weight:bold; color:white;">Employee</td>' \
                 '<td style="text-align:center; font-weight:bold; color:white;">Total Claimed Amount</td>' \
                 '</tr>'
-        
+
         # Add each expense claim to the email content
         for expense in approver_expense_list:
             data += f'<tr>' \
@@ -7440,7 +5715,7 @@ def send_mail_for_expenseapproval_weekly_hod():
                     '</tr>'
             s_no += 1
         data += '</table>'
-        
+
         # Send the email
         frappe.sendmail(
             # recipients=["divya.p@groupteampro.com"],
@@ -7577,7 +5852,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
     border = Border(left=Side(border_style='thin', color='000000'),
             right=Side(border_style='thin', color='000000'),
             top=Side(border_style='thin', color='000000'),
-            bottom=Side(border_style='thin', color='000000')) 
+            bottom=Side(border_style='thin', color='000000'))
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=17):
         for cell in row:
             cell.border = thin_border
@@ -7612,7 +5887,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
     for col in range(1, len(headers) + 1):
         cell = ws.cell(row=2, column=col)
         cell.fill = head_fill
-        cell.font = Font(bold=True, color="FFFFFF")  
+        cell.font = Font(bold=True, color="FFFFFF")
         cell.alignment = Alignment(horizontal="center")
         cell.border = thin_border
     for col in range(1, len(sub_headers) + 1):
@@ -7650,7 +5925,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
     total_cr_issues=0
     total_all_tasks=0
     total_all_issues=0
-    current_row = 4 
+    current_row = 4
     s_row=4
     for c in cust:
         total_task_count = 0
@@ -7668,22 +5943,22 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
         h_pr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Pending Review","project":c.project_name,"priority":"High"})
         h_cr_taskcount=frappe.db.count("Task",{"status":"Client Review","spoc":spoc,"project_name":c.project_name,"priority":"High"})
         h_cr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Client Review","project":c.project_name,"priority":"High"})
-        high_task_count = h_open_taskcount + h_working_taskcount + h_overdue_taskcount + h_pr_taskcount + h_cr_taskcount 
+        high_task_count = h_open_taskcount + h_working_taskcount + h_overdue_taskcount + h_pr_taskcount + h_cr_taskcount
         high_issue_count = h_open_issuecount + h_working_issuecount + h_overdue_issuecount + h_pr_issuecount + h_cr_issuecount
         e_high_task_count = h_open_taskcount + h_working_taskcount + h_overdue_taskcount + h_pr_taskcount + h_cr_taskcount
         e_high_issue_count = h_open_issuecount + h_working_issuecount + h_overdue_issuecount + h_pr_issuecount + h_cr_issuecount
 
-        total_new_tasks += h_new_taskcount 
-        total_new_issues += h_new_issuecount 
-        total_open_tasks += h_open_taskcount 
-        total_open_issues += h_open_issuecount 
-        total_working_tasks += h_working_taskcount 
-        total_working_issues += h_working_issuecount 
-        total_overdue_tasks += h_overdue_taskcount 
-        total_overdue_issues += h_overdue_issuecount 
-        total_pr_tasks += h_pr_taskcount 
+        total_new_tasks += h_new_taskcount
+        total_new_issues += h_new_issuecount
+        total_open_tasks += h_open_taskcount
+        total_open_issues += h_open_issuecount
+        total_working_tasks += h_working_taskcount
+        total_working_issues += h_working_issuecount
+        total_overdue_tasks += h_overdue_taskcount
+        total_overdue_issues += h_overdue_issuecount
+        total_pr_tasks += h_pr_taskcount
         total_pr_issues += h_pr_issuecount
-        total_cr_tasks += h_cr_taskcount 
+        total_cr_tasks += h_cr_taskcount
         total_cr_issues += h_cr_issuecount
         total_all_tasks += e_high_task_count
         total_all_issues += e_high_issue_count
@@ -7692,7 +5967,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
         total_issue_count += high_issue_count
         # Initialize row data
         row_data = [serial_number, c['project_name'], "High"] + [""] * 14
-        
+
         # Prepare the row data, excluding the project name
         row_data[3] = '' if h_new_taskcount == 0 else h_new_taskcount  # Open Task Count (High)
         row_data[4] = '' if h_new_issuecount == 0 else h_new_issuecount  # Open Issue Count (High)
@@ -7711,7 +5986,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
 
 
         ws.append(row_data)
- 
+
         priority_cell = ws.cell(row=ws.max_row, column=3)  # Column C for "High"
         priority_cell.font = Font(color="FF0000")
         for idx in [3,4,5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15, 16,17]:
@@ -7724,7 +5999,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
             if cell.value and cell.value.strip() == "High":  # Check for "High"
                 cell.font = Font(color="FF0000")  # Set the font color to red
  # Change font color to red
-        for priority in priority_rows[1:]: 
+        for priority in priority_rows[1:]:
             total_mediumtask_count = 0
             total_mediumissue_count = 0
      # Start from Medium to avoid duplicating 'High'
@@ -7746,26 +6021,26 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
                 m_pr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Pending Review","project":c.project_name,"priority":"Medium"})
                 m_cr_taskcount=frappe.db.count("Task",{"status":"Client Review","spoc":spoc,"project_name":c.project_name,"priority":"Medium"})
                 m_cr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Client Review","project":c.project_name,"priority":"Medium"})
-                medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount 
+                medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount
                 medium_issue_count = m_open_issuecount + m_working_issuecount + m_overdue_issuecount + m_pr_issuecount + m_cr_issuecount
-                e_medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount 
-                e_medium_issue_count = m_open_issuecount + m_working_issuecount + m_overdue_issuecount + m_pr_issuecount + m_cr_issuecount 
-                total_new_tasks +=  m_new_taskcount 
-                total_new_issues +=m_new_issuecount 
-                total_open_tasks += m_open_taskcount 
+                e_medium_task_count = m_open_taskcount + m_working_taskcount + m_overdue_taskcount + m_pr_taskcount + m_cr_taskcount
+                e_medium_issue_count = m_open_issuecount + m_working_issuecount + m_overdue_issuecount + m_pr_issuecount + m_cr_issuecount
+                total_new_tasks +=  m_new_taskcount
+                total_new_issues +=m_new_issuecount
+                total_open_tasks += m_open_taskcount
                 total_open_issues +=  m_open_issuecount
-                total_working_tasks +=  m_working_taskcount 
-                total_working_issues +=  m_working_issuecount 
-                total_overdue_tasks +=  m_overdue_taskcount 
-                total_overdue_issues +=  m_overdue_issuecount 
-                total_pr_tasks += m_pr_taskcount 
-                total_pr_issues +=m_pr_issuecount 
-                total_cr_tasks += m_cr_taskcount 
+                total_working_tasks +=  m_working_taskcount
+                total_working_issues +=  m_working_issuecount
+                total_overdue_tasks +=  m_overdue_taskcount
+                total_overdue_issues +=  m_overdue_issuecount
+                total_pr_tasks += m_pr_taskcount
+                total_pr_issues +=m_pr_issuecount
+                total_cr_tasks += m_cr_taskcount
                 total_cr_issues += m_cr_issuecount             # Accumulate to total task/issue counts
                 total_mediumtask_count += medium_task_count
                 total_mediumissue_count += medium_issue_count
                 total_all_tasks += e_medium_task_count
-                total_all_issues += e_medium_issue_count 
+                total_all_issues += e_medium_issue_count
                 priority_row_data[3] = '' if m_new_taskcount == 0 else m_new_taskcount  # Open Task Count (High)
                 priority_row_data[4] = '' if m_new_issuecount == 0 else m_new_issuecount  # Open Issue Count (High)
                 priority_row_data[5] = '' if m_open_taskcount == 0 else m_open_taskcount  # Open Task Count (Medium)
@@ -7795,9 +6070,9 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
                 l_pr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Pending Review","project":c.project_name,"priority":"Low"})
                 l_cr_taskcount=frappe.db.count("Task",{"status":"Client Review","spoc":spoc,"project_name":c.project_name,"priority":"Low"})
                 l_cr_issuecount=frappe.db.count("Issue",{"custom_issue_status":"Client Review","project":c.project_name,"priority":"Low"})
-                low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount 
-                low_issue_count = l_open_issuecount + l_working_issuecount + l_overdue_issuecount + l_pr_issuecount + l_cr_issuecount 
-                e_low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount 
+                low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount
+                low_issue_count = l_open_issuecount + l_working_issuecount + l_overdue_issuecount + l_pr_issuecount + l_cr_issuecount
+                e_low_task_count = l_open_taskcount + l_working_taskcount + l_overdue_taskcount + l_pr_taskcount + l_cr_taskcount
                 e_low_issue_count = l_open_issuecount + l_working_issuecount + l_overdue_issuecount + l_pr_issuecount + l_cr_issuecount
                 total_new_tasks += l_new_taskcount
                 total_new_issues += l_new_issuecount
@@ -7815,7 +6090,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
                 total_mediumtask_count += low_task_count
                 total_mediumissue_count += low_issue_count
                 total_all_tasks += e_low_task_count
-                total_all_issues += e_low_issue_count 
+                total_all_issues += e_low_issue_count
                 priority_row_data[3] = '' if l_new_taskcount == 0 else l_new_taskcount  # Open Task Count (Low)
                 priority_row_data[4] = '' if l_new_issuecount == 0 else l_new_issuecount  # Open Issue Count (Low)
                 priority_row_data[5] = '' if l_open_taskcount == 0 else l_open_taskcount  # Open Task Count (Low)
@@ -7831,9 +6106,9 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
                 priority_row_data[15] = '' if total_mediumtask_count == 0 else total_mediumtask_count  # Total Task Count
                 priority_row_data[16] = '' if total_mediumissue_count == 0 else total_mediumissue_count  # Total Issue Count
 
-            ws.append(priority_row_data)  
+            ws.append(priority_row_data)
             # ws.merge_cells(start_row=current_row, start_column=2, end_row=current_row+2, end_column=2)
- 
+
             for idx in [3,4,5, 6, 7, 8, 9, 10, 11, 12, 13,14, 15, 16,17]:
                 cell = ws.cell(row=ws.max_row, column=idx)
                 cell.font = Font(color="000000")
@@ -7881,7 +6156,7 @@ def make_xlsx_spoc_project_weekly(spoc, filename):
     xlsx_file = BytesIO()
     wb.save(xlsx_file)
     xlsx_file.seek(0)
-    
+
     return xlsx_file
 
 @frappe.whitelist()
@@ -7900,7 +6175,7 @@ def kk_dpr_daily():
     before_dates=datetime.strptime(before_date, '%Y-%m-%d')
     formatted_before_date=before_dates.strftime('%Y-%m-%d')
     data=[]
-    recievers.append('keerthana.k@groupteampro.com') 
+    recievers.append('keerthana.k@groupteampro.com')
     data = '<table border="1" width="100%" style="border-collapse: collapse;">'
     data += '<tr style="text-align:center;"><td colspan="9"><b>KK DPR, {}</b></td></tr>'.format(formatted_date)
     data += '''
@@ -7920,18 +6195,18 @@ def kk_dpr_daily():
         short_code = frappe.db.get_value("Employee", {"user_id": user_email}, "short_code")
         lead_count = frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Lead"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user_email,"next_contact_date": formatted_next_date,"follow_up_to":"Customer"})
-        
+
         # appointment_count = frappe.db.count("Appointment",{"scheduled_time": ["between", [f"{formatted_next_date} 00:00:00", f"{formatted_next_date} 23:59:59"]],"owner":user_email})
         todo_count=frappe.db.count("ToDo",{"allocated_to":user_email,"custom_production_date":formatted_next_date})
         data += '<tr style="text-align:center;"><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>'.format(
                 short_code,'3' , lead_count if lead_count else '0' , open_count if open_count else '0', replied_count if replied_count else '0', interested_count if interested_count else '0', opportunity_count if opportunity_count else '0', customer_count if customer_count else'0',todo_count if todo_count else '0'
             )
-        
-    for todo in  recievers:  
+
+    for todo in  recievers:
         todo_list=frappe.db.get_all("ToDo",{"custom_production_date":formatted_next_date,"allocated_to":todo},["*"])
         if todo_list:
             data += '''
@@ -7965,9 +6240,9 @@ def kk_dpr_daily():
         short_code = frappe.db.get_value("Employee", {"user_id": user}, "short_code")
         lead_day_bforecount = frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Lead"})
         open_day_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
-        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
-        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
-        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        replied_day_beforecount= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
+        interested_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
+        opportunity_before_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         customer_day_befor_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"next_contact_date": formatted_before_date,"follow_up_to":"Customer"})
         todo_day_before_count=frappe.db.count("ToDo",{"allocated_to":user,"custom_production_date":formatted_before_date})
         data += '<tr style="text-align:center;"><td>{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td><td style="color: red;">{}</td></tr>'.format(
@@ -7989,7 +6264,7 @@ Please find the below DPR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -8034,11 +6309,11 @@ def kk_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": c,"last_contacted_on": formatted_next_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -8071,7 +6346,7 @@ def kk_dsr_daily():
             <td style="width:10%;"><b>ToDo</b></b></td>
             <td style="width:10%;"><b>OR%</b></b></td>
             <td style="width:10%;"><b>PR%</b></b></td>
-            
+
         </tr>
     '''
     for user in emp_emails:
@@ -8083,11 +6358,11 @@ def kk_dsr_daily():
         effective_call_lead=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Lead","call_status": "Effective"})
         open_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open"})
         effective_call_open=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Open","call_status": "Effective"})
-        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})       
+        replied_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied"})
         effective_call_replied=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Replied","call_status": "Effective"})
-        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})               
+        interested_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested"})
         effective_call_interested=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Interested","call_status": "Effective"})
-        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})   
+        opportunity_count= frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity"})
         effective_call_oppr=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Lead","status": "Opportunity","call_status": "Effective"})
         customer_count=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer"})
         effective_call_cust=frappe.db.count("Sales Follow Up", {"next_contact_by": user,"last_contacted_on": formatted_before_date,"follow_up_to":"Customer","call_status": "Effective"})
@@ -8108,11 +6383,11 @@ def kk_dsr_daily():
             short_code = frappe.db.get_value("Employee", {"user_id": todo.allocated_to}, "short_code")
             data += '<tr style="text-align:center;"><td colspan="1">{}</td><td colspan="1">{}</td><td colspan="2" style="text-align: left; padding-left: 10px;">{}</td><td colspan="7">{}</td></tr>'.format(short_code, todo.name, todo.custom_subject, todo.current_status_ or '')
 
-    
+
     data += '</table>'
     frappe.sendmail(
                 # recipients=['divya.p@groupteampro.com'],
-                recipients=['keerthana.k@groupteampro.com'], 
+                recipients=['keerthana.k@groupteampro.com'],
                 cc=['dineshbabu.k@groupteampro.com','sangeetha.a@groupteampro.com'],
                 subject='KK DSR %s -Reg' % formatted_date,
                 message = """
@@ -8121,7 +6396,7 @@ Please find the below DSR for {} for your kind reference and action.<br><br>
 
             {}<br><br>
                 Thanks & Regards,<br>TEAM ERP<br>
-                
+
                 <i>This email has been automatically generated. Please do not reply</i>
                 """.format(formatted_date,data)
             )
@@ -8155,7 +6430,7 @@ def update_tat_completion_date_inchecks(name):
                 holiday.append(current_date)
                 working_days -= 1
             current_date = add_days(current_date, 1)
-        
+
         return holiday[-1]
 
 @frappe.whitelist()
@@ -8173,7 +6448,7 @@ def update_tat_completion_date_inchecks_criminal(name):
                 holiday.append(current_date)
                 working_days -= 1
             current_date = add_days(current_date, 1)
-        
+
         return holiday[-1]
 
 @frappe.whitelist()
@@ -8408,7 +6683,7 @@ def update_tat_completion_date_sm(name):
                 working_days -= 1
             current_date = add_days(current_date, 1)
         return holiday[-1]
-    
+
 @frappe.whitelist()
 def update_tat_completion_date_sm_ch(name):
     doc=frappe.get_doc("Social Media",name)
@@ -8441,7 +6716,7 @@ def update_tat_completion_date_family(name):
                 holiday.append(current_date)
                 working_days -= 1
             current_date = add_days(current_date, 1)
-        
+
         return holiday[-1]
         # frappe.db.set_value("Family",doc.name,"tat_completion_date",holiday[-1])
 
@@ -8464,72 +6739,6 @@ def update_tat_completion_date_family_ch(name):
         # frappe.db.set_value("Family",doc.name,"tat_completion_date",holiday[-1])
 
 @frappe.whitelist()
-def validate_permission_request(doc,method):
-    start_date = get_first_day(doc.permission_date) 
-    end_date = get_last_day(doc.permission_date) 
-    permission=0
-    permission_list = frappe.db.get_all("Attendance Permission",{"name": ("!=", doc.name),"employee": doc.employee,"permission_date": ("between", [start_date, end_date]),"docstatus":("!=",2)},["*"])    
-    if permission_list:
-        for i in permission_list:
-            permission+=int(i.total_time)
-            if permission>=2:
-                frappe.throw("Only 2 hours Permission is allowed for the month")
-            elif permission<2:
-                permission+=int(doc.total_time)
-                if permission>2:
-                    frappe.throw("Already applied for 1 hour permission.You are only  allow to apply additionaly 1 hour")
-
-
-@frappe.whitelist()
-def update_permission_req_in_att(doc,method):
-    attendance=frappe.get_doc("Attendance",{"attendance_date":doc.permission_date,"docstatus":("!=",2),"employee":doc.employee})
-    hours=0
-    if attendance:
-        attendance.custom_attendance_permission=doc.name
-        if attendance.bt_difference:
-            diff=(attendance.bt_difference)
-            hours = diff+int(doc.total_time)
-        if hours>=8:
-            attendance.status="Present"
-        elif hours>=4 and hours < 8:
-            attendance.status="Half Day"
-        else:
-            attendance.status="Absent"
-    attendance.save()
-    frappe.db.commit()
-
-@frappe.whitelist()
-def update_permission_req_in_att_cancel(doc,method):
-    attendance=frappe.get_doc("Attendance",{"attendance_date":doc.permission_date,"docstatus":("!=",2),"employee":doc.employee})
-    hours=0
-    if attendance:
-        attendance.custom_attendance_permission=""
-        if attendance.bt_difference:
-            diff=(attendance.bt_difference)
-            hours = diff
-        if hours>=8:
-            attendance.status="Present"
-        elif hours>=4 and hours < 8:
-            attendance.status="Half Day"
-        else:
-            attendance.status="Absent"
-    attendance.save()
-    frappe.db.commit()
-
-
-@frappe.whitelist()
-def update_sfp_remarks(doc,method):
-    if doc.status in ['Open','Overdue','Enquiry']:
-        if doc.customer:
-            status=frappe.db.get_value('Customer',{'name':doc.customer},['disabled'])
-            sfp=frappe.db.get_all("Sales Follow Up",{'party_from':'Customer','party_name':doc.customer,'service':doc.service},['active','name'])
-            if status==0 and sfp:
-                for s in sfp:
-                    if s.active==0:
-                        frappe.db.set_value("Sales Follow Up",s.name,'active',True)   
-             
-
-@frappe.whitelist()
 def update_sfp_status():
     sfp=frappe.db.get_all("Sales Follow Up",{'party_from':'Customer'},['party_name','service','name'])
     for s in sfp:
@@ -8539,172 +6748,7 @@ def update_sfp_status():
                 frappe.db.set_value('Sales Follow Up',s.name,'active',1)
             else:
                 frappe.db.set_value('Sales Follow Up',s.name,'active',0)
-            
-            
-@frappe.whitelist()
-def update_profile_submission_project(project):
-    tasks=frappe.db.get_all("Task",{"project":project},["name"])
-    return tasks
 
-@frappe.whitelist()
-def send_mail_for_profile_submission(project):
-    pro=frappe.get_doc("Project",{"name":project})
-    posting_date = datetime.now().strftime("%d-%m-%Y")
-    spoc=pro.spoc
-    table = '<table text-align="center" border="1" width="75%" style="border-collapse: collapse;">'
-    table += '<tr style="background-color: #87CEFA"><td style= width="1%;font-weight: bold;"><b>Project</b></td><td style= width="1%";font-weight: bold;"><b>Task ID</b></td><td style="width:1%; font-weight: bold;">Position</td><td style="width: 1%; font-weight: bold;">#Profiles</td><td style="width:2%; font-weight: bold;">Date</td></tr>'
-    for i in pro.custom_profile_submission:
-        formatted_date = frappe.utils.formatdate(i.date, 'dd-mm-yyyy')
-        table+="""<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"""%(i.project,i.task,i.position,i.profiles,formatted_date)
-    table+='</table>'
-    subject="New Project Batch Profile Submission Plan-  %s" % posting_date
-    message = """
-    Dear Sir/Madam,<br><br>
-    Kindly find the below Project Details:<p><b>Project Name:</b>{}<p><b>Project ID:</b>{}<p><b>Project Manager</b>{}<p> A new project has been opened for your further action.<br>Kindly find the 1 st batch profile submission plan<br>{}<br></p><br>
-    Thanks & Regards,<br>TEAM ERP<br>
-    <i>This email has been automatically generated. Please do not reply</i>
-    """.format(pro.project_name,pro.name,pro.project_manager,table)
-    frappe.sendmail(
-        # recipients=["divya.p@groupteampro.com"],
-        recipients=["sangeetha.a@groupteampro.com","dineshbabu.k@groupteampro.com","sangeetha.s@groupteampro.com","aruna.g@groupteampro.com",spoc],
-        subject=subject,
-        message=message
-    )
-
-
-@frappe.whitelist()
-def project_send_mail_to_creation_adv(name):
-    posting_date = datetime.now().strftime("%d-%m-%Y")
-    pro = frappe.get_doc("Project",name)
-    tasks = frappe.get_all("Task",{'project': pro.name},['*'])
-    t=frappe.db.get_all("Task",{'project': pro.name},['food'],group_by='food')
-    food_count=len(t)
-    qualification=frappe.get_all("Task",{'project': pro.name},['qualification_type'],group_by='qualification_type')
-    qual_count=len(qualification)
-    experience=frappe.get_all("Task",{'project': pro.name},['total_experience'],group_by='total_experience')
-    exp_count=len(experience)
-    g_experience=frappe.get_all("Task",{'project': pro.name},['gulf_experience'],group_by='gulf_experience')
-    g_exp=len(g_experience)
-    interview=frappe.get_all("Task",{'project': pro.name},['mode_of_interview'],group_by='mode_of_interview')
-    int_count=len(interview)
-    acc=frappe.get_all("Task",{'project': pro.name},['accommodation'],group_by='accommodation')
-    a_count=len(acc)
-    transport=frappe.get_all("Task",{'project': pro.name},['transportation'],group_by='transportation')
-    trans_count=len(transport)
-    visa=frappe.get_all("Task",{'project': pro.name},['visa_type'],group_by='visa_type')
-    v_count=len(visa)
-    con=frappe.get_all("Task",{'project': pro.name},['contract_period_year'],group_by='contract_period_year')
-    con_count=len(con)
-    categorys=frappe.get_all("Task",{'project': pro.name},['category'],group_by='category')
-    ca_count=len(categorys)
-    keys=frappe.get_all("Task",{'project': pro.name},['custom_major_key_skills'],group_by='custom_major_key_skills')
-    key_count=len(keys)
-    rec=frappe.get_all("Task",{'project': pro.name},['custom_free_recruitment'],group_by='custom_free_recruitment')
-    rec_count=len(rec)
-    task_count=(frappe.db.count("Task",{'project': pro.name}))
-    serial_no = 1
-    table = '<table text-align="center" border="1" width="100%" style="border-collapse: collapse;text-align: center;">'
-    table += '<tr style="background-color: #87CEFA"><td style="width: 10%; font-weight: bold; text-align: center;">S.NO</td><td style="width: 30%; font-weight: bold; text-align: center;">Title</td><td style="width: 60%; font-weight: bold; text-align: center;">Details</td></tr>'
-    table += """<tr><td>1</td><td>Project ID</td><td>{}</td></tr>""".format(pro.name or '')
-    table += """<tr><td>2</td><td>Date</td><td>{}</td></tr>""".format(pro.custom_actionconfirmed_datetime or '')
-    table += """<tr><td>3</td><td>Country</td><td>{}</td></tr>""".format(pro.territory or '')
-    table += """<tr><td>4</td><td>Client</td><td>{}</td></tr>""".format(pro.customer or '')
-    for i in tasks:
-        if tasks.index(i)==0:
-            table += """<tr><td rowspan={}>5</td><td rowspan={}>Positions</td><td>{}</td></tr>""".format(task_count,task_count,i.subject or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(i.subject or '')
-    for k in keys:
-        if keys.index(k)==0:
-            table += """<tr><td rowspan={}>6</td><td rowspan={}>Major Key Skills</td><td>{}</td></tr>""".format(key_count,key_count,k.custom_major_key_skills or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(k.custom_major_key_skills or '')
-    for d in qualification:
-        if qualification.index(d)==0:
-            table += """<tr><td rowspan={}>7</td><td rowspan={}>Qualification</td><td>{}</td></tr>""".format(qual_count,qual_count,d.qualification_type or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(d.qualification_type or '')
-    for e in experience:
-        if experience.index(e)==0:
-            table += """<tr><td rowspan={}>8</td><td rowspan={}>Experience</td><td>{}</td></tr>""".format(exp_count,exp_count,e.total_experience or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(e.total_experience or '')
-    for g in g_experience:
-        if g_experience.index(g)==0:
-            table += """<tr><td rowspan={}>9</td><td rowspan={}>GCC Experience</td><td>{}</td></tr>""".format(g_exp,g_exp,g.gulf_experience or '')
-        else:
-            table +="""<tr><td>{}</td></tr>""".format(g.gulf_experience or '')
-    for r in rec:
-        if rec.index(r)==0:
-            table += """<tr><td rowspan={}>10</td><td rowspan={}>Free Recruitment</td><td>{}</td></tr>""".format(rec_count,rec_count,r.custom_free_recruitment or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(r.custom_free_recruitment or '')
-    for m in interview:
-        if interview.index(m)==0:
-            table += """<tr><td rowspan={}>11</td><td rowspan={}>Mode Of Interview</td><td>{}</td></tr>""".format(int_count,int_count,m.mode_of_interview or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(m.mode_of_interview or '')
-    table += """<tr><td>12</td><td>If Direct Client Interview - Location & Date</td><td></td></tr>"""
-    table += """<tr><td>13</td><td>Contact Number</td><td>+91 75502 24400,+91 73050 56204</td></tr>"""
-    table += """<tr><td>14</td><td>Mail ID</td><td>aruna.g@groupteampro.com</td></tr>"""
-    for v in visa:
-            if visa.index(v)==0:
-                table += """<tr><td rowspan={}>15</td><td rowspan={}>Visa Type</td><td>{}</td></tr>""".format(v_count,v_count,v.visa_type or '')
-            else:
-                table += """<tr><td>{}</td></tr>""".format(v.visa_type or '')
-    for cons in con:
-            if con.index(cons)==0:
-                table += """<tr><td rowspan={}>16</td><td rowspan={}>Contract</td><td>{}</td></tr>""".format(con_count,con_count,cons.contract_period_year or '')
-            else:
-                table += """<tr><td>{}</td></tr>""".format(cons.contract_period_year or '')
-    for cat in categorys:
-            if categorys.index(cat)==0:
-                table += """<tr><td rowspan={}>17</td><td rowspan={}>ECR/ECNR</td><td>{}</td></tr>""".format(ca_count,ca_count,cat.category or '')
-            else:
-                table += """<tr><td>{}</td></tr>""".format(cat.category or '')
-    table += """<tr><td>18</td><td>Special Remarks</td><td>Attractive Salary</td></tr>"""
-    table += """<tr><td>19</td><td>Common Version 1.0</td><td>Company Name + Logo + RA Licence + Location + Website + Common Number (7305056202) + Common Mail ID</td></tr>"""
-    table += '</table>'
-    subject = "Advertisement Details - %s" %posting_date
-    message = """
-    Dear Sir/Madam,<br><br>
-    Kindly find the below Advertisement Confirmed Details:<br><br>{}<br><br>
-    Thanks & Regards,<br>TEAM ERP<br>
-    <i>This email has been automatically generated. Please do not reply</i>
-    """.format(table)
-    frappe.sendmail(
-        # recipients=["divya.p@groupteampro.com"],
-        recipients=["dineshbabu.k@groupteampro.com","dm@groupteampro.com","annie.m@groupteampro.com"],
-        subject=subject,
-        message=message
-    )
-
-@frappe.whitelist()     
-def new_project_creation_mail(name):
-    create=frappe.get_doc("Project",name)
-    posting_date = datetime.now().strftime("%d-%m-%Y")
-    table = '<table text-align="center" border="1" width="100%" style="border-collapse: collapse;text-align: center;">'
-    table += '<tr style="background-color: #87CEFA"><td style="width: 10%; font-weight: bold; text-align: center;">S.NO</td><td style="width: 30%; font-weight: bold; text-align: center;">Title</td><td style="width: 60%; font-weight: bold; text-align: center;">Details</td></tr>'
-    table += """<tr><td>1</td><td>Project ID</td><td>{}</td></tr>""".format(create.name or '')
-    table += """<tr><td>2</td><td>Project Name</td><td>{}</td></tr>""".format(create.project_name or '')
-    table += """<tr><td>3</td><td>Customer</td><td>{}</td></tr>""".format(create.customer or '')
-    table += """<tr><td>4</td><td>Mode Of Interview</td><td>{}</td></tr>""".format(create.mode_of_interview or '')
-    table += """<tr><td>5</td><td>#Positions</td><td>{}</td></tr>""".format(create.task or '')
-    table += """<tr><td>6</td><td>#vacancies</td><td>{}</td></tr>""".format(create.tvac or '')
-    table+='</table>'
-    subject="Project Created-  %s" % posting_date
-    message = """
-    Dear Sir/Madam,<br><br>
-    Kindly find the below project Created Details:<p><b>Project Name:</b>{}<p><b>Project ID:</b>{}– a new project has been created for your further action.<br>{}<br></p><br>
-    Thanks & Regards,<br>TEAM ERP<br>
-    <i>This email has been automatically generated. Please do not reply</i>
-    """.format(create.project_name,create.name,table)
-    frappe.sendmail(
-        # recipients=["divya.p@groupteampro.com"],
-        recipients=["sangeetha.a@groupteampro.com","dineshbabu.k@groupteampro.com","sangeetha.s@groupteampro.com","aruna.g@groupteampro.com"],
-        subject=subject,
-        message=message
-    )
 
 @frappe.whitelist()
 def get_to_date(from_date):
@@ -8762,37 +6806,6 @@ def create_new_epnc_review():
         doc.save()
     frappe.db.commit()
 
-
-
-@frappe.whitelist()
-def update_score_in_epnc_review(doc, method):
-    from datetime import datetime
-    creation_date_result = frappe.db.sql(
-        """
-        SELECT date(creation) as creation from `tabEnergy Point And Non Conformity` where creation=%s AND name=%s
-        """, (doc.creation,doc.name), as_dict=True)
-    creation_date = creation_date_result[0]['creation'] if creation_date_result else None
-    first_date=get_first_day(creation_date)
-    documents=frappe.db.get_all("Monthly EP NC Review",{"start_date":first_date,'employee':doc.emp},["name"])
-    for i in documents:
-        doc=frappe.get_doc("Monthly EP NC Review",i)
-        ep = frappe.db.sql(
-            """
-            SELECT sum(total) as total from `tabEnergy Point And Non Conformity` where emp=%s AND action='Energy Point(EP)' AND docstatus=1 AND date(creation) BETWEEN %s AND %s
-            """, (doc.employee, doc.start_date, doc.end_date), as_dict=True)
-        nc = frappe.db.sql(
-            """
-            SELECT sum(total_nc) as total_nc from `tabEnergy Point And Non Conformity` where emp=%s AND action='Non Conformity(NC)' AND docstatus=1 AND date(creation) BETWEEN %s AND %s
-            """, (doc.employee, doc.start_date, doc.end_date), as_dict=True)
-        doc.total_ep = ep[0]['total'] if ep and ep[0]['total'] is not None else 0
-        doc.total_nc = nc[0]['total_nc'] if nc and nc[0]['total_nc'] is not None else 0
-        total = 100 - doc.total_nc + doc.total_ep
-        doc.total_score = total
-        doc.save(ignore_permissions=True)
-
-    frappe.db.commit()
-
-
 @frappe.whitelist()
 def update_service(name):
     doc = frappe.get_doc("Target Manager",name)
@@ -8825,37 +6838,7 @@ def update_service(name):
     doc.save()
     frappe.db.commit()
 
-@frappe.whitelist()
-def update_service_tm(doc,method):
-    doc = frappe.get_doc("Target Manager",doc.name)
-    total_ct = 0
-    total_ft = 0
-    doc.target_child=[]
-    doc.monthly_ft_allocation=[]
-    if doc.service_list:
-        for i in doc.service_list:
-            total_ct += i.ct
-            total_ft += i.ft
-    doc.annual_ct = total_ct
-    doc.annual_ft = total_ft
-    months = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar']
-    month_no = {'Apr':'12','May':'11','Jun':'10','Jul':'9','Aug':'8','Sep':'7','Oct':'6','Nov':'5','Dec':'4','Jan':'3','Feb':'2','Mar':'1'}
-    value =doc.annual_ct / 12
-    value_ft =doc.annual_ft / 12
-    for month in months:
-        doc.append("target_child", {
-            'month': month,
-            'month_nos': month_no[month],
-            'ct': value
-        })
-        doc.append("monthly_ft_allocation", {
-            'month': month,
-            'month_nos': month_no[month],
-            'ft': value_ft
-        })
 
-    doc.save()
-    frappe.db.commit()
 
 @frappe.whitelist()
 def organization_update_sp(customer):
@@ -8867,17 +6850,6 @@ def organization_update_sp_lead(lead):
     company_name=frappe.db.get_value("Lead",{"name":lead},["company_name"])
     return company_name
 
-# @frappe.whitelist()
-# def organization_update_sp_test():
-#     customer=frappe.db.get_all("Sales Follow Up",{"organization_name":("=",''),"party_from":"Customer"},["*"])
-#     count=0
-#     for i in customer:
-#         organization_name=frappe.db.get_value("Customer",{"name":i.customer},["name"])
-#         print(i.name)
-#         print(organization_name)
-#         frappe.db.set_value("Sales Follow Up",i.name,"organization_name",organization_name)
-#         count+=1
-#     print(count)
 
 import frappe
 from frappe.utils import today
@@ -8896,7 +6868,7 @@ def send_mail_for_update_checkpro_holiday():
             holiday_for_next_year = any(
                 holiday.holiday_date.year == next_year for holiday in holiday_list.holidays
             )
-            
+
             if not holiday_for_next_year:
                 subject = f"Add Holidays for TEAMPRO 2023 - Checkpro{next_year}"
                 message = (
@@ -8905,12 +6877,12 @@ def send_mail_for_update_checkpro_holiday():
                     f"Please update the holiday list for {next_year} to avoid any disruptions. <br><br>"
                     f"Regards,<br>Team"
                 )
-                recipients = ["divya.p@groupteampro.com","chitra.g@groupteampro.com","sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"] 
+                recipients = ["divya.p@groupteampro.com","sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"]
                 frappe.sendmail(
-                    recipients=recipients, 
-                    subject=subject, 
+                    recipients=recipients,
+                    subject=subject,
                     message=message)
-                
+
 # def dsr_for_project_spoc_daily():
 #     job = frappe.db.exists('Scheduled Job Type', 'send_mail_for_update_checkpro_holiday')
 #     if not job:
@@ -8934,205 +6906,6 @@ def update_currency_amount(currency, amount):
             amount_value =conversion_amt
         return amount_value
 
-
-@frappe.whitelist()
-def update_sla_details(name, service, sla_from_date, sla_to_date, sla_type, status,attach):
-    try:
-        customer = frappe.get_doc("Customer", name)
-        if customer.custom_sla_details:
-            for i in customer.custom_sla_details:
-                customer.append("custom_sla_history", {
-                    "service": i.service,
-                    "sla_from_date": i.sla_from_date,
-                    "sla_to_date": i.sla_to_date,
-                    "sla_type": i.sla_type,
-                    "status": i.status,
-                    "attach":i.attach,
-                })
-            customer.set("custom_sla_details", [])
-        customer.append("custom_sla_details", {
-            "service": service,
-            "sla_from_date": sla_from_date,
-            "sla_to_date": sla_to_date,
-            "sla_type": sla_type,
-            "status": status,
-            "attach":attach,
-        })
-
-        customer.save(ignore_permissions=True)
-        frappe.db.commit()
-        return {"status": "success", "message": "SLA details updated successfully"}
-    except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Update SLA Details")
-        return {"status": "error", "message": str(e)}
-
-
-
-# @frappe.whitelist()
-# def update_sla_status_and_notify():
-# 	customers = frappe.db.get_all("Customer", {"disabled": 0,"name":"Divya"}, ["*"])
-# 	expired_sla_data = []
-
-# 	for customer_info in customers:
-# 		customer = frappe.get_doc("Customer", customer_info.name)
-# 		expired_services = []
-        
-# 		if customer.custom_sla_details:
-# 			for sla in customer.custom_sla_details:
-# 				print(sla.service)
-# 				if sla.sla_to_date and getdate(sla.sla_to_date) < getdate(nowdate()):
-# 					expired_services.append(sla)
-# 					if expired_services:
-# 						for sla in expired_services:
-# 							print(sla.service)
-# 							expired_sla_data.append({
-# 								"customer_name": customer.customer_name,
-# 								"service": sla.service,
-# 								"sla_to_date": sla.sla_to_date
-# 							})
-# 			customer.save(ignore_permissions=True)
-# 			frappe.db.commit()
-
-# 	print(expired_sla_data)
-# 	# Send a single email if there are expired SLAs
-# 	if expired_sla_data:
-# 		table_rows = "".join(
-# 			f"<tr><td>{entry['customer_name']}</td><td>{entry['service']}</td><td>{entry['sla_to_date']}</td></tr>"
-# 			for entry in expired_sla_data
-# 		)
-
-# 		table_html = f"""
-# 			<table border="1" style="border-collapse: collapse; width: 100%;">
-# 				<thead>
-# 					<tr>
-# 						<th style="padding: 8px; text-align: left;">Customer Name</th>
-# 						<th style="padding: 8px; text-align: left;">Service</th>
-# 						<th style="padding: 8px; text-align: left;">SLA To Date</th>
-# 					</tr>
-# 				</thead>
-# 				<tbody>
-# 					{table_rows}
-# 				</tbody>
-# 			</table>
-# 		"""
-
-# 		subject = "Alert: Expired SLA Details"
-# 		message = f"""
-# 			Dear Sir/Mam,<br><br>
-# 			The following SLA services have expired:<br><br>
-# 			{table_html}
-# 			<br><br>
-# 			Please take necessary actions to renew these services.<br><br>
-# 			Best Regards,<br>Your Team
-# 		"""
-# 		recipients = ["divya.p@groupteampro.com"]
-
-# 		frappe.sendmail(
-# 			recipients=recipients,
-# 			subject=subject,
-# 			message=message,
-# 		)
-
-# import frappe
-# from frappe.utils import getdate, nowdate, add_days
-
-# @frappe.whitelist()
-# def update_sla_status_and_notify():
-# 	customers = frappe.db.get_all("Customer", {"disabled": 0}, ["*"])
-# 	expired_sla_data = []
-# 	nearing_expiry_sla_data = []
-
-# 	for customer_info in customers:
-# 		customer = frappe.get_doc("Customer", customer_info.name)
-        
-# 		if customer.custom_sla_details:
-# 			for sla in customer.custom_sla_details:
-# 				if sla.sla_to_date:
-# 					sla_date = getdate(sla.sla_to_date)
-# 					formatted_sla_date = formatdate(sla.sla_to_date, "dd-MM-yyyy")
-# 					today = getdate(nowdate())
-
-# 					# Expired SLAs (already past)
-# 					if sla_date < today:
-# 						expired_sla_data.append({
-# 							"customer_name": customer.customer_name,
-# 							"service": sla.service,
-# 							"sla_to_date": formatted_sla_date
-# 						})
-
-# 					# Nearing expiry SLAs (expiring within the next 60 days)
-# 					elif 0 <= (sla_date - today).days <= 60:
-# 						nearing_expiry_sla_data.append({
-# 							"customer_name": customer.customer_name,
-# 							"service": sla.service,
-# 							"sla_to_date": formatted_sla_date
-# 						})
-
-# 	# If there's any data to notify
-# 	if expired_sla_data or nearing_expiry_sla_data:
-        
-# 		expired_table_rows = "".join(
-# 			f"<tr><td>{entry['customer_name']}</td><td>{entry['service']}</td><td>{entry['sla_to_date']}</td></tr>"
-# 			for entry in expired_sla_data
-# 		)
-# 		nearing_expiry_table_rows = "".join(
-# 			f"<tr><td>{entry['customer_name']}</td><td>{entry['service']}</td><td>{entry['sla_to_date']}</td></tr>"
-# 			for entry in nearing_expiry_sla_data
-# 		)
-
-# 		# Tables for both cases
-# 		expired_table_html = f"""
-# 			<h3>Expired SLAs</h3>
-# 			<table border="1" style="border-collapse: collapse; width: 100%;">
-# 				<thead>
-# 					<tr>
-# 						<th style="padding: 8px; text-align: left;">Customer Name</th>
-# 						<th style="padding: 8px; text-align: left;">Service</th>
-# 						<th style="padding: 8px; text-align: left;">SLA To Date</th>
-# 					</tr>
-# 				</thead>
-# 				<tbody>
-# 					{expired_table_rows}
-# 				</tbody>
-# 			</table>
-# 		""" if expired_sla_data else ""
-
-# 		nearing_expiry_table_html = f"""
-# 			<h3>SLAs Nearing Expiry (Next 60 Days)</h3>
-# 			<table border="1" style="border-collapse: collapse; width: 100%;">
-# 				<thead>
-# 					<tr>
-# 						<th style="padding: 8px; text-align: left;">Customer Name</th>
-# 						<th style="padding: 8px; text-align: left;">Service</th>
-# 						<th style="padding: 8px; text-align: left;">SLA To Date</th>
-# 					</tr>
-# 				</thead>
-# 				<tbody>
-# 					{nearing_expiry_table_rows}
-# 				</tbody>
-# 			</table>
-# 		""" if nearing_expiry_sla_data else ""
-
-# 		# Construct final email message
-# 		subject = "Alert: SLA Expiry Notifications"
-# 		message = f"""
-# 			Dear Sir/Mam,<br><br>
-# 			Please find the SLA expiry details below:<br><br>
-# 			{expired_table_html}
-# 			<br>
-# 			{nearing_expiry_table_html}
-# 			<br><br>
-# 			Please take necessary actions.<br><br>
-# 			Best Regards,<br>Teampro
-# 		"""
-
-# 		recipients = ["divya.p@groupteampro.com"]
-
-# 		frappe.sendmail(
-# 			recipients=recipients,
-# 			subject=subject,
-# 			message=message,
-# 		)
 import frappe
 from frappe.utils import getdate, nowdate, add_days, formatdate
 
@@ -9146,7 +6919,7 @@ def update_sla_status_and_notify():
 
     for customer_info in customers:
         customer = frappe.get_doc("Customer", customer_info.name)
-        
+
         if customer.custom_sla_details:
             for sla in customer.custom_sla_details:
                 if sla.sla_to_date:
@@ -9159,7 +6932,7 @@ def update_sla_status_and_notify():
                             "customer_name": customer.customer_name,
                             "service": sla.service,
                             "sla_to_date": formatted_sla_date,
-                            "description":sla.description,
+                            "description":sla.description if sla.description else None,
                             "sla_type":sla.sla_type
                         })
 
@@ -9170,7 +6943,7 @@ def update_sla_status_and_notify():
                             "service": sla.service,
                             "sla_to_date": formatted_sla_date,
                             "days_remaining": (sla_date - today).days,
-                            "description":sla.description,
+                            "description":sla.description if sla.description else None,
                             "sla_type":sla.sla_type
                         })
 
@@ -9240,11 +7013,12 @@ def update_sla_status_and_notify():
         """
 
 
-        recipients = ["annie.m@groupteampro.com","dineshbabu.k@groupteampro.com"]
+        recipients = ["annie.m@groupteampro.com","abdulla.pi@groupteampro.com", "sivarenisha.m@groupteampro.com", "jeniba.a@groupteampro.com"]
         # recipients = ["divya.p@groupteampro.com"]
 
         frappe.sendmail(
             recipients=recipients,
+            cc = "dineshbabu.k@groupteampro.com",
             subject=subject,
             message=message,
         )
@@ -9263,289 +7037,17 @@ def update_sla_status():
             customer.save(ignore_permissions=True)
             frappe.db.commit()
 
-# @frappe.whitelist()
-# def task_mail_notification_status ():
-#     job = frappe.db.exists('Scheduled Job Type','send_daily_psr_report')
-#     if not job:
-#         task = frappe.new_doc("Scheduled Job Type")
-#         task.update({
-#             "method": 'teampro.teampro.doctype.psr_report_dashboard.psr_report_dashboard.send_daily_psr_report',
-#             "frequency": 'Cron',
-#             "cron_format": '0 9 * * *'
-#         })
-#         task.save(ignore_permissions=True)
-
-# @frappe.whitelist()
-# def update_case_age_test():
-#     age=0
-#     tat_var=0
-#     tat_mon=''
-#     tat_sts=''
-#     doc=frappe.db.get_list("Case",{"name":"SHF-130125-15473-00001"},["name","date_of_initiating","case_status",'insufficiency_days','package_tat','insufficiency_closed'],order_by='date_of_initiating ASC')
-#     for i in doc:
-#         if i.case_status not in ("Case Completed","Drop","Generate Report with Insuff",'',"Drop"):
-#             if i.date_of_initiating and not i.insufficiency_closed:
-#                 date=(date_diff(nowdate(),i.date_of_initiating))+1
-#                 sql_query = f"""
-#                     SELECT COUNT(*) 
-#                     FROM `tabHoliday` 
-#                     WHERE parent = 'TEAMPRO 2023 - Checkpro' 
-#                     AND holiday_date BETWEEN '{i.date_of_initiating}' AND '{nowdate()}'
-#                 """
-#                 count = frappe.db.sql(sql_query, as_list=True)[0][0]
-#                 print(count)
-#                 print(date)
-#                 if count==0:
-#                     age=date-i.insufficiency_days
-#                 else:
-#                     age = (date-(count+i.insufficiency_days))
-#                 print(i.name)
-#                 print(age)
-#             else:
-#                 if i.insufficiency_closed:
-#                     date=(date_diff(nowdate(),i.insufficiency_closed))+1
-#                     sql_query = f"""
-#                         SELECT COUNT(*) 
-#                         FROM `tabHoliday` 
-#                         WHERE parent = 'TEAMPRO 2023 - Checkpro' 
-#                         AND holiday_date BETWEEN '{i.date_of_initiating}' AND '{nowdate()}'
-#                     """
-#                     count = frappe.db.sql(sql_query, as_list=True)[0][0]
-#                     print(count)
-#                     print(date)
-#                     if count==0:
-#                         age=date-i.insufficiency_days
-#                     else:
-#                         age = (date-(count))
-#                     print(i.name)
-#                     print(age)
-
-frappe.whitelist()
-def update_wh_att(doc,method):
-    if frappe.db.exists("Attendance",{"attendance_request":doc.name,"employee":doc.employee,'docstatus':['!=',2]}):
-        att=frappe.db.get_value("Attendance",{"attendance_request":doc.name,"employee":doc.employee,'docstatus':['!=',2]},['name'])
-        if att:
-            frappe.db.set_value("Attendance",att,'attendance_request','')          
-
-# frappe.whitelist()
-# def att_od():
-#     frappe.db.set_value("Attendance",'HR-ATT-2025-01291','attendance_request','') 
-
-@frappe.whitelist()
-def validate_timesheet(doc,method):
-    if doc.department=="IT. Development - THIS" and doc.total_hours <6 and not doc.custom_or_remarks:
-        frappe.throw("Your Total hours is less than 6 hours.Kindly fill the OR Remarks")
-    if doc.timesheet_summary:
-        for i in doc.timesheet_summary:
-            if i.status=="Working" and not i.remarks:
-                frappe.throw(
-                        f"Row #{i.idx}:Kindly fill the Working Remarks."
-                    )
-
-@frappe.whitelist()
-def update_working_remarks(doc,method):
-    if doc.timesheet_summary:
-        for i in doc.timesheet_summary:
-            if i.status=="Working" and i.remarks:
-                frappe.db.set_value("Task",i.id,"custom_remarks",i.remarks)
-# import frappe
-
-# def validate_et_vs_at(task):
-
-#     if not task.employee:
-#         frappe.throw("No employee is linked to this task. Please set an employee.")
-
-   
-#     timesheets = frappe.get_all("Timesheet Detail",
-#         filters={"task": task.name},
-#         fields=["parent", "hours"]
-#     )
-
-#     if not timesheets:
-#         return  
 
     
-#     total_actual_time = sum(ts["hours"] for ts in timesheets)
 
-    
-#     if total_actual_time > task.expected_time and not task.et_vs_at_remarks:
-#         frappe.throw(f"ET vs AT Remarks is mandatory when Actual Time ({total_actual_time} hours) exceeds Estimated Time ({task.expected_time} hours).")
-
-# @frappe.whitelist()
-# def validate(doc, method):
-#     validate_et_vs_at(doc)
-
-
-# import frappe
-# @frappe.whitelist()
-# def et_vs_at(task, employee):
-#     if not task or not employee:
-#         frappe.throw("Task or Employee is missing.")
-
-#     # Fetch actual time from timesheets
-#     timesheet_data = frappe.db.sql("""
-#         SELECT SUM(td.hours) AS total_hours
-#         FROM `tabTimesheet Detail` td
-#         JOIN `tabTimesheet` ti ON td.parent = ti.name
-#         WHERE td.task = %s AND ti.employee = %s
-#     """, (task, employee), as_dict=True)
-
-#     actual_time = float(timesheet_data[0].total_hours) if timesheet_data and timesheet_data[0].total_hours else 0.0
-
-#     # Fetch estimated time and ensure it's a float
-#     estimated_time = frappe.db.get_value("Task", task, "expected_time") or 0.0
-#     estimated_time = float(estimated_time)  # Convert to float if needed
-
-#     # Fetch task document
-#     task_doc = frappe.get_doc("Task", task)
-
-#     # Check if ET vs AT remarks are required
-#     if actual_time > estimated_time and not task_doc.custom_et_vs_at_remark:
-#         frappe.throw(f"ET vs AT Remarks is mandatory when Actual Time ({actual_time} hours) exceeds Estimated Time ({estimated_time} hours).")
-
-#     return {
-#         "task": task,
-#         "employee": employee,
-#         "estimated_time": estimated_time,
-#         "actual_time": actual_time
-#     }
-
-import frappe
-
-import frappe
-
-def validate_et_vs_at(doc, method):
-    if doc.service=="IT-SW":
-        employee = frappe.get_value("Employee", {"user_id": frappe.session.user}, "name")
-
-        if not employee:
-            frappe.throw(f"Employee record for the current user ({frappe.session.user}) not found.")
-
-        timesheet_data = frappe.db.sql("""
-            SELECT SUM(td.hours) AS total_hours
-            FROM `tabTimesheet Detail` td
-            INNER JOIN `tabTimesheet` ti ON td.parent = ti.name
-            WHERE td.task = %s AND ti.employee = %s
-        """, (doc.name, employee), as_dict=True)
-
-        actual_time = timesheet_data[0].total_hours if timesheet_data and timesheet_data[0].total_hours else 0.0
-        estimated_time = frappe.db.get_value(
-        "Task", 
-        {"name": doc.name, "status": "Working"},  
-        "expected_time"
-        ) or 0.0
-
-        if not isinstance(actual_time, (int, float)) or not isinstance(estimated_time, (int, float)):
-            frappe.throw("Invalid time values detected.")
-
-        if actual_time > estimated_time and not doc.custom_et_vs_at_remark:
-            frappe.throw(f"ET vs AT Remark field is mandatory when Actual Time ({actual_time} hours) exceeds Estimated Time ({estimated_time} hours).")
 
 @frappe.whitelist()
 def get_per_billed_in_so():
     so = frappe.get_doc("Sales Order",'SAL-ORD-2021-00004')
     so.per_billed = 100
     so.save(ignore_permissions=True)
-    
-
-@frappe.whitelist()
-def update_cost_center(doc, method):
-    for row in doc.accounts:
-        row.cost_center = doc.custom_cost_center
 
 
-# import frappe
-# import pypdf
-# from frappe.utils.pdf import get_pdf
-# from frappe.utils.file_manager import get_file_path
-# from frappe import _
-# from io import BytesIO
-# from pypdf import PdfReader, PdfMerger
-# from PIL import Image
-# import os
-
-# def is_valid_pdf(file_path):
-#     """Check if a file is a valid PDF."""
-#     try:
-#         with open(file_path, "rb") as f:
-#             PdfReader(f, strict=False)  # Try loading the PDF
-#         return True
-#     except Exception:
-#         return False
-
-# def convert_image_to_pdf(image_path):
-#     """Convert an image (JPG, PNG) to PDF."""
-#     img = Image.open(image_path)
-#     pdf_path = f"/tmp/{os.path.basename(image_path)}.pdf"
-    
-#     img = img.convert("RGB")  # Ensure it's in RGB mode
-#     img.save(pdf_path, "PDF")
-    
-#     return pdf_path
-
-# def remove_blank_pages(pdf_reader):
-#     """Remove blank pages from a PdfReader object."""
-#     valid_pages = []
-#     for page in pdf_reader.pages:
-#         text = page.extract_text()
-#         if text and not text.isspace():  # Keep only pages with actual content
-#             valid_pages.append(page)
-#     return valid_pages
-
-# @frappe.whitelist()
-# def merge_and_download_pdf(docname):
-#     doc = frappe.get_doc("Candidate", docname)
-
-#     print_format_pdf = get_pdf(frappe.get_print("Candidate", docname, "Interview form Masked"))
-#     print_pdf_file = BytesIO(print_format_pdf)  # Convert to file-like object
-#     print_pdf_file.seek(0)  # Reset cursor
-
-#     reader1 = PdfReader(print_pdf_file, strict=False)
-#     pages1 = remove_blank_pages(reader1)
-#     file_doc = frappe.db.get_value("File", 
-#                                    {"attached_to_doctype": "Candidate", "attached_to_name": docname}, 
-#                                    ["file_url"])
-    
-#     if not file_doc:
-#         frappe.throw(_("No attached file found!"))
-
-#     file_path = get_file_path(file_doc)
-
-#     if is_valid_pdf(file_path):
-#         pdf_to_merge = file_path  # It's already a PDF
-#     else:
-#         try:
-#             pdf_to_merge = convert_image_to_pdf(file_path)  # Convert image to PDF
-#         except Exception as e:
-#             frappe.throw(_("Error converting image to PDF: {0}").format(str(e)))
-
-#     reader2 = PdfReader(pdf_to_merge, strict=False)
-#     pages2 = remove_blank_pages(reader2)
-
-#     merger = PdfMerger()
-#     print_pdf_path = f"/tmp/clean_print_{docname}.pdf"
-#     with open(print_pdf_path, "wb") as temp_pdf:
-#         writer = pypdf.PdfWriter()
-#         for page in pages1:
-#             writer.add_page(page)
-#         writer.write(temp_pdf)
-#     clean_attached_pdf_path = f"/tmp/clean_attached_{docname}.pdf"
-#     with open(clean_attached_pdf_path, "wb") as temp_pdf:
-#         writer = pypdf.PdfWriter()
-#         for page in pages2:
-#             writer.add_page(page)
-#         writer.write(temp_pdf)
-#     merger.append(print_pdf_path)
-#     merger.append(clean_attached_pdf_path)
-#     merged_pdf_path = f"/tmp/merged_{docname}.pdf"
-#     with open(merged_pdf_path, "wb") as output_file:
-#         merger.write(output_file)
-
-#     merger.close()
-#     with open(merged_pdf_path, "rb") as file:
-#         frappe.local.response.filename = f"Merged_{docname}.pdf"
-#         frappe.local.response.filecontent = file.read()
-#         frappe.local.response.type = "download"
 
 import frappe
 import pypdf
@@ -9592,20 +7094,27 @@ def compress_pdf_with_fitz(input_path, output_path, quality=60):
     doc.close()
 
 
+
 def remove_blank_pages(pdf_reader):
-    """Remove blank pages from a PdfReader object."""
     valid_pages = []
     for page in pdf_reader.pages:
-        text = page.extract_text()
-        if text and not text.isspace():
+        try:
+            text = page.extract_text()
+            if not text or text.isspace():
+                # Still add it – it might contain image content
+                valid_pages.append(page)
+            else:
+                valid_pages.append(page)
+        except:
             valid_pages.append(page)
     return valid_pages
+
 
 def download_external_file(file_url):
     """Download file from external storage (dfp_external_storage, S3, etc.)."""
     if not file_url.startswith("http"):
         file_url = frappe.utils.get_url() + file_url  # Convert relative URL to full URL
-    
+
     response = requests.get(file_url, stream=True)
     if response.status_code != 200:
         frappe.throw(_("Failed to download file from external storage."))
@@ -9621,7 +7130,7 @@ import fitz  # PyMuPDF
 def add_logo_to_pdf_with_fitz(input_pdf_path, output_pdf_path, logo_path):
     doc = fitz.open(input_pdf_path)
     logo = fitz.open(logo_path)
-    
+
     logo_width = 100
     logo_height = 70  # Slightly smaller height
     top_margin = 1    # Closer to the top
@@ -9644,8 +7153,6 @@ def add_logo_to_pdf_with_fitz(input_pdf_path, output_pdf_path, logo_path):
 @frappe.whitelist()
 def merge_and_download_pdf(docname):
     doc = frappe.get_doc("Candidate", docname)
-
-    # Generate the masked interview form PDF
     print_format_pdf = get_pdf(frappe.get_print("Candidate", docname, "Interview form Masked"))
     print_pdf_file = BytesIO(print_format_pdf)
     print_pdf_file.seek(0)
@@ -9653,10 +7160,9 @@ def merge_and_download_pdf(docname):
     reader1 = PdfReader(print_pdf_file, strict=False)
     pages1 = remove_blank_pages(reader1)
 
-    # Fetch the attached file URL
-    file_doc = doc.updated__masked_cv
-    # file_doc = frappe.db.get_value("File", {"attached_to_doctype": "Candidate", "attached_to_name": docname}, "file_url")
-    
+    # file_doc = doc.updated__masked_cv
+    file_doc = frappe.db.get_value("File", {"attached_to_doctype": "Candidate", "attached_to_name": docname,"attached_to_field":"updated__masked_cv"}, "file_url")
+
     if not file_doc:
         frappe.throw(_("No attached file found!"))
 
@@ -9701,137 +7207,22 @@ def merge_and_download_pdf(docname):
     merged_pdf_path = f"/tmp/merged_{docname}.pdf"
     with open(merged_pdf_path, "wb") as output_file:
         merger.write(output_file)
-    
+
     merger.close()
-    # Add logo to each page
     file_doc = frappe.get_doc("File", {"file_name": "27a5425e7c98ba2cb891TEAMPRO STROKE 3.png"})
     file_url = file_doc.file_url
 
     # Converts file_url (e.g., /private/files/logo.png) to full file system path
     logo_path = frappe.get_site_path(file_url.strip("/"))
-    # logo_path = frappe.get_site_path("private", "files", "27a5425e7c98ba2cb891TEAMPRO STROKE 3.png")
     final_pdf_path = f"/tmp/final_with_logo_{docname}.pdf"
     add_logo_to_pdf_with_fitz(merged_pdf_path, final_pdf_path, logo_path)
     compressed_pdf_path = f"/tmp/compressed_final_{docname}.pdf"
     compress_pdf_with_fitz(final_pdf_path, compressed_pdf_path)
-    # Send final PDF with logo to user
-    # with open(final_pdf_path, "rb") as file:
-    # 	frappe.local.response.filename = f"Merged_{docname}.pdf"
-    # 	frappe.local.response.filecontent = file.read()
-    # 	frappe.local.response.type = "download"
+
     with open(compressed_pdf_path, "rb") as file:
         frappe.local.response.filename = f"Merged_{docname}.pdf"
         frappe.local.response.filecontent = file.read()
         frappe.local.response.type = "download"
-
-
-
-@frappe.whitelist()
-def project_send_mail_to_creation_adv_button(name):
-    posting_date = datetime.now().strftime("%d-%m-%Y")
-    pro = frappe.get_doc("Project",name)
-    tasks = frappe.get_all("Task",{'project': pro.name},['*'])
-    t=frappe.db.get_all("Task",{'project': pro.name},['food'],group_by='food')
-    food_count=len(t)
-    qualification=frappe.get_all("Task",{'project': pro.name},['qualification_type'],group_by='qualification_type')
-    qual_count=len(qualification)
-    experience=frappe.get_all("Task",{'project': pro.name},['total_experience'],group_by='total_experience')
-    exp_count=len(experience)
-    g_experience=frappe.get_all("Task",{'project': pro.name},['gulf_experience'],group_by='gulf_experience')
-    g_exp=len(g_experience)
-    interview=frappe.get_all("Task",{'project': pro.name},['mode_of_interview'],group_by='mode_of_interview')
-    int_count=len(interview)
-    acc=frappe.get_all("Task",{'project': pro.name},['accommodation'],group_by='accommodation')
-    a_count=len(acc)
-    transport=frappe.get_all("Task",{'project': pro.name},['transportation'],group_by='transportation')
-    trans_count=len(transport)
-    visa=frappe.get_all("Task",{'project': pro.name},['visa_type'],group_by='visa_type')
-    v_count=len(visa)
-    con=frappe.get_all("Task",{'project': pro.name},['contract_period_year'],group_by='contract_period_year')
-    con_count=len(con)
-    categorys=frappe.get_all("Task",{'project': pro.name},['category'],group_by='category')
-    ca_count=len(categorys)
-    keys=frappe.get_all("Task",{'project': pro.name},['custom_major_key_skills'],group_by='custom_major_key_skills')
-    key_count=len(keys)
-    rec=frappe.get_all("Task",{'project': pro.name},['custom_free_recruitment'],group_by='custom_free_recruitment')
-    rec_count=len(rec)
-    task_count=(frappe.db.count("Task",{'project': pro.name}))
-    serial_no = 1
-    table = '<table text-align="center" border="1" width="100%" style="border-collapse: collapse;text-align: center;">'
-    table += '<tr style="background-color: #87CEFA"><td style="width: 10%; font-weight: bold; text-align: center;">S.NO</td><td style="width: 30%; font-weight: bold; text-align: center;">Title</td><td style="width: 60%; font-weight: bold; text-align: center;">Details</td></tr>'
-    table += """<tr><td>1</td><td>Project ID</td><td>{}</td></tr>""".format(pro.name or '')
-    table += """<tr><td>2</td><td>Date</td><td>{}</td></tr>""".format(pro.custom_actionconfirmed_datetime or '')
-    table += """<tr><td>3</td><td>Country</td><td>{}</td></tr>""".format(pro.territory or '')
-    table += """<tr><td>4</td><td>Client</td><td>{}</td></tr>""".format(pro.customer or '')
-    for i in tasks:
-        if tasks.index(i)==0:
-            table += """<tr><td rowspan={}>5</td><td rowspan={}>Positions</td><td>{}</td></tr>""".format(task_count,task_count,i.subject or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(i.subject or '')
-    for k in keys:
-        if keys.index(k)==0:
-            table += """<tr><td rowspan={}>6</td><td rowspan={}>Major Key Skills</td><td>{}</td></tr>""".format(key_count,key_count,k.custom_major_key_skills or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(k.custom_major_key_skills or '')
-    for d in qualification:
-        if qualification.index(d)==0:
-            table += """<tr><td rowspan={}>7</td><td rowspan={}>Qualification</td><td>{}</td></tr>""".format(qual_count,qual_count,d.qualification_type or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(d.qualification_type or '')
-    for e in experience:
-        if experience.index(e)==0:
-            table += """<tr><td rowspan={}>8</td><td rowspan={}>Experience</td><td>{}</td></tr>""".format(exp_count,exp_count,e.total_experience or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(e.total_experience or '')
-    for g in g_experience:
-        if g_experience.index(g)==0:
-            table += """<tr><td rowspan={}>9</td><td rowspan={}>GCC Experience</td><td>{}</td></tr>""".format(g_exp,g_exp,g.gulf_experience or '')
-        else:
-            table +="""<tr><td>{}</td></tr>""".format(g.gulf_experience or '')
-    for r in rec:
-        if rec.index(r)==0:
-            table += """<tr><td rowspan={}>10</td><td rowspan={}>Free Recruitment</td><td>{}</td></tr>""".format(rec_count,rec_count,r.custom_free_recruitment or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(r.custom_free_recruitment or '')
-    for m in interview:
-        if interview.index(m)==0:
-            table += """<tr><td rowspan={}>11</td><td rowspan={}>Mode Of Interview</td><td>{}</td></tr>""".format(int_count,int_count,m.mode_of_interview or '')
-        else:
-            table += """<tr><td>{}</td></tr>""".format(m.mode_of_interview or '')
-    table += """<tr><td>12</td><td>If Direct Client Interview - Location & Date</td><td></td></tr>"""
-    table += """<tr><td>13</td><td>Contact Number</td><td>+91 75502 24400,+91 73050 56204</td></tr>"""
-    table += """<tr><td>14</td><td>Mail ID</td><td>aruna.g@groupteampro.com</td></tr>"""
-    for v in visa:
-            if visa.index(v)==0:
-                table += """<tr><td rowspan={}>15</td><td rowspan={}>Visa Type</td><td>{}</td></tr>""".format(v_count,v_count,v.visa_type or '')
-            else:
-                table += """<tr><td>{}</td></tr>""".format(v.visa_type or '')
-    for cons in con:
-            if con.index(cons)==0:
-                table += """<tr><td rowspan={}>16</td><td rowspan={}>Contract</td><td>{}</td></tr>""".format(con_count,con_count,cons.contract_period_year or '')
-            else:
-                table += """<tr><td>{}</td></tr>""".format(cons.contract_period_year or '')
-    for cat in categorys:
-            if categorys.index(cat)==0:
-                table += """<tr><td rowspan={}>17</td><td rowspan={}>ECR/ECNR</td><td>{}</td></tr>""".format(ca_count,ca_count,cat.category or '')
-            else:
-                table += """<tr><td>{}</td></tr>""".format(cat.category or '')
-    table += """<tr><td>18</td><td>Special Remarks</td><td>Attractive Salary</td></tr>"""
-    table += """<tr><td>19</td><td>Common</td><td>Company Name + Logo + RA Licence + Location + Website + Common Number (7305056202) + Common Mail ID</td></tr>"""
-    table += '</table>'
-    subject = "Advertisement Details - %s" %posting_date
-    message = """
-    Dear Sir/Madam,<br><br>
-    Kindly find the below Advertisement Confirmed Details:<br><br>{}<br><br>
-    Thanks & Regards,<br>TEAM ERP<br>
-    <i>This email has been automatically generated. Please do not reply</i>
-    """.format(table)
-    frappe.sendmail(
-        # recipients=["divya.p@groupteampro.com"],
-        recipients=["dineshbabu.k@groupteampro.com","dm@groupteampro.com","annie.m@groupteampro.com"],
-        subject=subject,
-        message=message
-    )
 
 
 def ptsr_report():
@@ -9859,9 +7250,9 @@ def ptsr_report():
             '<td style="text-align:center; font-weight:bold; color:white;">#PSL</td>' \
             '<td style="text-align:center; font-weight:bold; color:white;">#LP</td>' \
             '</tr>'
-    
+
     cust = frappe.db.sql("""SELECT * FROM `tabCustomer` WHERE `disabled` = 0 AND service IN ('REC-I','REC-D') ORDER BY `customer_name` ASC""", as_dict=True)
-    
+
     ev_total = 0
     grand_totals = {'vac': 0, 'sp': 0, 'fp': 0, 'sl': 0, 'psl': 0, 'custom_lp': 0}
 
@@ -9874,16 +7265,16 @@ def ptsr_report():
                 ev_total += float(p.get('expected_value', 0) or 0)
             except ValueError:
                 frappe.log_error(f"Expected value is not a number for project {p.get('project_name')}", "Data Error in PSR Report")
-            
+
             taskid = frappe.get_all("Task", {"status": ("in", ('Working', 'Open', 'Overdue', 'Pending Review')), "project": p.name}, ['*'], order_by="priority ASC")
-            
+
             # Project row
             data += f'<tr style="background-color: #98d7f5;">' \
                     f'<td style="text-align:center;">{s_no}</td>' \
                     f'<td colspan=4 style="text-align:left;">{c.name} - {p.territory}</td>' \
                     f'<td colspan=13></td>' \
                     '</tr>'
-            
+
             # Each task row within a project
             for t in taskid:
                 data += f'<tr>' \
@@ -9905,7 +7296,7 @@ def ptsr_report():
                         f'<td style="text-align:center;">{t.pl}</td>' \
                         f'<td style="text-align:center;">{t.custom_lp}</td>' \
                         '</tr>'
-                
+
                 # Update task totals
                 task_totals['vac'] += t.get('vac', 0)
                 task_totals['sp'] += t.get('sp', 0)
@@ -9935,45 +7326,9 @@ def ptsr_report():
             f'<td style="text-align:center; font-weight: bold; color: #ffffff;">{grand_totals["psl"]}</td>' \
             f'<td style="text-align:center; font-weight: bold; color: #ffffff;">{grand_totals["custom_lp"]}</td>' \
             '</tr>'
-    
+
     data += '</table>'
     return data
-
-@frappe.whitelist()
-def update_qualification_status(name,qualification_status):
-    sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name": name}, "name")
-    if sfp_name:
-        for i in sfp_name:
-            sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-            sfp_doc.qualification_status = qualification_status
-            sfp_doc.save()  
-            sfp_doc.reload() 
-            frappe.db.commit() 
-
-@frappe.whitelist()
-def update_visit_status_sfp(name,visit_status):
-    sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name": name}, "name")
-    if sfp_name:
-        for i in sfp_name:
-            sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-            sfp_doc.visit_status = visit_status
-            sfp_doc.save()  
-            sfp_doc.reload() 
-            frappe.db.commit() 
-    
-@frappe.whitelist()
-def update_spf_status(doc,method):
-    if doc.lead_name:
-        sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name": doc.lead_name}, "name")
-        if sfp_name:
-            for i in sfp_name:
-                sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-                sfp_doc.status = "Converted"
-                sfp_doc.party_from="Customer"
-                sfp_doc.party_name=doc.name
-                sfp_doc.save()  
-                sfp_doc.reload() 
-                frappe.db.commit() 
 
 @frappe.whitelist()
 def add_custom_appointment_details_in_lead(name, lead, visted_date, visted_by, appointment_remarks):
@@ -9987,7 +7342,7 @@ def add_custom_appointment_details_in_lead(name, lead, visted_date, visted_by, a
                 "visit_by": visted_by,
                 "remarks": appointment_remarks
             })
-                
+
         else:
             # If the child table is empty, add a new entry
             lead_doc.append("visit_status1", {
@@ -10000,86 +7355,6 @@ def add_custom_appointment_details_in_lead(name, lead, visted_date, visted_by, a
         lead_doc.save()
         frappe.db.commit()  # Not necessary, but keeping it here if needed
 
-@frappe.whitelist()
-def update_sfp_opportunity(doc,method):
-    if doc.custom_sales_follow_up and doc.custom_quotation and doc.status=="Lost":
-        frappe.db.set_value("Sales Follow Up",doc.custom_sales_follow_up,"status","Replied")
-
-@frappe.whitelist()
-def update_dnc(name):
-    sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name":name}, "name")
-    if sfp_name:
-        for i in sfp_name:
-            sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-            sfp_doc.status = "Do Not Contact"
-            sfp_doc.save()  
-            sfp_doc.reload() 
-            frappe.db.commit() 
-
-@frappe.whitelist()
-def update_dnc_converted(name):
-    sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name":name}, "name")
-    if sfp_name:
-        for i in sfp_name:
-            sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-            sfp_doc.status = "Converted"
-            sfp_doc.save()  
-            sfp_doc.reload() 
-            frappe.db.commit() 
-
-@frappe.whitelist()
-def update_territory_sfp(name,territory):
-    sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name": name}, "name")
-    if sfp_name:
-        for i in sfp_name:
-            sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-            sfp_doc.territory = territory
-            sfp_doc.save()  
-            sfp_doc.reload() 
-            frappe.db.commit() 
-
-@frappe.whitelist()
-def update_market_segment_sfp(name,market_segment):
-    sfp_name = frappe.db.get_all("Sales Follow Up", {"party_name": name}, "name")
-    if sfp_name:
-        for i in sfp_name:
-            sfp_doc = frappe.get_doc("Sales Follow Up", i.name) 
-            sfp_doc.market_segment = market_segment
-            sfp_doc.save()  
-            sfp_doc.reload() 
-            frappe.db.commit() 
-
-@frappe.whitelist()
-def update_check_existing_lead(doc,method):
-    if doc.custom_check_existing:
-        # frappe.errprint(doc.custom_check_existing)
-        # if frappe.db.exists("Lead",{'name':['!=',doc.name],'custom_existing_lead':doc.custom_existing_lead}):
-        #     lead_name=frappe.get_doc("Lead",{'name':['!=',doc.name],'custom_existing_lead':doc.custom_existing_lead})
-        #     form_link = get_link_to_form("Lead", lead_name.name)
-        #     msg = _("Already another lead found {0}").format(form_link)
-        #     frappe.throw(msg)
-        
-        leads=frappe.get_doc("Existing Leads",doc.custom_check_existing)
-        leads.lead_id=doc.name
-        leads.save()  
-        leads.reload() 
-        frappe.db.commit() 
-
-@frappe.whitelist()
-def update_company_name(name):
-    organiation_name=frappe.db.get_value("Existing Leads",name,"lead_name")
-    return organiation_name
-
-@frappe.whitelist()
-def update_project_dates(doc, method):
-    if doc.custom_sla_details:
-        for row in doc.custom_sla_details:
-            if row.project and row.sla_from_date and row.sla_to_date:
-                frappe.db.set_value("Project", row.project, {
-                    "expected_start_date": row.sla_from_date,
-                    "expected_end_date": row.sla_to_date
-                })
-                frappe.db.commit()
 
 @frappe.whitelist()
 def employee_chc_print(doc):
@@ -10091,7 +7366,7 @@ def employee_chc_print(doc):
             '<td style="text-align:left; font-weight:bold; color:white;font-size: 18px;width: 100%">Status</td>' \
             '</tr>'
     s_no = 1
-    
+
     if chc:
         for i in chc.custom_employee_chc:
             data += f'<tr>' \
@@ -10116,7 +7391,7 @@ def employee_joining_print(doc):
             '<td style="text-align:center; width: 30%;background-color: #0f1568 !important; color: white">Status</td>' \
             '</tr>'
     s_no = 1
-    
+
     if chc:
         for i in chc.activities:
             data += f'<tr>' \
@@ -10131,147 +7406,70 @@ def employee_joining_print(doc):
     data += '</table>'
     return data
 
-@frappe.whitelist()
-def update_lead_contacts_sfp(doc,method):
-    if doc.party_from=="Lead" and doc.party_name:
-        lead_contact = frappe.get_doc("Lead", doc.party_name)
-        for i in lead_contact.lead_contacts:
-            doc.append("contacts", {
-                'person_name': i.person_name,
-                'mobile': i.mobile,
-                'is_primary': i.is_primary,
-                'has_whatsapp': i.has_whatsapp,
-                'email_id': i.email_id,
-                'is_primaryemail': i.is_primaryemail,
-                'service':i.service
-            })
-            doc.append("custom_contact_details", {
-                'person_name': i.person_name,
-                'mobile': i.mobile,
-                'is_primary': i.is_primary,
-                'has_whatsapp': i.has_whatsapp,
-                'email_id': i.email_id,
-                'is_primaryemail': i.is_primaryemail,
-                'service':i.service
-            })
-    elif doc.party_from=="Customer" and doc.party_name:
-        lead_contact = frappe.get_doc("Customer", doc.party_name)
-        for i in lead_contact.customer_contact:
-            doc.append("customer_contacts", {
-                "person_name": i.person_name or '',
-                "mobile": i.mobile or '',
-                "is_primary": i.is_primary or False,
-                "has_whatsapp": i.has_whatsapp or False,
-                "email_id": i.email_id or '',
-                "is_primaryemail": i.is_primaryemail or False,
-                "service":i.service or ''
-            })
-    doc.save()
-    frappe.db.commit()  
-            
-# @frappe.whitelist()
-# def update_project_type():
-#     frappe.db.set_value("Sales Follow Up","SFP-30292","status","Opportunity")
-
-@frappe.whitelist()
-def clear_payment_table_si(doc,method):
-    doc.payment_schedule=[]
-
-@frappe.whitelist()
-def validate_maintain_stok_si(doc,method):
-    if doc.pos_profile not in ["Main Store","VM1_Precision"]:
-    # if doc.pos_profile!="Main Store":
-        if doc.items:
-            for i in doc.items:
-                stock=frappe.db.get_value("Item",i.item_code,"is_stock_item")
-                if stock and not i.delivery_note:
-                    frappe.throw(_("Row {0}:Stock Item '{1}' requires a Delivery Note.Kindly create Invoice from Delivery Note.").format(i.idx, i.item_code))
-
-# @frappe.whitelist()
-# def update_status_sfp():
-#     frappe.db.set_value("Sales Follow Up","SFP-28768","status","Converted")
-
-@frappe.whitelist()
-def update_month_cycle(doc,method):
-    from_date_obj = datetime.strptime(doc.start_date, "%Y-%m-%d")
-    month_year = from_date_obj.strftime("%b %Y") 
-    frappe.db.set_value("Appraisal Cycle",doc.name,"custom_cycle_month",month_year)
-
-@frappe.whitelist()
-def update_spf_details_lead(doc,method):
-    created_on=now_datetime()
-    if doc.party_from=="Lead":
-        lead=frappe.get_doc("Lead",doc.party_name)
-        lead.append("custom_sfp_details", {"sfp_id": doc.name,"sfp_owner":doc.account_manager_lead_owner,"created_on":created_on,"service":doc.service})
-        lead.save()
-        frappe.db.commit()  
-    if doc.party_from=="Customer":
-        customer=frappe.get_doc("Customer",doc.party_name)
-        customer.append("custom_sfp_details", {"sfp_id": doc.name,"sfp_owner":doc.account_manager_lead_owner,"created_on":created_on,"service":doc.service})
-        customer.save()
-        frappe.db.commit() 
-
-# @frappe.whitelist()
-# def update_exixting_spf_details_lead():
-#     count=0
-#     sfp=frappe.db.get_all("Sales Follow Up",{"party_from":"Lead"},["party_name","account_manager_lead_owner","service","name","creation"])
-#     for i in sfp:
-#         if i.party_name:
-#             lead=frappe.get_doc("Lead",i.party_name)
-#             # Check if the sfp_id is already in the child table
-#             existing_sfp_ids = [row.sfp_id for row in lead.custom_sfp_details]
-#             if i.name not in existing_sfp_ids:  # Avoid duplicate entries
-#                 lead.append("custom_sfp_details", {
-#                     "sfp_id": i.name,
-#                     "sfp_owner": i.account_manager_lead_owner,
-#                     "created_on": i.creation,
-#                     "service": i.service
-#                 })
-#                 lead.save()
-#                 frappe.db.commit()
-#                 count += 1
-#     print(count)
-
-# @frappe.whitelist()
-# def enqueue_sfp():
-#     from frappe.utils.background_jobs import enqueue
-#     enqueue(method=update_exixting_spf_details_lead, queue="long", timeout=96000)
-
-
 
 import frappe
 from frappe import _
 import requests
 import json
 
-# Replace this with your actual Mattermost incoming webhook URL
+
 MATTERMOST_WEBHOOK_URL = "https://pm.teamproit.com/hooks/8rm94z3knfdptf8phf6cmrszpe"
 
 
 @frappe.whitelist(allow_guest=True)
 def create_issue_from_mattermost_new():
     data = frappe.local.form_dict
+    # frappe.log_error("Data Mattermost", data)
     user_name = data.get("user_name")
-    text = data.get("text")  # whatever comes after the slash command
+    text = data.get("text") 
     channel = data.get("channel_name")
-    # Proceed if token is OK
+    short_channel = channel[:7]
+    file_ids_str = data.get("file_ids")
     user_name = frappe.form_dict.get("user_name") or "unknown"
     text = frappe.form_dict.get("text") or "No message"
     project_name = frappe.db.get_value(
         "Project",
-        {"name": ["like", f"%{channel}%"]},
+        {"name": ["like", f"%{short_channel}%"],'service':'IT-SW'},
         "name"
     )
-    issue=frappe.new_doc("Issue")
+    if not project_name:
+        project_name = frappe.db.get_value(
+            "Project",
+            {"name": ["like", f"%{channel[:4]}%"],'service':'IT-SW'},
+            "name"
+        )
+        if not project_name:
+            project_name = frappe.db.get_value(
+                "Project",
+                {"name": ["like", f"%{channel[:5]}%"],'service':'IT-SW'},
+                "name"
+            )
+    mattermost_url=frappe.db.get_value('Project',project_name,'custom_mattermost_url')
+    file_list = []
+    file_links_html = ""
+    if file_ids_str:
+        file_list = file_ids_str.split(",")
+        for f_id in file_list:
+            # frappe.log_error("Image Mattermost", f_id)
+            url = f"https://pm.teamproit.com/api/v4/files/{f_id}"
+            file_links_html += f'<br><a href="{url}" target="_blank">{url}</a>'
+    issue=frappe.new_doc("Task")
     issue.subject=f"Issue from Mattermost by {user_name}"
-    issue.description=text
+    issue.description =f"{text}<br>{file_links_html}"
     issue.project=project_name
-    issue.save()
+    issue.priority="Medium"
+    issue.insert(ignore_mandatory=True, ignore_permissions=True) 
     frappe.db.commit()
-    message = f"Your query has been registered successfully. Please refer to Ticket Number:*{issue.name}* for any future communication.\n> {text}"
+    
+    if mattermost_url :
+        WEBHOOK_URL=mattermost_url
+        
+    else:
+        WEBHOOK_URL=MATTERMOST_WEBHOOK_URL
+    message = f"Your query has been registered successfully against the project {project_name}. Please refer to Ticket Number:*{issue.name}* for any future communication.\n> {text}"
     try:
         response = requests.post(
-            MATTERMOST_WEBHOOK_URL,
+            WEBHOOK_URL,
             headers={"Content-Type": "application/json"},
             data=json.dumps({"text": message})
         )
@@ -10281,136 +7479,23 @@ def create_issue_from_mattermost_new():
 
     return "OK"
 
-@frappe.whitelist()
-def send_amil_for_working(subject,id,action_taken,live,et,at,code_review_revision,service,proof,allocated=None,project=None,issue=None,domain=None,spoc=None,reason=None,dev_spoc=None,code_review_comment=None):
-    if service=='IT-SW':
-        percentage=et_at_calculation(id, et, at, allocated,subject)
-        reports=frappe.db.get_value("Employee",{'user_id':allocated},['reports_to'])
-        reports_to=frappe.db.get_value("Employee",{'name':reports},['user_id'])
-        tl=frappe.db.get_value("Employee",{'user_id':allocated},["custom_tl"])
-        tl_mail=frappe.db.get_value("Employee",{'name':tl},['user_id'])
-        et_rate= 'ET : %s and AT : %s'%(et,round(percentage,2))
-        if issue:
-            raised_by=frappe.db.get_value("Issue",{'name':issue},['raised_by'])
-        else:
-            raised_by='None'
-        data = ''
-        data += f"<table width='100%' style='border-collapse: collapse; border: 1px solid black; text-align: center;'>\
-        <tr><td colspan='2' style='text-align: center; background-color: #0f1568;color: white; font-size: 17px; border: 1px solid black;'><b>Task / Issue Pending Review Note</b></td></tr>\
-        <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Task ID</b></td><td style='border: 1px solid black;'><a href='https://erp.teamproit.com/app/task/{id}' target='_blank'>{id}</a></td></tr>\
-        <tr style='text-align: left;'><td width='25%'style='border: 1px solid black;'><b>Project</b></td><td style='border: 1px solid black;'>{project}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task Raised By</b></td><td style='border: 1px solid black;'>{reports_to}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue ID</b></td><td style='border: 1px solid black;'>{issue}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Issue Raised By</b></td><td style='border: 1px solid black;'>{raised_by}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task / Issue Statement</b></td><td style='border: 1px solid black;'>{subject}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Task / Issue Action Taken</b></td><td style='border: 1px solid black;'>{action_taken}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Live At</b></td><td style='border: 1px solid black;'>{live}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Domain</b></td><td style='border: 1px solid black;'>{domain}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Proof</b></td><td style='border: 1px solid black;'><a href='https://erp.teamproit.com/{proof}' target='_blank'>Link to Proof</a></td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>ET & AT</b></td><td style='border: 1px solid black;'>{et_rate}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Code Review to Working Count</b></td><td style='border: 1px solid black;'>{code_review_revision}</td></tr>\
-        <tr style='text-align: left;'><td style='border: 1px solid black;'><b>Reason:</b></td><td style='border: 1px solid black;'>{code_review_comment}</td></tr></table>"
-        cc = [reports_to, allocated,spoc,'anil.p@groupteampro.com'] + ([dev_spoc] if dev_spoc else []) +([tl_mail] if tl_mail else [])
-        frappe.sendmail(
-            sender=allocated,
-            recipients='divya.p@groupteampro.com',
-            # recipients=spoc,
-            # cc=cc,
-            subject='Task : %s Status Changed to Working from Code Review' % id,
-            message = """
-            <b>Dear Patron,<br><br>Greeting !!!</b><br><br>
-           The referenced task has been moved back to <b>Working</b> from <b>Code Review</b> for further development or changes kindly find the Code Reviewer Comment.<br><br>
-            Please find the task details below:<br><br>
-           {}<br><br>
-            Thanks & Regards,<br>TEAM ERP<br>
-            
-            <i>This email has been automatically generated. Please do not reply</i>
-            """.format(data)
-        )
-
-@frappe.whitelist()
-def update_project_issue(doc,method):
-    if not doc.project:
-        frappe.db.set_value("Issue",doc.name,"project","Internal ERP - TEAMPRO V15")
 
 # @frappe.whitelist()
 # def update_status_lead_today():
-#     filename='9940a8111b2bae3Lead.csv'
+#     filename='4332dda17376a6dSales Follow Up.csv'
 #     from frappe.utils.file_manager import get_file
 #     filepath = get_file(filename)
 #     pps = read_csv_content(filepath[1])
 #     ind=0
 #     for pp in pps:
-#         if pp[0]!="ID":
-#             frappe.db.set_value("Lead",{"name":pp[0]},"lead_owner",pp[1])
+#         if pp[0]!="ID" or pp[0]!="None":
+#             frappe.db.set_value("Sales Follow Up",{"name":pp[0]},"territory","Tamil Nadu")
 #             ind+=1
 #             print(pp[0])
-#             print(pp[1])
 #     print(ind)
 
 
-# method to update the criteria table during the task creation
-@frappe.whitelist()
-def update_criteria_table(doc, method):
-    pass
-    # if doc.service == 'REC-I':
-    # 	proj = frappe.get_doc("Project", doc.project)        
-    # 	doc.set("custom_criteria_table", [])
-    # 	for row in proj.custom_criteria_table:
-    # 		doc.append("custom_criteria_table", {
-    # 			"scheduling_criteria": row.scheduling_criteria,
-    # 			"scheduling_parameter": row.scheduling_parameter
-    # 		}) 
-    # 	doc.save()
 
-
-import frappe
-import requests
-import json
-from datetime import datetime
-
-@frappe.whitelist()
-def update_issue_wonjin(doc,method):
-    if not doc.is_new():
-        doc_task = frappe.get_doc("Task",doc.name)
-        if doc.project == 'Wonjin_ERP_19.12.2023' and not doc.is_new():
-            subject = f"{doc.subject} - {doc_task.creation.strftime('%d-%m-%Y')}"
-            creation = doc_task.creation.strftime('%d-%m-%Y')
-
-            params = {
-                'creation': creation,
-                'name': doc.name,
-                'subject': subject,
-                'description': doc.description,
-                'priority': doc.priority,
-                'status': doc.status,
-                'pr_remarks': doc.custom_taskissue_action_taken,
-                'proof': doc.custom_proof_of_closure_review,
-                'issue_id': doc.issue,
-                'allocated_to': doc.custom_allocated_to,
-
-            }
-
-            url = "https://erp.onegeneindia.in/api/method/onegene.www.update_issue.update_issue_from_teampro"
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': 'token 7503af112f2692c:812bd60c48b22ed'
-            }
-
-
-            try:
-                response = requests.post(url, headers=headers, json=params, verify=False)
-                response.raise_for_status()  # raises exception for 4xx/5xx errors
-
-                res = response.json()
-                return res
-
-            except requests.exceptions.RequestException as e:
-                frappe.throw(f"HTTP error: {str(e)}")
-            except json.JSONDecodeError:
-                frappe.throw("Failed to decode JSON response from server")
-
-        return "No matching task found or it's new"
 
 @frappe.whitelist()
 def create_issue_wonjin(doc,method):
@@ -10440,7 +7525,7 @@ def create_issue_wonjin(doc,method):
 
         try:
             response = requests.post(url, headers=headers, json=params, verify=False)
-            response.raise_for_status()  # raises exception for 4xx/5xx errors
+            response.raise_for_status() 
 
             res = response.json()
             return res
@@ -10453,130 +7538,6 @@ def create_issue_wonjin(doc,method):
     return "No matching task found or it's new"
 
 
-@frappe.whitelist()
-def update_issueid_wonjin(doc,method):
-    # doc = frappe.get_doc("Issue",doc.name)
-    if doc.raised_by == 'wonjin_corporate@onegeneindia.in':
-        params = {
-            'name': doc.name,
-            'subject': doc.subject,
-            'status': doc.status,
-        }
-
-        url = "https://erp.onegeneindia.in/api/method/onegene.www.update_issue.update_issueid_from_teampro"
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': 'token 7503af112f2692c:812bd60c48b22ed'
-        }
-
-
-        try:
-            response = requests.post(url, headers=headers, json=params, verify=False)
-            response.raise_for_status()  # raises exception for 4xx/5xx errors
-
-            res = response.json()
-            return res
-
-        except requests.exceptions.RequestException as e:
-            frappe.throw(f"HTTP error: {str(e)}")
-        except json.JSONDecodeError:
-            frappe.throw("Failed to decode JSON response from server")
-
-    return "No matching task found or it's new"
-
-@frappe.whitelist()
-def update_criteria_changes(name):
-    project = frappe.get_doc("Project", name)
-    # if not project.custom_criteria_table:
-    # 	return
-    tasks = frappe.get_all("Task", {"project": name}, ["name"])
-    for i in tasks:
-        frappe.errprint(i.name)
-        task = frappe.get_doc("Task", i.name)
-        for row in project.custom_criteria_table:
-            frappe.errprint('name')
-            if not row.updated:
-                frappe.errprint('name1')
-                task.append("custom_criteria_table", {
-                    "scheduling_criteria": row.scheduling_criteria,  
-                    "scheduling_parameter": row.scheduling_parameter         
-                })
-        task.save()
-    return "Ok"
-
-
-# @frappe.whitelist()
-# def get_service():
-#     count =0
-#     project = frappe.get_all('Project',filters={"service":"IT-SW"},fields=["name","customer"])
-#     for i in project:
-#         # i.customer
-#         # i.name
-#         task = frappe.get_all('Task',filters={'project':i.name,"service":"IT-SW",'customer':["!=",i.customer],'creation': ['between', ['2025-04-20', '2025-05-09']]},fields=['name','creation'])
-#         for j in task:
-#             count += 1
-#             if(i.customer != j.customer):
-#                 # if j.name == 'TS10119':
-#                 print(j.name)
-#                 # frappe.db.set_value('Task',j.name,'customer',i.customer)
-#     print(count)
-
-@frappe.whitelist()
-def merge_material_request_items(material_request):
-    childtab = frappe.db.sql(""" select `tabMaterial Request Item`.item_code,`tabMaterial Request Item`.warehouse,
-    `tabMaterial Request Item`.item_name,`tabMaterial Request Item`.conversion_factor,
-    sum(`tabMaterial Request Item`.qty) as qty, sum(`tabMaterial Request Item`.stock_qty) as stock_qty, `tabMaterial Request Item`.actual_qty as actual_stock_qty,
-    `tabMaterial Request Item`.stock_uom,
-    `tabMaterial Request Item`.uom,`tabMaterial Request Item`.warehouse,
-    `tabMaterial Request Item`.from_warehouse,`tabMaterial Request Item`.stb
-    from `tabMaterial Request` 
-    left join `tabMaterial Request Item` on `tabMaterial Request`.name = `tabMaterial Request Item`.parent where `tabMaterial Request`.name = '%s' group by `tabMaterial Request Item`.item_code order by `tabMaterial Request Item`.idx """%(material_request),as_dict = 1)
-    return childtab
-
-@frappe.whitelist()
-def update_ordered_qty(doc,method):
-    material_request = frappe.db.get_value("Purchase Order Item", {"parent": doc.name}, "material_request")
-    if frappe.db.exists("Material Request", material_request):
-        for i in doc.items:
-            mr_name = frappe.db.get_value("Material Request Clubbed Item",{'parent':i.material_request,'item_code':i.item_code},['name'])
-            if mr_name:
-                frappe.db.set_value("Material Request Clubbed Item",mr_name,'po_qty',i.qty)
-
-@frappe.whitelist()
-def update_ordered_qty_on_cancel(doc,method):
-    material_request = frappe.db.get_value("Purchase Order Item", {"parent": doc.name}, "material_request")
-    if frappe.db.exists("Material Request", material_request):
-        for i in doc.items:
-            mr_name = frappe.db.get_value("Material Request Clubbed Item",{'parent':i.material_request,'item_code':i.item_code},['name'])
-            if mr_name:
-                po_qty = frappe.db.get_value("Material Request Clubbed Item",{'parent':i.material_request,'item_code':i.item_code},['po_qty'])
-                if po_qty and po_qty > 0:
-                    frappe.db.set_value("Material Request Clubbed Item",mr_name,'po_qty',po_qty - i.qty)
-        doc = frappe.get_doc("Material Request", material_request)
-        row_count = 0
-        conditions_satisfied_count = 0
-        for row in doc.custom_merged_items:
-            row_count += 1
-            if row.po_qty >= row.purchase_qty:
-                conditions_satisfied_count += 1
-        if row_count > 0 and  row_count == conditions_satisfied_count:
-            frappe.db.set_value("Material Request", material_request, "status", "Pending")
-
-@frappe.whitelist()
-def update_material_request_status_on_submit(doc,method):
-    material_request = frappe.db.get_value("Purchase Order Item", {"parent": doc.name}, "material_request")
-    if frappe.db.exists("Material Request", material_request):
-        doc = frappe.get_doc("Material Request", material_request)
-        row_count = 0
-        conditions_satisfied_count = 0
-        for row in doc.custom_merged_items:
-            row_count += 1
-            if row.po_qty >= row.purchase_qty:
-                conditions_satisfied_count += 1
-        if row_count > 0 and row_count == conditions_satisfied_count:
-            frappe.db.set_value("Material Request", material_request, "status", "Ordered")
-        
-        
 import frappe
 from frappe.utils import add_days
 
@@ -10591,25 +7552,6 @@ def get_previous_count(name,date):
     """, (prev_date, name,prev_date))
 
     return result[0][0] or 0
-
-@frappe.whitelist()
-def calc_cost_prize_po(docname):
-    doc = frappe.get_doc("Purchase Order", docname)  # change doctype if needed
-    warnings = []
-    for f in doc.items:
-        tfp_item = frappe.db.get_value("Item", f.item_code, "tfp")
-        if tfp_item == 1:
-            price = frappe.db.get_value("Item Price", {
-                "price_list": "Cost Price TFP",
-                "item_code": f.item_code
-            }, "price_list_rate")
-            if price:
-                item_price = price / 1000 if f.uom == "Gram" else price
-                item_rate = round(item_price, 2)
-                if f.rate > item_rate:
-                    warnings.append(f"{f.item_name}")
-
-    return {"warnings": warnings}
 
 @frappe.whitelist()
 def validate_stock_counting(doc,method):
@@ -10691,7 +7633,7 @@ def get_tfp_item():
     for i, item in enumerate(items_with_tfp):
         if i % 4 == 0:
             if i != 0:
-                html += "</div>" 
+                html += "</div>"
             html += '<div class="page">'
 
         html += f"""
@@ -10704,59 +7646,14 @@ def get_tfp_item():
         </div>
         """
 
-    html += "</div></body></html>" 
+    html += "</div></body></html>"
 
     return html
 
-from frappe.utils import formatdate
 
-import frappe
 
-@frappe.whitelist()
-def get_tasks_by_date_and_employee(employee, date):
-    emp=frappe.db.get_value("Employee",employee,["user_id"])
-    tasks = frappe.get_all(
-        "Task",
-        filters={
-            "custom_production_date": date,
-            "custom_allocated_to": emp
-        },
-        fields=["name", "status", "rt","project","subject"]
-    )
 
-    if not tasks:
-        return "<div>No tasks found for the selected date and employee.</div>"
-    html = """
-    <style>
-        .task-table, .task-table th, .task-table td {
-            border: 1px solid black;
-            border-collapse: collapse;
-        }
-    </style>
-    <table class="table table-bordered">
-        <thead>
-            <tr style = 'background-color:#0f1568;color:white;text-align:center'>
-                <th>Task ID</th>
-                <th>Project</th>
-                <th>Subject</th>
-                <th>Status</th>
-                <th>RT</th>
-            </tr>
-        </thead>
-        <tbody>
-    """
-    for task in tasks:
-        html += f"""
-            <tr>
-                <td>{task.name}</td>
-                <td>{task.project}</td>
-                <td>{task.subject}</td>
-                <td>{task.status}</td>
-                <td style='text-align:right'>{task.rt or ''}</td>
-            </tr>
-        """
-    html += "</tbody></table>"
-    return html
+
 
 @frappe.whitelist()
 def update_app_visit_status(lead,visit):
@@ -10769,18 +7666,18 @@ def update_app_visit_status(lead,visit):
 def update_table_in_task(doc,method):
    if doc.service == 'REC-I':
         # doc.reload()
-        frappe.errprint("Hello")
+        # frappe.errprint("Hello")
         frappe.enqueue(
-            update_criteria_to_tasks, 
+            update_criteria_to_tasks,
             queue="long",
             timeout=36000,
-            is_async=True, 
-            now=False, 
+            is_async=True,
+            now=False,
             job_name='Update Tasks',
             enqueue_after_commit=False,
             name=doc.name,
         )
-    
+
 @frappe.whitelist()
 def update_criteria_to_tasks(name):
     frappe.log_error(title='Task Update', message='Starting update_criteria_to_tasks')
@@ -10794,13 +7691,10 @@ def update_criteria_to_tasks(name):
     tasks = frappe.get_all("Task", {"project": name}, ["name"])
     for t in tasks:
         task = frappe.get_doc("Task", t.name)
-        for project_criteria in criteria_list:
-            already_exists = any(
-                task_criteria.scheduling_criteria == project_criteria.scheduling_criteria and
-                task_criteria.scheduling_parameter == project_criteria.scheduling_parameter
-                for task_criteria in task.custom_criteria_table
-            )
-            if not already_exists:
+        if not task.custom_criteria_table:
+            continue
+        for project_criteria in project.custom_criteria_table:
+            if project_criteria.updated==0:
                 task.append("custom_criteria_table", {
                     "scheduling_criteria": project_criteria.scheduling_criteria,
                     "scheduling_parameter": project_criteria.scheduling_parameter
@@ -10821,13 +7715,6 @@ def update_existing_cust():
         # exist.id=c.name
         exist.insert()
         exist.save()
-        frappe.db.commit()
-@frappe.whitelist()
-def create_cust(name):
-    if not frappe.db.exists("Existing Customer",name):
-        cust=frappe.new_doc("Existing Customer")
-        cust.customer_id=name
-        cust.save()
         frappe.db.commit()
 
 @frappe.whitelist()
@@ -10928,63 +7815,7 @@ def get_so_from_dn(doc):
 #                     if so_item:
 #                         row.custom_cover_type = so_item
 
-import frappe
-from frappe.model.document import Document
-from frappe.utils import flt
 
-@frappe.whitelist()
-def create_material_isse(doc, method):
-    doc = frappe.get_doc("Delivery Note", doc.name) if isinstance(doc, str) else doc
-
-    if doc.company != "TEAMPRO Food Products":
-        return
-
-    stock_entry = None
-    for item in doc.items:
-        items_to_issue = []
-
-        if flt(item.custom_covers) > 0 and item.custom_cover_type:
-            items_to_issue.append({
-                "item_code": item.custom_cover_type,
-                "qty": item.custom_covers
-            })
-
-        if flt(item.custom_bag) > 0 and item.custom_packing_type:
-            items_to_issue.append({
-                "item_code": item.custom_packing_type,
-                "qty": item.custom_bag
-            })
-
-        if flt(item.custom_box) > 0 and item.custom_tertiary_packingbox:
-            items_to_issue.append({
-                "item_code": item.custom_tertiary_packingbox,
-                "qty": item.custom_box
-            })
-
-        if items_to_issue:
-            if not stock_entry:
-                stock_entry = frappe.new_doc("Stock Entry")
-                stock_entry.stock_entry_type = "Material Issue"
-                stock_entry.from_warehouse = "Stores - TFP"
-                stock_entry.company = doc.company
-                # stock_entry.set_posting_time = 1
-                stock_entry.posting_date = doc.posting_date
-                stock_entry.posting_time = doc.posting_time
-                stock_entry.custom_delivery_note=doc.name
-            for i in items_to_issue:
-                stock_entry.append("items", {
-                    "item_code": i["item_code"],
-                    "qty": i["qty"],
-                    "uom":"Nos",
-                    "s_warehouse": stock_entry.from_warehouse,
-                    "cost_center": item.cost_center or frappe.db.get_value("Company", doc.company, "cost_center"),
-                    "allow_zero_valuation_rate":1
-                })
-
-    if stock_entry:
-        stock_entry.insert()
-        stock_entry.submit()
-        frappe.msgprint(f"Material Issue created: {stock_entry.name}")
 
 @frappe.whitelist()
 def cancel_material_isse(doc, method):
@@ -10992,25 +7823,6 @@ def cancel_material_isse(doc, method):
     for stock_name in stock_entries:
         stock = frappe.get_doc("Stock Entry", stock_name)
         stock.cancel()
-
-
-
-@frappe.whitelist()
-def set_totals_in_delivery_note(doc, method):
-    doc = frappe.get_doc("Delivery Note", doc.name) if isinstance(doc, str) else doc
-
-    total_covers = 0
-    total_bag = 0
-    total_box = 0
-    if doc.items:
-        for item in doc.items:
-            total_covers += flt(item.custom_covers)
-            total_bag += flt(item.custom_bag)
-            total_box += flt(item.custom_box)
-
-        doc.custom_total_covers = total_covers
-        doc.custom_total_bag = total_bag
-        doc.custom_total_box = total_box
 
 
 import frappe
@@ -11085,28 +7897,7 @@ def get_packing_slip_table(doc):
     table_html += "</tbody></table>"
     return table_html
 
-import frappe
-from frappe.model.naming import make_autoname
-from frappe.utils import now_datetime
 
-@frappe.whitelist()
-def set_customer_id(doc, method):
-    if doc.is_new():
-        if not doc.customer_id:
-            last_customer = frappe.db.sql("""
-                SELECT customer_id FROM `tabCustomer`
-                WHERE customer_id REGEXP '^CUST-[0-9]{6}$'
-                ORDER BY CAST(SUBSTRING(customer_id, 6) AS UNSIGNED) DESC
-                LIMIT 1
-            """, as_dict=True)
-
-            if last_customer:
-                last_id_num = int(last_customer[0]["customer_id"].split("-")[1])
-                new_id_num = last_id_num + 1
-            else:
-                new_id_num = 1
-            new_customer_id = f"CUST-{new_id_num:06d}"
-            doc.customer_id = new_customer_id
 
 def update_cover_count(doc, method):
     if doc.items:
@@ -11144,33 +7935,6 @@ def set_totals_in_sales_order(doc, method):
         doc.custom_total_bag = total_bag
         doc.custom_total_box = total_box
 
-import frappe
-
-@frappe.whitelist()
-def send_mail_so_submission(doc,method):
-    if doc.service == "TFP" and doc.company == "TEAMPRO Food Products":
-        table = '''
-            <table border="1" style="border-collapse: collapse; width: 50%; text-align: center;">
-                <tr style="background-color: #87CEFA;">
-                    <th>SO ID</th>
-                    <th>Customer</th>
-                </tr>
-                <tr>
-                    <td style="text-align:left">{so_id}</td>
-                    <td style="text-align:left">{customer}</td>
-                </tr>
-            </table>
-        '''.format(so_id=doc.name, customer=doc.customer)
-        subject = "New Sales Order created for TFP"
-        message = f"<p>Dear Team,</p><p>A new Sales Order has been created. Details are as follows:</p>{table}<p>Regards,<br>ERP System</p>"
-        recipients = ["nishanthi.p@groupteampro.com"]
-        frappe.sendmail(
-            recipients=recipients,
-            cc=['tfp@groupteampro.com','sangeetha.s@groupteampro.com','dineshbabu.k@groupteampro.com'],
-            subject=subject,
-            message=message,
-        )
-
 @frappe.whitelist()
 def get_so_delivery_data(docname):
     from frappe.utils import flt
@@ -11185,7 +7949,7 @@ def get_so_delivery_data(docname):
 
     # Fetch DN items
     dn_items = frappe.db.sql("""
-        SELECT 
+        SELECT
             dni.parent AS dn_name,
             dni.item_code,
             dni.item_name,
@@ -11260,7 +8024,7 @@ def stock_counting_report_excel():
     filename = "Physical_Vs_ERP_Stock_balance_" + formatted_date
     xlsx_file = build_xlsx_response_stock(filename)
     send_mail_with_attachment_stock(filename, xlsx_file.getvalue())
-    
+
 
 def send_mail_with_attachment_stock(filename,file_content):
     formatted_date = frappe.utils.format_datetime(frappe.utils.nowdate(), "dd-MM-yyyy")
@@ -11338,7 +8102,6 @@ def make_xlsx_physical_stock(filename, sheet_name=None, wb=None, column_widths=N
             else:
                 cell.alignment = Alignment(horizontal="right", vertical="center", wrap_text=True)
             cell.border = border
-            # Apply conditional font color for Status column
             if j == 7:  # Status column
                 if status == "Match":
                     cell.font = Font(bold=True, color="008000")  # Green
@@ -11397,7 +8160,6 @@ def get_stock_data():
 def get_physical_vs_erp_stock_data():
     from frappe.utils import flt
 
-    # Step 1: Get latest submitted Stock Counting document
     latest_stock_counting = frappe.get_all(
         "Stock Counting",
         filters={"docstatus": 1},
@@ -11411,14 +8173,12 @@ def get_physical_vs_erp_stock_data():
 
     latest_date = latest_stock_counting[0].date
 
-    # Step 2: Get items marked as TFP
-    items = frappe.get_all("Item", filters={"tfp": 1, "disabled": 0}, fields=["name", "item_name"])
+    items = frappe.get_all("Item", filters={"tfp": 1, "disabled": 0}, fields=["name", "item_name","item_group"])
     data = []
 
     for item in items:
         item_code = item.name
 
-        # Step 3: Get physical quantity from Stock Counting Details using latest date
         result = frappe.db.sql("""
             SELECT SUM(sd.count) AS physical_qty
             FROM `tabStock Counting Details` sd
@@ -11430,82 +8190,36 @@ def get_physical_vs_erp_stock_data():
 
         physical_qty = flt(result[0].physical_qty) if result and result[0].physical_qty else 0
 
-        # Step 4: Get stock qty from Bin
         stock_qty = frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0
 
         diff = flt(stock_qty) - flt(physical_qty)
+        diff = round(diff, 2)
         if physical_qty > 0 or stock_qty > 0:
-            status = "Match" if diff == 0 else "Variance"
+            # status = "Match" if diff == 0 else "Variance"
+            status = "Match" if abs(diff) <= 0.02 else "Variance"
             data.append({
                 "item": item_code,
                 "item_name": item.item_name,
+                "item_group": item.item_group,
                 "stock_qty": stock_qty,
                 "physical_qty": physical_qty,
                 "difference": diff,
                 "status": status
             })
-
+    data.sort(key=lambda x: (
+        x["item_group"] or "",
+        1 if x["status"] == "Variance" else 0
+    ))
     return {
-    "date": latest_date,
-    "data": data
-}
-
-
-@frappe.whitelist()
-def update_so_priority(doc,method):
-    so=''
-    for i in doc.items:
-        if i.against_sales_order:
-            so=i.against_sales_order
-            break
-    frappe.db.set_value("Sales Order",so,'custom_priority','')
+        "date": latest_date,
+        "data": data
+    }
 
 
 
-@frappe.whitelist()
-def get_so_item_details(doc,method):
-    if not doc.sales_order:
-        return
 
-    for item in doc.items:
-        if not item.item_code:
-            continue
 
-        so_item = frappe.db.get_value(
-            "Sales Order Item",
-            {
-                "parent": item.against_sales_order or doc.sales_order,
-                "item_code": item.item_code
-            },
-            [
-                "custom_cover_type",
-                "custom_packing_type",
-                "custom_tertiary_packingbox",
-                "custom_bag",
-                "custom_covers",
-                "custom_box",
-                "custom_per_2p",
-                "custom_per_3p",
-                "custom_wrd_uom",
-                "custom_wrd_rate"
-            ],
-            as_dict=True
-        )
 
-        if so_item:
-            item.custom_cover_type = so_item.custom_cover_type
-            item.custom_packing_type = so_item.custom_packing_type
-            item.custom_tertiary_packingbox = so_item.custom_tertiary_packingbox
-            item.custom_bag = so_item.custom_bag
-            item.custom_covers = so_item.custom_covers
-            item.custom_box = so_item.custom_box
-            item.custom_per_2p = so_item.custom_per_2p
-            item.custom_per_3p = so_item.custom_per_3p
-            item.custom_wrd_uom = so_item.custom_wrd_uom
-            item.custom_wrd_rate = so_item.custom_wrd_rate
-
-    # Save updated child table values
-    doc.save(ignore_permissions=True)
 
 @frappe.whitelist()
 def get_tfp_plan_html_plan_new():
@@ -11532,7 +8246,7 @@ def get_tfp_plan_html_plan_new():
             <th style="position: sticky; top: 0; text-align: center;background-color: #002060; color: white;" colspan="1">Packing</th>
             <th style="position: sticky; top: 0; text-align: center;background-color: #002060; color: white;" colspan="2">Delivery</th>
         </tr>'''
-    
+
     html += '</tr></thead><tbody>'
 
     s_no = 1
@@ -11675,10 +8389,10 @@ def get_tfp_plan_html_plan_new():
         }});
     </script>
     '''
-    
+
 
     return html
-    
+
 @frappe.whitelist()
 def create_dn_from_so(sales_order):
     import frappe
@@ -11771,28 +8485,1384 @@ def create_mr_from_so(sales_order):
 
     return mr.name
 
+
+
+
+
 @frappe.whitelist()
-def update_so_priority_on_submit(doc, method):
-    # Fetch all TFP SOs with 'To Deliver and Bill' status
-    sales_orders = frappe.get_all(
-        "Sales Order",
-        filters={
-            "service": "TFP",
-            "status": "To Deliver and Bill"
-        },
-        fields=["name", "custom_packing_on","custom_priority"]
+# def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
+def update_allocated_task_at_dev():
+    name='DM-00762'
+    dev_team='CHARLIE'
+    type='OPS'
+    date=add_days(today(),-1)
+    parent_doc = frappe.get_doc("Daily Monitor",
+                                 name)
+    existing_task_ids = {(d.id, d.cb): d for d in parent_doc.task_details if d.id and d.cb}
+
+    issues = []
+    meetings = []
+    tasks = []
+    cdr_list = []
+    if type == "OPS":
+        appended_issues = set()
+        appended_meetings = set()
+        appended_tasks = set()
+        employee_list = frappe.get_all("Employee", {
+            'department': "IT. Development - THIS",
+            'custom_dept_type': 'OPS',
+            "custom_dev_team": dev_team
+        }, ['short_code', 'name'])
+        # employee_list = frappe.get_all("Employee", ['short_code', 'name'])
+
+        for emp in employee_list:
+            timesheet = frappe.db.get_value("Timesheet", {'start_date': date, 'employee': emp.name}, ['name'])
+            short_code = emp.short_code
+
+            if timesheet:
+                issue_logs = frappe.get_all("Timesheet Detail", filters={'parent': timesheet, 'custom_issue': ['!=', '']}, fields=['*'])
+                for issue in issue_logs:
+                    key = (issue.custom_issue, short_code)
+                    if key in appended_issues:
+                        continue
+
+                    priority = frappe.db.get_value("Issue", issue.custom_issue, "priority")
+                    status = frappe.db.get_value("Issue", issue.custom_issue, "status")
+                    sum_issue = frappe.db.sql("""
+                        SELECT SUM(cs.hours) as total FROM `tabTimesheet` c
+                        INNER JOIN `tabTimesheet Detail` cs ON c.name = cs.parent
+                        WHERE cs.custom_issue=%s AND c.employee=%s AND c.start_date=%s
+                    """, (issue.custom_issue, emp.name, date), as_dict=True)[0].total or 0.0
+
+                    data = {
+                        "id": issue.custom_issue,
+                        "at_taken": sum_issue,
+                        'project_name': issue.project_name,
+                        'subject': issue.custom_subject_issue,
+                        'status': status,
+                        'cb': short_code,
+                        'priority': priority
+                    }
+
+                    if key in existing_task_ids:
+                        row = existing_task_ids[key]
+                        for k, v in data.items():
+                            row.set(k, v)
+                    else:
+                        issues.append(data)
+
+                    appended_issues.add(key)
+
+                meeting_logs = frappe.get_all("Timesheet Detail", filters={'parent': timesheet, 'custom_meeting': ['!=', '']}, fields=['*'])
+                for meeting in meeting_logs:
+                    key = (meeting.custom_meeting, short_code)
+                    if key in appended_meetings:
+                        continue
+
+                    status = frappe.db.get_value("Meeting", meeting.custom_meeting, "status")
+                    sum_meeting = frappe.db.sql("""
+                        SELECT SUM(cs.hours) as total FROM `tabTimesheet` c
+                        INNER JOIN `tabTimesheet Detail` cs ON c.name = cs.parent
+                        WHERE cs.custom_meeting=%s AND c.employee=%s AND c.start_date=%s
+                    """, (meeting.custom_meeting, emp.name, date), as_dict=True)[0].total or 0.0
+
+                    data = {
+                        "id": meeting.custom_meeting,
+                        "at_taken": sum_meeting,
+                        'subject': meeting.custom_subject_meeting,
+                        'cb': short_code,
+                        'status': status
+                    }
+
+                    if key in existing_task_ids:
+                        row = existing_task_ids[key]
+                        for k, v in data.items():
+                            row.set(k, v)
+                    else:
+                        meetings.append(data)
+
+                    appended_meetings.add(key)
+
+                task_logs = frappe.get_all("Timesheet Detail", filters={'parent': timesheet, 'task': ['!=', '']}, fields=['*'])
+                for log in task_logs:
+                    key = (log.task, short_code)
+                    if key in appended_tasks:
+                        continue
+
+                    status = frappe.db.get_value("Task", log.task, "status")
+                    sum_task = frappe.db.sql("""
+                        SELECT SUM(cs.hours) as total FROM `tabTimesheet` c
+                        INNER JOIN `tabTimesheet Detail` cs ON c.name = cs.parent
+                        WHERE cs.task=%s AND c.employee=%s AND c.start_date=%s
+                    """, (log.task, emp.name, date), as_dict=True)[0].total or 0.0
+
+                    if log.activity_type =="Code Review":
+
+                        data = {
+                            "id": log.task,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt":0.5,
+                            'today_rt':0.5
+                        }
+
+                    else:
+
+                        data = {
+                            "id": log.task,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt": frappe.db.get_value("Task",{'name':log.task},['rt']),
+                            'today_rt':frappe.db.get_value("Task",{'name':log.task},['rt'])
+                        }
+
+                    if key in existing_task_ids:
+                        row = existing_task_ids[key]
+                        for k, v in data.items():
+                            if k == "today_rt":
+                                continue
+                            row.set(k, v)
+                    else:
+                        tasks.append(data)
+
+                    appended_tasks.add(key)
+
+                cdr_task_logs = frappe.get_all("Timesheet Summary", filters={'parent': timesheet, 'id': ['!=', '']}, fields=['*'])
+                for log in cdr_task_logs:
+                    key = (log.id, short_code)
+                    if key in appended_tasks:
+                        continue
+                    status = frappe.db.get_value("Task", log.task, "status")
+                    sum_task_result = frappe.db.sql("""
+                        SELECT cs.tu as total
+                        FROM `tabTimesheet` c
+                        INNER JOIN `tabTimesheet Summary` cs ON c.name = cs.parent
+                        WHERE cs.document = 'Task' AND cs.task = %s AND c.employee = %s AND c.start_date = %s
+                    """, (log.id, emp.name, date), as_dict=True)
+
+                    sum_task = sum_task_result[0].total if sum_task_result else 0.0
+                    # print(log.id)
+                    if frappe.db.exists('Task',{'name':log.id}):
+                        alloc=frappe.db.get_value('Employee',{'short_code':short_code},['user_id'])
+                        allocated_person=frappe.db.get_value('Task',{'name':log.id},['custom_allocated_to'])
+                        if alloc != allocated_person:
+                            data = {
+                            "id": log.id,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt": frappe.db.get_value("Task", log.task, "rt"),
+                            "today_rt": 0.5,
+                            }
+                        else:
+                            data = {
+                            "id": log.id,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt": frappe.db.get_value("Task", log.task, "rt"),
+                            "today_rt": frappe.db.get_value("Task", log.task, "rt"),
+                            }
+                    else:
+                        data = {
+                            "id": log.id,
+                            "at_taken": sum_task,
+                            "cb": short_code,
+                            "current_status": status,
+                            "rt": frappe.db.get_value("Task", log.task, "rt"),
+                            "today_rt": frappe.db.get_value("Task", log.task, "rt"),
+                        }
+                    if key in existing_task_ids:
+                        row = existing_task_ids[key]
+                        for k, v in data.items():
+                            if k == "today_rt":
+                                continue
+                            row.set(k, v)
+                    else:
+                        cdr_list.append(data)
+
+                    appended_tasks.add(key)
+
+        for d in issues:
+            parent_doc.append("task_details", d)
+        for m in meetings:
+            parent_doc.append("task_details", m)
+        # print(tasks)
+        # print(cdr_list)
+        for t in tasks:
+            parent_doc.append("task_details", t)
+        for c in cdr_list:
+            parent_doc.append("task_details", c)
+        parent_doc.dsr_check = 1
+        for row in parent_doc.task_details:
+            print(row.id)
+            if frappe.db.exists('Issue',{'name':row.id}):
+                status =frappe.db.get_value('Issue',{'name':row.id},['status'])
+            elif frappe.db.exists('Task',{'name':row.id}):
+                status =frappe.db.get_value('Task',{'name':row.id},['status'])
+            if status:
+                row.current_status = status
+    # parent_doc.dm_status = 'DSR Pending'
+    parent_doc.save()
+    frappe.db.commit()
+
+
+
+import frappe
+from frappe.utils import add_days, getdate, today
+
+def auto_submit_ep1():
+    cutoff_date = add_days(getdate(today()), -2)
+
+    print(cutoff_date)
+    active_emps = frappe.get_all("Employee", filters={"status": "Active"}, pluck="name")
+    for employee in active_emps:
+        print(employee)
+        docs = frappe.db.sql("""
+            SELECT name, workflow_state
+            FROM `tabEnergy Point And Non Conformity`
+            WHERE workflow_state IN ('Draft', 'Explanation')
+            AND action = 'Non Conformity(NC)'
+            AND docstatus = 0
+            AND DATE(creation) <= %s
+            AND emp = %s
+        """, (cutoff_date,employee), as_dict=True)
+        print(docs)
+        for row in docs:
+            name = row.name
+            doc = frappe.get_doc("Energy Point And Non Conformity", name)
+
+            if row.workflow_state == "Draft":
+                # frappe.errprint(f"Moving {name} from Draft → Explanation")
+                doc.workflow_state = "Explanation"
+                doc.save(ignore_permissions=True)
+                frappe.db.commit()
+                doc.workflow_state = "Submitted"
+                doc.docstatus = 1
+                doc.save(ignore_permissions=True)
+                frappe.db.commit()
+
+            if row.workflow_state == "Explanation":
+                # frappe.errprint(f"Auto-submitting {name}")
+                doc.workflow_state = "Submitted"
+                doc.docstatus = 1
+                doc.save(ignore_permissions=True)
+                frappe.db.commit()
+
+
+@frappe.whitelist()
+def sch_ep_nc1():
+    job = frappe.db.exists('Scheduled Job Type', 'ep_nc1')
+    if not job:
+        att = frappe.new_doc("Scheduled Job Type")
+        att.update({
+            "method": 'teampro.custom.auto_submit_ep1',
+            "frequency": 'Cron',
+            "cron_format": "0 0 * * *"
+        })
+        att.save(ignore_permissions=True)
+
+
+
+def auto_dpr():
+    job = frappe.db.exists('Scheduled Job Type', 'send_daily_candidate_status_alert4')
+    if not job:
+        sjt = frappe.new_doc("Scheduled Job Type")
+        sjt.update({
+            "method": 'teampro.custom.send_daily_candidate_status_alert4',
+            "frequency": 'Cron',
+            "cron_format": '00 21 * * *'
+        })
+        sjt.save(ignore_permissions=True)
+
+import frappe
+from frappe.utils import today, getdate, formatdate
+from collections import defaultdict
+
+@frappe.whitelist()
+def send_daily_candidate_status_alert():
+
+    date = getdate(today())
+    formatted_date = formatdate(date, "dd-mm-yyyy")
+    statuses = ["IDB", "Sourced", "Pending QC", "Submit(SPOC)"]
+
+    # Get all active executives
+    executives = frappe.get_all(
+        'Employee',
+        filters={"department": "Recruitment - THIS", "status": "Active"},
+        fields=['user_id'],
+        distinct=True
+    )
+    executive_list = [exe.user_id for exe in executives if exe.user_id]
+
+    if not executive_list:
+        frappe.msgprint("No active executives found.")
+        return
+
+    placeholders = ", ".join(["%s"] * len(executive_list))
+
+    # Fetch Submit(SPOC) candidates
+    candidate_statuses = frappe.db.sql(f"""
+    SELECT DISTINCT c.name,
+           c.candidate_created_by AS executive,
+           cs.task AS task,
+           c.position AS position,
+           cs.status AS status
+    FROM `tabCandidate status` cs
+    INNER JOIN `tabCandidate` c ON c.name = cs.parent
+    WHERE c.candidate_created_by IN ({placeholders})
+    AND DATE(cs.sourced_date) = %s
+    AND cs.status = 'Submit(SPOC)'
+""", tuple(executive_list + [date]), as_dict=True)
+
+    # Fetch pending_for candidates (distinct)
+    pending_candidates = frappe.db.sql(f"""
+        SELECT DISTINCT c.name,
+            c.candidate_created_by AS executive,
+            cs.task AS task,
+            c.position AS position,
+            c.pending_for AS status
+        FROM `tabCandidate` c
+        LEFT JOIN `tabCandidate status` cs ON c.name = cs.parent
+        WHERE c.candidate_created_by IN ({placeholders})
+        AND c.pending_for IN (%s, %s, %s)
+        AND DATE(cs.sourced_date) = %s
+    """, tuple(executive_list + ["IDB", "Sourced", "Pending QC", date]), as_dict=True)
+
+    # Combine both
+    all_rows = candidate_statuses + pending_candidates
+
+    if not all_rows:
+        frappe.msgprint("No candidate data found for today.")
+        return
+
+    # Aggregate counts: {executive: {task: {status: count, position: value}}}
+    table_data = defaultdict(lambda: defaultdict(lambda: {"position": "", **{s: 0 for s in statuses}}))
+    for r in all_rows:
+        exe = r.get('executive')
+        task = r.get('task') or "N/A"
+        pos = r.get('position') or "N/A"
+        stat = r.get('status')
+        if exe and stat in statuses:
+            table_data[exe][task]["position"] = pos
+            table_data[exe][task][stat] += 1
+
+    # Build HTML table
+    html = f"""
+    <h3>Daily Candidate Status Alert - {formatted_date}</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#007bff;color:white;">
+                <th>S.No</th>
+                <th>Executive</th>
+                <th>Task</th>
+                <th>Position</th>
+                <th>IDB</th>
+                <th>Sourced</th>
+                <th>Pending QC</th>
+                <th>Submit(SPOC)</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    sno = 1
+    for exe, tasks in table_data.items():
+        task_list = list(tasks.keys())
+        rowspan = len(task_list)
+        first_row = True
+        for task_name in task_list:
+            counts = tasks[task_name]
+            html += "<tr>"
+            html += f"<td>{sno}</td>"
+            if first_row:
+                html += f"<td rowspan='{rowspan}'>{exe}</td>"
+                first_row = False
+            html += f"<td>{task_name}</td>"
+            html += f"<td>{counts.get('position', '')}</td>"
+            html += f"<td>{counts.get('IDB', 0)}</td>"
+            html += f"<td>{counts.get('Sourced', 0)}</td>"
+            html += f"<td>{counts.get('Pending QC', 0)}</td>"
+            html += f"<td>{counts.get('Submit(SPOC)', 0)}</td>"
+            html += "</tr>"
+            sno += 1
+
+    html += "</tbody></table>"
+
+    # Send email
+    subject = f"Daily Candidate Status Alert - {formatted_date}"
+    recipients = ["divya.p@groupteampro.com","sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"]
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=html
     )
 
-    # Group SOs by packing date
-    from collections import defaultdict
-    date_groups = defaultdict(list)
+    frappe.msgprint(f"Alert email sent for {sno-1} rows for today.")
 
-    for so in sales_orders:
-        if so.custom_packing_on:
-            date_groups[so.custom_packing_on].append(so.name)
+@frappe.whitelist()
+def send_daily_candidate_status_alert1():
 
-    # Sort packing dates and assign priorities
-    for priority, packing_date in enumerate(sorted(date_groups.keys()), start=1):
-        for so_name in date_groups[packing_date]:
-            # frappe.log_error(title=so_name,message=priority)
-            frappe.db.set_value("Sales Order", so_name, "custom_priority", priority)
+    date = getdate(today())
+    formatted_date = formatdate(date, "dd-mm-yyyy")
+    statuses = ["IDB", "Sourced", "Pending QC", "Submit(SPOC)"]
+
+    executives = frappe.get_all(
+        'Employee',
+        filters={"department": "Recruitment - THIS", "status": "Active"},
+        fields=['user_id'],
+        distinct=True
+    )
+    executive_list = [exe.user_id for exe in executives if exe.user_id]
+
+    if not executive_list:
+        frappe.msgprint("No active executives found.")
+        return
+
+    placeholders = ", ".join(["%s"] * len(executive_list))
+
+    candidate_statuses = frappe.db.sql(f"""
+    SELECT DISTINCT c.name,
+           c.candidate_created_by AS executive,
+           cs.task AS task,
+           c.position AS position,
+           cs.status AS status
+    FROM `tabCandidate status` cs
+    INNER JOIN `tabCandidate` c ON c.name = cs.parent
+    WHERE c.candidate_created_by IN ({placeholders})
+    AND DATE(cs.sourced_date) = %s
+    AND cs.status = 'Submit(SPOC)'
+""", tuple(executive_list + [date]), as_dict=True)
+
+    pending_candidates = frappe.db.sql(f"""
+        SELECT DISTINCT c.name,
+            c.candidate_created_by AS executive,
+            cs.task AS task,
+            c.position AS position,
+            c.pending_for AS status
+        FROM `tabCandidate` c
+        LEFT JOIN `tabCandidate status` cs ON c.name = cs.parent
+        WHERE c.candidate_created_by IN ({placeholders})
+        AND c.pending_for IN (%s, %s, %s)
+        AND DATE(cs.sourced_date) = %s
+    """, tuple(executive_list + ["IDB", "Sourced", "Pending QC", date]), as_dict=True)
+
+    all_rows = candidate_statuses + pending_candidates
+
+    if not all_rows:
+        frappe.msgprint("No candidate data found for today.")
+        return
+
+    table_data = defaultdict(lambda: defaultdict(lambda: {"position": "", **{s: 0 for s in statuses}}))
+    for r in all_rows:
+        exe = r.get('executive')
+        task = r.get('task') or "N/A"
+        pos = r.get('position') or "N/A"
+        stat = r.get('status')
+        if exe and stat in statuses:
+            table_data[exe][task]["position"] = pos
+            table_data[exe][task][stat] += 1
+
+    html = f"""
+    <h3>Daily Candidate Status Alert - {formatted_date}</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#007bff;color:white;">
+                <th>S.No</th>
+                <th>Executive</th>
+                <th>Task</th>
+                <th>Position</th>
+                <th>IDB</th>
+                <th>Sourced</th>
+                <th>Pending QC</th>
+                <th>Submit(SPOC)</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    sno = 1
+    for exe, tasks in table_data.items():
+        task_list = list(tasks.keys())
+        rowspan = len(task_list)
+        first_row = True
+        for task_name in task_list:
+            counts = tasks[task_name]
+            html += "<tr>"
+            html += f"<td>{sno}</td>"
+            if first_row:
+                html += f"<td rowspan='{rowspan}'>{exe}</td>"
+                first_row = False
+            html += f"<td>{task_name}</td>"
+            html += f"<td>{counts.get('position', '')}</td>"
+            html += f"<td>{counts.get('IDB', 0)}</td>"
+            html += f"<td>{counts.get('Sourced', 0)}</td>"
+            html += f"<td>{counts.get('Pending QC', 0)}</td>"
+            html += f"<td>{counts.get('Submit(SPOC)', 0)}</td>"
+            html += "</tr>"
+            sno += 1
+
+    html += "</tbody></table>"
+
+    subject = f"Daily Candidate Status Alert - {formatted_date}"
+    recipients =["sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"]
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=html
+    )
+
+    frappe.msgprint(f"Alert email sent for {sno-1} rows for today.")
+
+@frappe.whitelist()
+def send_daily_candidate_status_alert2():
+
+    date = getdate(today())
+    formatted_date = formatdate(date, "dd-mm-yyyy")
+    statuses = ["IDB", "Sourced", "Pending QC", "Submit(SPOC)"]
+
+    executives = frappe.get_all(
+        'Employee',
+        filters={"department": "Recruitment - THIS", "status": "Active"},
+        fields=['user_id'],
+        distinct=True
+    )
+    executive_list = [exe.user_id for exe in executives if exe.user_id]
+
+    if not executive_list:
+        frappe.msgprint("No active executives found.")
+        return
+
+    placeholders = ", ".join(["%s"] * len(executive_list))
+
+    candidate_statuses = frappe.db.sql(f"""
+    SELECT DISTINCT c.name,
+           c.candidate_created_by AS executive,
+           cs.task AS task,
+           c.position AS position,
+           cs.status AS status
+    FROM `tabCandidate status` cs
+    INNER JOIN `tabCandidate` c ON c.name = cs.parent
+    WHERE c.candidate_created_by IN ({placeholders})
+    AND DATE(cs.sourced_date) = %s
+    AND cs.status = 'Submit(SPOC)'
+""", tuple(executive_list + [date]), as_dict=True)
+
+    pending_candidates = frappe.db.sql(f"""
+        SELECT DISTINCT c.name,
+            c.candidate_created_by AS executive,
+            cs.task AS task,
+            c.position AS position,
+            c.pending_for AS status
+        FROM `tabCandidate` c
+        LEFT JOIN `tabCandidate status` cs ON c.name = cs.parent
+        WHERE c.candidate_created_by IN ({placeholders})
+        AND c.pending_for IN (%s, %s, %s)
+        AND DATE(cs.sourced_date) = %s
+    """, tuple(executive_list + ["IDB", "Sourced", "Pending QC", date]), as_dict=True)
+
+    all_rows = candidate_statuses + pending_candidates
+
+    if not all_rows:
+        frappe.msgprint("No candidate data found for today.")
+        return
+
+    table_data = defaultdict(lambda: defaultdict(lambda: {"position": "", **{s: 0 for s in statuses}}))
+    for r in all_rows:
+        exe = r.get('executive')
+        task = r.get('task') or "N/A"
+        pos = r.get('position') or "N/A"
+        stat = r.get('status')
+        if exe and stat in statuses:
+            table_data[exe][task]["position"] = pos
+            table_data[exe][task][stat] += 1
+
+    html = f"""
+    <h3>Daily Candidate Status Alert - {formatted_date}</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#007bff;color:white;">
+                <th>S.No</th>
+                <th>Executive</th>
+                <th>Task</th>
+                <th>Position</th>
+                <th>IDB</th>
+                <th>Sourced</th>
+                <th>Pending QC</th>
+                <th>Submit(SPOC)</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    sno = 1
+    for exe, tasks in table_data.items():
+        task_list = list(tasks.keys())
+        rowspan = len(task_list)
+        first_row = True
+        for task_name in task_list:
+            counts = tasks[task_name]
+            html += "<tr>"
+            html += f"<td>{sno}</td>"
+            if first_row:
+                html += f"<td rowspan='{rowspan}'>{exe}</td>"
+                first_row = False
+            html += f"<td>{task_name}</td>"
+            html += f"<td>{counts.get('position', '')}</td>"
+            html += f"<td>{counts.get('IDB', 0)}</td>"
+            html += f"<td>{counts.get('Sourced', 0)}</td>"
+            html += f"<td>{counts.get('Pending QC', 0)}</td>"
+            html += f"<td>{counts.get('Submit(SPOC)', 0)}</td>"
+            html += "</tr>"
+            sno += 1
+
+    html += "</tbody></table>"
+
+    subject = f"Daily Candidate Status Alert - {formatted_date}"
+    recipients = ["sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"]
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=html
+    )
+
+    frappe.msgprint(f"Alert email sent for {sno-1} rows for today.")
+
+@frappe.whitelist()
+def send_daily_candidate_status_alert3():
+
+    date = getdate(today())
+    formatted_date = formatdate(date, "dd-mm-yyyy")
+    statuses = ["IDB", "Sourced", "Pending QC", "Submit(SPOC)"]
+
+    executives = frappe.get_all(
+        'Employee',
+        filters={"department": "Recruitment - THIS", "status": "Active"},
+        fields=['user_id'],
+        distinct=True
+    )
+    executive_list = [exe.user_id for exe in executives if exe.user_id]
+
+    if not executive_list:
+        frappe.msgprint("No active executives found.")
+        return
+
+    placeholders = ", ".join(["%s"] * len(executive_list))
+
+    candidate_statuses = frappe.db.sql(f"""
+    SELECT DISTINCT c.name,
+           c.candidate_created_by AS executive,
+           cs.task AS task,
+           c.position AS position,
+           cs.status AS status
+    FROM `tabCandidate status` cs
+    INNER JOIN `tabCandidate` c ON c.name = cs.parent
+    WHERE c.candidate_created_by IN ({placeholders})
+    AND DATE(cs.sourced_date) = %s
+    AND cs.status = 'Submit(SPOC)'
+""", tuple(executive_list + [date]), as_dict=True)
+
+    pending_candidates = frappe.db.sql(f"""
+        SELECT DISTINCT c.name,
+            c.candidate_created_by AS executive,
+            cs.task AS task,
+            c.position AS position,
+            c.pending_for AS status
+        FROM `tabCandidate` c
+        LEFT JOIN `tabCandidate status` cs ON c.name = cs.parent
+        WHERE c.candidate_created_by IN ({placeholders})
+        AND c.pending_for IN (%s, %s, %s)
+        AND DATE(cs.sourced_date) = %s
+    """, tuple(executive_list + ["IDB", "Sourced", "Pending QC", date]), as_dict=True)
+
+    all_rows = candidate_statuses + pending_candidates
+
+    if not all_rows:
+        frappe.msgprint("No candidate data found for today.")
+        return
+
+    table_data = defaultdict(lambda: defaultdict(lambda: {"position": "", **{s: 0 for s in statuses}}))
+    for r in all_rows:
+        exe = r.get('executive')
+        task = r.get('task') or "N/A"
+        pos = r.get('position') or "N/A"
+        stat = r.get('status')
+        if exe and stat in statuses:
+            table_data[exe][task]["position"] = pos
+            table_data[exe][task][stat] += 1
+
+    html = f"""
+    <h3>Daily Candidate Status Alert - {formatted_date}</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#007bff;color:white;">
+                <th>S.No</th>
+                <th>Executive</th>
+                <th>Task</th>
+                <th>Position</th>
+                <th>IDB</th>
+                <th>Sourced</th>
+                <th>Pending QC</th>
+                <th>Submit(SPOC)</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    sno = 1
+    for exe, tasks in table_data.items():
+        task_list = list(tasks.keys())
+        rowspan = len(task_list)
+        first_row = True
+        for task_name in task_list:
+            counts = tasks[task_name]
+            html += "<tr>"
+            html += f"<td>{sno}</td>"
+            if first_row:
+                html += f"<td rowspan='{rowspan}'>{exe}</td>"
+                first_row = False
+            html += f"<td>{task_name}</td>"
+            html += f"<td>{counts.get('position', '')}</td>"
+            html += f"<td>{counts.get('IDB', 0)}</td>"
+            html += f"<td>{counts.get('Sourced', 0)}</td>"
+            html += f"<td>{counts.get('Pending QC', 0)}</td>"
+            html += f"<td>{counts.get('Submit(SPOC)', 0)}</td>"
+            html += "</tr>"
+            sno += 1
+
+    html += "</tbody></table>"
+
+    subject = f"Daily Candidate Status Alert - {formatted_date}"
+    recipients = ["sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"]  # Replace with actual recipients
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=html
+    )
+
+    frappe.msgprint(f"Alert email sent for {sno-1} rows for today.")
+
+@frappe.whitelist()
+def send_daily_candidate_status_alert4():
+
+    date = getdate(today())
+    formatted_date = formatdate(date, "dd-mm-yyyy")
+    statuses = ["IDB", "Sourced", "Pending QC", "Submit(SPOC)"]
+
+    executives = frappe.get_all(
+        'Employee',
+        filters={"department": "Recruitment - THIS", "status": "Active"},
+        fields=['user_id'],
+        distinct=True
+    )
+    executive_list = [exe.user_id for exe in executives if exe.user_id]
+
+    if not executive_list:
+        frappe.msgprint("No active executives found.")
+        return
+
+    placeholders = ", ".join(["%s"] * len(executive_list))
+
+    candidate_statuses = frappe.db.sql(f"""
+    SELECT DISTINCT c.name,
+           c.candidate_created_by AS executive,
+           cs.task AS task,
+           c.position AS position,
+           cs.status AS status
+    FROM `tabCandidate status` cs
+    INNER JOIN `tabCandidate` c ON c.name = cs.parent
+    WHERE c.candidate_created_by IN ({placeholders})
+    AND DATE(cs.sourced_date) = %s
+    AND cs.status = 'Submit(SPOC)'
+""", tuple(executive_list + [date]), as_dict=True)
+
+    pending_candidates = frappe.db.sql(f"""
+        SELECT DISTINCT c.name,
+            c.candidate_created_by AS executive,
+            cs.task AS task,
+            c.position AS position,
+            c.pending_for AS status
+        FROM `tabCandidate` c
+        LEFT JOIN `tabCandidate status` cs ON c.name = cs.parent
+        WHERE c.candidate_created_by IN ({placeholders})
+        AND c.pending_for IN (%s, %s, %s)
+        AND DATE(cs.sourced_date) = %s
+    """, tuple(executive_list + ["IDB", "Sourced", "Pending QC", date]), as_dict=True)
+
+    all_rows = candidate_statuses + pending_candidates
+
+    if not all_rows:
+        frappe.msgprint("No candidate data found for today.")
+        return
+
+    table_data = defaultdict(lambda: defaultdict(lambda: {"position": "", **{s: 0 for s in statuses}}))
+    for r in all_rows:
+        exe = r.get('executive')
+        task = r.get('task') or "N/A"
+        pos = r.get('position') or "N/A"
+        stat = r.get('status')
+        if exe and stat in statuses:
+            table_data[exe][task]["position"] = pos
+            table_data[exe][task][stat] += 1
+
+    html = f"""
+    <h3>Daily Candidate Status Alert - {formatted_date}</h3>
+    <table border="1" cellpadding="5" cellspacing="0" style="border-collapse: collapse;">
+        <thead>
+            <tr style="background-color:#007bff;color:white;">
+                <th>S.No</th>
+                <th>Executive</th>
+                <th>Task</th>
+                <th>Position</th>
+                <th>IDB</th>
+                <th>Sourced</th>
+                <th>Pending QC</th>
+                <th>Submit(SPOC)</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+
+    sno = 1
+    for exe, tasks in table_data.items():
+        task_list = list(tasks.keys())
+        rowspan = len(task_list)
+        first_row = True
+        for task_name in task_list:
+            counts = tasks[task_name]
+            html += "<tr>"
+            html += f"<td>{sno}</td>"
+            if first_row:
+                html += f"<td rowspan='{rowspan}'>{exe}</td>"
+                first_row = False
+            html += f"<td>{task_name}</td>"
+            html += f"<td>{counts.get('position', '')}</td>"
+            html += f"<td>{counts.get('IDB', 0)}</td>"
+            html += f"<td>{counts.get('Sourced', 0)}</td>"
+            html += f"<td>{counts.get('Pending QC', 0)}</td>"
+            html += f"<td>{counts.get('Submit(SPOC)', 0)}</td>"
+            html += "</tr>"
+            sno += 1
+
+    html += "</tbody></table>"
+
+    subject = f"Daily Candidate Status Alert - {formatted_date}"
+    recipients = ["sangeetha.a@groupteampro.com","sangeetha.s@groupteampro.com"]  # Replace with actual recipients
+
+    frappe.sendmail(
+        recipients=recipients,
+        subject=subject,
+        message=html
+    )
+
+    frappe.msgprint(f"Alert email sent for {sno-1} rows for today.")
+
+@frappe.whitelist()
+def rename_user():
+    rename_doc("User", "darshan.r@groupteampro.com", "systems@groupteampro.com", force=True)
+    frappe.db.commit() 
+    return "Rename Completed"
+
+
+import frappe
+
+@frappe.whitelist()
+def get_document_manager_data():
+    
+    docs = frappe.get_single('Document Manager')
+    
+    
+    document_manager_data = []
+
+    for doc in docs.document_manager:  
+        document_manager_data.append({
+            'name':doc.name,
+            'document_type': doc.type,
+            'document_title': doc.document_title,
+            'department': doc.department,
+            'category': doc.category,
+            'expiry_date': doc.expiry_date,
+            'document':doc.document
+            
+        })
+    
+    
+    return document_manager_data
+
+
+@frappe.whitelist()
+def meeting_status_check():
+    from frappe.utils import today
+    from datetime import datetime
+
+    completed_meetings = []
+
+    meetings = frappe.db.get_all(
+        "Meeting",
+        filters={"status": ["not in", [ "Completed" , "Cancelled"]], "custom_services": "IT-SW"},
+        fields=["name", "title", "project", "date"]
+    )
+
+    for meet in meetings:
+        task_count = 0
+        comp_count = 0
+
+        minutes = frappe.get_all(
+            "Meeting Minute",
+            filters={"parent": meet.name},
+            fields=["custom_id", "description"]
+        )
+
+        for minute in minutes:
+            if minute.custom_id:
+                task_count += 1
+                status = frappe.db.get_value("Task", {"name": minute.custom_id}, "status")
+                if status == "Completed":
+                    comp_count += 1
+
+        
+        if task_count > 0 and task_count == comp_count:
+            frappe.db.set_value("Meeting", meet.name, "status", "Completed")
+
+            # Capture completed meeting info
+            meeting_info = {
+                "name": meet.name,
+                "title": meet.title or "",
+                "project": meet.project or "",
+                "status": "Completed",
+                "date": meet.date or ""
+            }
+            completed_meetings.append(meeting_info)
+
+            
+            completed_tasks = []
+            for minute in minutes:
+                if minute.custom_id:
+                    completed_tasks.append({
+                        "description": minute.description or "",
+                        "action": "Task",
+                        "task": minute.custom_id or "",
+                        "cr_status": "Completed",
+                        "completed_on": frappe.db.get_value("Task", {"name": minute.custom_id}, "completed_on") or ""
+                    })
+
+            
+            date_obj = datetime.strptime(today(), "%Y-%m-%d")
+            formatted_date = date_obj.strftime("%d/%m/%Y")
+            created_on_date = ""
+            if meeting_info.get("date"):
+                created_on_date = formatdate(meeting_info["date"], "dd/MM/yyyy")
+            
+            table_html = f"""
+                <table border="1" cellpadding="5" cellspacing="0">
+                    <thead>
+                        <tr style="background-color:#0F1568; color:white;">
+                            <th style="text-align:center; border:1px solid black;" >S.No</th>
+                            <th style="text-align:center; border:1px solid black;" >Title</th>
+                            <th style="text-align:center; border:1px solid black;" >Project</th>
+                            <th style="text-align:center; border:1px solid black;" >Status</th>
+                            <th style="text-align:center; border:1px solid black;" >Created On</th>
+                            <th style="text-align:center; border:1px solid black;" >Completed On</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td style="text-align:center; border:1px solid black; ">1</td>
+                            <td style="text-align:center; border:1px solid black; ">{meeting_info['title']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{meeting_info['project']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{meeting_info['status']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{created_on_date}</td>
+                            <td style="text-align:center; border:1px solid black; ">{formatted_date}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            """
+
+            
+            table_html_2 = ""
+            if completed_tasks:
+                table_html_2 = """
+                    <table border="1" cellpadding="5" cellspacing="0">
+                        <thead>
+                            <tr style="background-color:#0F1568; color:white;">
+                                <th style="text-align:center; border:1px solid black;" >S.No</th>
+                                <th style="text-align:center; border:1px solid black;" >Description</th>
+                                <th style="text-align:center; border:1px solid black;" >Action</th>
+                                <th style="text-align:center; border:1px solid black;" >Task</th>
+                                <th style="text-align:center; border:1px solid black;" >Cr.Status</th>
+                                <th style="text-align:center; border:1px solid black;" >Completed On</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                """
+                for idx, task in enumerate(completed_tasks, start=1):
+                    
+                    # if task['completed_on']:
+                    #     formated_date_2 = frappe.format(task['completed_on'],{"fieldtype":"Date"})
+                        
+                    formated_date_2 = ""
+                    if task['completed_on']:
+                        formated_date_2 = formatdate(task['completed_on'], "dd/MM/yyyy")
+                            
+                    table_html_2 += f"""
+                        <tr>
+                            <td style="text-align:center; border:1px solid black; ">{idx}</td>
+                            <td style="text-align:center; border:1px solid black; ">{task['description']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{task['action']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{task['task']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{task['cr_status']}</td>
+                            <td style="text-align:center; border:1px solid black; ">{formated_date_2}</td>
+                        </tr>
+                    """
+                table_html_2 += "</tbody></table>"
+
+            subject = f"Meeting ID : {meeting_info['title']} as Completed on {formatted_date} - Reg"
+            message = f"""
+                <p>Dear Patron,</p>
+                <br>
+                <p>Greetings from TEAMPRO !!!</p>
+                <br>
+                <p>The following meeting has been marked as <b>Completed</b>:</p>
+                <br>
+                <p><b>Meeting Summary:</b></p>
+                <br>
+                {table_html}
+                <br>
+                <p><b>Points noted during the meeting and their current status:</b></p>
+                {table_html_2}
+                <br>
+                
+            """
+
+            
+            frappe.sendmail(
+                recipients=["riyaz.a@groupteampro.com"],
+                subject=subject,
+                message=message
+            )
+
+    return completed_meetings
+
+# @frappe.whitelist()
+# def create_website_item(name):
+#     item = frappe.get_doc("Item", name)
+
+#     # Only required fields
+#     params = {
+#         "item_code": item.name,
+#         "item_name": item.item_name,
+#         "item_group": item.item_group,
+#         "stock_uom": item.stock_uom
+#     }
+
+#     frappe.errprint(f"Payload Sending: {params}")
+
+#     url = "https://daileemart.com/api/method/daileemart.www.update_items.create_from_task"
+#     headers = {
+#         "Content-Type": "application/json",
+#         "Authorization": "token a718baed40f219b:81fd1cf12e6d4fe"
+#     }
+
+#     try:
+#         response = requests.post(url, headers=headers, json=params, timeout=10, verify=False)
+#         res = response.json()
+#         return res
+
+#     except Exception as e:
+#         frappe.throw(f"Sync failed: {str(e)}")
+
+
+
+@frappe.whitelist()
+def task_age_calculation():
+    tasks = frappe.db.get_all("Task",filters={"service":"IT-SW", "status":["not in",["Hold","Completed","Cancelled"]]},fields=["name","creation"])
+    
+    for task in tasks:
+        age_days = (frappe.utils.now_datetime() - task.creation).days
+
+        frappe.db.set_value("Task",task.name,"custom_age",age_days)
+
+    frappe.db.commit()
+    
+
+
+def auto_task_age_calculate():
+    job_name = "Task Age Calculation"
+
+    if not frappe.db.exists("Scheduled Job Type", job_name):
+        sjt = frappe.new_doc("Scheduled Job Type")
+        sjt.update({
+            "name": job_name,
+            "method": "teampro.custom.task_age_calculation",
+            "frequency": "Daily",
+            "enabled": 1
+        })
+        sjt.insert(ignore_permissions=True)
+        
+
+
+
+
+
+
+# import subprocess
+
+# def convert_word_to_pdf_new(word_file_path):
+#     pdf_file_path = word_file_path.replace(".docx", ".pdf")
+    
+#     subprocess.run(['unoconv', '-f', 'pdf', word_file_path])
+#     return pdf_file_path
+
+
+
+
+
+
+
+# def convert_excel_to_pdf(excel_file_path):
+#     """Convert an Excel file to PDF."""
+    
+#     pdf_file_path = f"/tmp/{os.path.basename(excel_file_path)}.pdf"
+#     excel_data = pd.read_excel(excel_file_path)
+#     excel_data.to_html(f"/tmp/temp.html")  
+    
+#     import pdfkit
+#     pdfkit.from_file('/tmp/temp.html', pdf_file_path)  
+#     return pdf_file_path
+        
+
+# def convert_excel_to_pdf(excel_file_path):
+#     """Convert Excel file to PDF (fit all columns in one A4 page)."""
+
+#     pdf_file_path = f"/tmp/{os.path.basename(excel_file_path)}.pdf"
+#     html_path = "/tmp/temp.html"
+
+#     # Read Excel
+#     df = pd.read_excel(excel_file_path, header=None)
+    
+#     df = df.fillna("")
+
+#     # Convert to HTML
+#     table_html = df.to_html(
+#         index=False,
+#         header=False,
+#         na_rep="",
+#         border=1
+#         )
+
+#     # Add CSS for A4 + scaling
+#     html_content = f"""
+#     <html>
+#     <head>
+#         <style>
+#             @page {{
+#                 size: A4 landscape;
+#                 margin: 10mm;
+#             }}
+
+#             body {{
+#                 font-family: Arial, sans-serif;
+#                 font-size: 9px;
+#             }}
+
+#             table {{
+#                 width: 100%;
+#                 border-collapse: collapse;
+#                 table-layout: fixed;
+#             }}
+
+#             th, td {{
+#                 border: 1px solid #000;
+#                 padding: 4px;
+#                 text-align: left;
+#                 word-wrap: break-word;
+#             }}
+
+#             th {{
+#                 background-color: #f2f2f2;
+#                 font-weight: bold;
+#             }}
+#         </style>
+#     </head>
+#     <body>
+#         {table_html}
+#     </body>
+#     </html>
+#     """
+
+#     # Save HTML
+#     with open(html_path, "w", encoding="utf-8") as f:
+#         f.write(html_content)
+
+#     # Convert HTML to PDF
+#     import pdfkit
+#     options = {
+#         'page-size': 'A4',
+#         'orientation': 'Landscape',
+#         'encoding': 'UTF-8',
+#         'quiet': ''
+#     }
+
+#     pdfkit.from_file(html_path, pdf_file_path, options=options)
+
+#     return pdf_file_path
+
+
+@frappe.whitelist()
+def emp_short_code_check(doc, method):
+    if not doc.short_code:
+        return
+
+    
+    if doc.is_new():
+        if frappe.db.exists("Employee", {"short_code": doc.short_code}):
+            frappe.throw("Short Code must be unique")
+        return
+
+    
+    old_doc = doc.get_doc_before_save()
+    if not old_doc:
+        return
+
+    if old_doc.short_code != doc.short_code:
+        if frappe.db.exists(
+            "Employee",
+            {
+                "short_code": doc.short_code,
+                "name": ["!=", doc.name],
+            }
+        ):
+            frappe.throw("Short Code must be unique")
+
+@frappe.whitelist()
+def update_check_insufff():
+    frappe.db.set_value("Education Checks","Education Checks-22750","insufficiency_days","10")
+
+# @frappe.whitelist()
+# def get_meet_logs(employee, expense_date):
+#     if not employee or not expense_date:
+#         return []
+
+#     from_datetime = get_datetime(f"{expense_date} 00:00:00")
+#     to_datetime = add_days(from_datetime, 1)
+
+#     return frappe.db.sql(
+#         """
+#         SELECT ml.name
+#         FROM `tabMeetLog` ml
+#         WHERE
+#             ml.employee = %(employee)s
+#             AND ml.docstatus = 1
+#             AND ml.creation BETWEEN %(from_dt)s AND %(to_dt)s
+#             AND ml.name NOT IN (
+#                 SELECT DISTINCT ecd.custom_meet_log
+#                 FROM `tabExpense Claim Detail` ecd
+#                 WHERE
+#                     ecd.custom_meet_log IS NOT NULL
+#                     AND ecd.custom_meet_log != ''
+#             )
+#         """,
+#         {
+#             "employee": employee,
+#             "from_dt": from_datetime,
+#             "to_dt": to_datetime,
+#         },
+#         pluck="name",
+#     )
+
+# @frappe.whitelist()
+# def update_salary_amount_from_field():
+#     filename='3ad39a0ce85ae22Task.csv'
+#     from frappe.utils.file_manager import get_file
+#     filepath = get_file(filename)
+#     pps = read_csv_content(filepath[1])
+#     ind=0
+#     for pp in pps:
+#         if pp[0]!="ID" and pp[0]!="TS18602":
+#             print(pp[0])
+#             print(pp[1])
+#             frappe.db.set_value("Task",pp[0],"amount",pp[1])
+
+
+
+@frappe.whitelist()
+def update_cb_bulk(doc,method):
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": doc.custom_allocated_to},
+        ["name", "short_code"],
+        as_dict=True
+    )
+
+    if not employee:
+        return
+    if employee.short_code:
+        doc.cb = employee.short_code
+
+@frappe.whitelist()
+def update_non_stock_for_candidates(execute=False):
+    ind=1
+    invoices = frappe.db.sql("""
+        SELECT DISTINCT si.name,so.name as sales_order,so.status
+        FROM `tabSales Invoice` si
+        INNER JOIN `tabSales Invoice Item` sii ON sii.parent = si.name
+        INNER JOIN `tabSales Order Item` soi ON soi.name = sii.so_detail
+        INNER JOIN `tabSales Order` so ON so.name = soi.parent
+        WHERE 
+            si.docstatus = 1
+            AND si.status = 'Paid'
+            AND so.docstatus = 1
+            AND so.status = 'To Deliver'
+            AND so.per_billed >= 100
+            AND soi.item_group = 'Candidates'
+    """, as_dict=True)
+
+    for inv in invoices:
+        print(inv.name)
+        print(inv.sales_order)
+    #     ind+=1
+        # force_non_stock_status_update(inv.name)
+
+
+import frappe
+from frappe.utils import cint
+
+@frappe.whitelist()
+def force_non_stock_status_update(invoice_name):
+    doc = frappe.get_doc("Sales Invoice", invoice_name)
+    original_update_stock = doc.update_stock
+    doc.update_stock = 1
+    doc.status_updater = []
+    doc.status_updater.append(
+        {
+            "source_dt": "Sales Invoice Item",
+            "target_dt": "Sales Order Item",
+            "target_parent_dt": "Sales Order",
+            "target_parent_field": "per_delivered",
+            "target_field": "delivered_qty",
+            "target_ref_field": "qty",
+            "source_field": "qty",
+            "join_field": "so_detail",
+            "percent_join_field": "sales_order",
+            "status_field": "delivery_status",
+            "keyword": "Delivered",
+            "second_source_dt": None,
+            "second_source_field": None,
+            "second_join_field": None,
+            "overflow_type": "delivery",
+            "extra_cond": f"""
+                and `tabSales Invoice Item`.parent = '{invoice_name}'
+            """
+        }
+    )
+    doc.update_prevdoc_status()
+    doc.update_stock = original_update_stock
+    frappe.db.commit()
+
+    return "Non-stock delivery updated successfully"
+

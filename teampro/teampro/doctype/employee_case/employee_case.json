@@ -1,0 +1,287 @@
+{
+ "actions": [],
+ "allow_import": 1,
+ "allow_rename": 1,
+ "autoname": "EC-.#####",
+ "creation": "2025-12-02 14:27:50.656299",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_dxfp",
+  "candidate_id",
+  "candidate_name",
+  "home_address",
+  "column_break_xchc",
+  "date_of_birth",
+  "gender",
+  "father_name",
+  "section_break_nwcx",
+  "branch",
+  "department",
+  "designation",
+  "column_break_u5kq",
+  "location",
+  "date_of_joining",
+  "section_break_oab8",
+  "aadhar_no",
+  "aadhar_link",
+  "column_break_itxw",
+  "pan_no",
+  "pan_link",
+  "section_break_cqqt",
+  "package",
+  "column_break_so07",
+  "batch",
+  "section_break_1zq1",
+  "employee_case_details",
+  "tab_break_utlu",
+  "status",
+  "customer",
+  "posting_date",
+  "posting_time",
+  "amended_from"
+ ],
+ "fields": [
+  {
+   "fieldname": "candidate_id",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Candidate ID",
+   "reqd": 1
+  },
+  {
+   "fieldname": "candidate_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Candidate Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_cqqt",
+   "fieldtype": "Section Break",
+   "hidden": 1
+  },
+  {
+   "default": "CP_ICL_18313",
+   "fieldname": "package",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Package",
+   "options": "Check Package"
+  },
+  {
+   "fieldname": "section_break_1zq1",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "employee_case_details",
+   "fieldtype": "Table",
+   "label": "Employee Case Details",
+   "options": "Employee Case Details"
+  },
+  {
+   "fieldname": "tab_break_utlu",
+   "fieldtype": "Tab Break",
+   "label": "Customer Details"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "posting_date",
+   "fieldtype": "Date",
+   "label": "Posting Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "posting_time",
+   "fieldtype": "Time",
+   "label": "Posting Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_xchc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "\nDraft\nSubmitted\nCreated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nTransgender",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth"
+  },
+  {
+   "fieldname": "column_break_so07",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "BT-031225-18314",
+   "fieldname": "batch",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "ignore_user_permissions": 1,
+   "label": "Batch",
+   "options": "Batch"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Employee Case",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "father_name",
+   "fieldtype": "Data",
+   "label": "Father Name"
+  },
+  {
+   "fieldname": "branch",
+   "fieldtype": "Data",
+   "label": "Branch"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Data",
+   "label": "Department"
+  },
+  {
+   "fieldname": "designation",
+   "fieldtype": "Data",
+   "label": "Designation"
+  },
+  {
+   "fieldname": "location",
+   "fieldtype": "Data",
+   "label": "Location"
+  },
+  {
+   "fieldname": "date_of_joining",
+   "fieldtype": "Data",
+   "label": "Date of Joining"
+  },
+  {
+   "fieldname": "home_address",
+   "fieldtype": "Small Text",
+   "label": "Home Address"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_nwcx",
+   "fieldtype": "Section Break",
+   "label": "Employment Details"
+  },
+  {
+   "fieldname": "column_break_u5kq",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_dxfp",
+   "fieldtype": "Section Break",
+   "label": "Personal Details"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "section_break_oab8",
+   "fieldtype": "Section Break",
+   "label": "Proof Documents"
+  },
+  {
+   "fieldname": "aadhar_no",
+   "fieldtype": "Data",
+   "label": "Aadhar ID"
+  },
+  {
+   "fieldname": "aadhar_link",
+   "fieldtype": "Data",
+   "label": "Proof Link",
+   "options": "URL"
+  },
+  {
+   "fieldname": "column_break_itxw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pan_no",
+   "fieldtype": "Data",
+   "label": "PAN ID"
+  },
+  {
+   "fieldname": "pan_link",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "options": "URL"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2025-12-04 15:51:07.841686",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Employee Case",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Employee",
+   "select": 1,
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Customer",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -3,128 +3,7 @@
 
 frappe.ui.form.on("Formatted Reports  Download", {
 	refresh(frm){
-		// frm.add_custom_button(("Test Download"),function(){
-				// only acc manger and fiscal year filter
-					// frappe.call({
-					// 	method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_manager_individual",
-					// 	args: {
-					// 		"quarter":frm.doc.quarter,
-					// 		"fiscal_year":frm.doc.fiscal_year,
-							
-					// 	},
-					// 	callback: function (r) {
-					// 		if (r.message) {
-					// 			let blob = new Blob([new Uint8Array(r.message.content)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-					// 			let link = document.createElement("a");
-					// 			link.href = window.URL.createObjectURL(blob);
-					// 			link.download = r.message.filename;
-					// 			document.body.appendChild(link);
-					// 			link.click();
-					// 			document.body.removeChild(link);
-					// 		}
-					// 	}
-					// });
-				// only fiscal year filter
-					// frappe.call({
-					// 	method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_manager",
-					// 	args: {
-					// 		"fiscal_year":frm.doc.fiscal_year
-					// 	},
-					// 	callback: function (r) {
-					// 		if (r.message) {
-					// 			let blob = new Blob([new Uint8Array(r.message.content)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-					// 			let link = document.createElement("a");
-					// 			link.href = window.URL.createObjectURL(blob);
-					// 			link.download = r.message.filename;
-					// 			document.body.appendChild(link);
-					// 			link.click();
-					// 			document.body.removeChild(link);
-					// 		}
-					// 	}
-					// });
-				// without account manager and with quarter and fiscal year filter
-					// frappe.call({
-					// 	method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_manager_quarter",
-					// 	args: {
-					// 		"quarter":frm.doc.quarter,
-					// 		"fiscal_year":frm.doc.fiscal_year,
-							
-					// 	},
-					// 	callback: function (r) {
-					// 		if (r.message) {
-					// 			let blob = new Blob([new Uint8Array(r.message.content)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-					// 			let link = document.createElement("a");
-					// 			link.href = window.URL.createObjectURL(blob);
-					// 			link.download = r.message.filename;
-					// 			document.body.appendChild(link);
-					// 			link.click();
-					// 			document.body.removeChild(link);
-					// 		}
-					// 	}
-					// });
-					// acc,fiscalyear,quarter filter
-						// frappe.call({
-						// 	method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc",
-						// 	args: {
-						// 		"quarter":frm.doc.quarter,
-						// 		"fiscal_year":frm.doc.fiscal_year,
-						// 		"acc_manager":frm.doc.acc_manager
-						// 	},
-						// 	callback: function (r) {
-						// 		if (r.message) {
-						// 			let blob = new Blob([new Uint8Array(r.message.content)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-						// 			let link = document.createElement("a");
-						// 			link.href = window.URL.createObjectURL(blob);
-						// 			link.download = r.message.filename;
-						// 			document.body.appendChild(link);
-						// 			link.click();
-						// 			document.body.removeChild(link);
-						// 		}
-						// 	}
-						// });
-					// acc,fiscalyear,quarter,month
-						// frappe.call({
-						// 	method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_month",
-						// 	args: {
-						// 		"quarter":frm.doc.quarter,
-						// 		"fiscal_year":frm.doc.fiscal_year,
-						// 		"acc_manager":frm.doc.acc_manager,
-						// 		"month":frm.doc.month
-						// 	},
-						// 	callback: function (r) {
-						// 		if (r.message) {
-						// 			let blob = new Blob([new Uint8Array(r.message.content)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-						// 			let link = document.createElement("a");
-						// 			link.href = window.URL.createObjectURL(blob);
-						// 			link.download = r.message.filename;
-						// 			document.body.appendChild(link);
-						// 			link.click();
-						// 			document.body.removeChild(link);
-						// 		}
-						// 	}
-						// });
-					// fiscalyear,month,quarter
-						// frappe.call({
-						// 	method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_quarter_month_report",
-						// 	args: {
-						// 		"quarter":frm.doc.quarter,
-						// 		"fiscal_year":frm.doc.fiscal_year,
-						// 		"acc_manager":frm.doc.acc_manager,
-						// 		"month":frm.doc.month
-						// 	},
-						// 	callback: function (r) {
-						// 		if (r.message) {
-						// 			let blob = new Blob([new Uint8Array(r.message.content)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-						// 			let link = document.createElement("a");
-						// 			link.href = window.URL.createObjectURL(blob);
-						// 			link.download = r.message.filename;
-						// 			document.body.appendChild(link);
-						// 			link.click();
-						// 			document.body.removeChild(link);
-						// 		}
-						// 	}
-						// });
-		// })
+		
 		frm.add_custom_button(("PDF"), function () {
 			if (frm.doc.report_type == 'PR: Primary Reports' && frm.doc.primary_reports=="PR:04 – Batch Status Report (BSR)"){
 				var print_format ="BCS - Batch Status Report";
@@ -275,6 +154,11 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			}	
 		},("Action")); 
 		frm.add_custom_button(("Excel"), function () {
+
+			
+
+
+
 			if (frm.doc.report_type == 'PR: Primary Reports' && frm.doc.primary_reports=="PR:04 – Batch Status Report (BSR)") {
 				if(!frm.doc.batch_customer && !frm.doc.batch){
 				var path_for_bsr = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_bcs_report";
@@ -306,6 +190,7 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			}
 			
 			else if (frm.doc.report_type == 'PR: Primary Reports' && frm.doc.primary_reports=="PR:01 – Opportunity Status Report (OSR)") {
+
 				var opp_path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.opportunity_excel_report"
 				var args = "opportunity_owner=%(opportunity_owner)s&opp_am=%(opp_am)s&opp_service=%(opp_service)s"
 			}
@@ -366,7 +251,7 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			}
 			else if (frm.doc.report_type=="PR: Primary Reports" && frm.doc.primary_reports=="PR:03 – Closure Status Report (CSR)") {
 				if (frm.doc.so_validate==1){
-					var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_closure_status_report";
+					var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_closure_status_report_test";
 				}
 				else if(frm.doc.so_status==0 && frm.doc.so_validate==0){
 					var path= "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_closure_status_report_so_false";
@@ -386,7 +271,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.app_taken_excel_report"
 			}
 			else if (frm.doc.report_type == 'MR: Monitoring Report' && frm.doc.mr_title=="MR:07 – TODO Status Report") {
-				console.log("inside of if")
 	
 				var path_for_todo = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_todo_report"
 				var args = 'allocated_to=%(allocated_to)s'
@@ -398,7 +282,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				});
 			}
 			if (path_for_todo) {
-				console.log("inside of path")
 				window.location.href = repl(frappe.request.url +
 					'?cmd=%(cmd)s&%(args)s', {
 					cmd: path_for_todo,
@@ -408,7 +291,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				});
 			}
 			if (path_for_bsr) {
-				console.log("inside of path")
 				window.location.href = repl(frappe.request.url +
 					'?cmd=%(cmd)s', {
 					cmd: path_for_bsr,
@@ -419,7 +301,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				});
 			}
 			if (path_for_bsr_cust) {
-				console.log("inside of path")
 				window.location.href = repl(frappe.request.url +
 					'?cmd=%(cmd)s', {
 					cmd: path_for_bsr_cust,
@@ -427,7 +308,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				});
 			}
 			if (path_for_bsr_batch) {
-				console.log("inside of path")
 				window.location.href = repl(frappe.request.url +
 					'?cmd=%(cmd)s', {
 					cmd: path_for_bsr_batch,
@@ -464,7 +344,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				});
 			}
 			if (path_for_clr) {
-				console.log("inside of path")
 				window.location.href = repl(frappe.request.url +
 					'?cmd=%(cmd)s&%(args)s', {
 					cmd: path_for_clr,
@@ -496,7 +375,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			}
 			else if(frm.doc.report_type == 'PR: Primary Reports' && frm.doc.primary_reports == "PR.07 – Target Status Report"){
 				if(frm.doc.acc_manager && frm.doc.fiscal_year && !frm.doc.quarter && !frm.doc.month&& !frm.doc.date){
-					console.log("hi1")
 					frappe.call({
 						method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_manager_individual",
 						args: {
@@ -518,7 +396,7 @@ frappe.ui.form.on("Formatted Reports  Download", {
 					});
 				}
 				if(frm.doc.fiscal_year && !frm.doc.acc_manager && !frm.doc.quarter && !frm.doc.month&& !frm.doc.date && !frm.doc.target_service){
-					console.log("hi2")
+				
 					frappe.call({
 						method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_manager",
 						args: {
@@ -538,7 +416,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 					});
 				}
 				if(!frm.doc.acc_manager &&  frm.doc.fiscal_year && frm.doc.quarter){
-					console.log("hi3")
 				frappe.call({
 						method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_manager_quarter",
 						args: {
@@ -560,7 +437,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 					});
 				}
 				if(frm.doc.acc_manager &&  frm.doc.fiscal_year && frm.doc.quarter && !frm.doc.month){
-					console.log("hi4")
 					frappe.call({
 							method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc",
 							args: {
@@ -582,7 +458,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 						});
 					}
 					if(frm.doc.acc_manager &&  frm.doc.fiscal_year && frm.doc.quarter && frm.doc.month){
-						console.log("hi5")
 					frappe.call({
 							method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_acc_month",
 							args: {
@@ -605,7 +480,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 						});
 					}
 					if(!frm.doc.acc_manager &&  frm.doc.fiscal_year && frm.doc.quarter && frm.doc.month){
-						console.log("hi6")
 					frappe.call({
 							method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_quarter_month_report",
 							args: {
@@ -628,7 +502,7 @@ frappe.ui.form.on("Formatted Reports  Download", {
 						});
 					}
 					if(!frm.doc.acc_manager && frm.doc.fiscal_year&& frm.doc.date &&!frm.doc.quarter && !frm.doc.month && !frm.doc.target_service){
-						console.log("hi7")
+						
 						frappe.call({
 							method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_employee_targets_report",
 							args: {
@@ -650,7 +524,7 @@ frappe.ui.form.on("Formatted Reports  Download", {
 						});
 					}
 					if(frm.doc.acc_manager && !frm.doc.month && !frm.doc.target_service && frm.doc.date &&!frm.doc.quarter && frm.doc.fiscal_year){
-						console.log("hi8")
+						
 							frappe.call({
 								method: "teampro.teampro.doctype.formatted_reports__download.updated_target_report.download_employee_targets_report_acc",
 								args: {
@@ -672,7 +546,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 							});
 						}
 					if(!frm.doc.acc_manager && !frm.doc.month && frm.doc.target_service){
-						console.log("hi9")
 					frappe.call({
 						method: "teampro.teampro.doctype.formatted_reports__download.target_report.download_service",
 						args: {
@@ -837,11 +710,256 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				// 		}
 				// 	});
 				// }
-			}	
+			}
+
+			else if(frm.doc.report_type == "CR: Closure Report"){
+
+				var path_for_cr = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_cr_report";
+				
+			}
+			if (path_for_cr) {
+				
+				window.location.href = repl(frappe.request.url +
+					'?cmd=%(cmd)s', {
+					cmd: path_for_cr,
+					
+				});
+			}
+			else if(frm.doc.report_type == "MR: Monitoring Report" && frm.doc.mr_title=="MR:08 - Closure Follow-Up Report (CLFR)"){
+
+				var path_for_clfr = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_all_closures_excel";
+				
+			}
+			if (path_for_clfr) {
+				
+				window.location.href = repl(frappe.request.url +
+					'?cmd=%(cmd)s', {
+					cmd: path_for_clfr,
+					
+				});
+			}
+			else if(frm.doc.report_type == "MR: Monitoring Report" && frm.doc.mr_title=="MR:09 - REC Project Task Planner (RPTP)"){
+
+				var path_for_rptp = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_rptp_report";
+				
+			}
+			if (path_for_rptp) {
+				
+				window.location.href = repl(frappe.request.url +
+					'?cmd=%(cmd)s', {
+					cmd: path_for_rptp,
+					
+				});
+			}
+			else if(frm.doc.report_type == "MR: Monitoring Report" && frm.doc.mr_title=="MR:10 - Closure Weekly Status Report (CWSR)"){
+
+				var path_for_cwsr = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_cwsr_report";
+				var args_for_cwsr = "customer=%(customer)s"
+				
+			}
+			if (path_for_cwsr) {
+				
+				window.location.href = repl(frappe.request.url +
+ 
+					'?cmd=%(cmd)s&%(args)s',{
+					cmd: path_for_cwsr,
+					args:args_for_cwsr,
+					customer:frm.doc.customer
+					
+				});
+			}
+			
+			
+
+
 		},("Action")); 
+
 		frm.add_custom_button(("View"), function () {
 			frappe.msgprint("Developer working on it.Kindly select PDF or Excel")
 		},("Action")); 
+
+
+
+
+frm.add_custom_button("Project Status Summary View", function() {
+    frappe.call({
+        method: "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.project_status_summ",
+        args: {},
+        callback: function(r) {
+            if (r.message && r.message.grouped_data) {
+
+                let dialog = new frappe.ui.Dialog({
+                    title: "Project Status Summary",
+                    size: "extra-large",
+                    fields: [
+                        {
+                            fieldtype: "HTML",
+                            fieldname: "project_status_summary",
+                            label: __("Project Status Summary")
+                        }
+                    ]
+                });
+
+                let groupedData = r.message.grouped_data;
+                let grand_v = 0, grand_fp = 0, grand_sp = 0, grand_psl = 0;
+                let summaryCounts = {};
+
+                let htmlContent = `
+                    <div style="max-height: 600px; overflow-y: auto;">
+                    <table border="1" style="width: 100%; border-collapse: collapse; font-size:13px;">
+                        <thead>
+                            <tr>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">Criteria</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">ID</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">Project Name</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">Sourcing Status</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">V#</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">FP#</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">SP#</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">PSL</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                // Object.keys(groupedData).forEach(function(priority) {
+				const priorityOrder = ["High", "Medium", "Low"];
+				Object.keys(groupedData)
+					.sort((a, b) => priorityOrder.indexOf(a) - priorityOrder.indexOf(b))
+					.forEach(function(priority) {
+                    let projects = groupedData[priority];
+                    let rowspan = projects.length;
+
+                    summaryCounts[priority] = { SP: 0, 'SP/FP': 0, FP: 0, total: 0 };
+
+                    projects.forEach(function(project, index) {
+                        
+                        let rowStyle = (index % 2 === 1) ? "background-color:#d9d9d9;" : "";
+
+                        htmlContent += `<tr style="${rowStyle}">`;
+
+                        if (index === 0) {
+                            htmlContent += `<td rowspan="${rowspan}" style="font-weight:bold; text-align:center; background:#fafafa;">${priority}</td>`;
+                        }
+
+                        let tvac = parseFloat(project.tvac) || 0;
+                        let tfp = parseFloat(project.tfp) || 0;
+                        let tsp = parseFloat(project.tsp) || 0;
+                        let tpsl = parseFloat(project.tpsl) || 0;
+
+                        grand_v += tvac;
+                        grand_fp += tfp;
+                        grand_sp += tsp;
+                        grand_psl += tpsl;
+
+                        let source = (project.sourcing_statu || "").trim();
+                        if (["SP", "SP/FP", "FP"].includes(source)) {
+                            summaryCounts[priority][source] += 1;
+                            summaryCounts[priority].total += 1;
+                        }
+
+                        htmlContent += `
+                            <td>${project.ID}</td>
+                            <td>${project.project_name}</td>
+                            <td>${project.sourcing_statu || '-'}</td>
+                            <td style="text-align:center;">${tvac}</td>
+                            <td style="text-align:center;">${tfp}</td>
+                            <td style="text-align:center;">${tsp}</td>
+                            <td style="text-align:center;">${tpsl}</td>
+                        </tr>`;
+                    });
+                });
+
+                htmlContent += `
+                    <tr style="background:#d9edf7; font-weight:bold;">
+                        <td colspan="4" style="text-align:center;">Grand Total</td>
+                        <td style="text-align:center;">${grand_v.toFixed(0)}</td>
+                        <td style="text-align:center;">${grand_fp.toFixed(0)}</td>
+                        <td style="text-align:center;">${grand_sp.toFixed(0)}</td>
+                        <td style="text-align:center;">${grand_psl.toFixed(0)}</td>
+                    </tr>
+                `;
+
+                htmlContent += `</tbody></table><br><br>`;
+
+                
+                let totalSP = 0, totalSPFP = 0, totalFP = 0, totalAll = 0;
+
+                htmlContent += `
+                    <table border="1" style="width:40%; border-collapse: collapse; font-size:13px;">
+                        <thead>
+                            <tr>
+                                <th colspan="1" style="text-align:center; background-color:#0f1568; color:white;">Count of CUSTOMER/PROJECT NAME</th>
+                                <th colspan="4" style="text-align:center; background-color:#0f1568; color:white;">Sourcing Status</th>
+                            </tr>
+                            <tr>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">Row Labels</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">SP</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">SP/FP</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">FP</th>
+                                <th style="text-align:center; background-color:#0f1568; color:white;">Grand Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                Object.keys(summaryCounts).forEach(function(priority, idx) {
+                    
+                    let rowStyle = (idx % 2 === 1) ? "background-color:#d9d9d9;" : "";
+                    let counts = summaryCounts[priority];
+                    totalSP += counts.SP;
+                    totalSPFP += counts['SP/FP'];
+                    totalFP += counts.FP;
+                    totalAll += counts.total;
+
+                    htmlContent += `
+                        <tr style="${rowStyle}">
+                            <td style="text-align:left;">${priority}</td>
+                            <td style="text-align:center;">${counts.SP}</td>
+                            <td style="text-align:center;">${counts['SP/FP']}</td>
+                            <td style="text-align:center;">${counts.FP}</td>
+                            <td style="text-align:center; font-weight:bold;">${counts.total}</td>
+                        </tr>
+                    `;
+                });
+
+                htmlContent += `
+                    <tr style="background:#d9edf7; font-weight:bold;">
+                        <td style="text-align:center;">Grand Total</td>
+                        <td style="text-align:center;">${totalSP}</td>
+                        <td style="text-align:center;">${totalSPFP}</td>
+                        <td style="text-align:center;">${totalFP}</td>
+                        <td style="text-align:center;">${totalAll}</td>
+                    </tr>
+                `;
+
+                htmlContent += `</tbody></table></div>`;
+
+                dialog.fields_dict['project_status_summary'].html(htmlContent);
+                dialog.show();
+            }
+        }
+    });
+}, "Action");
+
+frm.add_custom_button("Update Task", function() {
+
+frappe.call({
+	"method":"teampro.custom.update_task_psotions_count_hourly"
+})
+
+}, "Action")
+
+frm.add_custom_button("Update Project", function() {
+
+frappe.call({
+	"method":"teampro.custom.update_proj_positions_count_hourly"
+})
+
+}, "Action")
+
+
+
 	},
 	// date(frm){
 	// 	frm.set_value("fiscal_year","")
@@ -1063,7 +1181,7 @@ frappe.ui.form.on("Formatted Reports  Download", {
 		}
 		else if (frm.doc.report_type == 'PR: Primary Reports' && frm.doc.primary_reports=="PR:02 – Project Status Report –(PSR - R)" && frm.doc.services_psr=="REC-I") {
 			if(!frm.doc.customer && !frm.doc.project){
-			var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_PSR";
+			// var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_PSR";
 			var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports_download.download_PSR_new";
 			}
 			else if(frm.doc.customer && !frm.doc.project){
@@ -1117,7 +1235,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			var path = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.app_taken_excel_report"
 		}
 		else if (frm.doc.report_type == 'MR: Monitoring Report' && frm.doc.mr_title=="MR:07 – TODO Status Report") {
-			console.log("inside of if")
 
 			var path_for_todo = "teampro.teampro.doctype.formatted_reports__download.formatted_reports__download.download_todo_report"
 			var args = 'allocated_to=%(allocated_to)s'
@@ -1129,7 +1246,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			});
 		}
 		if (path_for_todo) {
-			console.log("inside of path")
 			window.location.href = repl(frappe.request.url +
 				'?cmd=%(cmd)s&%(args)s', {
 				cmd: path_for_todo,
@@ -1139,7 +1255,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			});
 		}
 		if (path_for_bsr) {
-			console.log("inside of path")
 			window.location.href = repl(frappe.request.url +
 				'?cmd=%(cmd)s', {
 				cmd: path_for_bsr,
@@ -1150,7 +1265,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			});
 		}
 		if (path_for_bsr_cust) {
-			console.log("inside of path")
 			window.location.href = repl(frappe.request.url +
 				'?cmd=%(cmd)s', {
 				cmd: path_for_bsr_cust,
@@ -1158,7 +1272,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			});
 		}
 		if (path_for_bsr_batch) {
-			console.log("inside of path")
 			window.location.href = repl(frappe.request.url +
 				'?cmd=%(cmd)s', {
 				cmd: path_for_bsr_batch,
@@ -1195,7 +1308,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 			});
 		}
 		if (path_for_clr) {
-			console.log("inside of path")
 			window.location.href = repl(frappe.request.url +
 				'?cmd=%(cmd)s&%(args)s', {
 				cmd: path_for_clr,
@@ -1353,7 +1465,6 @@ frappe.ui.form.on("Formatted Reports  Download", {
 				});
 			}
 			if(!frm.doc.fiscal_year&& frm.doc.date){
-				console.log("hello")
 				frappe.call({
 					method: "teampro.teampro.doctype.formatted_reports__download.target_report.download_date_filter",
 					args: {

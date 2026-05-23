@@ -19,20 +19,17 @@
   "appointment_date",
   "opportunity",
   "organization_name",
-  "territory",
   "market_segment",
   "region",
   "location",
   "customer_name",
   "customer_type",
   "customer_group",
-  "territory_customer",
+  "sfp_territory",
   "column_break_7",
   "from_lead",
   "account_manager_lead_owner",
   "from_opportunity",
-  "account_manager",
-  "lead_owner",
   "call_status",
   "company",
   "visit_status",
@@ -59,9 +56,7 @@
   "appointment",
   "sheduled_time",
   "name1",
-  "phone_no",
   "skype_id",
-  "email",
   "calendar_event",
   "column_break_jfdi",
   "appointment_status",
@@ -116,14 +111,6 @@
    "label": "Organization Name"
   },
   {
-   "fetch_from": "lead.territory",
-   "fetch_if_empty": 1,
-   "fieldname": "territory",
-   "fieldtype": "Data",
-   "label": "Territory",
-   "translatable": 1
-  },
-  {
    "fetch_from": "lead.market_segment",
    "fieldname": "market_segment",
    "fieldtype": "Data",
@@ -156,13 +143,6 @@
    "in_standard_filter": 1,
    "label": "Lead",
    "options": "Lead"
-  },
-  {
-   "fieldname": "lead_owner",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Lead Owner",
-   "options": "User"
   },
   {
    "fetch_from": "lead.call_status",
@@ -250,7 +230,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "\nLead\nOpen\nReplied\nOpportunity\nQuotation\nLost Quotation\nInterested\nConverted\nDo Not Contact"
+   "options": "\nLead\nOpen\nReplied\nOpportunity\nQuotation\nLost Quotation\nInterested\nConverted\nCustomer\nDo Not Contact"
   },
   {
    "fieldname": "section_break_23",
@@ -375,13 +355,6 @@
    "read_only": 1
   },
   {
-   "fetch_from": "customer.territory",
-   "fetch_if_empty": 1,
-   "fieldname": "territory_customer",
-   "fieldtype": "Data",
-   "label": "Territory"
-  },
-  {
    "fetch_from": "customer.lead_name",
    "fieldname": "from_lead",
    "fieldtype": "Data",
@@ -394,13 +367,6 @@
    "fieldtype": "Data",
    "label": "From Opportunity",
    "read_only": 1
-  },
-  {
-   "fieldname": "account_manager",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Account Manager",
-   "options": "User"
   },
   {
    "fetch_from": "customer.account_manager",
@@ -486,25 +452,10 @@
    "read_only": 1
   },
   {
-   "fetch_from": "appointment.customer_phone_number",
-   "fieldname": "phone_no",
-   "fieldtype": "Data",
-   "label": "Phone No",
-   "options": "Phone",
-   "read_only": 1
-  },
-  {
    "fetch_from": "appointment.customer_skype",
    "fieldname": "skype_id",
    "fieldtype": "Data",
    "label": "Skype ID",
-   "read_only": 1
-  },
-  {
-   "fetch_from": "appointment.customer_email",
-   "fieldname": "email",
-   "fieldtype": "Data",
-   "label": "Email",
    "read_only": 1
   },
   {
@@ -580,8 +531,7 @@
    "fieldname": "party_name",
    "fieldtype": "Dynamic Link",
    "label": "Party Name",
-   "options": "party_from",
-   "read_only": 1
+   "options": "party_from"
   },
   {
    "fieldname": "party_from",
@@ -592,6 +542,7 @@
   {
    "fieldname": "account_manager_lead_owner",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Account Manager/ Lead Owner",
    "options": "User"
   },
@@ -618,11 +569,11 @@
    "label": "Appointment on"
   },
   {
-   "default": "Yet to Meet",
+   "default": "Not Visited",
    "fieldname": "app_status",
    "fieldtype": "Select",
    "label": "App status",
-   "options": "Yet to Meet\nFix Meeting\nScheduled\nVisited"
+   "options": "Not Visited\nFix Meeting\nScheduled\nYet to Meet\nRe-Scheduled\nConfirmed\nCancelled\nVisited"
   },
   {
    "depends_on": "eval:doc.app_status=='Yet to visit(YTV)' || doc.app_status=='Visited'",
@@ -651,6 +602,7 @@
   {
    "fieldname": "visted_by",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Visted by",
    "options": "User",
    "read_only": 1
@@ -674,6 +626,14 @@
    "label": "Qualification Status",
    "options": "Unqualified\nIn Process\nQualified\nTargeted",
    "read_only": 1
+  },
+  {
+   "fieldname": "sfp_territory",
+   "fieldtype": "Link",
+   "label": "Territory",
+   "options": "Territory",
+   "read_only": 1,
+   "reqd": 1
   }
  ],
  "index_web_pages_for_search": 1,
@@ -683,7 +643,7 @@
    "link_fieldname": "custom_sales_follow_up"
   }
  ],
- "modified": "2025-06-11 13:48:16.351102",
+ "modified": "2026-05-08 13:58:22.663323",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "Sales Follow Up",
@@ -703,6 +663,7 @@
    "write": 1
   }
  ],
+ "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": [],

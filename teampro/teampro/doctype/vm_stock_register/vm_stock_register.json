@@ -1,41 +1,61 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "VM.######",
+ "autoname": "LSVM.######",
  "creation": "2025-06-12 14:42:39.423479",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
   "details_tab",
   "upload",
-  "total_crstock_qty",
+  "machine_id",
   "delivery_date",
   "manufactured_date",
   "status",
+  "total_covers",
   "column_break_dxwg",
   "posting_date",
-  "total_new_stock_qty",
+  "next_filling",
   "packing_date",
   "name_print",
   "grn_received",
+  "refill_attachment",
+  "return_document",
+  "section_break_xujo",
+  "capacity_data",
+  "section_break_gqrn",
+  "total_capacity",
+  "total_crstock_qty",
+  "column_break_skel",
+  "default_capacity",
+  "total_new_stock_qty",
+  "column_break_hrda",
+  "standard_capacity_count",
+  "total_refilled_qty",
   "section_break_frhs",
   "status_transition",
   "details1_tab",
   "section_break_mxcr",
   "amended_from",
   "column_break_bxbr",
+  "slot_a_total_gty",
   "a_section",
   "slot_a",
   "tab_2_tab",
   "slot_b",
+  "slot_b_total_qty",
   "c_tab",
   "slot_c",
+  "slot_c_total_qty",
   "d_tab",
   "slot_d",
+  "slot_d_total_qty",
   "e_tab",
   "slot_e",
+  "slot_e_total_qty",
   "rack_f_tab",
-  "slot_f"
+  "slot_f",
+  "slot_f_total_qty"
  ],
  "fields": [
   {
@@ -63,18 +83,21 @@
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "slot_a",
    "fieldtype": "Table",
    "options": "VM Stock Details"
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "slot_b",
    "fieldtype": "Table",
    "options": "VM Stock Details"
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "slot_c",
    "fieldtype": "Table",
    "options": "VM Stock Details"
@@ -86,12 +109,14 @@
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "slot_d",
    "fieldtype": "Table",
    "options": "VM Stock Details"
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "slot_e",
    "fieldtype": "Table",
    "options": "VM Stock Details"
@@ -106,6 +131,7 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "Now",
    "fieldname": "posting_date",
    "fieldtype": "Datetime",
    "in_list_view": 1,
@@ -134,6 +160,7 @@
   },
   {
    "allow_bulk_edit": 1,
+   "allow_on_submit": 1,
    "fieldname": "slot_f",
    "fieldtype": "Table",
    "label": "Slot F",
@@ -157,7 +184,7 @@
   {
    "fieldname": "total_new_stock_qty",
    "fieldtype": "Float",
-   "label": "Total New Stock Qty",
+   "label": "Total Refill Planned Qty",
    "read_only": 1
   },
   {
@@ -183,10 +210,11 @@
   },
   {
    "allow_on_submit": 1,
+   "default": "Planned",
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "\nSchedule\nPacked\nDispatched\nGRN Received",
+   "options": "Planned\nSchedule\nPacked\nDispatched\nGRN Received\nCompleted",
    "read_only": 1
   },
   {
@@ -207,12 +235,135 @@
    "fieldtype": "Attach",
    "label": "GRN Received",
    "read_only": 1
+  },
+  {
+   "fieldname": "slot_a_total_gty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot A Total Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "slot_b_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot B Total Qty"
+  },
+  {
+   "fieldname": "slot_c_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot C Total Qty"
+  },
+  {
+   "fieldname": "slot_d_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot D Total Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "slot_e_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot E Total Qty"
+  },
+  {
+   "fieldname": "slot_f_total_qty",
+   "fieldtype": "Float",
+   "hidden": 1,
+   "label": "Slot F Total Qty",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_covers",
+   "fieldtype": "Int",
+   "hidden": 1,
+   "label": "Total Covers"
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "return_document",
+   "fieldtype": "Attach",
+   "label": "Return Document",
+   "read_only": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "fieldname": "machine_id",
+   "fieldtype": "Link",
+   "label": "Machine ID",
+   "mandatory_depends_on": "eval:!doc.__islocal",
+   "options": "Warehouse"
+  },
+  {
+   "allow_on_submit": 1,
+   "depends_on": "eval:doc.status==\"GRN Received\"||doc.status==\"Completed\"",
+   "fieldname": "refill_attachment",
+   "fieldtype": "Attach",
+   "label": "Refill Attachment"
+  },
+  {
+   "fieldname": "section_break_gqrn",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_skel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "100",
+   "fieldname": "default_capacity",
+   "fieldtype": "Percent",
+   "label": "Standard Capacity (%)"
+  },
+  {
+   "fieldname": "total_refilled_qty",
+   "fieldtype": "Float",
+   "label": "Total Qty After Refill",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_capacity",
+   "fieldtype": "Float",
+   "label": "Total Capacity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_xujo",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "capacity_data",
+   "fieldtype": "HTML",
+   "label": "Capacity Data"
+  },
+  {
+   "fieldname": "column_break_hrda",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "standard_capacity_count",
+   "fieldtype": "Float",
+   "label": "Standard Capacity Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "next_filling",
+   "fieldtype": "Date",
+   "label": "Next Filling"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
- "links": [],
- "modified": "2025-06-17 19:48:11.809216",
+ "links": [
+  {
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "custom_vm_stock_register"
+  }
+ ],
+ "make_attachments_public": 1,
+ "modified": "2026-05-16 14:31:03.847909",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "VM Stock Register",

@@ -49,16 +49,32 @@ frappe.ui.form.on("Attendance Summary", {
 			frm.set_df_property('from_date','hidden',0)
 			frm.set_df_property('to_date','hidden',0)
         }
-		var currentDate = new Date();
-		var currentYear = currentDate.getFullYear();
-		var currentMonth = currentDate.getMonth() + 1; 
-		var months = [
-			"January", "February", "March", "April", "May", "June",
-			"July", "August", "September", "October", "November", "December"
-		];
-		var monthName = months[currentMonth - 1]; 
-		frm.set_value('month', monthName);
-		frm.set_value('year', currentYear);
+		// var currentDate = new Date();
+		// var currentYear = currentDate.getFullYear();
+		// var currentMonth = currentDate.getMonth() + 1; 
+		// var months = [
+		// 	"January", "February", "March", "April", "May", "June",
+		// 	"July", "August", "September", "October", "November", "December"
+		// ];
+		// var monthName = months[currentMonth - 1]; 
+		// frm.set_value('month', monthName);
+		// frm.set_value('year', currentYear);
+		if (!frm.doc.month || !frm.doc.year) {
+
+			var currentDate = new Date();
+			var currentYear = currentDate.getFullYear();
+			var currentMonth = currentDate.getMonth() + 1;
+
+			var months = [
+				"January", "February", "March", "April", "May", "June",
+				"July", "August", "September", "October", "November", "December"
+			];
+
+			var monthName = months[currentMonth - 1];
+
+			frm.set_value('month', monthName);
+			frm.set_value('year', currentYear);
+		}
 		frm.disable_save();
 		if (!frappe.user.has_role('System Manager') && !frappe.user.has_role('HOD') && !frappe.user.has_role('HR Manager') && !frappe.user.has_role('HR User')) {
 			frappe.db.get_value("Employee", {'user_id': frappe.session.user}, ['employee', 'employee_name'], (r) => {
@@ -70,6 +86,7 @@ frappe.ui.form.on("Attendance Summary", {
 			frm.set_df_property('employee_id','read_only',1)
 		}
 		frm.trigger('get_from_to_dates')
+		frm.trigger('get_data')
 	},
     employee_id(frm){
 		frm.trigger('get_from_to_dates')

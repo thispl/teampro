@@ -568,6 +568,7 @@ def get_data_of_opp():
 	
 	for owner, opportunities in grouped_data.items():
 		for i in opportunities:
+			
 			employee_short_code = frappe.db.get_value("Employee", {"user_id": owner}, "short_code")
 			
 			data.append([

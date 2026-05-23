@@ -1,0 +1,28 @@
+.cb-circle{
+    display:inline-flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+.cb-circle img{
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    border:2px solid #d9e3f0;
+    object-fit:cover;
+}
+
+.cb-code{
+    font-size:11px;
+    margin-top:2px;
+    font-weight:600;
+}
+
+.team-logo img{
+    width:45px;
+    height:45px;
+    border-radius:8px;
+    border:2px solid #d9e3f0;
+    padding:3px;
+    background:white;
+}

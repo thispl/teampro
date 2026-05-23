@@ -38,6 +38,7 @@ def get_data_summary(emp, from_date, to_date):
 			time_out = out_time
 			shift = 'G'  
 			status = att.status 
+			od_request = att.attendance_request
 			working_hours = round(att.bt_difference, 2) if att.bt_difference else ''
 			leave_type = att.leave_type or ''
 			late_entry_time = 0 
@@ -51,7 +52,7 @@ def get_data_summary(emp, from_date, to_date):
 				employee_in_time = datetime.strptime(in_time, '%H:%M:%S') 
 				if employee_in_time > start_time:
 					late_duration = employee_in_time - start_time
-					if late_duration:
+					if late_duration and att.custom_session != "First Half" :
 						late += 1
 
 	
@@ -61,8 +62,13 @@ def get_data_summary(emp, from_date, to_date):
 				present += 0.5
 			if status == 'Absent':
 				absent +=1
-			if status == 'On Duty':
-				on_duty += 1
+			if od_request:
+				req = frappe.get_doc("Attendance Request",{"reason":("not in",["Permission","Mispunch"])}, od_request)
+				if req:
+					if req.half_day and req.half_day_date == att.attendance_date:
+						on_duty += 0.5
+					else:
+						on_duty +=1
 			if status == 'On Leave':
 				on_leave += 1
 			
@@ -129,22 +135,6 @@ def get_data_system(emp, from_date, to_date):
 					late_entry_time = '00:00:00'
 			else:
 				late_entry_time = '-'
-
-			# holiday = check_holiday(date, emp)
-			# if holiday:
-			# 	row_data = """
-			# 		<tr>
-			# 			<td style='border: 1px solid black;'><center>{date}</center></td>
-			# 			<td style='border: 1px solid black;'><center>{day}</center></td>
-			# 			<td style='border: 1px solid black;'><center>WO</center></td>
-			# 			<td style='border: 1px solid black;'><center></center></td>
-			# 			<td style='border: 1px solid black;'><center></center></td>
-			# 			<td style='border: 1px solid black;'><center></center></td>
-			# 			<td style='border: 1px solid black; color: #BD2A0F;'><center>{holiday}</center></td>
-			# 			<td style='border: 1px solid black;'><center></center></td>
-			# 			<td style='border: 1px solid black;'><center></center></td>
-			# 		</tr>
-			# 	""".format(date=dt.strftime('%d-%b'), day=day,holiday=holiday)
 			if status == 'On Leave':
 				row_data = """
 					<tr>
@@ -157,70 +147,182 @@ def get_data_system(emp, from_date, to_date):
 						<td style='border: 1px solid black; color: #BD2A0F;'><center>{leave_type}</center></td>
 						<td style='border: 1px solid black;'><center></center></td>
 					</tr>
-				""".format(date=dt.strftime('%d-%b'), day=day, leave_type=leave_type)
-			elif status == 'Present' and att.attendance_request :
-				row_data = """
-					<tr>
-						<td style='border: 1px solid black;'><center>{date}</center></td>
-						<td style='border: 1px solid black;'><center>{day}</center></td>
-						<td style='border: 1px solid black;'><center>W</center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-						<td style='border: 1px solid black; color: #BD2A0F;'><center>OD</center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-					</tr>
-				""".format(date=dt.strftime('%d-%b'), day=day)
-			elif status == 'Absent' and att.attendance_request :
-				row_data = """
-					<tr>
-						<td style='border: 1px solid black;'><center>{date}</center></td>
-						<td style='border: 1px solid black;'><center>{day}</center></td>
-						<td style='border: 1px solid black;'><center>W</center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-						<td style='border: 1px solid black; color: #BD2A0F;'><center>OD</center></td>
-						<td style='border: 1px solid black;'><center></center></td>
-					</tr>
-				""".format(date=dt.strftime('%d-%b'), day=day)
-			
-			else:
-				if status=='Present' and frappe.db.exists('Attendance Permission',{'employee':att.employee,'permission_date':att.attendance_date,'docstatus':1}):
-					status='P/PR'
-				elif status=='Present' and not frappe.db.exists('Attendance Permission',{'employee':att.employee,'permission_date':att.attendance_date,'docstatus':1}):
-					status='P'
-				elif status=='Half Day' and frappe.db.exists('Attendance Permission',{'employee':att.employee,'permission_date':att.attendance_date,'docstatus':1}):
-					status='HD/PR'
-				elif status=='Half Day' and att.leave_type and att.leave_application:
-					status='HD/'+att.leave_type
-				elif status=='Absent':
-					status='AB'
-				else:
-					status=status
-				row_data = """
-					<tr>
-						<td style='border: 1px solid black;'><center>{date}</center></td>
-						<td style='border: 1px solid black;'><center>{day}</center></td>
-						<td style='border: 1px solid black;'><center>W</center></td>
-						<td style='border: 1px solid black;'><center>{time_in}</center></td>
-						<td style='border: 1px solid black;'><center>{time_out}</center></td>
-						<td style='border: 1px solid black;'><center>{shift}</center></td>
-						<td style='border: 1px solid black;'><center>{status}</center></td>
-						<td style='border: 1px solid black;'><center>{late_entry_time}</center></td>
-					</tr>
 				""".format(
-					date=dt.strftime('%d-%b'), day=day, time_in=format_datetime(time_in) or '-',
-					time_out=format_datetime(time_out) or '-', shift=shift, status=status,late_entry_time=late_entry_time
+					date=dt.strftime('%d-%b'),
+					day=day,
+					leave_type=leave_type
 				)
+
+			else:
+
+				req_data = None
+
+				if att.attendance_request:
+					req_data = frappe.get_doc("Attendance Request", att.attendance_request)
+				if req_data and req_data.reason in ["Permission"]:
+
+					if status == "Present":
+						status = "P/PR"
+					elif status == "Half Day":
+						status = "HD/PR"
+					elif status == "Absent":
+						status = "PR"
+					else:
+						status = status
+
+					row_data = """
+						<tr>
+							<td style='border: 1px solid black;'><center>{date}</center></td>
+							<td style='border: 1px solid black;'><center>{day}</center></td>
+							<td style='border: 1px solid black;'><center>W</center></td>
+							<td style='border: 1px solid black;'><center>{time_in}</center></td>
+							<td style='border: 1px solid black;'><center>{time_out}</center></td>
+							<td style='border: 1px solid black;'><center>{shift}</center></td>
+							<td style='border: 1px solid black; color: #BD2A0F;'><center>{status}</center></td>
+							<td style='border: 1px solid black;'><center>{late_entry_time}</center></td>
+						</tr>
+					""".format(
+						date=dt.strftime('%d-%b'),
+						day=day,
+						time_in=format_datetime(time_in) or '-',
+						time_out=format_datetime(time_out) or '-',
+						shift=shift,
+						status=status,
+						late_entry_time=late_entry_time
+					)
+
+				# OD Records
+				elif req_data and req_data.reason not in ["Permission", "Mispunch"]:
+
+					row_data = """
+						<tr>
+							<td style='border: 1px solid black;'><center>{date}</center></td>
+							<td style='border: 1px solid black;'><center>{day}</center></td>
+							<td style='border: 1px solid black;'><center>W</center></td>
+							<td style='border: 1px solid black;'><center>{time_in}</center></td>
+							<td style='border: 1px solid black;'><center>{time_out}</center></td>
+							<td style='border: 1px solid black;'><center>{shift}</center></td>
+							<td style='border: 1px solid black; color: #BD2A0F;'><center>OD</center></td>
+							<td style='border: 1px solid black;'><center>{late_entry_time}</center></td>
+						</tr>
+					""".format(
+						date=dt.strftime('%d-%b'),
+						day=day,
+						time_in=format_datetime(time_in) or '-',
+						time_out=format_datetime(time_out) or '-',
+						shift=shift,
+						late_entry_time=late_entry_time
+					)
+
+				else:
+					if status == 'Half Day' and att.leave_type and att.leave_application:
+						status = 'HD/' + att.leave_type
+					elif status == 'Absent':
+						status = 'AB'
+					else:
+						status = status
+					row_data = """
+						<tr>
+							<td style='border: 1px solid black;'><center>{date}</center></td>
+							<td style='border: 1px solid black;'><center>{day}</center></td>
+							<td style='border: 1px solid black;'><center>W</center></td>
+							<td style='border: 1px solid black;'><center>{time_in}</center></td>
+							<td style='border: 1px solid black;'><center>{time_out}</center></td>
+							<td style='border: 1px solid black;'><center>{shift}</center></td>
+							<td style='border: 1px solid black;'><center>{status}</center></td>
+							<td style='border: 1px solid black;'><center>{late_entry_time}</center></td>
+						</tr>
+					""".format(
+						date=dt.strftime('%d-%b'),
+						day=day,
+						time_in=format_datetime(time_in) or '-',
+						time_out=format_datetime(time_out) or '-',
+						shift=shift,
+						status=status,
+						late_entry_time=late_entry_time
+					)
+
 			data += row_data
+			# if status == 'On Leave':
+			# 	row_data = """
+			# 		<tr>
+			# 			<td style='border: 1px solid black;'><center>{date}</center></td>
+			# 			<td style='border: 1px solid black;'><center>{day}</center></td>
+			# 			<td style='border: 1px solid black;'><center>On Leave</center></td>
+			# 			<td style='border: 1px solid black;'><center></center></td>
+			# 			<td style='border: 1px solid black;'><center></center></td>
+			# 			<td style='border: 1px solid black;'><center></center></td>
+			# 			<td style='border: 1px solid black; color: #BD2A0F;'><center>{leave_type}</center></td>
+			# 			<td style='border: 1px solid black;'><center></center></td>
+			# 		</tr>
+			# 	""".format(date=dt.strftime('%d-%b'), day=day, leave_type=leave_type)
+			# elif status == 'Present' and att.attendance_request :
+			# 	req_data=frappe.get_doc("Attendance Request",att.attendance_request)
+			# 	if req_data.reason not in ["Permission","Mispunch"]:
+			# 		row_data = """
+			# 			<tr>
+			# 				<td style='border: 1px solid black;'><center>{date}</center></td>
+			# 				<td style='border: 1px solid black;'><center>{day}</center></td>
+			# 				<td style='border: 1px solid black;'><center>W</center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 				<td style='border: 1px solid black; color: #BD2A0F;'><center>OD</center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 			</tr>
+			# 		""".format(date=dt.strftime('%d-%b'), day=day)
+			# elif status == 'Absent' and att.attendance_request :
+			# 	req_data=frappe.get_doc("Attendance Request",att.attendance_request)
+			# 	if req_data.reason not in ["Permission","Mispunch"]:
+			# 		row_data = """
+			# 			<tr>
+			# 				<td style='border: 1px solid black;'><center>{date}</center></td>
+			# 				<td style='border: 1px solid black;'><center>{day}</center></td>
+			# 				<td style='border: 1px solid black;'><center>W</center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 				<td style='border: 1px solid black; color: #BD2A0F;'><center>OD</center></td>
+			# 				<td style='border: 1px solid black;'><center></center></td>
+			# 			</tr>
+			# 		""".format(date=dt.strftime('%d-%b'), day=day)
+			
+			
+			# else:
+			# 	if status=='Present' and frappe.db.exists('Attendance Request',{'employee':att.employee,'from_date':att.attendance_date,'docstatus':1,"reason":"Permission"}):
+			# 		status='P/PR'
+			# 	elif status=='Present' and frappe.db.exists('Attendance Request',{'employee':att.employee,'from_date':att.attendance_date,'docstatus':1,"reason":"Permission"}):
+			# 		status='P'
+			# 	elif status=='Half Day' and frappe.db.exists('Attendance Request',{'employee':att.employee,'from_date':att.attendance_date,'docstatus':1,"reason":"Permission"}):
+			# 		status='HD/PR'
+			# 	elif status=='Half Day' and att.leave_type and att.leave_application:
+			# 		status='HD/'+att.leave_type
+			# 	elif status=='Absent':
+			# 		status='AB'
+			# 	else:
+			# 		status=status
+			# 	row_data = """
+			# 		<tr>
+			# 			<td style='border: 1px solid black;'><center>{date}</center></td>
+			# 			<td style='border: 1px solid black;'><center>{day}</center></td>
+			# 			<td style='border: 1px solid black;'><center>W</center></td>
+			# 			<td style='border: 1px solid black;'><center>{time_in}</center></td>
+			# 			<td style='border: 1px solid black;'><center>{time_out}</center></td>
+			# 			<td style='border: 1px solid black;'><center>{shift}</center></td>
+			# 			<td style='border: 1px solid black;'><center>{status}</center></td>
+			# 			<td style='border: 1px solid black;'><center>{late_entry_time}</center></td>
+			# 		</tr>
+			# 	""".format(
+			# 		date=dt.strftime('%d-%b'), day=day, time_in=format_datetime(time_in) or '-',
+			# 		time_out=format_datetime(time_out) or '-', shift=shift, status=status,late_entry_time=late_entry_time
+			# 	)
+			# data += row_data
 		else:
 			shift = 'G' 
 			holiday = check_holiday(date, emp)
 			if holiday:
 				attendance = frappe.db.exists('Attendance', {'employee': emp, 'attendance_date': date, 'docstatus': ('!=', 2)})
 				if attendance:
-					frappe.errprint(date)
 					att = frappe.get_doc('Attendance', {'attendance_date': date, 'employee': emp, 'docstatus': ('!=', 2)})
 					if att and att.status!="Absent":
 						status = att.status 
@@ -259,7 +361,7 @@ def get_data_system(emp, from_date, to_date):
 							<td style='border: 1px solid black;'><center></center></td>
 						</tr>
 					""".format(date=dt.strftime('%d-%b'), day=day,holiday=holiday)
-					data += row_data
+						data += row_data
 
 				else:
 					row_data = """

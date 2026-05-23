@@ -42,7 +42,7 @@ def generate_data(args):
 
         salary_details = calculate_salary_details(salary_slips)
 
-        eps_wages = "0" if emp["user_id"] == "anil.p@groupteampro.com" else "15000"
+        eps_wages = "0" if emp["user_id"] == "annie.m@groupteampro.com" else "15000"
         eps_contri_remitted = (salary_details.get('Provident Fund', 0) * 0.70 if emp["user_id"] in ["dc@groupteampro.com", "mariyammal.a@groupteampro.com"] else 1800 * 0.70)
         epf_eps_diff_remitted = (salary_details.get('Provident Fund', 0) * 0.30 if emp["user_id"] in ["dc@groupteampro.com", "mariyammal.a@groupteampro.com"] else 1800 * 0.3)
 
