@@ -354,7 +354,7 @@ def get_candidate_status(candidate, task):
 
 				tracker[failed_status]["datetime"] = latest_transition.sourced_date
 
-				tracker[failed_status]["remarks"] = latest_transition.remarks
+				tracker[failed_status]["remarks"] = "Better luck next time"
 
 				failed_index = workflow.index(failed_status)
 
