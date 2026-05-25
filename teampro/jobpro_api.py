@@ -399,6 +399,9 @@ def apply_job(candidate, task):
 		})
 
 		doc.insert(ignore_permissions=True)
+  
+	if not frappe.db.get_value("Candidate", candidate, "task"):
+		frappe.db.set_value("Candidate", candidate, "task", task)
 
 @frappe.whitelist(allow_guest=True)
 def get_tasks(additional_filters=None, candidate=None):
