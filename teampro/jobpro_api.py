@@ -226,6 +226,20 @@ def get_candidate_status(candidate, task):
 		"Proposed PSL",
 		"Result Pending"
 	]
+ 
+	status_mapping = {
+		"Sourced": "Received CV",
+		"Pending QC": "Under Review",
+		"Submit(SPOC)": "Shared with Recruiter",
+		"Submitted(Client)": "Sent to Employer",
+		"Shortlisted": "Shortlisted",
+		"Linedup": "Interview Scheduled",
+		"Linedup Confirmed": "Interview Confirmed",
+		"Reported": "Joined Interview",
+		"Interviewed": "Interview Completed",
+		"Proposed PSL": "Offer in Progress",
+		"Result Pending": "Awaiting Feedback"
+	}
 
 	candidate_statuses = frappe.db.get_all(
 		"Candidate status",
@@ -240,7 +254,7 @@ def get_candidate_status(candidate, task):
 	# Default tracker
 	tracker = {
 		status: {
-			"label": status,
+			"label": status_mapping.get(status, status),
 			"state": "pending",
 			"datetime": None,
 			"remarks": None
