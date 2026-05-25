@@ -1,6 +1,7 @@
 import frappe
 import json
-from frappe.utils.file_manager import save_file
+from frappe.utils import cint
+from frappe import is_whitelisted, _
 
 @frappe.whitelist(allow_guest=True)
 def get_options(doctype, fields):
@@ -127,38 +128,131 @@ def update_user_details():
 	frappe.db.set_value("User", data.get("name"), data)
 	return {"message": "User details updated successfully."}
 
-@frappe.whitelist(allow_guest=True)
-def upload_file():
-	file = frappe.request.files.get("file")
 
-	if not file:
-		frappe.throw("No file uploaded")
+from typing import TYPE_CHECKING
+from frappe.handler import check_write_permission
+from mimetypes import guess_type
+from frappe.utils.image import optimize_image
 
-	docname = frappe.form_dict.get("docname")
-	doctype = frappe.form_dict.get("doctype")
-	fieldname = frappe.form_dict.get("fieldname")
-
-	saved_file = save_file(
-		fname=file.filename,
-		content=file.stream.read(),
-		dt=doctype,
-		dn=docname,
-		df=fieldname,
-		is_private=0
-	)
-
-	frappe.db.set_value(
-		doctype,
-		docname,
-		fieldname,
-		saved_file.file_url
-	)
-
-	return {
-		"status": "success",
-		"file_url": saved_file.file_url
-	}
+if TYPE_CHECKING:
+	from frappe.core.doctype.user.user import User
  
+ALLOWED_MIMETYPES = (
+	"image/png",
+	"image/jpeg",
+	"image/gif",
+	"application/pdf",
+	"application/msword",
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+	"application/vnd.ms-excel",
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+	"application/vnd.oasis.opendocument.text",
+	"application/vnd.oasis.opendocument.spreadsheet",
+	"text/plain",
+	"video/quicktime",
+	"video/mp4",
+	"text/csv",
+)
+
+@frappe.whitelist(allow_guest=True, methods=["POST"])
+def upload_file():
+	user = None
+	if frappe.session.user == "Guest":
+		if frappe.get_system_settings("allow_guests_to_upload_files"):
+			ignore_permissions = True
+		else:
+			raise frappe.PermissionError
+	else:
+		user: User = frappe.get_lazy_doc("User", frappe.session.user)
+		ignore_permissions = False
+
+	files = frappe.request.files
+	is_private = frappe.form_dict.is_private
+	doctype = frappe.form_dict.doctype
+	docname = frappe.form_dict.docname
+	fieldname = frappe.form_dict.fieldname
+	file_url = frappe.form_dict.file_url
+	folder = frappe.form_dict.folder or "Home"
+	method = frappe.form_dict.method
+	filename = frappe.form_dict.file_name
+	optimize = frappe.form_dict.optimize
+	content = None
+
+	if library_file := frappe.form_dict.get("library_file_name"):
+		frappe.has_permission("File", doc=library_file, throw=True)
+		doc = frappe.get_value(
+			"File",
+			frappe.form_dict.library_file_name,
+			["is_private", "file_url", "file_name"],
+			as_dict=True,
+		)
+		is_private = doc.is_private
+		file_url = doc.file_url
+		filename = doc.file_name
+
+	if not ignore_permissions:
+		check_write_permission(doctype, docname)
+
+	if "file" in files:
+		file = files["file"]
+		content = file.stream.read()
+		filename = file.filename
+
+		content_type = guess_type(filename)[0]
+		if optimize and content_type and content_type.startswith("image/"):
+			args = {"content": content, "content_type": content_type}
+			if frappe.form_dict.max_width:
+				args["max_width"] = int(frappe.form_dict.max_width)
+			if frappe.form_dict.max_height:
+				args["max_height"] = int(frappe.form_dict.max_height)
+			content = optimize_image(**args)
+
+	frappe.local.uploaded_file_url = file_url
+	frappe.local.uploaded_file = content
+	frappe.local.uploaded_filename = filename
+
+	if content is not None and (frappe.session.user == "Guest" or (user and not user.has_desk_access())):
+		filetype = guess_type(filename)[0]
+		if filetype not in ALLOWED_MIMETYPES:
+			frappe.throw(_("You can only upload JPG, PNG, GIF, PDF, TXT, CSV or Microsoft documents."))
+
+	if method:
+		method = frappe.get_attr(method)
+		is_whitelisted(method)
+		return method()
+	else:
+		file_doc = frappe.get_doc(
+			{
+				"doctype": "File",
+				"attached_to_doctype": doctype,
+				"attached_to_name": docname,
+				"attached_to_field": fieldname,
+				"folder": folder,
+				"file_name": filename,
+				"file_url": file_url,
+				"is_private": cint(is_private),
+				"content": content,
+			}
+		)
+		file_doc.save(ignore_permissions=ignore_permissions)
+		
+		# FIX: Fetch the newly generated file_url from the saved document
+		file_url = file_doc.file_url
+
+		# Only update parent document if doctype and docname are provided
+		if doctype and docname and fieldname:
+			frappe.db.set_value(
+				doctype,
+				docname,
+				fieldname,
+				file_url
+			)
+
+		return {
+			"status": "success",
+			"file_url": file_url
+		}
+
 @frappe.whitelist(allow_guest=True)
 def delete_file():
 	docname = frappe.form_dict.get("docname")
@@ -264,6 +358,7 @@ def get_candidate_status(candidate, task):
 
 	# Sourced always completed
 	tracker["Sourced"]["state"] = "completed"
+	tracker["Pending QC"]["state"] = "current"
 
 	last_completed_index = 0
 
@@ -370,14 +465,28 @@ def get_candidate_status(candidate, task):
 
 			if current_status in workflow:
 
-				tracker[current_status]["state"] = "current"
-
 				current_index = workflow.index(current_status)
 
-				# Previous statuses completed
-				for previous_status in workflow[:current_index]:
+				# Special case:
+				# Sourced should always remain completed
+				# Pending QC should become current
+				if current_status == "Sourced":
 
-					tracker[previous_status]["state"] = "completed"
+					tracker["Sourced"]["state"] = "completed"
+
+					if len(workflow) > 1:
+
+						tracker["Pending QC"]["state"] = "current"
+
+				else:
+
+					# Current status
+					tracker[current_status]["state"] = "current"
+
+					# Previous statuses completed
+					for previous_status in workflow[:current_index]:
+
+						tracker[previous_status]["state"] = "completed"
 	return list(tracker.values())
 
 @frappe.whitelist()
@@ -551,10 +660,3 @@ def create_candidate(
 			"status": "error",
 			"message": str(frappe.get_traceback())
 		}
-  
-def test_check():
-    tasks = frappe.get_all("Task", {"service": "REC-I", "custom_country_flag": ["is", "not set"]}, ["name", "territory"])
-    for task in tasks:
-        flag = frappe.db.get_value("Territory", task.territory, "custom_country_flag")
-        frappe.db.set_value("Task", task.name, "custom_country_flag", flag)
-        print([task.territory, flag])
