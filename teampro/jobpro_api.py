@@ -332,7 +332,7 @@ def get_candidate_status(candidate, task):
 		"Reported": "Joined Interview",
 		"Interviewed": "Interview Completed",
 		"Proposed PSL": "Offer in Progress",
-		"Result Pending": "Awaiting Feedback"
+		"Result Pending": "Waiting List",
 	}
 
 	candidate_statuses = frappe.db.get_all(
@@ -356,9 +356,8 @@ def get_candidate_status(candidate, task):
 		for status in workflow
 	}
 
-	# Sourced always completed
-	tracker["Sourced"]["state"] = "completed"
-	tracker["Pending QC"]["state"] = "current"
+	tracker["Sourced"]["state"] = "current"
+	# tracker["Pending QC"]["state"] = "current"
 
 	last_completed_index = 0
 
@@ -660,3 +659,10 @@ def create_candidate(
 			"status": "error",
 			"message": str(frappe.get_traceback())
 		}
+  
+def test_check():
+	jobpro_candidates = frappe.db.get_all("JOBPRO Candidate", pluck="name")
+	for jc in jobpro_candidates:
+		doc = frappe.get_doc("JOBPRO Candidate", jc)
+		print(doc.name)
+		doc.delete()
