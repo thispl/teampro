@@ -521,6 +521,8 @@ def create_candidate(
 		doc.custom_sourced_by = custom_sourced_by
 		doc.position = position
 		doc.candidate_image = candidate_image
+		doc.pending_for = "Sourced"
+		doc.candidate_created_by = "cv@groupteampro.com"
 		doc.flags.ignore_mandatory = True
 
 		if doc.is_new():
