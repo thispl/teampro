@@ -512,7 +512,8 @@ def apply_job(candidate, task):
 		frappe.db.set_value("Candidate", candidate, "task", task)
 
 @frappe.whitelist(allow_guest=True)
-def get_tasks(additional_filters=None, candidate=None):
+def get_tasks(additional_filters=None, candidate=None, start=0, page_length=12):
+ 
 	conditions = [
 		"t.status IN ('Open', 'Overdue', 'Pending Review', 'Working')",
 		"t.service IN ('REC-I', 'REC-D')"
@@ -549,7 +550,7 @@ def get_tasks(additional_filters=None, candidate=None):
 	where_clause = " AND ".join(conditions)
 
 	values["candidate"] = candidate
-
+ 
 	query = f"""
 		SELECT
 			t.name,
@@ -592,7 +593,7 @@ def get_tasks(additional_filters=None, candidate=None):
 		WHERE {where_clause}
 
 		ORDER BY t.created_on DESC
-		LIMIT 1000
+		LIMIT {start}, {page_length}
 	"""
 	return frappe.db.sql(query, values, as_dict=True)
 
@@ -615,8 +616,6 @@ def create_candidate(
 			"Candidate",
 			{"mail_id": mail_id}
 		)
-		
-		frappe.log_error("Candidate Name", [candidate_name, "feknkefn", candidate_image])
 
 		if candidate_name:
 			doc = frappe.get_doc("Candidate", candidate_name)
@@ -661,8 +660,4 @@ def create_candidate(
 		}
   
 def test_check():
-	jobpro_candidates = frappe.db.get_all("JOBPRO Candidate", pluck="name")
-	for jc in jobpro_candidates:
-		doc = frappe.get_doc("JOBPRO Candidate", jc)
-		print(doc.name)
-		doc.delete()
+	return get_tasks(start=12, page_length=12)
