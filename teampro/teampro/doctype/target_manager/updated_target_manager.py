@@ -179,7 +179,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
 				else:
@@ -191,7 +191,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				tc.revised_ct = tc.ct + pending_ct
@@ -211,7 +211,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
@@ -223,7 +223,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				i.cr_ft = i.ft + pending_ft
@@ -273,7 +273,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -286,7 +286,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -306,7 +306,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -319,7 +319,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft
@@ -491,7 +491,7 @@ def calculate_target_for_manager_test(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -507,7 +507,7 @@ def calculate_target_for_manager_test(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -530,7 +530,7 @@ def calculate_target_for_manager_test(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -545,7 +545,7 @@ def calculate_target_for_manager_test(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft
@@ -578,7 +578,7 @@ def calculate_target_for_manager_inso_test():
 		"name"
 	)
 
-	tps = frappe.get_all('Target Manager',filters={'custom_fiscal_year': current_fy},fields=['*'])
+	tps = frappe.get_all('Target Manager',filters={'custom_fiscal_year': current_fy, "name": "TA-0060"},fields=['*'])
 	def get_month_range(start_date, end_date):
 		current = start_date.replace(day=1)
 		end = end_date.replace(day=1)
@@ -834,7 +834,7 @@ def calculate_target_for_manager_inso_test():
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
 				else:
@@ -846,7 +846,7 @@ def calculate_target_for_manager_inso_test():
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				tc.revised_ct = tc.ct + pending_ct
@@ -869,7 +869,7 @@ def calculate_target_for_manager_inso_test():
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
@@ -881,7 +881,7 @@ def calculate_target_for_manager_inso_test():
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				i.cr_ft = i.ft + pending_ft
@@ -949,7 +949,7 @@ def calculate_target_for_manager_inso_test():
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -962,7 +962,7 @@ def calculate_target_for_manager_inso_test():
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -985,7 +985,7 @@ def calculate_target_for_manager_inso_test():
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -998,7 +998,7 @@ def calculate_target_for_manager_inso_test():
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft
@@ -1195,14 +1195,27 @@ def calculate_target_for_manager_inso_test():
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
 					
+					# query = f"""
+					# 	SELECT SUM(sii.base_amount) AS total
+					# 	FROM `tabSales Invoice` AS si
+					# 	INNER JOIN `tabSales Invoice Item` AS sii
+					# 	ON si.name = sii.parent
+					# 	WHERE sii.candidate_owner IN ({user_list_sql})
+					# 	AND MONTH(si.posting_date) = %s
+					# 	AND YEAR(si.posting_date) = %s
+					# 	AND si.services='REC-I'
+					# 	AND si.docstatus=1
+					# 	AND si.status NOT IN ('Cancelled')
+					# """
+					# achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 					query = f"""
-						SELECT SUM(sii.base_amount) AS total
+						SELECT sii.base_amount, si.name, si.posting_date, si.services, sii.item_code
 						FROM `tabSales Invoice` AS si
 						INNER JOIN `tabSales Invoice Item` AS sii
 						ON si.name = sii.parent
@@ -1211,9 +1224,21 @@ def calculate_target_for_manager_inso_test():
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+					achieved_si_records = frappe.db.sql(query, (month, year), as_dict=True)
+					achieved_value = 0
+					for asir in achieved_si_records:
+						# print([asir, month, year])
+						achieved_value += asir.base_amount
+						doc.append("achieved_data", {
+							"date": asir.posting_date,
+							"document_type": "Sales Invoice",
+							"id": asir.name,
+							"service": asir.services,
+							"item": asir.item_code,
+							"amount_cc": asir.base_amount
+						})
 				tc.revised_ct = tc.ct + pending_ct
 				tc.achieved = achieved_value
 				tc.ct_yta = tc.revised_ct - achieved_value
@@ -1238,7 +1263,7 @@ def calculate_target_for_manager_inso_test():
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -1253,7 +1278,7 @@ def calculate_target_for_manager_inso_test():
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				
@@ -1486,7 +1511,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
 				else:
@@ -1498,7 +1523,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				tc.revised_ct = tc.ct + pending_ct
@@ -1521,7 +1546,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
@@ -1533,7 +1558,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.posting_date) = %s 
 								AND YEAR(so.posting_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				i.cr_ft = i.ft + pending_ft
@@ -1600,7 +1625,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -1613,7 +1638,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -1636,7 +1661,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -1649,7 +1674,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft
@@ -1858,7 +1883,7 @@ def calculate_target_for_manager_point(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -1874,7 +1899,7 @@ def calculate_target_for_manager_point(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -1900,7 +1925,7 @@ def calculate_target_for_manager_point(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
@@ -1915,7 +1940,7 @@ def calculate_target_for_manager_point(name,emp,year):
 						AND YEAR(si.posting_date) = %s
 						AND si.services='REC-I'
 						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled', 'Credit Note Issued', 'Return')
+						AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft
