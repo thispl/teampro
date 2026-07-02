@@ -634,6 +634,8 @@ def bulk_update_closure_status():
 
 @frappe.whitelist()
 def rename_file(doc,method):
+    if not doc.is_new():
+        return
     hashcode = frappe.generate_hash()[:5]
     doc.file_name = hashcode + doc.file_name
 
@@ -705,7 +707,7 @@ def create_update_leave_allocation_new():
     )
 
     today = date.today()
-
+    # today=getdate("2026-06-15")
     for emp in employees:
         doj = emp.date_of_joining
         if not doj:
@@ -764,17 +766,16 @@ def update_tot_leave_days(doc, method):
             total_days -= 0.5
         doc.total_leave_days = total_days
 
-# @frappe.whitelist()
-# def create_schedule_job_type():
-# 	job = frappe.db.exists('Scheduled Job Type', 'create_cl')
-# 	if not job:
-# 		sjt = frappe.new_doc("Scheduled Job Type")
-# 		sjt.update({
-# 			"method": 'teampro.utility.create_update_leave_allocation_new',
-# 			"frequency": 'Cron',
-# 			"cron_format": '0 1 * * *'
-# 		})
-# 		sjt.save(ignore_permissions=True)
+@frappe.whitelist()
+def create_schedule_job_type():
+    sjt = frappe.new_doc("Scheduled Job Type")
+    sjt.update({
+        "method": "teampro.mark_attendance.mark_att",
+        "frequency": 'Cron',
+        "cron_format": '*/55 * * * *',
+        "create_log":1
+    })
+    sjt.save(ignore_permissions=True)
 
 @frappe.whitelist()
 def update_customer_contact_table(doc,method):
@@ -812,3 +813,45 @@ def update_sfp_details_customer(doc, method):
                     })
 
                 doc.save()
+
+
+import frappe
+@frappe.whitelist()
+def update_submitted_pi(doc, method):
+    frappe.db.set_value(
+        "Purchase Invoice",
+        doc.name,
+        "custom_document_status",
+        "Submitted"
+    )
+
+@frappe.whitelist()
+def update_canceled_pi(doc, method):
+    frappe.db.set_value(
+        "Purchase Invoice",
+        doc.name,
+        "custom_document_status",
+        "Cancelled"
+    )
+
+@frappe.whitelist()
+def update_submitted_si(doc, method):
+    frappe.db.set_value(
+        "Sales Invoice",
+        doc.name,
+        "custom_document_status",
+        "Submitted"
+    )
+
+
+import frappe
+@frappe.whitelist()
+def update_canceled_si(doc, method):
+    frappe.db.set_value(
+        "Sales Invoice",
+        doc.name,
+        "custom_document_status",
+        "Cancelled"
+    )
+
+

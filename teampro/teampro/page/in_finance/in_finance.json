@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2026-06-27 18:30:58.873299",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-06-27 18:30:58.873299",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "in-finance",
+ "owner": "Administrator",
+ "page_name": "in-finance",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": "/assets/teampro/css/in_finance.css",
+ "system_page": 0,
+ "title": "Finance"
+}

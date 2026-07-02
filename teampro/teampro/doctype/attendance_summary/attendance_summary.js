@@ -29,7 +29,7 @@ frappe.ui.form.on("Attendance Summary", {
 		}
 		frm.trigger('get_from_to_dates')
 		frappe.call({
-			method:"teampro.custom.update_last_execution",
+			method:"teampro.teampro.doctype.attendance_summary.attendance_summary.update_last_execution",
 			callback(r){
 				if (r.message) {
 					console.log(r.message)

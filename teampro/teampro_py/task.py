@@ -303,3 +303,210 @@ def get_data_grouped_by_position(args):
         ])
 
     return data
+
+import json
+@frappe.whitelist()
+def assign_task_to_users(tasks, users,rc):
+    tasks = json.loads(tasks) 
+    users = json.loads(users) 
+    rc=json.loads(rc)
+    for task in tasks:
+        doc = frappe.get_doc("Task", task)
+        doc.set("custom_assign_task", [])
+        for user in users:
+            new_user=user.get('assigned_to')
+            doc.append("custom_assign_task", {"assigned_to": new_user})
+        doc.custom_required_count=rc
+        # doc.custom_production_date=p_date
+        doc.save()
+        frappe.db.commit()
+
+@frappe.whitelist()
+def task_age_calculation():
+    tasks = frappe.db.get_all("Task",filters={"service":"IT-SW", "status":["not in",["Hold","Completed","Cancelled"]]},fields=["name","creation"])
+    
+    for task in tasks:
+        age_days = (frappe.utils.now_datetime() - task.creation).days
+
+        frappe.db.set_value("Task",task.name,"custom_age",age_days)
+
+    frappe.db.commit()
+
+
+@frappe.whitelist()
+def update_candidate_tcount():
+    tasks = frappe.get_all('Task',{'service':('in',('REC-I', 'REC-D')),"status":("in", ['Working', 'Open', 'Overdue', 'Pending Review'])},["name"])
+    # tasks = frappe.get_all("Task",filters={"name": "TS20840"},fields=["name"])
+    for task in tasks:
+        # task = task.name
+#         print(task)
+        submit_spoc = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for': 'Submit(SPOC)'}) or 0
+        submit_client = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for': 'Submitted(Client)'}) or 0
+        psl = frappe.db.count('Candidate', {'task': task.name, 'pending_for': (
+            'in', ('Client Offered', 'Proposed PSL'))}) or 0
+        shortlisted = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for':'Shortlisted'}) or 0
+        linedup = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for':('in', ('Linedup','Linedup Confirmed'))}) or 0
+        interviewed = frappe.db.count(
+            'Candidate', {'task': task.name, 'pending_for': 'Interviewed'}) or 0
+        result_pending =frappe.db.count('Candidate',{'task':task.name,'pending_for':'Result Pending'}) or 0
+
+        frappe.db.set_value('Task', task.name, 'psl', psl)
+        frappe.db.set_value('Task', task.name, 'fp',(submit_spoc + interviewed + submit_client))
+        frappe.db.set_value('Task',task.name,'custom_rp',result_pending)
+        frappe.db.set_value('Task', task.name, 'sl', shortlisted)
+        frappe.db.set_value('Task', task.name, 'custom_lp',linedup)
+
+        task_status = frappe.db.get_value('Task', task.name, 'status')
+
+        if task_status in ('Completed', 'Cancelled'):
+            frappe.db.set_value('Task', task.name, 'sp', 0)
+            frappe.db.set_value('Task', task.name, 'custom_lp', 0)
+        else:
+            vac = frappe.db.get_value('Task', task.name, 'vac')
+            prop = frappe.db.get_value('Task', task.name, 'prop')
+            pps = (vac - psl) * prop - (submit_spoc + submit_client+
+                                        interviewed + shortlisted +linedup)
+            frappe.db.set_value('Task', task.name, 'sp', pps)
+
+
+
+
+
+@frappe.whitelist()
+def update_task_positions_count_hourly():
+    frappe.enqueue(
+        update_candidate_tcount,
+        queue="long",
+        timeout=36000,
+        is_async=True,
+        now=False,
+        job_name='Task Update',
+        enqueue_after_commit=False,
+    )
+
+
+
+@frappe.whitelist()
+def update_task_from_candidate1():
+    job = frappe.db.exists('Scheduled Job Type','update_task_positions_count_hourly')
+    if not job:
+        task = frappe.new_doc("Scheduled Job Type")
+        task.update({
+            "method": 'teampro.teampro_py.task.update_task_positions_count_hourly',
+            "frequency": 'Cron',
+            "cron_format": '0 * * * *'
+        })
+        task.save(ignore_permissions=True)
+
+
+@frappe.whitelist()
+def update_sprint_task(task_id,dev_team=None,sprint=None,project=None):
+    if not dev_team or not sprint:
+        return
+    sprint_doc = frappe.get_doc("Sprint", {"team":dev_team,"sprint_id":sprint})
+    status=frappe.db.get_value('Task',task_id,'status')
+    if not any(row.task == task_id for row in sprint_doc.sprint_task):
+        sprint_doc.append("sprint_task", {
+            "task": task_id,
+            "project":project,
+            "status":status
+        })
+        sprint_doc.save(ignore_permissions=True)
+
+# import frappe
+
+# def update_prd_sprint_task(doc, method):
+#     if not doc.custom_production_date:
+#         return
+#     if not doc.custom_sprint or not doc.custom_dev_team:
+#         return
+#     if doc.kt_confirmed == 0:
+#         return
+#     sprint_doc = frappe.get_doc("Sprint", {"team":doc.custom_dev_team,"sprint_id":doc.custom_sprint})
+#     if any(row.task == doc.name for row in sprint_doc.sprint_task):
+#         return
+
+#     sprint_doc.append("sprint_task", {
+#         "task": doc.name,
+#         "project":doc.project,
+#         "status":doc.status,
+#         "created_on":doc.creation
+#     })
+
+#     sprint_doc.save(ignore_permissions=True)
+
+
+
+import frappe
+from frappe.utils import flt
+
+def update_prd_sprint_task(doc, method):
+    if not doc.custom_production_date:
+        return
+
+    if not doc.custom_sprint or not doc.custom_dev_team:
+        return
+
+    if doc.kt_confirmed == 0:
+        return
+
+    sprint_doc = frappe.get_doc(
+        "Sprint",
+        {
+            "team": doc.custom_dev_team,
+            "sprint_id": doc.custom_sprint
+        }
+    )
+
+    for row in sprint_doc.sprint_task:
+        if row.task == doc.name:
+            if flt(row.rt) != flt(doc.rt):
+                row.rt = doc.rt
+                sprint_doc.save(ignore_permissions=True)
+
+            return
+
+    sprint_doc.append("sprint_task", {
+        "task": doc.name,
+        "project": doc.project,
+        "status": doc.status,
+        "created_on": doc.creation,
+        "rt": doc.rt
+    })
+
+    sprint_doc.save(ignore_permissions=True)
+
+
+
+import frappe
+from frappe.utils import flt
+@frappe.whitelist()
+def update_prd_sprint_task(doc, method):
+
+    sprint_name = frappe.db.exists(
+        "Sprint",
+        {
+            "team": doc.custom_dev_team,
+            "sprint_id": doc.custom_sprint
+        }
+    )
+
+    if not sprint_name:
+        return
+
+    # Directly update the child table row instead of loading and saving the entire Sprint doc.
+    # This avoids triggering Sprint's validate hooks (update_sprint_hours, update_allocated_hrs,
+    # update_sprint_status) which perform O(n) SQL queries per row.
+    child_row = frappe.db.get_value(
+        "Sprint Task",
+        {"parent": sprint_name, "task": doc.name},
+        ["name", "rt"],
+        as_dict=True,
+    )
+
+    if child_row and flt(child_row.rt) != flt(doc.rt):
+        frappe.db.set_value("Sprint Task", child_row.name, "rt", doc.rt)

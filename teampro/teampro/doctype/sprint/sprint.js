@@ -331,7 +331,7 @@ else{
 			})
 		}
 		}
-		if (frm.doc.service !== 'CMN') {
+		if (frm.doc.service !== 'CMN' && frm.doc.workflow_state =="Planned") {
 		frm.add_custom_button(__("Send Planned Mail"),function(){
 
 			frappe.call({

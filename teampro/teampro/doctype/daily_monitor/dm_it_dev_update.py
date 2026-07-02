@@ -30,7 +30,7 @@ def dpr_task_mail_it_dev_update(date,name,service,type,dev_team,sprint):
     recievers.append('dineshbabu.k@groupteampro.com')
     # recievers.append('muthuselvan.e@groupteampro.com')
     task_data=frappe.get_doc("Daily Monitor",name)
-    task = frappe.db.get_all("Task", {"custom_production_date":date,"type":type,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to asc')
+    task = frappe.db.get_all("Task", {"custom_production_date":date,"type":type,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to')
     if task_data.dsr_check==1:
         if type =="OPS":
             count=1

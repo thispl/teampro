@@ -61,32 +61,56 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
     flex-shrink: 0;
     }
     .dashboard-card {
+        position: relative;
         width: 190px;
+        min-width: 190px;
+        background: #fff;
+        border: 1px solid #dcdcdc;
         border-radius: 12px;
-        padding: 10px;
-        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        transition: .25s;
         flex-shrink: 0;
+        overflow: hidden;
     }
-    .card-inner {
-        background-color: white;
-        padding: 20px 10px;
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    .dashboard-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 18px rgba(0,0,0,.15);
     }
-    .card-inner h3 {
+    .card-top-line {
+        height: 4px;
+        width: 100%;
         margin: 0;
-        font-size: 17px;
-        font-weight: bold;
-        color: #222;
-        text-align: center;
-        white-space: normal;
+        border-radius: 0;
     }
-    .card-inner .amount {
-        font-size: 22px;
+    .card-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        padding: 20px 15px;
+    }
+    .card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: #f3f6fb;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 8px;
+    }
+    .card-icon i {
+        font-size: 20px;
+    }
+    .card-title {
+        font-size: 14px;
         font-weight: bold;
-        color: green;
-        margin-top: 10px;
-        text-align: center;
+        margin-bottom: 5px;
+        color: #24344d;
+    }
+    .card-value {
+        font-size: 24px;
+        font-weight: bold;
     }
       .monitor-toggle-card.selected-card {
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
@@ -134,6 +158,7 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
         
 `;
     $(wrapper).html(`
+        <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" rel="stylesheet" />
         <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -143,112 +168,158 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
                 <h2 style="text-align: center; font-weight: bold; margin: 0;">DND DASHBOARD</h2>
                 <div id="current-datetime" style="font-size: 16px; color: #666; text-align: center; margin-top: 5px;"></div>
             </div>
-            <div id="rec-i-metrics-cards" style="display: flex; justify-content:space-around; gap: 10px; margin: 30px 20px 0; flex-wrap: nowrap;background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-                <div class="dashboard-card teampro-closure-count-card" style="background-color: #007BFF; width:11%; height:125px; "></div>
-                <div class="dashboard-card candidate-agent-closure-count-card" style="background-color: #6C757D; width:11%; height:125px; "></div>
-                <div class="dashboard-card agent-closure-count-card" style="background-color: #8c7bf4ff; width:11%; height:125px; "></div>
-                <div class="dashboard-card supp-closure-count-card" style="background-color: #5ee274ff; width:11%; height:125px; "></div>
-                <div class="dashboard-card client-closure-count-card" style="background-color: #17A2B8; width:11%; height:125px; "></div>
-                <div class="dashboard-card so_pending" style="background-color: #171fb8ff; width:11%; height:125px; "></div>
-                <div class="dashboard-card nepal-closure-count-card" style="background-color: #e9ff40ff; width:11%; height:125px; "></div>
-                <div class="dashboard-card srilanka-closure-count-card" style="background-color: #f079f9ff; width:11%; height:125px; "></div>
+            <div id="rec-i-metrics-cards" style="display: flex; justify-content:flex-start; gap: 15px; margin: 30px 20px 0; flex-wrap: wrap;background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 15px; box-sizing: border-box;">
+                <div class="dashboard-card teampro-closure-count-card"></div>
+                <div class="dashboard-card candidate-agent-closure-count-card"></div>
+                <div class="dashboard-card agent-closure-count-card"></div>
+                <div class="dashboard-card supp-closure-count-card"></div>
+                <div class="dashboard-card client-closure-count-card"></div>
+                <div class="dashboard-card so_pending"></div>
+                <div class="dashboard-card nepal-closure-count-card"></div>
+                <div class="dashboard-card srilanka-closure-count-card"></div>
                 
-            </div>
-
-            <div id="closure-matrix-container" style="margin: 40px 20px;border: 1px solid #ddd; border-radius: 8px;background-color: #f5f5f5;margin-left:20px;margin-right:20px;">
-            
-                <h4 style="margin-bottom: 10px; text-align:left; margin-left:10px; margin-right:10px;  margin-top:15px; position: relative;">
-                   TERRITORY-WISE CLOSURE STATUS
-
-                <div style="position: absolute; top: -5px; right: 10px; z-index: 10;">
-                <button id="download-closure-table" style="background-color:black; color:white;" class="btn btn-secondary">Download</button> 
-                </div>
-                
-
-                <div id="closure-matrix-table" style="margin-top: 0px;"></div>
-                    
             </div>
 
             <div id="closure-matrix-container"
-                    style="margin:40px 20px;border:1px solid #ddd;border-radius:8px;background-color:#f5f5f5;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 15px;flex-wrap:nowrap;">
-                        <h4 style="margin:0;white-space:nowrap;">
-                            Candidate Project Summary (Task / Candidate)
-                        </h4>
-                        <div style="display:flex;align-items:center;gap:15px;">
-                            <button id="task-view-btn"
-                                class="btn btn-primary btn-sm"
-                                style="
-                                    background-color:#1E3A8A;
-                                    border-color:#334155;
-                                ">
-                                <img src="https://cdn-icons-png.flaticon.com/128/2921/2921222.png"
-                                style="width:20px;height:20px;filter:brightness(0) invert(1);">
-                            </button>
-                            <select id="pending-status-filter"
-                                    class="form-control"
-                                    style="
-                                        width:220px;
-                                        display:none;
-                                    ">
+    style="margin:40px 20px;border:1px solid #ddd;border-radius:8px;background-color:#f5f5f5;">
 
-                                    <option value="">Pending with All</option>
-                                    <option value="Customer">Customer </option>
-                                    <option value="TEAMPRO">TEAMPRO </option>
-                                    <option value="Candidate">Candidate</option>
-                                    <option value="Supplier">Supplier </option>
+    <!-- Header -->
+    <div style="padding:15px;">
 
-                            </select>
-                            <button id="closure-view-btn"
-                                class="btn btn-primary btn-sm"
-                                style="
-                                    background-color:#0F766E;
-                                    border-color:#334155;
-                                ">
-                                <img src="https://cdn-icons-png.flaticon.com/128/681/681494.png"
-                style="width:22px;height:22px;filter:brightness(0) invert(1);">
-                            </button>
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            background-color:white;
+            padding:9px 15px;
+            border-radius:6px;
+            width:100%;
+            box-sizing:border-box;
+        ">
 
-                            <select id="closure-status-filter"
-                                class="form-control"
-                                style="
-                                    width:220px;
-                                    display:none;
-                                ">
+            <h4 style="margin:0;">
+                TERRITORY-WISE CLOSURE STATUS
+            </h4>
 
-                                <option value="">All Status</option>
+            <button
+                id="download-closure-table"
+                style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+                <img
+                    src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                    style="width:22px;height:22px;">
+            </button>
 
-                            </select>
-                            <button id="download-excel" title="Download Excel"
-                                style="background:none;border:none;width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
-                                <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
-                                    style="width:24px;height:24px;">
-                            </button>
+        </div>
 
-                        </div>
+    </div>
 
-                    </div>
+    <!-- Table -->
+    <div id="closure-matrix-table" style="margin-top:0px;"></div>
 
-                    <div id="closure-unified-container"
+</div>
+
+            <div id="closure-matrix-container"
+    style="margin:40px 20px;border:1px solid #ddd;border-radius:8px;background-color:#f5f5f5;">
+
+    <!-- Header -->
+    <div style="padding:15px;">
+
+        <div style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            background-color:white;
+            padding:0px 15px;
+            border-radius:6px;
+            width:100%;
+            box-sizing:border-box;
+        ">
+
+            <h4 style="margin:0;white-space:nowrap;">
+                Candidate Project Summary (Task / Candidate)
+            </h4>
+
+            <div style="display:flex;align-items:center;gap:15px;">
+
+                <button id="task-view-btn"
+                    class="btn btn-primary btn-sm"
                     style="
-                        margin-top:0px;
-                        height:90vh;
-                        overflow-y:auto;
-                        border:1px solid #ddd;
+                        background-color:#1E3A8A;
+                        border-color:#334155;
                     ">
-                </div>
-                </div>
-                    
-                
+                    <img src="https://cdn-icons-png.flaticon.com/128/2921/2921222.png"
+                        style="width:20px;height:20px;filter:brightness(0) invert(1);">
+                </button>
 
-                
-                    
-            </div>   
+                <select id="pending-status-filter"
+                    class="form-control"
+                    style="
+                        width:220px;
+                        display:none;
+                    ">
+                    <option value="">Pending with All</option>
+                    <option value="Customer">Customer</option>
+                    <option value="TEAMPRO">TEAMPRO</option>
+                    <option value="Candidate">Candidate</option>
+                    <option value="Supplier">Supplier</option>
+                </select>
 
+                <button id="closure-view-btn"
+                    class="btn btn-primary btn-sm"
+                    style="
+                        background-color:#0F766E;
+                        border-color:#334155;
+                    ">
+                    <img src="https://cdn-icons-png.flaticon.com/128/681/681494.png"
+                        style="width:22px;height:22px;filter:brightness(0) invert(1);">
+                </button>
 
+                <select id="closure-status-filter"
+                    class="form-control"
+                    style="
+                        width:220px;
+                        display:none;
+                    ">
+                    <option value="">All Status</option>
+                </select>
+
+                <button id="download-excel"
+                    title="Download Excel"
+                    style="
+                        background:none;
+                        border:none;
+                        width:42px;
+                        height:42px;
+                        border-radius:50%;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        cursor:pointer;
+                    ">
+                    <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                        style="width:24px;height:24px;">
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Table Container -->
+    <div id="closure-unified-container"
+        style="
+            margin-top:0;
+            height:90vh;
+            overflow-y:auto;
+            border-top:1px solid #ddd;
+        ">
+    </div>
+
+</div>
         
 <!-- SO Details -->
-<div class="closure-matrix-container" style="display: flex; gap: 20px; margin: 20px;">
+<div class="closure-matrix-container" style="display: flex; gap: 20px; margin: 20px; margin-top:0px;">
     <!-- Table 1 -->
     <div style="flex: 1; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
         <!-- Heading + Download -->
@@ -256,10 +327,15 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
             <h4 style="margin:0;text-align:left;font-size:16px;font-weight:600;">
                 CLOSURE "DROPPED" - SALES ORDER NOT UPDATED
             </h4>
-            <button id="download_closure_btn"
-                style="background-color:black;color:white;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:13px;font-weight:500;">
-                Download
-            </button>
+            <button 
+    id="download_closure_btn"
+    style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+    <img 
+        src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:22px;height:22px;"
+    >
+</button>
+
         </div>
         <div id="monitor-table-1"
             style="overflow:auto;max-height:400px;border:1px solid #ddd;padding:10px;">
@@ -267,16 +343,21 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
     </div>
 
     <!-- Table 2 -->
-    <div style="flex: 1; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
+    <div style="flex: 1; background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px; margin-top:0px">
         <!-- Heading + Download -->
         <div style="display:flex;justify-content:space-between;align-items:center;background-color:white;margin-top:20px;margin-bottom:15px;padding:10px 15px;border-radius:6px;">
             <h4 style="margin:0;text-align:left;font-size:16px;font-weight:600;">
                 CLOSURE "ARRIVED" - SALES ORDER NOT UPDATED
             </h4>
-            <button id="download_arrived_btn"
-                style="background-color:black;color:white;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:13px;font-weight:500;">
-                Download
-            </button>
+            <button 
+    id="download_arrived_btn"
+    style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+    <img 
+        src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:22px;height:22px;"
+    >
+</button>
+
         </div>
         <div id="monitor-table-2"
             style="overflow:auto;max-height:400px;border:1px solid #ddd;padding:10px;">
@@ -290,7 +371,7 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
 </div>
 
 
-            <div id="ptsr-sections-wrapper" style="margin-right: 20px; margin-left: 20px; margin-bottom:100px;" ></div>
+            <div id="ptsr-sections-wrapper" style="margin-right: 20px; margin-left: 20px; margin-bottom:-90px;" ></div>
 
             
             
@@ -312,27 +393,27 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
     <div id="feedback-section" class="ptsr-filter-section"></div>
 `);
 
-//     $(wrapper).find('#monitor-toggle-cards').before(`
-//     <div style="margin-top:30px;margin-bottom:30px; display: flex;  align-items: center; justify-content: center;gap: 15px;border: 1px solid #ddd; border-radius: 8px;background-color: #f5f5f5;margin-left:20px;margin-right:20px;">
+    //     $(wrapper).find('#monitor-toggle-cards').before(`
+    //     <div style="margin-top:30px;margin-bottom:30px; display: flex;  align-items: center; justify-content: center;gap: 15px;border: 1px solid #ddd; border-radius: 8px;background-color: #f5f5f5;margin-left:20px;margin-right:20px;">
 
-//         <button class="btn btn-sm btn-outline-primary" id="select-all-cards" style="margin-top:10px;margin-bottom:10px;">Select All</button>
-//         <button class="btn btn-sm btn-outline-danger" id="deselect-all-cards">Deselect All</button>
+    //         <button class="btn btn-sm btn-outline-primary" id="select-all-cards" style="margin-top:10px;margin-bottom:10px;">Select All</button>
+    //         <button class="btn btn-sm btn-outline-danger" id="deselect-all-cards">Deselect All</button>
 
-//         <!-- Monitor Toggle Buttons Inline -->
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#teampro">INTERNAL</button>
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#candidate_agent">CANDIDATE</button>
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#agent">AGENT</button>
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#supp_follow_up">SUPPLIER</button>
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#client">CLIENT</button>
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#nepal">NEPAL</button>
-//         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#srilanka">SRILANKA</button>
-        
-        
-//         <button type="button" class="btn btn-sm btn-outline-primary monitor-toggle-card"
-         
-       
-//     </div>
-// `);
+    //         <!-- Monitor Toggle Buttons Inline -->
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#teampro">INTERNAL</button>
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#candidate_agent">CANDIDATE</button>
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#agent">AGENT</button>
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#supp_follow_up">SUPPLIER</button>
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#client">CLIENT</button>
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#nepal">NEPAL</button>
+    //         <button type="button" class="btn btn-sm btn-sm btn-outline-primary monitor-toggle-card" data-target="#srilanka">SRILANKA</button>
+
+
+    //         <button type="button" class="btn btn-sm btn-outline-primary monitor-toggle-card"
+
+
+    //     </div>
+    // `);
     // Add unified control + toggle card bar
     $(wrapper).find('#ptsr-sections-wrapper').before(`
 
@@ -380,19 +461,19 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
 
 `);
 
-$(document).on("click", "#download-excel", function () {
+    $(document).on("click", "#download-excel", function () {
 
-    let d = new frappe.ui.Dialog({
-        title: "Download Options",
-        fields: [
-            {
-                fieldtype: "HTML",
-                fieldname: "options_html"
-            }
-        ]
-    });
+        let d = new frappe.ui.Dialog({
+            title: "Download Options",
+            fields: [
+                {
+                    fieldtype: "HTML",
+                    fieldname: "options_html"
+                }
+            ]
+        });
 
-    d.fields_dict.options_html.$wrapper.html(`
+        d.fields_dict.options_html.$wrapper.html(`
         <div style="text-align:center; padding:10px;">
 
             <p style="
@@ -429,138 +510,130 @@ $(document).on("click", "#download-excel", function () {
         </div>
     `);
 
-    d.show();
+        d.show();
 
-    
-    $(document).on("click", "#download-task", function () {
+        $(document).on("click", "#download-task", function () {
+            d.hide();
+            window.open("/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_task_summary");
+        });
 
-        d.hide();
-
-                    window.open("/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_task_summary");
-
+        d.$wrapper.on("click", "#download-candidate", function () {
+            d.hide();
+            window.open(
+                "/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_candidate_summary"
+            );
+        });
 
     });
 
-    d.$wrapper.on("click", "#download-candidate", function () {
 
-        d.hide();
+    frappe.call({
+        method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_dropped_closure_active_so",
+        callback: function (r) {
+            let data = r.message || [];
+            render_table("monitor-table-1", data);
+        }
+    });
+
+
+
+    $("#download_closure_btn").off("click").on("click", function () {
 
         window.open(
-            "/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_candidate_summary"
+            "/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_dropped_closure_active_so_excel"
         );
 
     });
 
-});
+    document.getElementById("loading-table-2").style.display = "block";
 
+    frappe.call({
+        method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_arrived_closure_active_so",
+        callback: function (r) {
 
-frappe.call({
-    method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_dropped_closure_active_so",
-    callback: function(r) {
-        let data = r.message || [];
-        render_table("monitor-table-1", data);
-    }
-});
+            let data = r.message || [];
 
+            render_table("monitor-table-2", data);
+            document.getElementById("loading-table-2").style.display = "none";
+        }
+    });
 
+    $("#download_arrived_btn").off("click").on("click", function () {
 
-$("#download_closure_btn").off("click").on("click", function () {
+        window.open(
+            "/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_arrived_closure_active_so_excel"
+        );
 
-    window.open(
-        "/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_dropped_closure_active_so_excel"
-    );
-
-});
-
-document.getElementById("loading-table-2").style.display = "block";
-
-frappe.call({
-    method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_arrived_closure_active_so",
-    callback: function(r) {
-
-        let data = r.message || [];
-
-        render_table("monitor-table-2", data);
-        document.getElementById("loading-table-2").style.display = "none";
-    }
-});
-
-$("#download_arrived_btn").off("click").on("click", function () {
-
-    window.open(
-        "/api/method/jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.download_arrived_closure_active_so_excel"
-    );
-
-});
+    });
 
 
 
-// function render_table(container_id, data) {
+    // function render_table(container_id, data) {
 
-//     let container = document.getElementById(container_id);
+    //     let container = document.getElementById(container_id);
 
-//     if (!container) return;
+    //     if (!container) return;
 
-//     if (!data || data.length === 0) {
-//         container.innerHTML = `<p style="text-align:center;">No Data Available</p>`;
-//         return;
-//     }
+    //     if (!data || data.length === 0) {
+    //         container.innerHTML = `<p style="text-align:center;">No Data Available</p>`;
+    //         return;
+    //     }
 
-//     let html = `
-//         <div class="custom-table-wrapper">
-//             <table class="custom-table">
-//                 <thead>
-//                     <tr>
-//                         <th>S#</th>
-//                         <th>Cl#</th>
-//                         <th>PP#</th>
-//                         <th>Name</th>
-//                         <th>Client</th>
-//                     </tr>
-//                 </thead>
-//                 <tbody>
-//     `;
-//     let s_no = 1
+    //     let html = `
+    //         <div class="custom-table-wrapper">
+    //             <table class="custom-table">
+    //                 <thead>
+    //                     <tr>
+    //                         <th>S#</th>
+    //                         <th>Cl#</th>
+    //                         <th>PP#</th>
+    //                         <th>Name</th>
+    //                         <th>Client</th>
+    //                     </tr>
+    //                 </thead>
+    //                 <tbody>
+    //     `;
+    //     let s_no = 1
 
-//     data.forEach(row => {
-//         html += `
-//             <tr>
-//                 <td>${s_no++}</td>
-//                 <td>
-//                     <a href="/app/closure/${row.closure_id}" target="_blank">
-//                         ${row.closure_id || "-"}
-//                     </a>
-//                 </td>
-//                 <td>${row.passport_number || "-"}</td>
-//                 <td style="text-align:left;">${row.name || "-"}</td>
-//                 <td style="text-align:left;">${row.client || "-"}</td>
-//             </tr>
-//         `;
-        
-//     });
-    
+    //     data.forEach(row => {
+    //         html += `
+    //             <tr>
+    //                 <td>${s_no++}</td>
+    //                 <td>
+    //                     <a href="/app/closure/${row.closure_id}" target="_blank">
+    //                         ${row.closure_id || "-"}
+    //                     </a>
+    //                 </td>
+    //                 <td>${row.passport_number || "-"}</td>
+    //                 <td style="text-align:left;">${row.name || "-"}</td>
+    //                 <td style="text-align:left;">${row.client || "-"}</td>
+    //             </tr>
+    //         `;
 
-//     html += `
-//                 </tbody>
-//             </table>
-//         </div>
-//     `;
+    //     });
 
-//     container.innerHTML = html;
-// }
 
-function render_table(container_id, data) {
+    //     html += `
+    //                 </tbody>
+    //             </table>
+    //         </div>
+    //     `;
 
-    let container = document.getElementById(container_id);
+    //     container.innerHTML = html;
+    // }
 
-    if (!container) return;
+    function render_table(container_id, data) {
 
-    if (!data || data.length === 0) {
-        container.innerHTML = `<p style="text-align:center;">No Data Available</p>`;
-        return;
-    }
+        let container = document.getElementById(container_id);
 
-    let html = `
+        if (!container) return;
+
+        if (!data || data.length === 0) {
+            container.innerHTML = `<p style="text-align:center;">No Data Available</p>`;
+            return;
+        }
+
+        let html = `
         <div class="custom-table-wrapper">
             <table class="custom-table" style="
                 width:100%;
@@ -594,16 +667,16 @@ function render_table(container_id, data) {
                 <tbody>
     `;
 
-    let s_no = 1;
+        let s_no = 1;
 
-    data.forEach((row, index) => {
+        data.forEach((row, index) => {
 
-        // ODD / EVEN ROW COLOR
-        let bg = (index % 2 === 0)
-            ? "#FFFFFF"
-            : "#E7E6EC";
+            // ODD / EVEN ROW COLOR
+            let bg = (index % 2 === 0)
+                ? "#FFFFFF"
+                : "#E7E6EC";
 
-        html += `
+            html += `
             <tr style="background:${bg};">
 
                 <td style="
@@ -654,16 +727,16 @@ function render_table(container_id, data) {
 
             </tr>
         `;
-    });
+        });
 
-    html += `
+        html += `
                 </tbody>
             </table>
         </div>
     `;
 
-    container.innerHTML = html;
-}
+        container.innerHTML = html;
+    }
 
     //Select All
     // $('#select-all-cards').on('click', function () {
@@ -917,59 +990,59 @@ function render_table(container_id, data) {
 
 
     function attachTeamproFilterHandler() {
-    const applyFilter = () => {
-        const selectedStatus = $('#status-select-teampro').val();
-        const selectedClient = $('#client-select-teampro').val();
-        const selectedTerritory = $('#territory-select-teampro')?.val() || "";
+        const applyFilter = () => {
+            const selectedStatus = $('#status-select-teampro').val();
+            const selectedClient = $('#client-select-teampro').val();
+            const selectedTerritory = $('#territory-select-teampro')?.val() || "";
 
-        const statusList = selectedStatus
-            ? [selectedStatus]
-            : ["PSL", "Emigration", "Ticket", "Onboarding"];
+            const statusList = selectedStatus
+                ? [selectedStatus]
+                : ["PSL", "Emigration", "Ticket", "Onboarding"];
 
-        frappe.call({
-            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise",
-            args: {
-                status: JSON.stringify(statusList),
-                territory: selectedTerritory,
-                client: selectedClient
-            },
-            callback: function (r) {
-                const data = r.message?.closure || [];
-                const sectionHtml = data.length > 0
-                    ? generateTeamproTable(data, "INTERNAL")
-                    : `<div style="min-height:600px;">
+            frappe.call({
+                method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise",
+                args: {
+                    status: JSON.stringify(statusList),
+                    territory: selectedTerritory,
+                    client: selectedClient
+                },
+                callback: function (r) {
+                    const data = r.message?.closure || [];
+                    const sectionHtml = data.length > 0
+                        ? generateTeamproTable(data, "INTERNAL")
+                        : `<div style="min-height:600px;">
                         <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
                         <button id="back-teampro" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary">Back</button>
                       </div>`;
 
-                const targetSelector = targetMap["INTERNAL"] || "#ptsr-sections-wrapper";
-                $(wrapper).find(targetSelector).html(sectionHtml);
+                    const targetSelector = targetMap["INTERNAL"] || "#ptsr-sections-wrapper";
+                    $(wrapper).find(targetSelector).html(sectionHtml);
 
-                // Repopulate dropdowns after re-render
-                populateTerritoryDropdown();
-                populateClientDropdown();
+                    // Repopulate dropdowns after re-render
+                    populateTerritoryDropdown();
+                    populateClientDropdown();
 
-                // Re-attach change listeners using delegation
-                $('#teampro').off('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro');
-                $('#teampro').on('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro', applyFilter);
+                    // Re-attach change listeners using delegation
+                    $('#teampro').off('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro');
+                    $('#teampro').on('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro', applyFilter);
 
-                // Back button
-                document.getElementById("back-teampro")?.addEventListener("click", loadDefaultTeamproData);
-                attachTeamproFilterHandler();
+                    // Back button
+                    document.getElementById("back-teampro")?.addEventListener("click", loadDefaultTeamproData);
+                    attachTeamproFilterHandler();
 
-                // Download button
-                const downloadBtn = document.getElementById("download-closure-teampro");
-                if (downloadBtn) {
-                    downloadBtn.addEventListener("click", downloadTeamproExcel);
+                    // Download button
+                    const downloadBtn = document.getElementById("download-closure-teampro");
+                    if (downloadBtn) {
+                        downloadBtn.addEventListener("click", downloadTeamproExcel);
+                    }
                 }
-            }
-        });
-    };
+            });
+        };
 
-    // Initial binding (when page loads)
-    $('#teampro').off('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro');
-    $('#teampro').on('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro', applyFilter);
-}
+        // Initial binding (when page loads)
+        $('#teampro').off('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro');
+        $('#teampro').on('change', '#status-select-teampro, #client-select-teampro, #territory-select-teampro', applyFilter);
+    }
 
 
     // function attachTeamproFilterHandler() {
@@ -1241,16 +1314,16 @@ function render_table(container_id, data) {
     //     });
     // }
 
-    function attachCandidateFilterHandler(){
-    const applyFilter = () => {
-        const selectedStatus = $('#status-select-candidate').val();
-        const selectedClient = $('#client-select-candidate').val();
+    function attachCandidateFilterHandler() {
+        const applyFilter = () => {
+            const selectedStatus = $('#status-select-candidate').val();
+            const selectedClient = $('#client-select-candidate').val();
 
-        const statusList = selectedStatus
+            const statusList = selectedStatus
                 ? [selectedStatus]
                 : ["Signed Offer Letter", "Premedical", "PCC", "Final Medical"];
 
-        frappe.call({
+            frappe.call({
                 method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_candidate",
                 args: {
                     status: JSON.stringify(statusList),
@@ -1268,31 +1341,31 @@ function render_table(container_id, data) {
                     const targetSelector = targetMap["CANDIDATE"] || "#ptsr-sections-wrapper";
                     $(wrapper).find(targetSelector).html(sectionHtml);
 
-            populateTerritoryDropdowncan();
-            populateClientDropdowncan();
+                    populateTerritoryDropdowncan();
+                    populateClientDropdowncan();
 
-            $('#candidate_agent').off('change', '#status-select-candidate, #client-select-candidate');
-            $('#candidate_agent').on('change', '#status-select-candidate, #client-select-candidate', applyFilter);
+                    $('#candidate_agent').off('change', '#status-select-candidate, #client-select-candidate');
+                    $('#candidate_agent').on('change', '#status-select-candidate, #client-select-candidate', applyFilter);
 
 
-            document.getElementById("back-candidate")?.addEventListener("click", loadDefaultCandidateData);
+                    document.getElementById("back-candidate")?.addEventListener("click", loadDefaultCandidateData);
 
-            attachCandidateFilterHandler();
+                    attachCandidateFilterHandler();
 
-            const downloadBtn = document.getElementById("download-closure-candidate");
-            if (downloadBtn) {
-                downloadBtn.addEventListener("click", downloadCandidateExcel);
-            }
-            }
-        });
+                    const downloadBtn = document.getElementById("download-closure-candidate");
+                    if (downloadBtn) {
+                        downloadBtn.addEventListener("click", downloadCandidateExcel);
+                    }
+                }
+            });
 
-    };
-    $('#candidate_agent').off('change', '#status-select-candidate, #client-select-candidate');
-    $('#candidate_agent').on('change', '#status-select-candidate, #client-select-candidate', applyFilter);
+        };
+        $('#candidate_agent').off('change', '#status-select-candidate, #client-select-candidate');
+        $('#candidate_agent').on('change', '#status-select-candidate, #client-select-candidate', applyFilter);
 
-}
+    }
 
-    
+
 
 
     // ✅ Initial call on page load
@@ -1449,52 +1522,52 @@ function render_table(container_id, data) {
 
 
     function attachAgentFilterHandler() {
-    const applyFilter = () => {
-        const selectedStatus = document.getElementById("status-select-agent").value;
-        const selectedClient = document.getElementById("client-select-agent").value;
+        const applyFilter = () => {
+            const selectedStatus = document.getElementById("status-select-agent").value;
+            const selectedClient = document.getElementById("client-select-agent").value;
 
-        const statusList = selectedStatus
-            ? [selectedStatus]
-            : ["Signed Offer Letter", "Premedical", "PCC", "Final Medical"];
+            const statusList = selectedStatus
+                ? [selectedStatus]
+                : ["Signed Offer Letter", "Premedical", "PCC", "Final Medical"];
 
-        frappe.call({
-            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_agent",
-            args: {
-                status: JSON.stringify(statusList),
-                client: selectedClient
-            },
-            callback: function (r) {
-                const data = r.message?.closure || [];
-                const sectionHtml = data.length > 0
+            frappe.call({
+                method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_agent",
+                args: {
+                    status: JSON.stringify(statusList),
+                    client: selectedClient
+                },
+                callback: function (r) {
+                    const data = r.message?.closure || [];
+                    const sectionHtml = data.length > 0
                         ? generateAgentTable(data, "AGENT")
                         : `<div style="min-height:600px;" >
                         <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
                        <button id="back-agent" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary" >Back</button></div>`;
 
-                // Render table inside #agent
-                $('#agent').html(sectionHtml);
+                    // Render table inside #agent
+                    $('#agent').html(sectionHtml);
 
-                // Repopulate dropdowns
-                populateTerritoryDropdownage();
-                populateClientDropdownage();
+                    // Repopulate dropdowns
+                    populateTerritoryDropdownage();
+                    populateClientDropdownage();
 
-                // Bind change events inside #agent only
-                $('#agent').off('change', '#status-select-agent, #client-select-agent');
-                $('#agent').on('change', '#status-select-agent, #client-select-agent', applyFilter);
+                    // Bind change events inside #agent only
+                    $('#agent').off('change', '#status-select-agent, #client-select-agent');
+                    $('#agent').on('change', '#status-select-agent, #client-select-agent', applyFilter);
 
-                document.getElementById("back-agent")?.addEventListener("click", loadDefaultAgentData);
-                attachAgentFilterHandler(); // re-attach after default load
+                    document.getElementById("back-agent")?.addEventListener("click", loadDefaultAgentData);
+                    attachAgentFilterHandler(); // re-attach after default load
 
-                // Download button
-                $('#download-closure-agent').off('click').on('click', downloadAgentExcel);
-            }
-        });
-    };
+                    // Download button
+                    $('#download-closure-agent').off('click').on('click', downloadAgentExcel);
+                }
+            });
+        };
 
-    // Initial binding inside #agent
-    $('#agent').off('change', '#status-select-agent, #client-select-agent');
-    $('#agent').on('change', '#status-select-agent, #client-select-agent', applyFilter);
-}
+        // Initial binding inside #agent
+        $('#agent').off('change', '#status-select-agent, #client-select-agent');
+        $('#agent').on('change', '#status-select-agent, #client-select-agent', applyFilter);
+    }
 
     // ✅ Initial call on page load
     loadDefaultAgentData();
@@ -1650,51 +1723,51 @@ function render_table(container_id, data) {
 
 
     function attachSFUFilterHandler() {
-    const applyFilter = () => {
-        const selectedStatus = document.getElementById("status-select-sfu").value;
-        const selectedClient = document.getElementById("client-select-sfu").value;
+        const applyFilter = () => {
+            const selectedStatus = document.getElementById("status-select-sfu").value;
+            const selectedClient = document.getElementById("client-select-sfu").value;
 
-         const statusList = selectedStatus
+            const statusList = selectedStatus
                 ? [selectedStatus]
                 : ["Certificate Attestation", "Biometric", "Trade Test", "Visa Stamping"];
 
-        frappe.call({
-            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise",
-            args: {
-                status: JSON.stringify(statusList),
-                client: selectedClient
-            },
-            callback: function (r) {
-                const data = r.message?.closure || [];
-                const sectionHtml = data.length > 0
+            frappe.call({
+                method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise",
+                args: {
+                    status: JSON.stringify(statusList),
+                    client: selectedClient
+                },
+                callback: function (r) {
+                    const data = r.message?.closure || [];
+                    const sectionHtml = data.length > 0
                         ? generateSFUTable(data, "SUPPLIER")
                         : `<div style="min-height:600px;" >
                         <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
                        <button id="back-agent" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary" >Back</button></div>`;
 
-                // Render table inside #agent
-                $('#supp_follow_up').html(sectionHtml);
+                    // Render table inside #agent
+                    $('#supp_follow_up').html(sectionHtml);
 
-                populateTerritoryDropdownsfu();
-                populateClientDropdownsfu();
+                    populateTerritoryDropdownsfu();
+                    populateClientDropdownsfu();
 
-                // Bind change events inside #agent only
-                $('#supp_follow_up').off('change', '#status-select-agent, #client-select-agent');
-                $('#supp_follow_up').on('change', '#status-select-agent, #client-select-agent', applyFilter);
+                    // Bind change events inside #agent only
+                    $('#supp_follow_up').off('change', '#status-select-agent, #client-select-agent');
+                    $('#supp_follow_up').on('change', '#status-select-agent, #client-select-agent', applyFilter);
 
-                document.getElementById("back-agent")?.addEventListener("click", loadDefaultSFUData);
-                attachSFUFilterHandler(); // re-attach after default load
+                    document.getElementById("back-agent")?.addEventListener("click", loadDefaultSFUData);
+                    attachSFUFilterHandler(); // re-attach after default load
 
-                // Download button
-                $('#download-closure-sfu').off('click').on('click', downloadSupplierExcel);
-            }
-        });
-    };
+                    // Download button
+                    $('#download-closure-sfu').off('click').on('click', downloadSupplierExcel);
+                }
+            });
+        };
 
-    // Initial binding inside #agent
-    $('#supp_follow_up').off('change', '#status-select-sfu, #client-select-sfu');
-    $('#supp_follow_up').on('change', '#status-select-sfu, #client-select-sfu', applyFilter);
-}
+        // Initial binding inside #agent
+        $('#supp_follow_up').off('change', '#status-select-sfu, #client-select-sfu');
+        $('#supp_follow_up').on('change', '#status-select-sfu, #client-select-sfu', applyFilter);
+    }
 
     // ✅ Initial call on page load
     loadDefaultSFUData();
@@ -1850,51 +1923,51 @@ function render_table(container_id, data) {
 
 
     function attachClientFilterHandler() {
-    const applyFilter = () => {
-        const selectedStatus = document.getElementById("status-select-client").value;
-        const selectedClient = document.getElementById("client-select-client").value;
+        const applyFilter = () => {
+            const selectedStatus = document.getElementById("status-select-client").value;
+            const selectedClient = document.getElementById("client-select-client").value;
 
-        const statusList = selectedStatus
+            const statusList = selectedStatus
                 ? [selectedStatus]
                 : ["Client Offer Letter", "Visa"];
 
-        frappe.call({
-            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise",
-            args: {
-                status: JSON.stringify(statusList),
-                client: selectedClient
-            },
-            callback: function (r) {
-                const data = r.message?.closure || [];
-                const sectionHtml = data.length > 0
+            frappe.call({
+                method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise",
+                args: {
+                    status: JSON.stringify(statusList),
+                    client: selectedClient
+                },
+                callback: function (r) {
+                    const data = r.message?.closure || [];
+                    const sectionHtml = data.length > 0
                         ? generateClientTable(data, "CLIENT")
                         : `<div style="min-height:600px;" >
                         <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
                        <button id="back-client" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary" >Back</button></div>`;
 
-                // Render table inside #agent
-                $('#client').html(sectionHtml);
+                    // Render table inside #agent
+                    $('#client').html(sectionHtml);
 
-                populateTerritoryDropdowncli();
-                populateClientDropdowncli();
+                    populateTerritoryDropdowncli();
+                    populateClientDropdowncli();
 
-                // Bind change events inside #agent only
-                $('#client').off('change', '#status-select-client, #client-select-client');
-                $('#client').on('change', '#status-select-client, #client-select-client', applyFilter);
+                    // Bind change events inside #agent only
+                    $('#client').off('change', '#status-select-client, #client-select-client');
+                    $('#client').on('change', '#status-select-client, #client-select-client', applyFilter);
 
-                document.getElementById("back-client")?.addEventListener("click", loadDefaultClientData);
-                attachClientFilterHandler(); // re-attach after default load
+                    document.getElementById("back-client")?.addEventListener("click", loadDefaultClientData);
+                    attachClientFilterHandler(); // re-attach after default load
 
-                // Download button
-                $('#download-closure-client').off('click').on('click', downloadClientExcel);
-            }
-        });
-    };
+                    // Download button
+                    $('#download-closure-client').off('click').on('click', downloadClientExcel);
+                }
+            });
+        };
 
-    // Initial binding inside #agent
-    $('#client').off('change', '#status-select-client, #client-select-client');
-    $('#client').on('change', '#status-select-client, #client-select-client', applyFilter);
-}
+        // Initial binding inside #agent
+        $('#client').off('change', '#status-select-client, #client-select-client');
+        $('#client').on('change', '#status-select-client, #client-select-client', applyFilter);
+    }
 
     // ✅ Initial call on page load
     loadDefaultClientData();
@@ -2063,51 +2136,51 @@ function render_table(container_id, data) {
 
 
     function attachNepalFilterHandler() {
-    const applyFilter = () => {
-        const selectedStatus = document.getElementById("status-select-nepal").value;
-        const selectedClient = document.getElementById("client-select-nepal").value;
+        const applyFilter = () => {
+            const selectedStatus = document.getElementById("status-select-nepal").value;
+            const selectedClient = document.getElementById("client-select-nepal").value;
 
-        const statusList = selectedStatus
+            const statusList = selectedStatus
                 ? [selectedStatus]
                 : ["PSL", "Emigration", "Ticket", "Onboarding", "Signed Offer Letter", "Premedical", "PCC", "Final Medical", "Certificate Attestation", "Biometric", "Trade Test", "Visa Stamping"];
 
-        frappe.call({
-            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_nepal",
-            args: {
-                status: JSON.stringify(statusList),
-                client: selectedClient
-            },
-            callback: function (r) {
-                const data = r.message?.closure || [];
-                const sectionHtml = data.length > 0
+            frappe.call({
+                method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_nepal",
+                args: {
+                    status: JSON.stringify(statusList),
+                    client: selectedClient
+                },
+                callback: function (r) {
+                    const data = r.message?.closure || [];
+                    const sectionHtml = data.length > 0
                         ? generateNepalTable(data, "NEPAL")
                         : `<div style="min-height:600px;" >
                         <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
                        <button id="back-nepal" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary" >Back</button></div>`;
 
-                // Render table inside #agent
-                $('#nepal').html(sectionHtml);
+                    // Render table inside #agent
+                    $('#nepal').html(sectionHtml);
 
-                populateTerritoryDropdownnep();
-                populateClientDropdownnep();
+                    populateTerritoryDropdownnep();
+                    populateClientDropdownnep();
 
-                // Bind change events inside #agent only
-                $('#nepal').off('change', '#status-select-nepal, #client-select-nepal');
-                $('#nepal').on('change', '#status-select-nepal, #client-select-nepal', applyFilter);
+                    // Bind change events inside #agent only
+                    $('#nepal').off('change', '#status-select-nepal, #client-select-nepal');
+                    $('#nepal').on('change', '#status-select-nepal, #client-select-nepal', applyFilter);
 
-                document.getElementById("back-nepal")?.addEventListener("click", loadDefaultNepalData);
-                attachNepalFilterHandler(); // re-attach after default load
+                    document.getElementById("back-nepal")?.addEventListener("click", loadDefaultNepalData);
+                    attachNepalFilterHandler(); // re-attach after default load
 
-                // Download button
-                $('download-closure-nepal').off('click').on('click', downloadNepalExcel);
-            }
-        });
-    };
+                    // Download button
+                    $('download-closure-nepal').off('click').on('click', downloadNepalExcel);
+                }
+            });
+        };
 
-    // Initial binding inside #agent
-    $('#nepal').off('change', '#status-select-nepal, #client-select-nepal');
-    $('#nepal').on('change', '#status-select-nepal, #client-select-nepal', applyFilter);
-}
+        // Initial binding inside #agent
+        $('#nepal').off('change', '#status-select-nepal, #client-select-nepal');
+        $('#nepal').on('change', '#status-select-nepal, #client-select-nepal', applyFilter);
+    }
 
     // ✅ Initial call on page load
     loadDefaultNepalData();
@@ -2242,7 +2315,7 @@ function render_table(container_id, data) {
     //                 const sectionHtml = data.length > 0
     //                     ? generateSrilankaTable(data, "SRILANKA")
     //                     : `<div style="min-height:600px;">
-                        
+
     //                     <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
     //                    <button id="back-srilanka" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary" >Back</button>
     //                    </div>`;
@@ -2271,52 +2344,52 @@ function render_table(container_id, data) {
     // }
 
 
-     function attachSrilankaFilterHandler() {
-    const applyFilter = () => {
-        const selectedStatus = document.getElementById("status-select-srilanka").value;
-        const selectedClient = document.getElementById("client-select-srilanka").value;
+    function attachSrilankaFilterHandler() {
+        const applyFilter = () => {
+            const selectedStatus = document.getElementById("status-select-srilanka").value;
+            const selectedClient = document.getElementById("client-select-srilanka").value;
 
-        const statusList = selectedStatus
+            const statusList = selectedStatus
                 ? [selectedStatus]
                 : ["PSL", "Emigration", "Ticket", "Onboarding", "Signed Offer Letter", "Premedical", "PCC", "Final Medical", "Certificate Attestation", "Biometric", "Trade Test", "Visa Stamping"];
 
-        frappe.call({
-            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_srilanka",
-            args: {
-                status: JSON.stringify(statusList),
-                client: selectedClient
-            },
-            callback: function (r) {
-                const data = r.message?.closure || [];
-                const sectionHtml = data.length > 0
+            frappe.call({
+                method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_srilanka",
+                args: {
+                    status: JSON.stringify(statusList),
+                    client: selectedClient
+                },
+                callback: function (r) {
+                    const data = r.message?.closure || [];
+                    const sectionHtml = data.length > 0
                         ? generateSrilankaTable(data, "SRILANKA")
                         : `<div style="min-height:600px;" >
                         <div style="margin-top: 30px; text-align:center; font-weight:bold;">No Data Available</div>
                        <button id="back-nepal" style="margin-left:725px; margin-top:5px; margin-bottom:5px;" class="btn btn-primary" >Back</button></div>`;
 
-                // Render table inside #agent
-                $('#srilanka').html(sectionHtml);
+                    // Render table inside #agent
+                    $('#srilanka').html(sectionHtml);
 
-                populateTerritoryDropdownsri();
-                populateClientDropdownsri();
+                    populateTerritoryDropdownsri();
+                    populateClientDropdownsri();
 
-                // Bind change events inside #agent only
-                $('#srilanka').off('change', '#status-select-srilanka, #client-select-srilanka');
-                $('#srilanka').on('change', '#status-select-srilanka, #client-select-srilanka', applyFilter);
+                    // Bind change events inside #agent only
+                    $('#srilanka').off('change', '#status-select-srilanka, #client-select-srilanka');
+                    $('#srilanka').on('change', '#status-select-srilanka, #client-select-srilanka', applyFilter);
 
-                document.getElementById("back-srilanka")?.addEventListener("click", loadDefaultSrilankaData);
-                attachSrilankaFilterHandler(); // re-attach after default load
+                    document.getElementById("back-srilanka")?.addEventListener("click", loadDefaultSrilankaData);
+                    attachSrilankaFilterHandler(); // re-attach after default load
 
-                // Download button
-                $('download-closure-srilanka').off('click').on('click', downloadSrilankaExcel);
-            }
-        });
-    };
+                    // Download button
+                    $('download-closure-srilanka').off('click').on('click', downloadSrilankaExcel);
+                }
+            });
+        };
 
-    // Initial binding inside #agent
-    $('#srilanka').off('change', '#status-select-srilanka, #client-select-srilanka');
-    $('#srilanka').on('change', '#status-select-srilanka, #client-select-srilanka', applyFilter);
-}
+        // Initial binding inside #agent
+        $('#srilanka').off('change', '#status-select-srilanka, #client-select-srilanka');
+        $('#srilanka').on('change', '#status-select-srilanka, #client-select-srilanka', applyFilter);
+    }
 
     // ✅ Initial call on page load
     loadDefaultSrilankaData();
@@ -2589,13 +2662,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="10" style="text-align:left;">
@@ -2605,11 +2678,11 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                 <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -2618,15 +2691,15 @@ table td {
 
                             <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
 
                                 <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
@@ -2651,70 +2724,70 @@ table td {
                                 <span class="editable-span">${closure.remark || '-'}</span>
                                 </td>
                             </tr>`;
-                                                });
-
                 });
 
-
-        //     data.forEach((closure, index) => {
-
-
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
-
-        //         // let standard_remarks = "";
-        //         // frappe.db.get_value("Standard Remarks", { "name": closure.standard_remarks }, "standard_remarks").then(r => {
-
-        //         //     if (r.message.standard_remarks) {
-        //         //         standard_remarks = r.message.standard_remarks;
-        //         //     }
-        //         // })
+            });
 
 
-        //         html += `
-        // <tr class="project-header" style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
-
-        //    <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
+            //     data.forEach((closure, index) => {
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
+            //         // let standard_remarks = "";
+            //         // frappe.db.get_value("Standard Remarks", { "name": closure.standard_remarks }, "standard_remarks").then(r => {
 
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
+            //         //     if (r.message.standard_remarks) {
+            //         //         standard_remarks = r.message.standard_remarks;
+            //         //     }
+            //         // })
 
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
-            
-        // </tr>`;
+
+            //         html += `
+            // <tr class="project-header" style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
+
+            //    <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
+
+
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
+
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+            // </tr>`;
 
 
             // });
@@ -2762,13 +2835,13 @@ table td {
                     <tbody>
             `;
 
-            Object.keys(summaryData).forEach(client => {
-                let row = summaryData[client];
-                Object.keys(grandTotal).forEach(key => {
-                    grandTotal[key] += row[key] || 0;
-                });
+        Object.keys(summaryData).forEach(client => {
+            let row = summaryData[client];
+            Object.keys(grandTotal).forEach(key => {
+                grandTotal[key] += row[key] || 0;
+            });
 
-                summaryHtml += `
+            summaryHtml += `
                     <tr>
                         <td style="text-align:left;">${client}</td>
                         <td>${row["Signed Offer Letter"] || "-"}</td>
@@ -2784,9 +2857,9 @@ table td {
                         <td>${row["Onboarding"] || "-"}</td>
                     </tr>
                 `;
-            });
+        });
 
-            summaryHtml += `
+        summaryHtml += `
                 <tr style="font-weight:bold; background:#f0f0f0;">
                     <td>Total</td>
                     <td>${grandTotal["Signed Offer Letter"] || "-"}</td>
@@ -2803,8 +2876,8 @@ table td {
                 </tr>
 `;
 
-            summaryHtml += `</tbody></table></div></div>`;
-        
+        summaryHtml += `</tbody></table></div></div>`;
+
 
         html += summaryHtml;
 
@@ -2812,62 +2885,62 @@ table td {
         return html;
     }
     window.downloadClosureSummaryTable = function () {
-    let table = document.getElementById("closure-summary-table");
+        let table = document.getElementById("closure-summary-table");
 
-    if (!table) {
-        alert("Summary table not found");
-        return;
-    }
+        if (!table) {
+            alert("Summary table not found");
+            return;
+        }
 
-    let csv = [];
+        let csv = [];
 
-    let rows = table.querySelectorAll("tr");
+        let rows = table.querySelectorAll("tr");
 
-    rows.forEach(row => {
-        let cols = row.querySelectorAll("th, td");
-        let rowData = [];
+        rows.forEach(row => {
+            let cols = row.querySelectorAll("th, td");
+            let rowData = [];
 
-        cols.forEach(col => {
-            let text = col.innerText.replace(/\n/g, " ").replace(/,/g, "");
-            rowData.push(`"${text}"`);
+            cols.forEach(col => {
+                let text = col.innerText.replace(/\n/g, " ").replace(/,/g, "");
+                rowData.push(`"${text}"`);
+            });
+
+            csv.push(rowData.join(","));
         });
 
-        csv.push(rowData.join(","));
-    });
+        let csvContent = csv.join("\n");
 
-    let csvContent = csv.join("\n");
+        let blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 
-    let blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        let link = document.createElement("a");
+        let url = URL.createObjectURL(blob);
 
-    let link = document.createElement("a");
-    let url = URL.createObjectURL(blob);
+        link.setAttribute("href", url);
+        link.setAttribute("download", "closure_summary.csv");
 
-    link.setAttribute("href", url);
-    link.setAttribute("download", "closure_summary.csv");
+        document.body.appendChild(link);
+        link.click();
 
-    document.body.appendChild(link);
-    link.click();
-
-    document.body.removeChild(link);
-}
+        document.body.removeChild(link);
+    }
 
 
 
     document.addEventListener("click", function (e) {
 
-            if (!e.target.classList.contains("toggle-btn")) return;
+        if (!e.target.classList.contains("toggle-btn")) return;
 
-            const key = e.target.dataset.client;
-            const rows = document.querySelectorAll(".client-row-" + key);
+        const key = e.target.dataset.client;
+        const rows = document.querySelectorAll(".client-row-" + key);
 
-            const isVisible = rows[0].style.display === "table-row";
+        const isVisible = rows[0].style.display === "table-row";
 
-            rows.forEach(row => {
-                row.style.display = isVisible ? "none" : "table-row";
-            });
-
-            e.target.textContent = isVisible ? "+" : "-";
+        rows.forEach(row => {
+            row.style.display = isVisible ? "none" : "table-row";
         });
+
+        e.target.textContent = isVisible ? "+" : "-";
+    });
 
 
 
@@ -3054,13 +3127,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1;
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="11" style="text-align:left;">
@@ -3070,11 +3143,11 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                 <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -3083,15 +3156,15 @@ table td {
 
                                 <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
 
 
@@ -3118,70 +3191,70 @@ table td {
                                 </td>
                                 
                             </tr>`;
-                                                });
-
                 });
 
-
-        //     data.forEach((closure, index) => {
-
-
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
-
-        //         html += `
-        // <tr class="project-header candidate-row"
-        //         data-candidate_name="${closure.given_name || ''}"
-        //         data-mobile_number="${closure.mobile || ''}"
-        //         style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
-
-        //      <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
+            });
 
 
+            //     data.forEach((closure, index) => {
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
-            
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
+            //         html += `
+            // <tr class="project-header candidate-row"
+            //         data-candidate_name="${closure.given_name || ''}"
+            //         data-mobile_number="${closure.mobile || ''}"
+            //         style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
 
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
-            
-            
-        // </tr>`;
+            //      <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
 
 
-        //     });
+
+
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
+
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+
+            // </tr>`;
+
+
+            //     });
 
 
 
@@ -3232,7 +3305,7 @@ table td {
                     <td style="text-align:left;">${client}</td>
                     <td style="text-align:center;">${row["Signed Offer Letter"] || "-"}</td>
                     <td style="text-align:center;">${row["Premedical"] || "-"}</td>
-                    <td style="text-align:center;">${row["PCC"] || "-" }</td>
+                    <td style="text-align:center;">${row["PCC"] || "-"}</td>
                     <td style="text-align:center;">${row["Final Medical"] || "-"}</td>
                 </tr>
             `;
@@ -3476,13 +3549,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1;
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="13" style="text-align:left;">
@@ -3492,11 +3565,11 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                 <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -3505,15 +3578,15 @@ table td {
 
                                 <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
 
 
@@ -3546,68 +3619,68 @@ table td {
                                 <td style="text-align:left !important;" >${closure.sa_name || '-'}</td>
                                 <td style="text-align:left !important;" >${closure.sa_mobile_number || '-'}</td>
                             </tr>`;
-                                                });
-
                 });
 
-
-        //     data.forEach((closure, index) => {
-
-
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
-
-        //         html += `
-        // <tr class="project-header" style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
-
-        //      <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
+            });
 
 
+            //     data.forEach((closure, index) => {
+
+
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
+
+            //         html += `
+            // <tr class="project-header" style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
+
+            //      <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
 
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
-            
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
-
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
-
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
 
 
-        //     <td style="text-align:left !important;" >${closure.sa_name || '-'}</td>
-        //     <td style="text-align:left !important;" >${closure.sa_mobile_number || '-'}</td>
-            
-        // </tr>`;
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
+
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+
+            //     <td style="text-align:left !important;" >${closure.sa_name || '-'}</td>
+            //     <td style="text-align:left !important;" >${closure.sa_mobile_number || '-'}</td>
+
+            // </tr>`;
 
 
             // });
@@ -3679,7 +3752,7 @@ table td {
         `;
         summaryHtml += `</tbody></table></div></div>`;
 
-    html += summaryHtml;
+        html += summaryHtml;
 
         return html;
     }
@@ -3766,7 +3839,7 @@ table td {
                 grandTotal[status]++;
             }
         });
-    
+
 
         let html = `
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -3904,13 +3977,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1;
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="13" style="text-align:left;">
@@ -3920,24 +3993,24 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                        let con = ""
+                    let con = ""
 
-                        frappe.db.get_value("Supplier", { "name": closure.associate }, "mobile_no").then(r => {
+                    frappe.db.get_value("Supplier", { "name": closure.associate }, "mobile_no").then(r => {
 
-                            if (r.message && r.message.mobile_no) {
-                                con = r.message.mobile_no
-                            }
-                            else {
-                                con = ""
-                            }
+                        if (r.message && r.message.mobile_no) {
+                            con = r.message.mobile_no
+                        }
+                        else {
+                            con = ""
+                        }
 
-                        })
+                    })
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                 <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -3946,15 +4019,15 @@ table td {
 
                                 <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
 
                                 <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
@@ -3982,80 +4055,80 @@ table td {
                                 <td style="text-align:left !important;" >${closure.associate || '-'}</td>
                                 <td style="text-align:left !important;" >${con || '-'}</td>
                             </tr>`;
-                                                });
-
                 });
 
-
-        //     data.forEach((closure, index) => {
-
-
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
-
-                // let con = ""
-
-                // frappe.db.get_value("Supplier", { "name": closure.associate }, "mobile_no").then(r => {
-
-                //     if (r.message && r.message.mobile_no) {
-                //         con = r.message.mobile_no
-                //     }
-                //     else {
-                //         con = ""
-                //     }
-
-                // })
-
-        //         html += `
-        // <tr class="project-header" style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
-
-        //      <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
+            });
 
 
+            //     data.forEach((closure, index) => {
+
+
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
+
+            // let con = ""
+
+            // frappe.db.get_value("Supplier", { "name": closure.associate }, "mobile_no").then(r => {
+
+            //     if (r.message && r.message.mobile_no) {
+            //         con = r.message.mobile_no
+            //     }
+            //     else {
+            //         con = ""
+            //     }
+
+            // })
+
+            //         html += `
+            // <tr class="project-header" style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
+
+            //      <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
 
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
 
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
 
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
 
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
 
-        //     <td style="text-align:left !important;" >${closure.associate || '-'}</td>
-        //     <td style="text-align:left !important;" >${con || '-'}</td>
-            
-        // </tr>`;
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" >${closure.associate || '-'}</td>
+            //     <td style="text-align:left !important;" >${con || '-'}</td>
+
+            // </tr>`;
 
 
             // });
@@ -4115,10 +4188,10 @@ table td {
         summaryHtml += `
             <tr style="font-weight:bold;background:#f0f0f0;">
                 <td style="text-align:left;">TOTAL</td>
-                <td>${grandTotal["Certificate Attestation"]|| "-"}</td>
-                <td>${grandTotal["Biometric"]|| "-"}</td>
-                <td>${grandTotal["Trade Test"]|| "-"}</td>
-                <td>${grandTotal["Visa Stamping"]|| "-"}</td>
+                <td>${grandTotal["Certificate Attestation"] || "-"}</td>
+                <td>${grandTotal["Biometric"] || "-"}</td>
+                <td>${grandTotal["Trade Test"] || "-"}</td>
+                <td>${grandTotal["Visa Stamping"] || "-"}</td>
             </tr>
         `;
 
@@ -4336,13 +4409,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1;
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="11" style="text-align:left;">
@@ -4352,11 +4425,11 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                 <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -4365,15 +4438,15 @@ table td {
 
                                 <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
                                 <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
                                     class="status-cell" 
@@ -4397,67 +4470,67 @@ table td {
                                 <span class="editable-span">${closure.remark || '-'}</span>
                                 </td>
                             </tr>`;
-                                                });
-
                 });
+
+            });
 
 
             // data.forEach((closure, index) => {
 
 
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-        //         html += `
-        // <tr class="project-header" style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
+            //         html += `
+            // <tr class="project-header" style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
 
-        //      <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
-
-
+            //      <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
 
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
-
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
-
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
-
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
-            
-        // </tr>`;
 
 
-        //     });
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
+
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+            // </tr>`;
+
+
+            //     });
 
 
 
@@ -4502,7 +4575,7 @@ table td {
             summaryHtml += `
                 <tr>
                     <td style="text-align:left;width:200px;">${client}</td>
-                    <td style="text-align:center;width:200px;">${row["Client Offer Letter"]|| "-"}</td>
+                    <td style="text-align:center;width:200px;">${row["Client Offer Letter"] || "-"}</td>
                     <td style="text-align:center;width:200px;">${row["Visa"] || "-"}</td>
                 </tr>
             `;
@@ -4588,34 +4661,34 @@ table td {
             "Visa Stamping": 0
         };
         data.forEach(item => {
-        let client = item.customer || "-";
-        let status = item.status || "-";
+            let client = item.customer || "-";
+            let status = item.status || "-";
 
-        if (!summaryData[client]) {
-            summaryData[client] = {
-                "PSL": 0,
-                "Emigration": 0,
-                "Ticket": 0,
-                "Onboarding": 0,
-                "Signed Offer Letter": 0,
-                "Premedical": 0,
-                "PCC": 0,
-                "Final Medical": 0,
-                "Certificate Attestation": 0,
-                "Biometric": 0,
-                "Trade Test": 0,
-                "Visa Stamping": 0
-            };
-        }
+            if (!summaryData[client]) {
+                summaryData[client] = {
+                    "PSL": 0,
+                    "Emigration": 0,
+                    "Ticket": 0,
+                    "Onboarding": 0,
+                    "Signed Offer Letter": 0,
+                    "Premedical": 0,
+                    "PCC": 0,
+                    "Final Medical": 0,
+                    "Certificate Attestation": 0,
+                    "Biometric": 0,
+                    "Trade Test": 0,
+                    "Visa Stamping": 0
+                };
+            }
 
-        if (summaryData[client][status] !== undefined) {
-            summaryData[client][status]++;
-        }
+            if (summaryData[client][status] !== undefined) {
+                summaryData[client][status]++;
+            }
 
-        if (grandTotal[status] !== undefined) {
-            grandTotal[status]++;
-        }
-    });
+            if (grandTotal[status] !== undefined) {
+                grandTotal[status]++;
+            }
+        });
 
         let html = `
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -4757,13 +4830,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1;
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="11" style="text-align:left;">
@@ -4773,11 +4846,11 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                  <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -4786,15 +4859,15 @@ table td {
 
                                 <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
                                 <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
                                     class="status-cell" 
@@ -4818,68 +4891,68 @@ table td {
                                 <span class="editable-span">${closure.remark || '-'}</span>
                                 </td>
                             </tr>`;
-                                                });
-
                 });
 
-
-
-        //     data.forEach((closure, index) => {
-
-
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
-
-        //         html += `
-        // <tr class="project-header" style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
-
-        //      <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
+            });
 
 
 
+            //     data.forEach((closure, index) => {
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
+            //         html += `
+            // <tr class="project-header" style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
 
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
-
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
-            
-        // </tr>`;
+            //      <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
 
 
-        //     });
+
+
+
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
+
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+            // </tr>`;
+
+
+            //     });
 
 
 
@@ -5206,13 +5279,13 @@ table td {
             let serialNo = 1;
             let clientSerialNo = 1;
 
-                Object.keys(groupedData).forEach(client => {
+            Object.keys(groupedData).forEach(client => {
 
-                    let safeKey = btoa(client).replace(/=/g, "");
-                    
+                let safeKey = btoa(client).replace(/=/g, "");
 
-                    // Client header row
-                    html += `
+
+                // Client header row
+                html += `
                     <tr style="background-color:#d3d3d3; font-weight:bold;">
                         <td>${clientSerialNo++}</td>
                         <td colspan="9" style="text-align:left;">
@@ -5222,11 +5295,11 @@ table td {
                     </tr>
                     `;
 
-                    groupedData[client].forEach((closure, index) => {
+                groupedData[client].forEach((closure, index) => {
 
-                        let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
+                    let rowColor = (serialNo % 2 === 0) ? "#ffffff" : "#e6f2f1";
 
-                            html += `
+                    html += `
                             <tr class="client-row-${safeKey}" style="display:none; background-color:${rowColor};">
                                 <td>${serialNo++}</td>
                                 <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
@@ -5235,15 +5308,15 @@ table td {
 
                                 <td>
                                     ${closure.mobile
-                                            ? (() => {
-                                                const cleanNumber = closure.mobile.replace(/\D/g, '');
-                                                return `${closure.mobile}
+                            ? (() => {
+                                const cleanNumber = closure.mobile.replace(/\D/g, '');
+                                return `${closure.mobile}
                                                 <a href="https://wa.me/${cleanNumber}" target="_blank">
                                                     <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
                                                 </a>`;
-                                            })()
-                                            : '-'
-                                        }
+                            })()
+                            : '-'
+                        }
                                 </td>
 
                                 <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
@@ -5268,69 +5341,69 @@ table td {
                                 <span class="editable-span">${closure.remark || '-'}</span>
                                 </td>
                             </tr>`;
-                                                });
-
                 });
 
-
-
-        //     data.forEach((closure, index) => {
-
-
-        //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
-
-        //         html += `
-        // <tr class="project-header" style="background-color:${color};">
-        //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
-        //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
-        //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
-        //     <td>${closure.passport_no || '-'}</td>
-
-        //      <td>
-        //         ${closure.mobile
-        //                 ? (() => {
-        //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
-        //                     return `${closure.mobile}
-        //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
-        //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
-        //                     </a>`;
-        //                 })()
-        //                 : '-'
-        //             }
-        //     </td>
+            });
 
 
 
+            //     data.forEach((closure, index) => {
+
+
+            //         let color = (index % 2 === 0) ? "#ffffff" : "#e6f2f1";
+
+            //         html += `
+            // <tr class="project-header" style="background-color:${color};">
+            //     <td>${index + 1}</td>  <!-- Serial number is simply the index + 1 -->
+            //     <td  ><a href="https://erp.teamproit.com/app/closure/${closure.name}">${closure.name || '-'}</a></td>
+            //     <td style="text-align:left !important;" >${closure.given_name || '-'}</td>
+            //     <td>${closure.passport_no || '-'}</td>
+
+            //      <td>
+            //         ${closure.mobile
+            //                 ? (() => {
+            //                     const cleanNumber = closure.mobile.replace(/\D/g, '');
+            //                     return `${closure.mobile}
+            //                     <a href="https://wa.me/${cleanNumber}" target="_blank">
+            //                         <i class="fa fa-whatsapp" style="font-size:24px; color:green;"></i>
+            //                     </a>`;
+            //                 })()
+            //                 : '-'
+            //             }
+            //     </td>
 
 
 
-        //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
-        //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
-        //         class="status-cell" 
-        //         data-name="${closure.name}" 
-        //         data-status="${closure.status}">
-        //         ${closure.status || '-'}
-        //     </td>
-        //     <td>${calculateAgeClosure(closure.custom_history)}</td>
-        //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
-
-        //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
-        //         <span class="editable-span">${closure.std_remarks || '-'}</span>
-        //     </td>
-
-        //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
-        //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
-        //     </td>
-
-        //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
-            
-        //     <span class="editable-span">${closure.remark || '-'}</span>
-        //     </td>
-            
-        // </tr>`;
 
 
-        //     });
+
+            //     <td style="text-align:left !important;" >${closure.customer || '-'}</td>
+            //     <td style="text-align:left !important; cursor:pointer;  font-weight:bold;" 
+            //         class="status-cell" 
+            //         data-name="${closure.name}" 
+            //         data-status="${closure.status}">
+            //         ${closure.status || '-'}
+            //     </td>
+            //     <td>${calculateAgeClosure(closure.custom_history)}</td>
+            //     <td>${formatDate(closure.last_updated_on) || '-'}</td>
+
+            //     <td style="white-space:nowrap;" onclick="makeEditable(this, '${closure.name}', 'standard_remarks')">
+            //         <span class="editable-span">${closure.std_remarks || '-'}</span>
+            //     </td>
+
+            //     <td onclick="makeEditable(this, '${closure.name}', 'custom_next_follow_up_on')">
+            //     <span class="editable-span">${formatDate(closure.custom_next_follow_up_on) || '-'}</span>
+            //     </td>
+
+            //     <td style="text-align:left !important;" onclick="makeEditable(this, '${closure.name}', 'remark')" >
+
+            //     <span class="editable-span">${closure.remark || '-'}</span>
+            //     </td>
+
+            // </tr>`;
+
+
+            //     });
 
 
 
@@ -5346,9 +5419,9 @@ table td {
         html += `</tbody></table></div></div></div></div>`;
         let summaryHtml = "";
 
-if (data.length === 0) {
+        if (data.length === 0) {
 
-    summaryHtml = `
+            summaryHtml = `
         <div class="border rounded p-3 mt-3">
             <h5 style="margin-bottom:10px;">Sri Lanka Summary</h5>
             <div style="text-align:center;margin-top:20px;">
@@ -5356,10 +5429,10 @@ if (data.length === 0) {
             </div>
         </div>
     `;
-}
-else {
+        }
+        else {
 
-    summaryHtml = `
+            summaryHtml = `
     <div class="border rounded p-3 mt-3">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
             <h3 class="text-muted mb-0">Srilanka Summary</h3>
@@ -5393,10 +5466,10 @@ else {
             <tbody>
     `;
 
-    Object.keys(summaryData).forEach(client => {
-        let row = summaryData[client];
+            Object.keys(summaryData).forEach(client => {
+                let row = summaryData[client];
 
-        summaryHtml += `
+                summaryHtml += `
             <tr>
                 <td style="text-align:left;">${client}</td>
                 <td>${row["PSL"] || "-"}</td>
@@ -5413,9 +5486,9 @@ else {
                 <td>${row["Visa Stamping"] || "-"}</td>
             </tr>
         `;
-    });
+            });
 
-    summaryHtml += `
+            summaryHtml += `
         <tr style="font-weight:bold;background:#f0f0f0;">
             <td style="text-align:left;">TOTAL</td>
             <td>${grandTotal["PSL"] || "-"}</td>
@@ -5426,20 +5499,20 @@ else {
             <td>${grandTotal["Premedical"] || "-"}</td>
             <td>${grandTotal["PCC"] || "-"}</td>
             <td>${grandTotal["Final Medical"] || "-"}</td>
-            <td>${grandTotal["Certificate Attestation" ] || "-"}</td>
+            <td>${grandTotal["Certificate Attestation"] || "-"}</td>
             <td>${grandTotal["Biometric"] || "-"}</td>
             <td>${grandTotal["Trade Test"] || "-"}</td>
             <td>${grandTotal["Visa Stamping"] || "-"}</td>
         </tr>
     `;
 
-    summaryHtml += `
+            summaryHtml += `
             </tbody>
         </table>
         </div>
     </div>
     `;
-}
+        }
 
         return html + summaryHtml;
     }
@@ -9289,12 +9362,12 @@ else {
 
 
 
-let GLOBAL_DATA = [];
-loadUnifiedClosureData();
+    let GLOBAL_DATA = [];
+    loadUnifiedClosureData();
 
-function loadUnifiedClosureData() {
+    function loadUnifiedClosureData() {
 
-    $("#closure-unified-container").html(`
+        $("#closure-unified-container").html(`
         <div style="
             padding:20px;
             text-align:center;
@@ -9303,80 +9376,80 @@ function loadUnifiedClosureData() {
         </div>
     `);
 
-    frappe.call({
+        frappe.call({
 
-        method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_all",
+            method: "jobpro.jobpro.page.rec_dashboard.rec_dashboard.get_ptsr_data_closure_wise_all",
 
-        callback: function(r) {
+            callback: function (r) {
 
-            let data = r.message || {};
+                let data = r.message || {};
 
-            // =========================================
-            // STATUS FILTER
-            // =========================================
+                // =========================================
+                // STATUS FILTER
+                // =========================================
 
-            let statuses = new Set();
+                let statuses = new Set();
 
-            Object.keys(data).forEach(section => {
+                Object.keys(data).forEach(section => {
 
-                (data[section] || []).forEach(row => {
+                    (data[section] || []).forEach(row => {
 
-                    if (row.status) {
-                        statuses.add(row.status);
-                    }
+                        if (row.status) {
+                            statuses.add(row.status);
+                        }
+
+                    });
 
                 });
 
-            });
+                $("#closure-status-filter").empty();
 
-            $("#closure-status-filter").empty();
-
-            $("#closure-status-filter").append(`
+                $("#closure-status-filter").append(`
                 <option value="">All Status</option>
             `);
 
-            [...statuses].sort().forEach(status => {
+                [...statuses].sort().forEach(status => {
 
-                $("#closure-status-filter").append(`
+                    $("#closure-status-filter").append(`
                     <option value="${status}">
                         ${status}
                     </option>
                 `);
 
-            });
+                });
 
-            // =========================================
-            // MERGE DATA
-            // =========================================
+                // =========================================
+                // MERGE DATA
+                // =========================================
 
-            const sections = [
-                { key: "internal" },
-                { key: "candidate" },
-                { key: "agent" },
-                { key: "supplier" },
-                { key: "client" },
-                { key: "nepal" },
-                { key: "srilanka" }
-            ];
+                const sections = [
+                    { key: "internal" },
+                    { key: "candidate" },
+                    { key: "agent" },
+                    { key: "supplier" },
+                    { key: "client" },
+                    { key: "nepal" },
+                    { key: "srilanka" }
+                ];
 
-            let mergedData = [];
+                let mergedData = [];
 
-            sections.forEach(sec => {
+                sections.forEach(sec => {
 
-                if (data[sec.key] && data[sec.key].length) {
+                    if (data[sec.key] && data[sec.key].length) {
 
-                    mergedData = mergedData.concat(data[sec.key]);
+                        mergedData = mergedData.concat(data[sec.key]);
 
-                }
+                    }
 
-            });
+                });
 
-            // =========================================
-            // TABLE HTML
-            // =========================================
+                // =========================================
+                // TABLE HTML
+                // =========================================
 
-            let html = `
-                <table class="table table-bordered">
+                let html = `
+                <table class="table table-bordered style="table-layout:fixed;">
 
                     <thead style="
                         position:sticky;
@@ -9395,12 +9468,23 @@ function loadUnifiedClosureData() {
                             <th>
                                 Customer
                             </th>
-
-                            <th>VAC</th>
-                            <th>SP</th>
-                            <th>FP</th>
-                            <th>SL</th>
-                            <th>LP</th>
+                            <th>Position</th>
+                            <th style="width:20px;">PSL</th>
+                            <th style="width:20px;">COL</th>
+                            <th style="width:20px;">SOL</th>
+                            <th style="width:20px;">VISA</th>
+                            <th style="width:20px;">PM</th>
+                            <th style="width:20px;">PCC</th>
+                            <th style="width:20px;">CA</th>
+                            <th style="width:20px;">FM</th>
+                            <th style="width:20px;">BIO</th>
+                            <th style="width:20px;">QVP</th>
+                            <th style="width:20px;">TT</th>
+                            <th style="width:20px;">VS</th>
+                            <th style="width:20px;">POE</th>
+                            <th style="width:20px;">TKT</th>
+                            <th style="width:20px;">OB</th>
+                            <th style="width:50px;">OD</th>
 
                         </tr>
 
@@ -9409,13 +9493,13 @@ function loadUnifiedClosureData() {
                     <tbody>
             `;
 
-            if (mergedData.length) {
+                if (mergedData.length) {
 
-                html += buildInternalTable(mergedData);
+                    html += buildInternalTable(mergedData);
 
-            } else {
+                } else {
 
-                html += `
+                    html += `
                     <tr>
                         <td colspan="7"
                             style="
@@ -9427,662 +9511,956 @@ function loadUnifiedClosureData() {
                         </td>
                     </tr>
                 `;
-            }
+                }
 
-            html += `
+                html += `
                     </tbody>
                 </table>
             `;
 
-            $("#closure-unified-container").html(html);
-        }
+                $("#closure-unified-container").html(html);
+            }
 
-    });
+        });
 
-}
+    }
 
-// =========================================
-// GROUP CUSTOMER
-// =========================================
+    // =========================================
+    // GROUP CUSTOMER
+    // =========================================
 
-function groupByCustomer(data) {
+    function groupByCustomer(data) {
 
-    let grouped = {};
+        let grouped = {};
 
-    data.forEach(d => {
+        data.forEach(d => {
 
-        let key = d.customer || "Unknown";
+            let key = d.customer || "Unknown";
 
-        if (!grouped[key]) {
+            if (!grouped[key]) {
 
-            grouped[key] = [];
+                grouped[key] = [];
 
-        }
+            }
 
-        grouped[key].push(d);
+            grouped[key].push(d);
 
-    });
+        });
 
-    return grouped;
+        return grouped;
 
-}
+    }
 
-// =========================================
-// MAIN BUILD
-// =========================================
+    // =========================================
+    // MAIN BUILD
+    // =========================================
 
-function buildInternalTable(data){
+    // function buildInternalTable(data) {
+
+    //     let grouped = groupByCustomer(data);
+
+    //     let html = "";
+
+    //     let customerIndex = 1;
+
+    //     Object.keys(grouped)
+    //         .sort((a, b) => a.localeCompare(b))
+    //         .forEach(customer => {
+
+    //             let customerKey =
+    //                 "C_" + btoa(customer).replace(/=/g, "");
+
+    //             let rows = grouped[customer];
+
+    //             // =========================================
+    //             // TOTALS
+    //             // =========================================
+
+    //             let totals = {
+    //                 tvac: 0,
+    //                 tsp: 0,
+    //                 tfp: 0,
+    //                 tsl: 0,
+    //                 tlp: 0
+    //             };
+
+    //             rows.forEach(r => {
+
+    //                 let status = (r.status || "").trim();
+
+    //                 if (["PSL", "Client Offer Letter", "Signed Offer Letter", "Visa"].includes(status)) {
+    //                     totals.tvac++;
+    //                 }
+
+    //                 if (["Premedical", "PCC", "Certificate Attestation"].includes(status)) {
+    //                     totals.tsp++;
+    //                 }
+
+    //                 if (["Final Medical", "Biometric", "QVP"].includes(status)) {
+    //                     totals.tfp++;
+    //                 }
+
+    //                 if (["Trade Test", "Visa Stamping", "Emigration"].includes(status)) {
+    //                     totals.tsl++;
+    //                 }
+
+    //                 if (["Ticket", "Onboarding", "Onboarded"].includes(status)) {
+    //                     totals.tlp++;
+    //                 }
+
+    //             });
+
+    //             // PROJECT UNIQUE
+    //             let projectMap = {};
+
+    //             rows.forEach(r => {
+
+    //                 let pid =
+    //                     r.project_id ||
+    //                     r.project_name;
+
+    //                 if (!projectMap[pid]) {
+
+    //                     projectMap[pid] = r;
+
+    //                 }
+
+    //             });
+
+    //             // Object.values(projectMap).forEach(p => {
+
+    //             //     totals.tvac += Number(p.tvac || 0);
+    //             //     totals.tsp += Number(p.tsp || 0);
+    //             //     totals.tfp += Number(p.tfp || 0);
+    //             //     totals.tsl += Number(p.tsl || 0);
+    //             //     totals.tlp += Number(p.custom_t_lp || 0);
+
+    //             // });
+
+                
+
+    //             // =========================================
+    //             // COUNTS
+    //             // =========================================
+
+    //             let totalTaskCount = rows.length;
+    //             let totalClosureCount = rows.length;
+
+    //             // =========================================
+    //             // CUSTOMER ROW
+    //             // =========================================
+
+    //             html += `
+
+    //     <tr style="
+    //         background:#85819e;
+    //         color:white;
+    //         font-weight:bold;
+    //     ">
+
+    //         <td>
+    //             ${customerIndex++}
+    //         </td>
+
+    //         <td style="text-align:left;">
+    //             <div style="display:flex;justify-content:space-between;align-items:center;">
+    //                 <div>
+    //                     ${customer}
+    //                 </div>
+    //                 <div>
+    //                 <span class="customer-task-toggle" data-key="${customerKey}"
+    //                     style="cursor:pointer;margin-right:20px;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#1E3A8A;" title="Task View">
+    //                     <img src="https://cdn-icons-png.flaticon.com/128/2921/2921222.png"
+    //                         style="width:18px;height:18px;filter:brightness(0) invert(1);">
+    //                 </span>
+    //                 <span class="customer-closure-toggle" data-key="${customerKey}"
+    //                     style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#0F766E;" title="Closure View">
+    //                     <img src="https://cdn-icons-png.flaticon.com/128/681/681494.png"
+    //                         style="width:18px;height:18px;filter:brightness(0) invert(1);">
+    //                 </span>
+    //                 </div>
+    //             </div>
+    //         </td>
+    //         <td>${totals.psl}</td>
+    //         <td>${totals.col}</td>
+    //         <td>${totals.sol}</td>
+    //         <td>${totals.visa}</td>
+    //         <td>${totals.pm}</td>
+    //         <td>${totals.pcc}</td>
+    //         <td>${totals.ca}</td>
+    //         <td>${totals.fm}</td>
+    //         <td>${totals.bio}</td>
+    //         <td>${totals.qvp}</td>
+    //         <td>${totals.tt}</td>
+    //         <td>${totals.vs}</td>
+    //         <td>${totals.poe}</td>
+    //         <td>${totals.tkt}</td>
+    //         <td>${totals.ob}</td>
+    //         <td>${totals.od}</td>
+    //     </tr>
+    //     `;
+
+    //             // =========================================
+    //             // TASK TABLE
+    //             // =========================================
+
+    //             html += `
+
+    //     <tr class="
+    //         task-table-row
+    //         customer-task-${customerKey}
+    //     "
+    //     style="display:none;">
+
+    //         <td colspan="7">
+
+    //             <div class="ptsr-horizontal-scroll">
+
+    //                 <table class="
+    //                     table table-bordered table-sm
+    //                 ">
+
+    //                     <thead style="
+    //                         background:#99ccff !important;
+    //                         color:black !important;
+    //                     ">
+
+    //                         <tr>
+
+    //                             <th>S.No</th>
+    //                             <th>Project</th>
+    //                             <th>Position</th>
+
+    //                             <th>PSL</th>
+    //                             <th>COL</th>
+    //                             <th>SOL</th>
+    //                             <th>VISA</th>
+    //                             <th>PM</th>
+    //                             <th>PCC</th>
+    //                             <th>CA</th>
+    //                             <th>FM</th>
+    //                             <th>BIO</th>
+    //                             <th>QVP</th>
+    //                             <th>TT</th>
+    //                             <th>VS</th>
+    //                             <th>POE</th>
+    //                             <th>TKT</th>
+    //                             <th>OB</th>
+    //                             <th>OD</th>
+
+    //                         </tr>
+
+    //                     </thead>
+
+    //                     <tbody>
+    //     `;
+
+    //             // =========================================
+    //             // TASK GROUP
+    //             // =========================================
+
+    //             let taskGrouped = {};
+
+    //             rows.forEach(r => {
+
+    //                 let key =
+    //                     (r.project_name || "") +
+    //                     "##" +
+    //                     (r.task_subject || "");
+
+    //                 if (!taskGrouped[key]) {
+
+    //                     taskGrouped[key] = [];
+
+    //                 }
+
+    //                 taskGrouped[key].push(r);
+
+    //             });
+
+    //             let taskIndex = 1;
+
+    //             Object.keys(taskGrouped).forEach(key => {
+
+    //                 let taskRows = taskGrouped[key];
+
+    //                 let first = taskRows[0];
+
+    //                 function getCount(statusName) {
+
+    //                     return taskRows.filter(r =>
+    //                         (r.status || "").trim()
+    //                         === statusName
+    //                     ).length;
+
+    //                 }
+
+    //                 function statusCell(value) {
+
+    //                     if (value > 0) {
+
+    //                         return `
+    //                     <span style="
+    //                         color:green;
+    //                         font-weight:bold;
+    //                     ">
+    //                         ${value}
+    //                     </span>
+    //                 `;
+
+    //                     }
+
+    //                     return "-";
+
+    //                 }
+
+    //                 html += `
+
+    //         <tr class="task-data-row" 
+    //         data-filter=" 
+    //         ${getCount('PSL') > 0 ? 'PSL TEAMPRO' : ''} 
+    //         ${getCount('Client Offer Letter') > 0 ? 'POL Customer' : ''} 
+    //         ${getCount('Signed Offer Letter') > 0 ? 'SOL Candidate' : ''} 
+    //         ${getCount('Visa') > 0 ? 'VISA Customer' : ''} 
+    //         ${getCount('Premedical') > 0 ? 'PM Candidate' : ''} 
+    //         ${getCount('PCC') > 0 ? 'PCC Candidate' : ''} 
+    //         ${getCount('Certificate Attestation') > 0 ? 'CA TEAMPRO' : ''} 
+    //         ${getCount('Final Medical') > 0 ? 'FM Candidate' : ''} 
+    //         ${getCount('Biometric') > 0 ? 'BIO Candidate' : ''} 
+    //         ${getCount('QVP') > 0 ? 'QVP Candidate' : ''} 
+    //         ${getCount('Trade Test') > 0 ? 'TT Candidate' : ''} 
+    //         ${getCount('Visa Stamping') > 0 ? 'VS Supplier' : ''} 
+    //         ${getCount('Emigration') > 0 ? 'POE TEAMPRO' : ''} 
+    //         ${getCount('Ticket') > 0 ? 'TKT TEAMPRO' : ''} 
+    //         ${getCount('Onboarding') > 0 ? 'OB TEAMPRO' : ''} 
+    //         ${getCount('Onboarded') > 0 ? 'OD TEAMPRO' : ''} ">
+
+    //             <td>
+    //                 ${taskIndex++}
+    //             </td>
+
+    //             <td>
+    //                 ${first.project_name || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${first.task_subject || '-'}
+    //             </td>
+
+    //             <td>${statusCell(getCount("PSL"))}</td>
+
+    //             <td>${statusCell(getCount("Client Offer Letter"))}</td>
+
+    //             <td>${statusCell(getCount("Signed Offer Letter"))}</td>
+
+    //             <td>${statusCell(getCount("Visa"))}</td>
+
+    //             <td>${statusCell(getCount("Premedical"))}</td>
+
+    //             <td>${statusCell(getCount("PCC"))}</td>
+
+    //             <td>${statusCell(getCount("Certificate Attestation"))}</td>
+
+    //             <td>${statusCell(getCount("Final Medical"))}</td>
+
+    //             <td>${statusCell(getCount("Biometric"))}</td>
+
+    //             <td>${statusCell(getCount("QVP"))}</td>
+
+    //             <td>${statusCell(getCount("Trade Test"))}</td>
+
+    //             <td>${statusCell(getCount("Visa Stamping"))}</td>
+
+    //             <td>${statusCell(getCount("Emigration"))}</td>
+
+    //             <td>${statusCell(getCount("Ticket"))}</td>
+
+    //             <td>${statusCell(getCount("Onboarding"))}</td>
+
+    //             <td>${statusCell(getCount("Onboarded"))}</td>
+
+    //         </tr>
+    //         `;
+
+    //             });
+
+    //             html += `
+
+    //                     </tbody>
+
+    //                 </table>
+
+    //             </div>
+
+    //         </td>
+
+    //     </tr>
+    //     `;
+
+    //             // =========================================
+    //             // CLOSURE TABLE
+    //             // =========================================
+
+    //             html += `
+
+    //     <tr class="
+    //         closure-table-row
+    //         customer-closure-${customerKey}
+    //     "
+    //     style="display:none;">
+
+    //         <td colspan="7">
+
+    //             <div class="ptsr-horizontal-scroll">
+
+    //                 <table class="
+    //                     table table-sm table-bordered
+    //                 ">
+
+    //                     <thead style="
+    //                         background:#99ccff !important;
+    //                         color:black !important;
+    //                     ">
+
+    //                         <tr>
+
+    //                             <th>S.No</th>
+    //                             <th>Project</th>
+    //                             <th>CLID</th>
+    //                             <th>Name</th>
+    //                             <th>PP Number</th>
+    //                             <th>Contact</th>
+    //                             <th>Status</th>
+    //                             <th>Age</th>
+    //                             <th>Last Update</th>
+    //                             <th>Next Action</th>
+    //                             <th>Next Action On</th>
+    //                             <th>Remark</th>
+
+    //                         </tr>
+
+    //                     </thead>
+
+    //                     <tbody>
+    //     `;
+
+    //             let subIndex = 1;
+
+    //             rows.forEach(row => {
+
+    //                 html += `
+
+    //         <tr class="closure-data-row"
+    //             data-status="${row.status || ''}">
+
+    //             <td>
+    //                 ${subIndex++}
+    //             </td>
+
+    //             <td>
+    //                 ${row.project_name || '-'}
+    //             </td>
+
+    //             <td>
+
+    //                 <a href="
+    //                     https://erp.teamproit.com/app/closure/${row.name}
+    //                 "
+    //                 target="_blank">
+
+    //                     ${row.name || '-'}
+
+    //                 </a>
+
+    //             </td>
+
+    //             <td>
+    //                 ${row.given_name || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${row.passport_no || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${row.mobile || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${row.status || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${calculateAgeClosure(
+    //                     row.custom_history
+    //                 ) || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${formatDate(
+    //                     row.last_updated_on
+    //                 ) || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${row.std_remarks || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${formatDate(
+    //                     row.custom_next_follow_up_on
+    //                 ) || '-'}
+    //             </td>
+
+    //             <td>
+    //                 ${row.remark || '-'}
+    //             </td>
+
+    //         </tr>
+    //         `;
+
+    //             });
+
+    //             html += `
+
+    //                     </tbody>
+
+    //                 </table>
+
+    //             </div>
+
+    //         </td>
+
+    //     </tr>
+    //     `;
+
+    //         });
+
+    //     return html;
+
+    // }
+    function buildInternalTable(data) {
 
     let grouped = groupByCustomer(data);
-
     let html = "";
-
     let customerIndex = 1;
 
     Object.keys(grouped)
-    .sort((a, b) => a.localeCompare(b))
-    .forEach(customer => {
+        .sort((a, b) => a.localeCompare(b))
+        .forEach(customer => {
 
-        let customerKey =
-            "C_" + btoa(customer).replace(/=/g, "");
+            let customerKey =
+                "C_" + btoa(unescape(encodeURIComponent(customer))).replace(/=/g, "");
 
-        let rows = grouped[customer];
+            let rows = grouped[customer];
 
-        // =========================================
-        // TOTALS
-        // =========================================
+            // =========================
+            // TOTALS (FIXED STRUCTURE)
+            // =========================
+            let totals = {
+                psl: 0,
+                col: 0,
+                sol: 0,
+                visa: 0,
+                pm: 0,
+                pcc: 0,
+                ca: 0,
+                fm: 0,
+                bio: 0,
+                qvp: 0,
+                tt: 0,
+                vs: 0,
+                poe: 0,
+                tkt: 0,
+                ob: 0,
+                od: 0
+            };
 
-        let totals = {
-            tvac: 0,
-            tsp: 0,
-            tfp: 0,
-            tsl: 0,
-            tlp: 0
-        };
+            // fast count map (better than repeated loops)
+            let statusMap = {};
 
-        // PROJECT UNIQUE
-        let projectMap = {};
+            rows.forEach(r => {
+                let s = (r.status || "").trim();
+                statusMap[s] = (statusMap[s] || 0) + 1;
+            });
 
-        rows.forEach(r => {
+            // map to totals
+            totals.psl  = statusMap["PSL"] || 0;
+            totals.col  = statusMap["Client Offer Letter"] || 0;
+            totals.sol  = statusMap["Signed Offer Letter"] || 0;
+            totals.visa = statusMap["Visa"] || 0;
 
-            let pid =
-                r.project_id ||
-                r.project_name;
+            totals.pm   = statusMap["Premedical"] || 0;
+            totals.pcc  = statusMap["PCC"] || 0;
+            totals.ca   = statusMap["Certificate Attestation"] || 0;
 
-            if (!projectMap[pid]) {
+            totals.fm   = statusMap["Final Medical"] || 0;
+            totals.bio  = statusMap["Biometric"] || 0;
+            totals.qvp  = statusMap["QVP"] || 0;
 
-                projectMap[pid] = r;
+            totals.tt   = statusMap["Trade Test"] || 0;
+            totals.vs   = statusMap["Visa Stamping"] || 0;
+            totals.poe  = statusMap["Emigration"] || 0;
 
-            }
+            totals.tkt  = statusMap["Ticket"] || 0;
+            totals.ob   = statusMap["Onboarding"] || 0;
+            totals.od   = statusMap["Onboarded"] || 0;
 
-        });
+            let totalTaskCount = rows.length;
 
-        Object.values(projectMap).forEach(p => {
+            // =========================
+            // CUSTOMER ROW
+            // =========================
+            html += `
+            <tr style="background:#85819e;color:white;font-weight:bold;">
+                <td>${customerIndex++}</td>
 
-            totals.tvac += Number(p.tvac || 0);
-            totals.tsp  += Number(p.tsp || 0);
-            totals.tfp  += Number(p.tfp || 0);
-            totals.tsl  += Number(p.tsl || 0);
-            totals.tlp  += Number(p.custom_t_lp || 0);
+                <td colspan="2">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div style="text-align:left;">${customer}</div>
+                        <div>
+                            <span class="customer-task-toggle" data-key="${customerKey}"
+                                style="cursor:pointer;margin-right:20px;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#1E3A8A;">
+                                <img src="https://cdn-icons-png.flaticon.com/128/2921/2921222.png"
+                                    style="width:18px;height:18px;filter:brightness(0) invert(1);">
+                            </span>
 
-        });
-
-        // =========================================
-        // COUNTS
-        // =========================================
-
-        let totalTaskCount = rows.length;
-        let totalClosureCount = rows.length;
-
-        // =========================================
-        // CUSTOMER ROW
-        // =========================================
-
-        html += `
-
-        <tr style="
-            background:#85819e;
-            color:white;
-            font-weight:bold;
-        ">
-
-            <td>
-                ${customerIndex++}
-            </td>
-
-            <td style="text-align:left;">
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <div>
-                        ${customer}
+                            <span class="customer-closure-toggle" data-key="${customerKey}"
+                                style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#0F766E;">
+                                <img src="https://cdn-icons-png.flaticon.com/128/681/681494.png"
+                                    style="width:18px;height:18px;filter:brightness(0) invert(1);">
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                    <span class="customer-task-toggle" data-key="${customerKey}"
-                        style="cursor:pointer;margin-right:20px;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#1E3A8A;" title="Task View">
-                        <img src="https://cdn-icons-png.flaticon.com/128/2921/2921222.png"
-                            style="width:18px;height:18px;filter:brightness(0) invert(1);">
-                    </span>
-                    <span class="customer-closure-toggle" data-key="${customerKey}"
-                        style="cursor:pointer;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:50%;background:#0F766E;" title="Closure View">
-                        <img src="https://cdn-icons-png.flaticon.com/128/681/681494.png"
-                            style="width:18px;height:18px;filter:brightness(0) invert(1);">
-                    </span>
-                    </div>
-                </div>
-            </td>
-            <td>${totals.tvac}</td>
-            <td>${totals.tsp}</td>
-            <td>${totals.tfp}</td>
-            <td>${totals.tsl}</td>
-            <td>${totals.tlp}</td>
-        </tr>
-        `;
+                </td>
 
-        // =========================================
-        // TASK TABLE
-        // =========================================
+                <td>${totals.psl}</td>
+                <td>${totals.col}</td>
+                <td>${totals.sol}</td>
+                <td>${totals.visa}</td>
+                <td>${totals.pm}</td>
+                <td>${totals.pcc}</td>
+                <td>${totals.ca}</td>
+                <td>${totals.fm}</td>
+                <td>${totals.bio}</td>
+                <td>${totals.qvp}</td>
+                <td>${totals.tt}</td>
+                <td>${totals.vs}</td>
+                <td>${totals.poe}</td>
+                <td>${totals.tkt}</td>
+                <td>${totals.ob}</td>
+                <td>${totals.od}</td>
+            </tr>
+            `;
 
-        html += `
+            // =========================
+            // TASK TABLE
+            // =========================
+            html += `
+            <tr class="task-table-row customer-task-${customerKey}" style="display:none;">
+                <td colspan="19">
+                    <div class="ptsr-horizontal-scroll">
+                        <table class="table table-bordered table-sm">
+                            
+                            <tbody>
+            `;
 
-        <tr class="
-            task-table-row
-            customer-task-${customerKey}
-        "
-        style="display:none;">
+            let taskGrouped = {};
+            rows.forEach(r => {
+                let key = (r.project_name || "") + "##" + (r.task_subject || "");
+                if (!taskGrouped[key]) taskGrouped[key] = [];
+                taskGrouped[key].push(r);
+            });
 
-            <td colspan="7">
+            let taskIndex = 1;
 
-                <div class="ptsr-horizontal-scroll">
+            Object.keys(taskGrouped).forEach(key => {
 
-                    <table class="
-                        table table-bordered table-sm
-                    ">
+                let taskRows = taskGrouped[key];
+                let first = taskRows[0];
 
-                        <thead style="
-                            background:#99ccff !important;
-                            color:black !important;
-                        ">
-
-                            <tr>
-
-                                <th>S.No</th>
-                                <th>Project</th>
-                                <th>Position</th>
-
-                                <th>PSL</th>
-                                <th>COL</th>
-                                <th>SOL</th>
-                                <th>VISA</th>
-                                <th>PM</th>
-                                <th>PCC</th>
-                                <th>CA</th>
-                                <th>FM</th>
-                                <th>BIO</th>
-                                <th>QVP</th>
-                                <th>TT</th>
-                                <th>VS</th>
-                                <th>POE</th>
-                                <th>TKT</th>
-                                <th>OB</th>
-                                <th>OD</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-        `;
-
-        // =========================================
-        // TASK GROUP
-        // =========================================
-
-        let taskGrouped = {};
-
-        rows.forEach(r => {
-
-            let key =
-                (r.project_name || "") +
-                "##" +
-                (r.task_subject || "");
-
-            if (!taskGrouped[key]) {
-
-                taskGrouped[key] = [];
-
-            }
-
-            taskGrouped[key].push(r);
-
-        });
-
-        let taskIndex = 1;
-
-        Object.keys(taskGrouped).forEach(key => {
-
-            let taskRows = taskGrouped[key];
-
-            let first = taskRows[0];
-
-            function getCount(statusName) {
-
-                return taskRows.filter(r =>
-                    (r.status || "").trim()
-                    === statusName
-                ).length;
-
-            }
-
-            function statusCell(value) {
-
-                if (value > 0) {
-
-                    return `
-                        <span style="
-                            color:green;
-                            font-weight:bold;
-                        ">
-                            ${value}
-                        </span>
-                    `;
-
+                function getCount(statusName) {
+                    return taskRows.filter(r => (r.status || "").trim() === statusName).length;
                 }
 
-                return "-";
+                function statusCell(value) {
+                    return value > 0
+                        ? `<span style="color:green;font-weight:bold;">${value}</span>`
+                        : "-";
+                }
 
-            }
+                html += `
+                <tr>
+                    <td>${taskIndex++}</td>
+                    <td>
+                        <a href="https://erp.teamproit.com/app/task/${first.task || ''}"
+                        target="_blank"
+                        style="color:#1E3A8A;font-weight:600;text-decoration:none;">
+                            ${first.task_subject || '-'}
+                        </a>
+                    </td>
+                    
+
+                    <td style="width:42px;">${statusCell(getCount("PSL"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Client Offer Letter"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Signed Offer Letter"))}</td>
+                    <td style="width:55px;">${statusCell(getCount("Visa"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Premedical"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("PCC"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Certificate Attestation"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Final Medical"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Biometric"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("QVP"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Trade Test"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Visa Stamping"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Emigration"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Ticket"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Onboarding"))}</td>
+                    <td style="width:42px;">${statusCell(getCount("Onboarded"))}</td>
+                </tr>
+                `;
+            });
 
             html += `
-
-            <tr class="task-data-row" 
-            data-filter=" 
-            ${getCount('PSL') > 0 ? 'PSL TEAMPRO' : ''} 
-            ${getCount('Client Offer Letter') > 0 ? 'POL Customer' : ''} 
-            ${getCount('Signed Offer Letter') > 0 ? 'SOL Candidate' : ''} 
-            ${getCount('Visa') > 0 ? 'VISA Customer' : ''} 
-            ${getCount('Premedical') > 0 ? 'PM Candidate' : ''} 
-            ${getCount('PCC') > 0 ? 'PCC Candidate' : ''} 
-            ${getCount('Certificate Attestation') > 0 ? 'CA TEAMPRO' : ''} 
-            ${getCount('Final Medical') > 0 ? 'FM Candidate' : ''} 
-            ${getCount('Biometric') > 0 ? 'BIO Candidate' : ''} 
-            ${getCount('QVP') > 0 ? 'QVP Candidate' : ''} 
-            ${getCount('Trade Test') > 0 ? 'TT Candidate' : ''} 
-            ${getCount('Visa Stamping') > 0 ? 'VS Supplier' : ''} 
-            ${getCount('Emigration') > 0 ? 'POE TEAMPRO' : ''} 
-            ${getCount('Ticket') > 0 ? 'TKT TEAMPRO' : ''} 
-            ${getCount('Onboarding') > 0 ? 'OB TEAMPRO' : ''} 
-            ${getCount('Onboarded') > 0 ? 'OD TEAMPRO' : ''} ">
-
-                <td>
-                    ${taskIndex++}
+                            </tbody>
+                        </table>
+                    </div>
                 </td>
-
-                <td>
-                    ${first.project_name || '-'}
-                </td>
-
-                <td>
-                    ${first.task_subject || '-'}
-                </td>
-
-                <td>${statusCell(getCount("PSL"))}</td>
-
-                <td>${statusCell(getCount("Client Offer Letter"))}</td>
-
-                <td>${statusCell(getCount("Signed Offer Letter"))}</td>
-
-                <td>${statusCell(getCount("Visa"))}</td>
-
-                <td>${statusCell(getCount("Premedical"))}</td>
-
-                <td>${statusCell(getCount("PCC"))}</td>
-
-                <td>${statusCell(getCount("Certificate Attestation"))}</td>
-
-                <td>${statusCell(getCount("Final Medical"))}</td>
-
-                <td>${statusCell(getCount("Biometric"))}</td>
-
-                <td>${statusCell(getCount("QVP"))}</td>
-
-                <td>${statusCell(getCount("Trade Test"))}</td>
-
-                <td>${statusCell(getCount("Visa Stamping"))}</td>
-
-                <td>${statusCell(getCount("Emigration"))}</td>
-
-                <td>${statusCell(getCount("Ticket"))}</td>
-
-                <td>${statusCell(getCount("Onboarding"))}</td>
-
-                <td>${statusCell(getCount("Onboarded"))}</td>
-
             </tr>
             `;
 
-        });
-
-        html += `
-
-                        </tbody>
-
-                    </table>
-
-                </div>
-
-            </td>
-
-        </tr>
-        `;
-
-        // =========================================
-        // CLOSURE TABLE
-        // =========================================
-
-        html += `
-
-        <tr class="
-            closure-table-row
-            customer-closure-${customerKey}
-        "
-        style="display:none;">
-
-            <td colspan="7">
-
-                <div class="ptsr-horizontal-scroll">
-
-                    <table class="
-                        table table-sm table-bordered
-                    ">
-
-                        <thead style="
-                            background:#99ccff !important;
-                            color:black !important;
-                        ">
-
-                            <tr>
-
-                                <th>S.No</th>
-                                <th>Project</th>
-                                <th>CLID</th>
-                                <th>Name</th>
-                                <th>PP Number</th>
-                                <th>Contact</th>
-                                <th>Status</th>
-                                <th>Age</th>
-                                <th>Last Update</th>
-                                <th>Next Action</th>
-                                <th>Next Action On</th>
-                                <th>Remark</th>
-
-                            </tr>
-
-                        </thead>
-
-                        <tbody>
-        `;
-
-        let subIndex = 1;
-
-        rows.forEach(row => {
-
+            // =========================
+            // CLOSURE TABLE
+            // =========================
             html += `
-
-            <tr class="closure-data-row"
-                data-status="${row.status || ''}">
-
-                <td>
-                    ${subIndex++}
-                </td>
-
-                <td>
-                    ${row.project_name || '-'}
-                </td>
-
-                <td>
-
-                    <a href="
-                        https://erp.teamproit.com/app/closure/${row.name}
-                    "
-                    target="_blank">
-
-                        ${row.name || '-'}
-
-                    </a>
-
-                </td>
-
-                <td>
-                    ${row.given_name || '-'}
-                </td>
-
-                <td>
-                    ${row.passport_no || '-'}
-                </td>
-
-                <td>
-                    ${row.mobile || '-'}
-                </td>
-
-                <td>
-                    ${row.status || '-'}
-                </td>
-
-                <td>
-                    ${calculateAgeClosure(
-                        row.custom_history
-                    ) || '-'}
-                </td>
-
-                <td>
-                    ${formatDate(
-                        row.last_updated_on
-                    ) || '-'}
-                </td>
-
-                <td>
-                    ${row.std_remarks || '-'}
-                </td>
-
-                <td>
-                    ${formatDate(
-                        row.custom_next_follow_up_on
-                    ) || '-'}
-                </td>
-
-                <td>
-                    ${row.remark || '-'}
-                </td>
-
-            </tr>
+            <tr class="closure-table-row customer-closure-${customerKey}" style="display:none;">
+                <td colspan="19">
+                    <div class="ptsr-horizontal-scroll">
+                        <table class="table table-sm table-bordered">
+                            <thead style="background:#99ccff;color:black;">
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Project</th>
+                                    <th>CLID</th>
+                                    <th>Name</th>
+                                    <th>PP Number</th>
+                                    <th>Contact</th>
+                                    <th>Status</th>
+                                    <th>Age</th>
+                                    <th>Last Update</th>
+                                    <th>Next Action</th>
+                                    <th>Next Action On</th>
+                                    <th>Remark</th>
+                                </tr>
+                            </thead>
+                            <tbody>
             `;
 
+            let subIndex = 1;
+
+            rows.forEach(row => {
+                html += `
+                <tr>
+                    <td>${subIndex++}</td>
+                    <td>${row.project_name || '-'}</td>
+
+                    <td>
+                        <a href="https://erp.teamproit.com/app/closure/${row.name}" target="_blank">
+                            ${row.name || '-'}
+                        </a>
+                    </td>
+
+                    <td>${row.given_name || '-'}</td>
+                    <td>${row.passport_no || '-'}</td>
+                    <td>${row.mobile || '-'}</td>
+                    <td>${row.status || '-'}</td>
+                    <td>${calculateAgeClosure(row.custom_history) || '-'}</td>
+                    <td>${formatDate(row.last_updated_on) || '-'}</td>
+                    <td>${row.std_remarks || '-'}</td>
+                    <td>${formatDate(row.custom_next_follow_up_on) || '-'}</td>
+                    <td>${row.remark || '-'}</td>
+                </tr>
+                `;
+            });
+
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+            `;
         });
 
-        html += `
+    return html;
+}
 
-                        </tbody>
+    // =========================================
+    // CUSTOMER EXPAND
+    // =========================================
 
-                    </table>
+    $(document).on("click", ".toggle", function () {
 
-                </div>
+        let key = $(this).data("key");
 
-            </td>
+        let isOpen =
+            $(".customer-task-" + key).is(":visible") ||
+            $(".customer-closure-" + key).is(":visible");
 
-        </tr>
-        `;
+        if (isOpen) {
+
+            $(".customer-task-" + key).hide();
+            $(".customer-closure-" + key).hide();
+
+            $(this).text("+");
+
+        } else {
+
+            $(".customer-task-" + key).show();
+
+            $(this).text("-");
+
+        }
 
     });
 
-    return html;
+    // =========================================
+    // CUSTOMER TASK TOGGLE
+    // =========================================
 
-}
+    $(document).on("click", ".customer-task-toggle", function () {
 
-// =========================================
-// CUSTOMER EXPAND
-// =========================================
+        let key = $(this).data("key");
 
-$(document).on("click", ".toggle", function () {
-
-    let key = $(this).data("key");
-
-    let isOpen =
-        $(".customer-task-" + key).is(":visible") ||
-        $(".customer-closure-" + key).is(":visible");
-
-    if (isOpen) {
-
-        $(".customer-task-" + key).hide();
         $(".customer-closure-" + key).hide();
 
-        $(this).text("+");
+        $(".customer-task-" + key).toggle();
 
-    } else {
+    });
 
-        $(".customer-task-" + key).show();
+    // =========================================
+    // CUSTOMER CLOSURE TOGGLE
+    // =========================================
 
-        $(this).text("-");
+    $(document).on("click", ".customer-closure-toggle", function () {
 
-    }
+        let key = $(this).data("key");
 
-});
+        $(".customer-task-" + key).hide();
 
-// =========================================
-// CUSTOMER TASK TOGGLE
-// =========================================
+        $(".customer-closure-" + key).toggle();
 
-$(document).on("click", ".customer-task-toggle", function () {
+    });
 
-    let key = $(this).data("key");
+    // =========================================
+    // TOP TASK VIEW BUTTON
+    // =========================================
 
-    $(".customer-closure-" + key).hide();
+    let allTaskOpened = false;
 
-    $(".customer-task-" + key).toggle();
+    $(document).on("click", "#task-view-btn", function () {
 
-});
+        allTaskOpened = !allTaskOpened;
 
-// =========================================
-// CUSTOMER CLOSURE TOGGLE
-// =========================================
+        if (allTaskOpened) {
 
-$(document).on("click", ".customer-closure-toggle", function () {
+            $(".task-table-row").show();
 
-    let key = $(this).data("key");
+            $(".closure-table-row").hide();
 
-    $(".customer-task-" + key).hide();
+            $(".toggle").text("-");
 
-    $(".customer-closure-" + key).toggle();
+            $("#pending-status-filter").show();
 
-});
+        } else {
 
-// =========================================
-// TOP TASK VIEW BUTTON
-// =========================================
+            $(".task-table-row").hide();
 
-let allTaskOpened = false;
+            $(".toggle").text("+");
 
-$(document).on("click", "#task-view-btn", function () {
+            $("#pending-status-filter").hide();
 
-    allTaskOpened = !allTaskOpened;
+        }
 
-    if (allTaskOpened) {
+    });
 
-        $(".task-table-row").show();
+    // =========================================
+    // TOP CLOSURE VIEW BUTTON
+    // =========================================
 
-        $(".closure-table-row").hide();
+    let allClosureOpened = false;
 
-        $(".toggle").text("-");
+    $(document).on("click", "#closure-view-btn", function () {
 
-        $("#pending-status-filter").show();
+        allClosureOpened = !allClosureOpened;
 
-    } else {
+        if (allClosureOpened) {
 
-        $(".task-table-row").hide();
+            $(".closure-table-row").show();
 
-        $(".toggle").text("+");
+            $(".task-table-row").hide();
 
-        $("#pending-status-filter").hide();
+            $(".toggle").text("-");
 
-    }
+            $("#closure-status-filter").show();
 
-});
+        } else {
 
-// =========================================
-// TOP CLOSURE VIEW BUTTON
-// =========================================
+            $(".closure-table-row").hide();
 
-let allClosureOpened = false;
+            $(".toggle").text("+");
 
-$(document).on("click", "#closure-view-btn", function () {
+            $("#closure-status-filter").hide();
 
-    allClosureOpened = !allClosureOpened;
+        }
 
-    if (allClosureOpened) {
+    });
 
-        $(".closure-table-row").show();
+    // =========================================
+    // STATUS FILTER
+    // =========================================
 
-        $(".task-table-row").hide();
+    $(document).on("change", "#closure-status-filter", function () {
 
-        $(".toggle").text("-");
+        let selected =
+            $(this).val().trim();
 
-        $("#closure-status-filter").show();
+        if (!selected) {
 
-    } else {
+            $(".closure-data-row").show();
 
-        $(".closure-table-row").hide();
+            return;
+        }
 
-        $(".toggle").text("+");
+        $(".closure-data-row").hide();
 
-        $("#closure-status-filter").hide();
+        $(`.closure-data-row[data-status="${selected}"]`).show();
 
-    }
+    });
 
-});
+    // =========================================
+    // PENDING STATUS FILTER
+    // =========================================
 
-// =========================================
-// STATUS FILTER
-// =========================================
+    $(document).on("change", "#pending-status-filter", function () {
 
-$(document).on("change", "#closure-status-filter", function () {
+        let selected = $(this).val().trim();
 
-    let selected =
-        $(this).val().trim();
+        // SHOW ALL
+        if (!selected) {
 
-    if (!selected) {
+            $(".task-data-row").show();
 
-        $(".closure-data-row").show();
+            return;
+        }
 
-        return;
-    }
+        // HIDE ALL FIRST
+        $(".task-data-row").hide();
 
-    $(".closure-data-row").hide();
+        // SHOW ONLY MATCHED ROWS
+        $(`.task-data-row[data-filter*="${selected}"]`).show();
 
-    $(`.closure-data-row[data-status="${selected}"]`).show();
-
-});
-
-// =========================================
-// PENDING STATUS FILTER
-// =========================================
-
-$(document).on("change", "#pending-status-filter", function () {
-
-    let selected = $(this).val().trim();
-
-    // SHOW ALL
-    if (!selected) {
-
-        $(".task-data-row").show();
-
-        return;
-    }
-
-    // HIDE ALL FIRST
-    $(".task-data-row").hide();
-
-    // SHOW ONLY MATCHED ROWS
-    $(`.task-data-row[data-filter*="${selected}"]`).show();
-
-});
+    });
 
 
 
@@ -10312,24 +10690,33 @@ table td {
     }
     updateDateTime();
     setInterval(updateDateTime, 1000);
-    function renderSimpleCard(selector, label, value, curr = null, color = 'green') {
+    function renderSimpleCard(selector, label, value, curr = null, color = '#4f46e5', icon = 'ti ti-chart-bar') {
 
         if (curr) {
             const formattedTotal = formatMoney(curr);
 
             $(wrapper).find(selector).html(`
-        <div class="card-inner">
-            <h3>${label}</h3>
-            <div class="amount" style="color: ${color}">${value}(${formattedTotal})</div>
+        <div class="card-top-line" style="background-color: ${color};"></div>
+        <div class="card-body">
+            <div class="card-icon" style="color: ${color};">
+                <i class="${icon}"></i>
+            </div>
+            <div class="card-title">${label}</div>
+            <div class="card-value" style="color: ${color};">${value}</div>
+            <div style="font-size: 14px; color: #666; margin-top: 5px;">(${formattedTotal})</div>
         </div>
     `);
         }
         else {
 
             $(wrapper).find(selector).html(`
-        <div class="card-inner">
-            <h3>${label}</h3>
-            <div class="amount" style="color: ${color}">${value}</div>
+        <div class="card-top-line" style="background-color: ${color};"></div>
+        <div class="card-body">
+            <div class="card-icon" style="color: ${color};">
+                <i class="${icon}"></i>
+            </div>
+            <div class="card-title">${label}</div>
+            <div class="card-value" style="color: ${color};">${value}</div>
         </div>
     `);
 
@@ -10351,39 +10738,39 @@ table td {
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_teampro_closure_count",
-        callback: r => renderSimpleCard('.teampro-closure-count-card', 'Internal', r.message || 0)
+        callback: r => renderSimpleCard('.teampro-closure-count-card', 'Internal', r.message || 0, null, '#007BFF', 'ti ti-building')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_candidate_agent_closure_count",
-        callback: r => renderSimpleCard('.candidate-agent-closure-count-card', 'Candidate', r.message || 0)
+        callback: r => renderSimpleCard('.candidate-agent-closure-count-card', 'Candidate', r.message || 0, null, '#6C757D', 'ti ti-user')
     });
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_agent_closure_count",
-        callback: r => renderSimpleCard('.agent-closure-count-card', 'Agent', r.message || 0)
+        callback: r => renderSimpleCard('.agent-closure-count-card', 'Agent', r.message || 0, null, '#8c7bf4ff', 'ti ti-users')
     });
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_supp_agent_closure_count",
-        callback: r => renderSimpleCard('.supp-closure-count-card', 'Supplier', r.message || 0)
+        callback: r => renderSimpleCard('.supp-closure-count-card', 'Supplier', r.message || 0, null, '#5ee274ff', 'ti ti-truck')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_client_closure_count",
-        callback: r => renderSimpleCard('.client-closure-count-card', 'Client', r.message || 0)
+        callback: r => renderSimpleCard('.client-closure-count-card', 'Client', r.message || 0, null, '#17A2B8', 'ti ti-building-arch')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_so_pending_count",
-        callback: r => renderSimpleCard('.so_pending', 'SO Pending', r.message.count || 0, r.message.total || 0)
+        callback: r => renderSimpleCard('.so_pending', 'SO Pending', r.message.count || 0, r.message.total || 0, '#171fb8ff', 'ti ti-file-invoice')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_nepal_closure_count",
-        callback: r => renderSimpleCard('.nepal-closure-count-card', 'Nepal', r.message || 0)
+        callback: r => renderSimpleCard('.nepal-closure-count-card', 'Nepal', r.message || 0, null, '#e9ff40ff', 'ti ti-flag')
     });
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_srilanka_closure_count",
-        callback: r => renderSimpleCard('.srilanka-closure-count-card', 'Srilanka', r.message || 0)
+        callback: r => renderSimpleCard('.srilanka-closure-count-card', 'Srilanka', r.message || 0, null, '#f079f9ff', 'ti ti-flag-2')
     });
 
 
@@ -10525,8 +10912,19 @@ table td {
         color: #000;
         font-weight: bold;
     }
+   .triangle-icon {
+        float: right;
+        font-size: 8px;
+        color: #384765;
+        display: inline-block; /* Required for CSS transforms to work on a span */
+        transition: transform 0.3s ease-in-out; /* Controls the speed and smoothness */
+        margin-top: 3px;
+    }
     
-
+    /* When the Javascript adds 'expanded' class, flip it upside down */
+    .expanded .triangle-icon {
+        transform: rotate(180deg); 
+    }
 
 
 
@@ -10555,8 +10953,8 @@ table td {
 
             html += `<tr>
             <td class="territory-cell" style="cursor:pointer; text-align:left;" data-territory="${terr}">
-                <span class="toggle-icon" style="font-weight:bold; color:#002060; margin-right:4px;float:left;">[+]</span>
                 <strong>${terr}</strong>
+                <span class="triangle-icon">&#9660;</span>
             </td>`;
 
             statuses.forEach(status => {

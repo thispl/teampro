@@ -5,8 +5,9 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 		title: 'None',
 		single_column: true
 	});
+// Hide only the Service filter input and its wrapper container
 
-	page.set_title("Finance & Admin");
+	page.set_title("Finance & Accounts");
 	frappe.breadcrumbs.add('TEAMPRO');
 	const style = document.createElement('style');
 	style.innerHTML = `
@@ -69,7 +70,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 	color: white;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	text-align: center;
-	font-size: 18px;
+	font-size: 14px;
 	font-weight: bold;
 	min-width: 150px;
 	flex-shrink: 0;
@@ -181,6 +182,16 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
   .blink-border {
     animation: blink-border 2s infinite;
   }
+
+  @keyframes blink-border-name {
+    0%   { border-color: rgb(255, 255, 255); }
+    50%  { border-color: transparent; }
+    100% { border-color: rgb(255, 255, 255); }
+  }
+
+  .blink-border-name {
+    animation: blink-border-name 0.2s infinite;
+  }
 	.receivable-card1 {
 		background-color: #4b0082; /* Indigo - strong but professional */
 
@@ -235,7 +246,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 		
 <div class="dashboard-wrapper">
 			<div style="position: relative; padding: 10px; text-align: center;">
-				<h2 style="font-weight: bold; margin: 0;">Finance & Admin</h2>
+				<h2 style="font-weight: bold; margin: 0;">Finance & Accounts</h2>
 				<div class="top-actions">
 					<input type="date" id="tfp-from-date" class="form-control" style="width: 140px;">
 					<input type="date" id="tfp-to-date" class="form-control" style="width: 140px;">
@@ -247,10 +258,218 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 	<div class="active-customer-wrapper" style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin-left: 15px; margin-right: 15px;">
 	<div class="dashboard-cards-finaince" style="display: flex; gap: 30px; flex-wrap: nowrap; overflow-x: auto; justify-content: space-between;">
-		<div class="dashboard-card order-booking-card"></div>
-		<div class="dashboard-card turnover-card"></div>
-		<div class="dashboard-card collection-card"></div>
-		<div class="dashboard-card receivable-card"></div>
+		
+	
+
+    <style>
+        .dashboard-cards-finaince{
+            display:flex;
+            gap:30px;
+            flex-wrap:nowrap;
+            overflow-x:auto;
+            justify-content:space-between;
+        }
+
+		.dashboard-card,
+		.po_out,
+		.po,
+		.amount {
+			min-width: 200px;
+			height: 170px;
+			border-radius: 20px;
+			background: #ffffff;
+			border-top: 5px solid #f59e0b;
+			box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+			position: relative;
+			overflow: hidden;
+			padding: 10px;
+		}
+
+		.dashboard-card::before,
+		.po_out::before,
+		.po::before,
+		.amount::before {
+			content: '';
+			position: absolute;
+			top: -25px;
+			right: -25px;
+			width: 80px;
+			height: 80px;
+			border-radius: 50%;
+			background: #fff7ed; /* default orange light */
+		}
+
+		.turnover-card1      { border-top-color: #4f46e5; }
+		.turnover-card1::before      { background: #ede9fe; } /* purple light */
+
+		.order-booking-card1 { border-top-color: #10b981; }
+		.order-booking-card1::before { background: #d1fae5; } /* green light */
+
+		.order-booking-card  { border-top-color: #3b82f6; }
+		.order-booking-card::before  { background: #dbeafe; } /* blue light */
+
+		.turnover-card       { border-top-color: #ec4899; }
+		.turnover-card::before       { background: #fce7f3; } /* pink light */
+
+		.collection-card     { border-top-color: #f43f5e; }
+		.collection-card::before     { background: #ffe4e6; } /* red light */
+
+		.receivable-card     { border-top-color: #8b5cf6; }
+		.receivable-card::before     { background: #ede9fe; } /* violet light */
+
+		.po_out              { border-top-color: #14b8a6; }
+		.po_out::before              { background: #ccfbf1; } /* teal light */
+
+		.po                  { border-top-color: #f97316; }
+		.po::before                  { background: #ffedd5; } /* amber light */
+
+		.amount          { border-top-color: #06b6d4; }
+		.amount::before          { background: #cffafe; } /* cyan light */
+			
+		#rec_service_filter .frappe-control,
+		#rec_am_filter .frappe-control,
+		#rec_pm_filter .frappe-control {
+			margin-bottom: 0 !important;
+			padding-bottom: 0 !important;
+		}
+
+		#rec_service_filter .form-group,
+		#rec_am_filter .form-group,
+		#rec_pm_filter .form-group {
+				margin-bottom: 0 !important;
+		}
+
+		#rec_service_filter input,
+		#rec_am_filter input,
+		#rec_pm_filter input {
+			height: 30px !important;
+			font-size: 12px !important;
+			padding: 4px 8px !important;
+			min-width: 120px;
+		}
+			#to_service_filter .frappe-control,
+			#to_am_filter .frappe-control,
+			#to_pm_filter .frappe-control {
+				margin-bottom: 0 !important;
+				padding-bottom: 0 !important;
+			}
+
+			#to_service_filter .form-group,
+			#to_am_filter .form-group,
+			#to_pm_filter .form-group {
+				margin-bottom: 0 !important;
+			}
+
+			#to_service_filter input,
+			#to_am_filter input,
+			#to_pm_filter input {
+				height: 30px !important;
+				font-size: 12px !important;
+				padding: 4px 8px !important;
+				min-width: 120px;
+			}
+		#bill_service_filter .frappe-control,
+		#bill_am_filter .frappe-control,
+		#bill_pm_filter .frappe-control {
+			margin-bottom: 0 !important;
+			padding-bottom: 0 !important;
+		}
+
+		#bill_service_filter .form-group,
+		#bill_am_filter .form-group,
+		#bill_pm_filter .form-group {
+			margin-bottom: 0 !important;
+		}
+
+		#bill_service_filter input,
+		#bill_am_filter input,
+		#bill_pm_filter input {
+			height: 30px !important;
+			font-size: 12px !important;
+			padding: 4px 8px !important;
+			min-width: 120px;
+		}
+		#ob_service_filter .frappe-control,
+		#ob_am_filter .frappe-control,
+		#ob_pm_filter .frappe-control {
+			margin-bottom: 0 !important;
+			padding-bottom: 0 !important;
+		}
+
+		#ob_service_filter .form-group,
+		#ob_am_filter .form-group,
+		#ob_pm_filter .form-group {
+			margin-bottom: 0 !important;
+		}
+
+		#ob_service_filter input,
+		#ob_am_filter input,
+		#ob_pm_filter input {
+			height: 30px !important;
+			font-size: 12px !important;
+			padding: 4px 8px !important;
+			min-width: 120px;
+		}
+		#tb_service_filter .frappe-control,
+		#tb_am_filter .frappe-control,
+		#tb_pm_filter .frappe-control {
+			margin-bottom: 0 !important;
+			padding-bottom: 0 !important;
+		}
+
+		#tb_service_filter .form-group,
+		#tb_am_filter .form-group,
+		#tb_pm_filter .form-group {
+			margin-bottom: 0 !important;
+		}
+
+		#tb_service_filter input,
+		#tb_am_filter input,
+		#tb_pm_filter input {
+			height: 30px !important;
+			font-size: 12px !important;
+			padding: 4px 8px !important;
+			min-width: 120px;
+		}
+		#pay_service_filter .frappe-control,
+		#pay_am_filter .frappe-control,
+		#pay_pm_filter .frappe-control {
+			margin-bottom: 0 !important;
+			padding-bottom: 0 !important;
+		}
+
+		#pay_service_filter .form-group,
+		#pay_am_filter .form-group,
+		#pay_pm_filter .form-group {
+				margin-bottom: 0 !important;
+		}
+
+		#pay_service_filter input,
+		#pay_am_filter input,
+		#payc_pm_filter input {
+			height: 30px !important;
+			font-size: 12px !important;
+			padding: 4px 8px !important;
+			min-width: 120px;
+		}
+
+
+
+    </style>
+
+    <div class="dashboard-cards-finaince">
+		<div class="dashboard-card turnover-card1"></div>
+		<div class="dashboard-card order-booking-card1"></div>
+        <div class="dashboard-card order-booking-card"></div>
+        <div class="dashboard-card turnover-card"></div>
+        <div class="po_out"></div>
+        <div class="po"></div>
+        <div class="amount"></div>
+		
+		
+    </div>
+
+		
 	</div>
 </div>
 
@@ -258,25 +477,25 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 <div style="display: flex; flex-wrap: wrap; gap: 20px; margin: 20px 15px; justify-content: space-between;">
 
   <!-- Collection Outstanding -->
-  <div style="background-color: #f5f5f5; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; flex: 1; min-width: 30%; box-sizing: border-box;">
+  <div style=" display: none; background-color: #f5f5f5; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; flex: 1; min-width: 30%; box-sizing: border-box;">
     <h4 style="margin: 10px 0; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">COLLECTION OUTSTANDING</h4>
-		<div style="display:flex; gap:10px; margin-bottom:10px;">
+		<div style="display:flex; gap:10px; margin-top:-20px;">
 
-		<div id="service_filter"></div>
+			<div id="service_filter"></div>
 
-		<div id="am_filter"></div>
+			<div id="am_filter"></div>
 
-		<div id="dm_filter"></div>
+			<div id="dm_filter"></div>
 
-	</div>
+		</div>
 
-	<div id="receivable-so-table-content" style="margin-top: 10px;"></div>
+	<div id="receivable-so-table-content" style="margin-top: -50px;"></div>
   </div>
 
   <!-- Sales Order O/S (Billing) -->
-  <div style="background-color: #f5f5f5; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; flex: 1; min-width: 30%; box-sizing: border-box;">
+  <div style=" display: none; background-color: #f5f5f5; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; flex: 1; min-width: 30%; box-sizing: border-box;">
     <h4 style="margin: 10px 0; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">SALES ORDER O/S (BILLING) - SERVICES</h4>
-    <div style="display:flex; gap:10px; margin-bottom:0px;margin-top:5px;">
+    <div style="display:flex; gap:10px; margin-bottom:0px;margin-top:-20px;">
         <div id="invoice_service_filter"></div>
 
         <div id="invoice_am_filter"></div>
@@ -284,11 +503,11 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
         <div id="invoice_dm_filter"></div>
 
     </div>
-	<div id="tobill-so-table-content" style="margin-top: 10px;"></div>
+	<div id="tobill-so-table-content" style="margin-top: -60px;"></div>
   </div>
 
   <!-- Sales Order O/S (Collection) -->
-  <div style="background-color: #f5f5f5; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; flex: 1; min-width: 30%; box-sizing: border-box;">
+  <div style=" display: none; background-color: #f5f5f5; max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; flex: 1; min-width: 30%; box-sizing: border-box;">
     <h4 style="margin: 10px 0; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">SALES ORDER O/S (COLLECTION) - SERVICES</h4>
     <div id="rec-so-table-content" style="margin-top: 10px;"></div>
   </div>
@@ -301,15 +520,12 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 
 
-<div class="active-customer-wrapper" style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin: 20px 15px 0 15px;width:98%">
+<div class="active-customer-wrapper" style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin: 20px 15px 0 15px;width:98%;display:none;">
   <div class="dashboard-cards-finaince" style="display: flex; gap: 30px; overflow-x: auto;">
     <div class="bank"></div>
     <div class="cash" ></div>
     <div class="sfd" ></div>
     <div class="lfd" ></div>
-    <div class="po" ></div>
-    <div class="po_payment"></div>
-    <div class="po_out" ></div>
 </div>
 </div>
 
@@ -317,9 +533,9 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 <div style="display: flex; justify-content: space-between; gap: 20px; padding: 20px 15px; flex-wrap: nowrap;">
 
   <!-- Table 1 -->
-  <div style="background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
+  <div style="display: none;background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">CLOSURE - PAYMENT FROM</h4>
-     <div style="display:flex; gap:10px; margin-bottom:0px;margin-top:5px;">
+     <div style="display:flex; gap:10px; margin-bottom:0px;margin-top:-20px;">
         <div id="closure_service_filter"></div>
 
         <div id="closure_am_filter"></div>
@@ -327,17 +543,17 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
         <div id="closure_dm_filter"></div>
 
     </div>
-	<div id="so-table-content" style="margin-top: -10px;"></div>
+	<div id="so-table-content" style="margin-top: -60px;"></div>
   </div>
 
   <!-- Table 2 -->
-  <div style="background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
+  <div style="display: none;background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">FUND IN HAND</h4>
     <div id="so-table" style="margin-top: 10px;"></div>
   </div>
 
   <!-- Table 3 -->
-  <div style="background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
+  <div style="display: none;background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">PURCHASE ORDER - BILLING OUTSTANDING</h4>
     <div id="table_two" style="margin-top: 10px;"></div>
   </div>
@@ -348,18 +564,18 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 <div style="display: flex; justify-content: space-between; gap: 20px; padding: 0 15px;flex-wrap: nowrap;">
 
   <!-- Table 4 -->
-  <div style="background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
+  <div style="display: none;background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">PURCHASE ORDER O/S (PAYMENT) GR.</h4>
     <div id="table_three" style="margin-top: 10px;"></div>
   </div>
 
   <!-- Table 5 -->
-  <div style="background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
+  <div style="display: none;background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">PAYMENT OUTSTANDING ON PURCHASE INVOICE</h4>
     <div id="table_f" style="margin-top: 10px;"></div>
   </div>
 	<!-- Table 6 -->
-  <div style="background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
+  <div style="display: none;background-color: #f5f5f5; max-height: 400px; border: 1px solid #ddd; border-radius: 8px; padding: 15px; width: 33%; box-sizing: border-box; position: relative;">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;"></h4>
     <div id="" style="margin-top: 10px;"></div>
   </div>
@@ -369,7 +585,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 <!-- Chart Wrapper with Padding -->
 <div style="padding: 20px 15px;">
-  <div style="display: flex; justify-content: space-between; gap: 20px; flex-wrap: nowrap;">
+  <div style="display: flex; justify-content: space-between; gap: 20px; flex-wrap: nowrap;display:none">
 
     <!-- Chart 1 -->
     <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;">
@@ -405,7 +621,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 <div style="display: flex; justify-content: space-between; gap: 20px; padding: 0px 15px; flex-wrap: nowrap;">
 
   <!-- Chart 4 -->
-  <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;">
+  <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;display:none">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">PO PAYMENT</h4>
     <div id="chart_scroll_wrapper_4" style="overflow-x: auto; text-align: center;">
       <div id="chart_4" style="min-width: 1000px; margin: 0 auto; display: table;"></div>
@@ -413,7 +629,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
   </div>
 
   <!-- Chart 5 -->
-  <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;">
+  <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;display:none">
     <h4 style="margin: 10px; text-align: center; background: white;">PI O/S</h4>
     <div id="chart_scroll_wrapper_5" style="overflow-x: auto; text-align: center;">
       <div id="chart_5" style="min-width: 800px; margin: 0 auto; display: table;"></div>
@@ -421,7 +637,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
   </div>
 
   <!-- Chart 6 -->
-  <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;">
+  <div style="background-color: #f5f5f5; border: 1px solid #ddd; border-radius: 8px;padding: 15px; width: calc((100% - 40px) / 3); box-sizing: border-box;display:none">
     <h4 style="margin: 10px; text-align: center; background: white; position: sticky; top: 0; z-index: 1;"></h4>
     <div id="chart_scroll_wrapper_6" style="overflow-x: auto; text-align: center;">
       <div id="chart_6" style="min-width: 1000px; margin: 0 auto; display: table;"></div>
@@ -430,23 +646,30 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 	</div>
 
-	<br>
 	
-<div style="position: relative; padding: 10px; text-align: center;">
-				<h2 style="font-weight: bold; margin: 0;">FOOD PRODUCTS</h2>
-				<div class="top-actions">
-					<input type="date" id="tfp-from-date1" class="form-control" style="width: 140px;">
-					<input type="date" id="tfp-to-date1" class="form-control" style="width: 140px;">
-					<button id="apply-tfp-filter1" class="btn btn-primary">Apply</button>
-					<button id="refresh-dashboard" class="btn btn-primary">Refresh</button>
-				</div>
-				<div id="current-datetime" style="font-size: 16px; color: #666; margin-top: 5px;"></div>
+	
+		<div style="position: relative; padding: 0px 10px; text-align: center; line-height:1;">
+
+			<div style="
+				display:flex;
+				justify-content:flex-end;
+				align-items:center;
+				margin:0;
+				padding:0;
+				height:auto;
+			">
+
+				<div id="overall_service_filter" style="width:200px; margin:0;"></div>
+
 			</div>
 
-			<div class="active-customer-wrapper" style="background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
+		</div>
+
+</div>
+
+			<div class="active-customer-wrapper" style="display: none; background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
 			<div class="dashboard-cards-finaince" style="display: flex; gap: 30px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 30px;">
-				<div class="dashboard-card order-booking-card1"></div>
-				<div class="dashboard-card turnover-card1"></div>
+				
 				<div class="dashboard-card collection-card1"></div>
 				<div class="dashboard-card receivable-card1"></div>
 				<div class="dashboard-card tobill-card1"></div>
@@ -454,38 +677,140 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 				<div class="dashboard-card payable-card1"></div>
 			</div>
 			</div>
-
+	<div style="background-color: #f5f5f5;display: flex;gap: 5px;padding-bottom: 10px;margin-top: -90px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd;border-radius: 8px;">
+    
+		<div id="tfp-receivable-table1" style="width: 100%;border: 1px solid #ddd;border-radius: 8px;padding: 10px;box-sizing: border-box;margin: 15px;position: relative;">
 			
-<div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
-	<!-- RECEIVABLE -->
-	<div id="tfp-receivable-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin-left: 15px; margin-top: 15px; position: relative;">
-	<h4 style="margin: 10px; padding: 0px 0; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">RECEIVABLE</h4>
-	<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-		<button id="download9-dashboard" class="btn btn-secondary">Download</button>
+			<div style="display: flex; align-items: center; justify-content: space-between; height:50px; background: white; position: sticky; top: 0; z-index: 1; padding: 2px 10px; margin-bottom: -15px;">
+				
+				<h3 style="margin: 0;">TURNOVER</h3>
+				
+				<div style="display: flex; align-items: center; gap: 10px;">
+					<div id="to_service_filter" style="margin: 0; padding: 0;"></div>
+					<div id="to_am_filter" style="margin: 0; padding: 0;"></div>
+					<div id="to_pm_filter" style="margin: 0; padding: 0;"></div>
+					<button id="download-to-dashboard" class="btn btn-secondary">Download</button>
+				</div>
+
+			</div>
+
+			<div id="to-table-content1" style="width: 100%; margin-top: 15px;"></div>
+		</div>
 	</div>
-	<div id="receivable-so-table-content1" style="margin-top: 0px;"></div>
+	<br>
+	<div style="background-color: #f5f5f5;display: flex;gap: 5px;padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd;border-radius: 8px;">
+		<div id="tfp-receivable-table2" style="width: 98%;border: 1px solid #ddd;border-radius: 8px;padding: 10px;box-sizing: border-box;margin: 15px;position: relative;">
+			
+			<div style="display: flex; align-items: center; justify-content: space-between; height:50px; background: white; position: sticky; top: 0; z-index: 1; padding: 2px 10px; margin-bottom: -15px;">
+				
+				<h3 style="margin: 0;">ORDER BOOKING</h3>
+
+				<div style="display: flex; align-items: center; gap: 10px;">
+					<div id="ob_service_filter" style="margin: 0; padding: 0;"></div>
+					<div id="ob_am_filter" style="margin: 0; padding: 0;"></div>
+					<div id="ob_pm_filter" style="margin: 0; padding: 0;"></div>
+					<button id="download-ob" class="btn btn-secondary">Download</button>
+				</div>
+
+			</div>
+			<div id="ob-table" style="width: 100%; margin-top: 15px;"></div>
+		</div>
+	</div>
+
+	<br>		
+	<div style="background-color: #f5f5f5;display: flex;gap: 5px;padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd;border-radius: 8px;">
+    <div id="tfp-receivable-table3" style="width: 100%;border: 1px solid #ddd;border-radius: 8px;padding: 10px;box-sizing: border-box;margin: 15px;position: relative;">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; height:50px; background: white; position: sticky; top: 0; z-index: 1; padding: 2px 10px; margin-bottom: -15px;">
+            
+            <h3 style="margin: 0;">RECEIVABLE</h3>
+
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="rec_service_filter" style="margin: 0; padding: 0;"></div>
+                <div id="rec_am_filter" style="margin: 0; padding: 0;"></div>
+                <div id="rec_pm_filter" style="margin: 0; padding: 0;"></div>
+                <button id="download9-dashboard" class="btn btn-secondary">Download</button>
+            </div>
+
+        </div>
+        <div id="receivable-so-table-content1" style="width: 100%; margin-top: 15px;"></div>
+    </div>
 </div>
 
-	<!-- TO BILL -->
-<div id="tfp-tobill-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin-top: 15px; position: relative;">
-	<h4 style="margin: 0; padding: 0px 0; text-align:center; background: white; position: sticky; top: 0; z-index: 1;">TO BILL</h4>
-	<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-		<button id="download10-dashboard" class="btn btn-secondary">Download</button>
-	</div>
-	<div id="tobill-so-table-content1" style="margin-top: 0px;"></div>
+<br>
+
+
+		
+	<div style="background-color: #f5f5f5;display: flex;gap: 5px;margin-top: 5px;padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd;border-radius: 8px;">
+    <div id="tfp-receivable-table4" style="width: 100%;width:98%; border: 1px solid #ddd;border-radius: 8px;padding: 10px;box-sizing: border-box;margin: 15px;position: relative;">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; height:50px; background: white; position: sticky; top: 0; z-index: 1; padding: 2px 10px; margin-bottom: -15px;">
+            
+            <h3 style="margin: 0;">TO BILL</h3>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="bill_service_filter" style="margin: 0; padding: 0;"></div>
+                <div id="bill_am_filter" style="margin: 0; padding: 0;"></div>
+                <div id="bill_pm_filter" style="margin: 0; padding: 0;"></div>
+                <button id="download10-dashboard" class="btn btn-secondary">Download</button>
+            </div>
+
+        </div>
+
+        <div id="tobill-so-table-content1" style="width: 100%; margin-top: 15px;"></div>
+    </div>
+</div>
+<br>
+
+<div style="background-color: #f5f5f5;display: flex;gap: 5px;margin-top: 5px;padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd;border-radius: 8px;">
+    <div id="tfp-receivable-table5" style="width: 100%;width:98%; border: 1px solid #ddd;border-radius: 8px;padding: 10px;box-sizing: border-box;margin: 15px;position: relative;">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; height:50px; background: white; position: sticky; top: 0; z-index: 1; padding: 2px 10px; margin-bottom: -15px;">
+            
+            <h3 style="margin: 0;">PAYABLE</h3>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="pay_service_filter" style="margin: 0; padding: 0;"></div>
+                <div id="pay_am_filter" style="margin: 0; padding: 0;"></div>
+                <div id="pay_pm_filter" style="margin: 0; padding: 0;"></div>
+                <button id="download11-dashboard" class="btn btn-secondary">Download</button>
+            </div>
+
+        </div>
+
+        <div id="payable-so-table-content" style="width: 100%; margin-top: 15px;"></div>
+    </div>
+</div>
+
+	
+
+<br>
+	
+
+
+		
+	<div style="background-color: #f5f5f5;display: flex;gap: 5px;margin-top: 5px;padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd;border-radius: 8px;">
+    <div id="tfp-receivable-table6" style="width: 100%;width:98%; border: 1px solid #ddd;border-radius: 8px;padding: 10px;box-sizing: border-box;margin: 15px;position: relative;">
+        
+        <div style="display: flex; align-items: center; justify-content: space-between; height:50px; background: white; position: sticky; top: 0; z-index: 1; padding: 2px 10px; margin-bottom: -15px;">
+            
+            <h3 style="margin: 0;">TO BOOK</h3>
+            
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div id="tb_service_filter" style="margin: 0; padding: 0;"></div>
+                <div id="tb_am_filter" style="margin: 0; padding: 0;"></div>
+                <div id="tb_pm_filter" style="margin: 0; padding: 0;"></div>
+                <button id="download-tb" class="btn btn-secondary">Download</button>
+            </div>
+
+        </div>
+
+        <div id="tb-table" style="width: 100%; margin-top: 15px;"></div>
+    </div>
 </div>
 
 
-	<!-- PAYABLE -->
-	<div id="tfp-payable-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-right: 15px;margin-top:15px;  position: relative;">
-		<h4 style="margin: 0; padding: 0px 0; text-align:center; background: white; position: sticky; top: 0; z-index: 1;">PAYABLE</h4>
-		<div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
-		<button id="download11-dashboard" class="btn btn-secondary">Download</button>
-	</div>
-		<div id="payable-so-table-content" style="margin-top: 0px;"></div>
-	</div>
 
-</div>
 <br>
 <div style="background-color:#f5f5f5; display:flex; gap:20px; margin:30px 15px; padding:10px; border:1px solid #ddd; border-radius:8px;">
 
@@ -517,144 +842,6 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 </div>
 <br>
-<div class="dashboard-wrapper">
-	<div style="position: relative; padding: 10px;">
-		<h2 style="text-align: center; font-weight: bold; margin: 0;">HR SERVICES</h2>
-		<div id="current-datetime" style="font-size: 16px; color: #666; text-align: center; margin-top: 5px;"></div>
-
-		<div class="top-actions">
-			<input type="date" id="tfp-from-date2" class="form-control" style="width: 140px;">
-			<input type="date" id="tfp-to-date2" class="form-control" style="width: 140px;">
-			<button id="apply-tfp-filter2" class="btn btn-dark">Apply</button>
-			<button id="refresh-dashboard" class="btn btn-dark">Refresh</button>
-		</div>
-	</div>
-
-	<div class="active-customer-wrapper" style="background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
-		<div class="dashboard-cards-finaince" style="display: flex; gap: 30px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 30px;">
-			<div class="dashboard-card order-booking-card2" style="background-color: #0096A6;"></div>
-			<div class="dashboard-card turnover-card2" style="background-color: #2F8F46;"></div>
-			<div class="dashboard-card collection-card2" style="background-color: #C29100;"></div>
-			<div class="dashboard-card receivable-card2" style="background-color: #540D6E;"></div>
-			<div class="dashboard-card tobill-card2" style="background-color: #006D77;"></div>
-			<div class="dashboard-card todeliverbill-card2" style="background-color: #457B9D;"></div>
-			<div class="dashboard-card payable-card2" style="background-color: #8B0000;"></div>
-		</div>
-	</div>
-	<div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
-
-	<!-- RECEIVABLE -->
-	<div id="tfp-receivable-table" style="margin-left:15px;min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-top:20px;">
-		<h4 style="margin: 0; padding: 0px 0; text-align:center; background: white; position: sticky; top: 0; z-index: 1;">RECEIVABLE</h4>
-		<div id="receivable-so-table-content2" style="margin-top: 0px;"></div>
-	</div>
-
-	<!-- TO BILL -->
-	<div id="tfp-tobill-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-top:20px;">
-		<h4 style="margin: 0; padding: 0px 0; text-align:center; background: white; position: sticky; top: 0; z-index: 1;">TO BILL</h4>
-		<div id="tobill-so-table-content2" style="margin-top: 0px;"></div>
-	</div>
-
-	<!-- PAYABLE -->
-	<div id="tfp-payable-table" style="margin-right:15px;min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-top:20px;">
-		<h4 style="margin: 0; padding: 0px 0; text-align:center; background: white; position: sticky; top: 0; z-index: 1;">PAYABLE</h4>
-		<div id="payable-so-table-content2" style="margin-top: 0px;"></div>
-	</div>
-
-</div>
-
-<br>
-
-<div class="dashboard-wrapper">
-      <div style="position: relative; padding: 10px;">
-        <h2 style="text-align: center; font-weight: bold; margin: 0;">IT SERVICES</h2>
-		
-        <div id="current-datetime" style="font-size: 16px; color: #666; text-align: center; margin-top: 5px;"></div>
-		
-        <div class="top-actions">
-          <input type="date" id="tfp-from-date3" class="form-control" style="width: 140px;">
-          <input type="date" id="tfp-to-date3" class="form-control" style="width: 140px;">
-          <button id="apply-tfp-filter3" class="btn btn-dark">Apply</button>
-          <button id="refresh-dashboard" class="btn btn-dark">Refresh</button>
-        </div>
-		
-      </div>
-	  <div class="active-customer-wrapper" style="background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
-			<div class="dashboard-cards-finaince" style="display: flex; gap: 30px; flex-wrap: nowrap; overflow-x: auto; margin-bottom: 30px;">
-				<div class="dashboard-card order-booking-card3" style="background-color: #0096A6;"></div>
-				<div class="dashboard-card turnover-card3 blink-border" style="background-color: #2F8F46;"></div>
-				<div class="dashboard-card collection-card3 blink-border" style="background-color: #C29100;"></div>
-				<div class="dashboard-card receivable-card3 blink-border" style="background-color: #540D6E;"></div>
-				<div class="dashboard-card tobill-card3 blink-border" style="background-color: #006D77;"></div>
-				<div class="dashboard-card todeliverbill-card3 blink-border" style="background-color: #4169e1;"></div>
-				<div class="dashboard-card payable-card3 blink-border" style="background-color: #8B0000;"></div>
-			</div>
-		</div>
-      <div id="financial-cards" class="active-customer-wrapper" style="padding: 20px;"></div>
-      <div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: -20px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px; padding-top: 10px; padding-right: 10px; padding-left: 10px; border: 1px solid #ddd; border-radius: 8px;">
-        <div id="tfp-receivable-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-          <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">RECEIVABLE</h4>
-          <div id="receivable-so-table-content3"></div>
-        </div>
-        <div id="tfp-tobill-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-          <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">TO BILL</h4>
-          <div id="tobill-so-table-content3"></div>
-        </div>
-        <div id="tfp-payable-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-          <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">PAYABLE</h4>
-          <div id="payable-so-table-content3"></div>
-        </div>
-      </div>
-</div></div>
-
-
-
-<div class="dashboard-wrapper">
-			<div style="position:relative; padding:10px; text-align:center; ">
-			<div class= "active-customer-wrapper" ; style= "padding:10px; ">
-				<h2 style="font-weight:bold; margin:0; "> R & S Dashboard</h2>
-				<div class="top-actions1" style="width: 100%; display: flex; text-align: left; gap: 10px;">
-				</div>
-
-				<div class="top-actions"> 	
-					<input type = "date" id ="rs-from-date" class="form_control" style="width:140px;">
-					<input type = "date" id="rs-to-date" class="form_control" style="width:140px;">
-					<button id ="apply-rs-filter" class="btn btn-primary"> Apply </button>
-					<button id ="refresh-dashboard" class="btn btn-primary"> Refresh </button>
-				</div>
-				<div id= "current-datetime" style= "font-size:16px; color:#666; margin-top:5px;"></div> 
-			</div>
-			</div>
-			<br>
-			<div class="active-customer-wrapper" style="background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
-				<div class="dashboard-cards-rs" style="display:flex; gap:30px; overflow-x:auto; morgin-bottom:30px;" >
-					<div class="dashboard-card order-booking-card4"> </div>
-					<div class="dashboard-card turnover-card4"></div>
-					<div class="dashboard-card collection-card4"></div>
-					<div class="dashboard-card receivable-card4"></div>
-					<div class="dashboard-card tobill-card4"></div>
-					<div class="dashboard-card todeliverbill-card4"></div>
-				</div>
-			</div>		
-
-
-
-<div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
-
-    <!-- TO BILL -->
-	<div id="rs-tobill-table" style="width:50%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-top:15px;">
-        <h4 style="margin: 10; padding: 0px 0; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">TO BILL</h4>
-        <div id="tobill-so-table-content4" style="margin-top: 0px;"></div>
-    </div>
-
-    <!-- RECEIVABLE -->
-	<div id="rs-receivable-table" style="width:50%; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-right: 15px;margin-top:15px;">
-        <h4 style="margin: 10; padding: 0px 0; text-align: center; background: white; position: sticky; top: 0; z-index: 1;">RECEIVABLE</h4>
-        <div id="receivable-so-table-content4" style="margin-top: 0px;"></div>
-    </div>
-
-</div>
-</div>
 
 
 
@@ -664,9 +851,7 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 
 
-
-
-<div style="display: flex; justify-content: space-between; gap: 20px; padding: 20px 15px; flex-wrap: nowrap;">
+<div style="display: none; justify-content: space-between; gap: 20px; padding: 20px 15px; flex-wrap: nowrap;">
 
 	<div id="rec-i-payment-wrapper" style="width:50%;margin: 40px 20px;border: 1px solid #ddd; border-radius: 8px;background-color: #f5f5f5;margin-left:20px;margin-right:20px;">
 		<h4 style="margin-bottom: 15px;text-align:center;background-color:white;margin-top:20px">PAYMENT COLLECTION DETAILS ( RESOURCE ) </h4>
@@ -698,6 +883,11 @@ frappe.pages['finance'].on_page_load = function(wrapper) {
 
 
 		`);
+
+
+
+
+		
 loadDashboardData();
 
 	// DateTime
@@ -741,110 +931,160 @@ loadDashboardData();
 	}
 
 	// frappe.call({
-	// 	    method: "teampro.teampro.page.finance.finance_dashboard.epnc_table",
-	// 		args: {
-	// 			from_date: from_date,
-	// 			to_date: to_date
-	// 		},
-	// 	    callback: function(r) {
-	// 		    if (r.message) {
-	// 			    $('#epnc-table-content').html(r.message);
-	// 		    } else {
-	// 			    $('#epnc-table-content').html(`<p>No data found.</p>`);
-	// 		    }
-	// 	    }
-	//     });
+	// method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking_overall",
+	// callback: function(r) {
+	// 	const value = r.message || 0;
+
+    //     // Get current month and year
+    //     const now = new Date();
+    //     const currentMonth = now.getMonth() + 1; // 1-12
+    //     const currentYear = now.getFullYear();
+
+    //     // Calculate current financial month number
+    //     // April (4) is month 1, March (3) is month 12
+    //     let financialMonth;
+    //     if (currentMonth >= 4) {
+    //         financialMonth = currentMonth - 3;
+    //     } else {
+    //         financialMonth = currentMonth + 9;
+    //     }
+
+    //     // Calculate average
+    //     const avg = value / financialMonth;
+	// 	const avg_value=Math.round(avg || 0);
+
+    //     const formattedTotal = parseFloat(value).toLocaleString('en-IN', {
+    //         style: 'currency',
+    //         currency: 'INR',
+    //         maximumFractionDigits: 0 
+    //     });
+	// 	let arrowSvg = `
+	// 	<svg width="70" height="20" viewBox="0 0 60 40">
+	// 		<path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+	// 			stroke="black" stroke-width="2" fill="none" 
+	// 			stroke-linecap="round" stroke-linejoin="round" 
+	// 			style="stroke-dasharray: 4,1;" />
+	// 		<polygon points="57,10 52,0 58,0" fill="black"/>
+	// 	</svg>`;
+
+	// 			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+	// 				maximumFractionDigits: 0 
+	// 			});
+
+
+	// 			// Inject HTML into wrapper
+	// 			$(wrapper).find('.order-booking-card1').html(`
+	// 				<div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+	// 					<h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">Order Booking HI</h3>
+	// 					<div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
+	// 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+	// 					</div>
+	// 					<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
+	// 				</div>
+	// 			`);
+				
+	// 		}
+	// 	});
 
 	frappe.call({
-	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking",
-	callback: function(r) {
-		const value = r.message || 0;
+    method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking_overall",
+    callback: function(r) {
+        const data = r.message || {};
+        const value = data.total || 0;
+        const groups = data.groups || {};
 
-        // Get current month and year
         const now = new Date();
-        const currentMonth = now.getMonth() + 1; // 1-12
-        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+        let financialMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
 
-        // Calculate current financial month number
-        // April (4) is month 1, March (3) is month 12
-        let financialMonth;
-        if (currentMonth >= 4) {
-            financialMonth = currentMonth - 3;
-        } else {
-            financialMonth = currentMonth + 9;
+        function formatToLakhs(val) {
+            return '₹' + (val / 100000).toFixed(2) + 'L';
         }
 
-        // Calculate average
-        const avg = value / financialMonth;
-		const avg_value=Math.round(avg || 0);
+        const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT"];
 
-        const formattedTotal = parseFloat(value).toLocaleString('en-IN', {
-            style: 'currency',
-            currency: 'INR',
-            maximumFractionDigits: 0 
-        });
-
-        // const formattedAvg = parseFloat(avg).toLocaleString('en-IN', {
-        //     style: 'currency',
-        //     currency: 'INR',
-        //     maximumFractionDigits: 0 
-        // });
-		let arrowSvg = `
-		<svg width="70" height="20" viewBox="0 0 60 40">
-			<path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-				stroke="black" stroke-width="2" fill="none" 
-				stroke-linecap="round" stroke-linejoin="round" 
-				style="stroke-dasharray: 4,1;" />
-			<polygon points="57,10 52,0 58,0" fill="black"/>
-		</svg>`;
-
-				const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
-					maximumFractionDigits: 0 
-				});
-
-
-				// Inject HTML into wrapper
-				$(wrapper).find('.order-booking-card1').html(`
-					<div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
-						<h3 style="margin: 0; text-align:center; white-space:nowrap; font-size:17px;">Order Booking</h3>
-						<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
-						<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
-						</div>
-						<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
-					</div>
-				`);
-				
-			}
-		});
-function add_filter(parent_id, df, callback_function = null) {
-
-	$(parent_id).empty();
-
-	const control = frappe.ui.form.make_control({
-		parent: $(parent_id),
-
-		df: Object.assign({
-			reqd: 0,
-
-			onchange: function () {
-
-				frappe.dom.freeze('Loading data...');
-
-				if (callback_function) {
-					callback_function();
-				}
-			}
-
-		}, df),
-
-		render_input: true
+        const serviceItems = groupOrder.map(key => {
+		const val = groups[key] || 0;
+		return `
+			<div style="display:flex; align-items:center; padding:1px 0;">
+				<span style="font-weight:bold; font-size:10px; color:black;">${key}:</span>
+				<span style="font-size:10px; color:red; font-weight:bold; margin-left:1px;">${formatToLakhs(val)}</span>
+			</div>
+		`;
 	});
 
-	control.make();
-	control.refresh();
+	const gridHtml = `
+		<div style="display:flex; justify-content:space-around; gap:15px; margin-top:5px;margin-left:-10px;">
+			${serviceItems.slice(0, 3).join('')}
+		</div>
+		<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;">
+			${serviceItems.slice(3, 5).join('')}
+		</div>
+	`;	
 
-	return control;
+        $(wrapper).find('.order-booking-card1').html(`
+			<div  style="width:200px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+
+				<h3 style="margin:0; text-align:center; margin-top:-20px; white-space:nowrap; font-size:16px;">
+					Order Booking
+				</h3>
+
+				<div style="text-align:center; margin-top:8px;">
+					<div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+						<span style="font-size:16px; font-weight:bold; color:green;">
+							${formatToLakhs(value)}
+						</span>
+					</div>
+				</div>
+
+				<div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+					${gridHtml}
+				</div>
+			</div>
+        `);
+    }
+});
+
+function add_filter(parent_id, df, callback_function = null) {
+
+    $(parent_id).empty();
+
+    const control = frappe.ui.form.make_control({
+        parent: $(parent_id),
+
+        df: Object.assign({
+            reqd: 0,
+
+            onchange: function () {
+
+                frappe.dom.freeze('Loading data...');
+
+                if (callback_function) {
+                    Promise.resolve(callback_function()).finally(function () {
+                        frappe.dom.unfreeze();
+                    });
+                } else {
+                    frappe.dom.unfreeze();
+                }
+            }
+
+        }, df),
+
+        render_input: true
+    });
+
+    control.make();
+    control.refresh();
+
+    return control;
 }
+
+// let overall_service_filter = add_filter('#overall_service_filter', {
+// 	fieldtype: 'Link',
+// 	options: 'Services',
+// 	fieldname: 'overall_service',
+// 	placeholder: 'Service'
+// },load_overall_dashboard);
 let closure_service_filter = add_filter('#closure_service_filter', {
 	fieldtype: 'Link',
 	options: 'Services',
@@ -907,61 +1147,253 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 	placeholder: 'DM'
 }, load_so_billing);
 
+let rec_service_filter = add_filter('#rec_service_filter', {
+    fieldtype: 'Link',
+    options: 'Services',
+    fieldname: 'rec_service',
+    placeholder: 'Service'
+}, load_receivable_overall_table);
+
+let rec_am_filter = add_filter('#rec_am_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'rec_am',
+    placeholder: 'AM'
+}, load_receivable_overall_table);
+
+let rec_pm_filter = add_filter('#rec_pm_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'rec_pm',
+    placeholder: 'PM'
+}, load_receivable_overall_table);
+let to_service_filter = add_filter('#to_service_filter', {
+    fieldtype: 'Link',
+    options: 'Services',
+    fieldname: 'to_service',
+    placeholder: 'Service'
+}, load_turnover_overall_table);
+
+
+let to_am_filter = add_filter('#to_am_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'to_am',
+    placeholder: 'AM'
+}, load_turnover_overall_table);
+
+let to_pm_filter = add_filter('#to_pm_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'to_pm',
+    placeholder: 'PM'
+}, load_turnover_overall_table);
+
+let bill_service_filter = add_filter('#bill_service_filter', {
+    fieldtype: 'Link',
+    options: 'Services',
+    fieldname: 'bill_service',
+    placeholder: 'Service'
+}, load_tobill_overall_table);
+
+let bill_am_filter = add_filter('#bill_am_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'bill_am',
+    placeholder: 'AM'
+}, load_tobill_overall_table);
+
+let bill_pm_filter = add_filter('#bill_pm_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'bill_pm',
+    placeholder: 'PM'
+}, load_tobill_overall_table);
+
+let ob_service_filter = add_filter('#ob_service_filter', {
+    fieldtype: 'Link',
+    options: 'Services',
+    fieldname: 'ob_service',
+    placeholder: 'Service'
+}, load_ob_overall_table);
+
+let ob_am_filter = add_filter('#ob_am_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'ob_am',
+    placeholder: 'AM'
+}, load_ob_overall_table);
+
+let ob_pm_filter = add_filter('#ob_pm_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'ob_pm',
+    placeholder: 'PM'
+}, load_ob_overall_table);
+
+
+let tb_service_filter = add_filter('#tb_service_filter', {
+    fieldtype: 'Link',
+    options: 'Services',
+    fieldname: 'tb_service',
+    placeholder: 'Service'
+}, load_to_book_table);
+
+let tb_am_filter = add_filter('#tb_am_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'tb_am',
+    placeholder: 'AM'
+}, load_to_book_table);
+
+let tb_pm_filter = add_filter('#tb_pm_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'tb_pm',
+    placeholder: 'PM'
+}, load_to_book_table);
+
+$('#tb_am_filter').hide();
+$('#tb_pm_filter').hide();
+
+let pay_service_filter = add_filter('#pay_service_filter', {
+    fieldtype: 'Link',
+    options: 'Services',
+    fieldname: 'pay_service',
+    placeholder: 'Service'
+}, load_payable_table);
+
+let pay_am_filter = add_filter('#pay_am_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'payc_am',
+    placeholder: 'AM'
+}, load_payable_table);
+
+let pay_pm_filter = add_filter('#pay_pm_filter', {
+    fieldtype: 'Link',
+    options: 'User',
+    fieldname: 'pay_pm',
+    placeholder: 'PM'
+}, load_payable_table);
+
+$('#pay_am_filter').hide();
+$('#pay_pm_filter').hide();
+
+
+
+
+	// frappe.call({
+	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover_overall",
+	// 	callback: function(r) {
+	// 		const data = r.message || {};
+	// 		const value = data.total || 0;
+	// 		const groups = data.groups || {};
+
+	// 		const now = new Date();
+	// 		const currentMonth = now.getMonth() + 1;
+	// 		let financialMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
+
+	// 		function formatToLakhs(val) {
+	// 			return '₹' + (val / 100000).toFixed(2) + 'L';
+	// 		}
+			
+	// 		const serviceEntries = Object.entries(groups);
+	// 		const serviceRows = serviceEntries.map(([key, val]) => `
+	// 			<div style="display:flex; justify-content:space-between; align-items:center; padding:2px 4px;">
+	// 				<span style="font-weight:bold; font-size:10px; color:black;">${key}:</span>
+	// 				<span style="font-size:10px; color:red; font-weight:bold;">${formatToLakhs(val)}</span>
+	// 			</div>
+	// 		`).join('');
+
+	// 		$(wrapper).find('.turnover-card1').html(`
+	// 			<div class="card blink-border-name" style="width:180px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+					
+	// 				<h3 style="margin:0; text-align:center;margin-top:-20px; white-space:nowrap; font-size:16px;">
+	// 					Turnover
+	// 				</h3>
+
+	// 				<div style="text-align:center; margin-top:8px;">
+	// 					<div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+	// 						<span  style="font-size:13px; font-weight:bold; color:green;">
+	// 							${formatToLakhs(value)}
+	// 						</span>
+	// 					</div>
+	// 				</div>
+
+	// 				<div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px; display:grid; grid-template-columns:1fr 1fr; gap:4px;">
+	// 					${serviceRows}
+	// 				</div>
+
+	// 			</div>
+	// 		`);
+	// 	}
+	// });
+
+
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover",
-		callback: function(r) {
-			const value = r.message || 0;
+    method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover_overall",
+    callback: function(r) {
+        const data = r.message || {};
+        const value = data.total || 0;
+        const groups = data.groups || {};
 
-			// Get current month and year
-			const now = new Date();
-			const currentMonth = now.getMonth() + 1; // 1-12
-			const currentYear = now.getFullYear();
+        const now = new Date();
+        const currentMonth = now.getMonth() + 1;
+        let financialMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
 
-			// Calculate current financial month number
-			// April (4) is month 1, March (3) is month 12
-			let financialMonth;
-			if (currentMonth >= 4) {
-				financialMonth = currentMonth - 3;
-			} else {
-				financialMonth = currentMonth + 9;
-			}
+        function formatToLakhs(val) {
+            return '₹' + (val / 100000).toFixed(2) + 'L';
+        }
 
-			// Calculate average
-			const avg = value / financialMonth;
-			const avg_value=Math.round(avg || 0);
+        const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT"];
 
-			const formattedTotal = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0 
-			});
-			let arrowSvg = `
-	<svg width="70" height="20" viewBox="0 0 60 40">
-		<path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-			stroke="black" stroke-width="2" fill="none" 
-			stroke-linecap="round" stroke-linejoin="round" 
-			style="stroke-dasharray: 4,1;" />
-		<polygon points="57,10 52,0 58,0" fill="black"/>
-	</svg>`;
+        const serviceItems = groupOrder.map(key => {
+            const val = groups[key] || 0;
+            return `
+                <div style="display:flex; align-items:center; gap:2px; padding:2px 0;">
+                    <span style="font-weight:bold; font-size:10px; color:black; width:35px; text-align:right;margin-left:-5px;">${key}: </span>
+                    <span style="font-size:10px; color:red; font-weight:bold; width:45px; text-align:left;">${formatToLakhs(val)}</span>
+                </div>
+            `;
+        });
 
-		
-			const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
-				maximumFractionDigits: 0 
-			});
+        const gridHtml = `
+			<div style="display:flex; justify-content:space-around; gap:0px;margin-left:-25px;margin-top:5px;">
+				${serviceItems.slice(0, 3).join('')}
+			</div>
+			<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;">
+				${serviceItems.slice(3, 5).join('')}
+			</div>
+		`;
+        $(wrapper).find('.turnover-card1').html(`
+			
+            <div  style="width:200px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+                
+                <h3 style="margin:0; text-align:center; margin-top:-20px; white-space:nowrap; font-size:16px;">
+                    Turnover
+                </h3>
 
-			$(wrapper).find('.turnover-card1').html(`
-				<div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;font-size:17px;">Turnover</h3>
-					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
-					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
-					</div>
-					<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
-				</div>
-			`);
-		}
-	});
+                <div style="text-align:center; margin-top:8px;">
+                    <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+                        <span style="font-size:16px; font-weight:bold; color:green;">
+                            ${formatToLakhs(value)}
+                        </span>
+                    </div>
+                </div>
+
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+                    ${gridHtml}
+                </div>
+
+            </div>
+        `);
+    }
+});
+
+
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_collection_value",
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_collection_value_overall",
 		callback: function(r) {
 			const value = r.message || 0;
 
@@ -1007,10 +1439,10 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 
 				// const count = r.message || 0;
 			$(wrapper).find('.collection-card1').html(`
-				<div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
+				<div class="display:none;card blink-border" style="display:none; width: 160px; padding: 15px; border-radius: 8px;">
 					<h3 style="margin: 0;text-align:center;font-size:17px;">Collection</h3>
 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedTotal}</div>
-               <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
+               <div style="display: none;font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
                 </div>
 				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
             </div>
@@ -1018,7 +1450,7 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 		}
 	});
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_receivable",
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.receivable_overall",
 		callback: function(r) {
 			// const value = r.message || 0;
 			const value = r.message || 0;
@@ -1060,8 +1492,8 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 		</svg>`;
 				// const count = r.message || 0;
 			$(wrapper).find('.receivable-card1').html(`
-				<div class="card blink-border" style="width: 150px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;font-size:17px;">Receivable</h3>
+				<div class="display: none; card blink-border" style="width: 70px; padding: 15px; border-radius: 8px;">
+					<h3 style="margin: 0;text-align:center;font-size:14px;">Receivable</h3>
 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
                 </div>
@@ -1071,7 +1503,7 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 		}
 	});
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_to_bill_value",
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.to_bill_value_overall",
 		callback: function(r) {
 			const value = r.message || 0;
 			const now = new Date();
@@ -1109,7 +1541,7 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 </svg>`;
 				// const count = r.message || 0;
 			$(wrapper).find('.tobill-card1').html(`
-				<div class="card blink-border" style="width: 150px; padding: 15px; border-radius: 8px;">
+				<div class="display: none;card blink-border" style="width: 150px; padding: 15px; border-radius: 8px;">
 					<h3 style="margin: 0;text-align:center;font-size:17px;">To Bill</h3>
 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
@@ -1120,7 +1552,7 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 		}
 	});
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_to_deliver_bill_value",
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.to_deliver_bill_value_overall",
 		callback: function(r) {
 			const value = r.message || 0;
 			const now = new Date();
@@ -1159,7 +1591,7 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 				// const count = r.message || 0;
 			$(wrapper).find('.todeliverbill-card1').html(`
 				<div class="card blink-border" style="width: 168px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;white-space:nowrap;font-size:17px;">To Deliver and Bill</h3>
+					<h3 style="margin: 0;text-align:center;white-space:nowrap;font-size:17px;">To Deliver and </h3>
 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
                 </div>
@@ -1169,7 +1601,7 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 		}
 	});
 	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.tfp_payable",
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.payable_overall",
 		// args: { from_date, to_date },
 		callback: function(r) {
 			// const value = r.message || 0;
@@ -1212,9 +1644,9 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 			</svg>`;
 				// const count = r.message || 0;
 				$(wrapper).find('.payable-card1').html(`
-					<div class="card blink-border" style="width: 140px; padding: 15px; border-radius: 8px;">
+					<div class="card blink-border" style="width: 160px; padding: 15px; border-radius: 8px;">
 						<h3 style="margin: 0;text-align:center;font-size:17px;">Payable</h3>
-						<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+						<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;white-space:nowrap;">${formatted}</div>
 						<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;">[${formattedAvg}]
                 </div>
 				<div style="font-size: 10px;color:black;text-align: center;">[Avg]</div>
@@ -1222,53 +1654,404 @@ let invoice_dm_filter = add_filter('#invoice_dm_filter', {
 				`);
 			}
 		});
-	frappe.call({
-		method: 'teampro.teampro.page.finance_details.tfp_dashboard.tfp_receivable_table',
-		// args: { from_date, to_date },
-		callback: function(r) {
+	// Replace the existing frappe.call for receivable_table_overall with:
+	function load_receivable_overall_table() {
+		frappe.call({
+			method: 'teampro.teampro.page.finance_details.tfp_dashboard.receivable_table_overall',
+			args: {
+				service: rec_service_filter.get_value() || null,
+				am: rec_am_filter.get_value() || null,
+				pm: rec_pm_filter.get_value() || null
+			},
+			callback: function(r) {
+				if (r.message) {
+					$('#receivable-so-table-content1').html(r.message);
+				} else {
+					$('#receivable-so-table-content1').html(
+						`<div style="padding: 10px; text-align:center">No data found</div>`
+					);
+				}
+				frappe.dom.unfreeze();
+			},
+			error: function() {
+				frappe.dom.unfreeze();
+			}
+		});
+	}
+	load_receivable_overall_table();
+	// frappe.call({
+	// 	method: 'teampro.teampro.page.finance_details.tfp_dashboard.tobill_table_overall',
+	// 	// args: { from_date, to_date },
+	// 	callback: function(r) {
+	// 		if (r.message) {
+	// 			$('#tobill-so-table-content1').html(r.message);
+	// 		}
+	// 		else {
+	// 			$('#tobill-so-table-content1').html(`<div style="padding: 10px;text-align:center">No data found</div>`);
+	// 		}
+	// 	}
+	// });
+
+	function load_tobill_overall_table() {
+
+    let service = bill_service_filter.get_value();
+    let am = bill_am_filter.get_value();
+    let pm = bill_pm_filter.get_value();
+
+    frappe.call({
+        method: "teampro.teampro.page.finance_details.tfp_dashboard.tobill_table_overall",
+        args: {
+            overall_service: service,
+            account_manager: am,
+            project_manager: pm
+        },
+        callback: function(r) {
+
+            if (r.message) {
+                $("#tobill-so-table-content1").html(r.message.html);
+            }
+            else {
+                $("#tobill-so-table-content1").html(
+                    `<div style="padding:10px;text-align:center">
+                        No data found
+                    </div>`
+                );
+            }
+        }
+    });
+}
+
+load_tobill_overall_table();
+
+
+	function load_ob_overall_table() {
+
+    let service = ob_service_filter.get_value();
+    let am = ob_am_filter.get_value();
+    let pm = ob_pm_filter.get_value();
+
+    frappe.call({
+        method: "teampro.teampro.page.finance_details.tfp_dashboard.ob_table_overall",
+        args: {
+            overall_service: service,
+            account_manager: am,
+            project_manager: pm
+        },
+        callback: function(r) {
+
+            if (r.message) {
+                $("#ob-table").html(r.message.html);
+            }
+            else {
+                $("#ob-table").html(
+                    `<div style="padding:10px;text-align:center">
+                        No data found
+                    </div>`
+                );
+            }
+        }
+    });
+}
+
+load_ob_overall_table();
+function load_turnover_overall_table() {
+
+    let service = to_service_filter.get_value();
+    let am = to_am_filter.get_value();
+    let pm = to_pm_filter.get_value();
+
+    frappe.call({
+        method: "teampro.teampro.page.finance_details.tfp_dashboard.download_to_table_overall",
+        args: {
+            overall_service: service,
+            account_manager: am,
+            project_manager: pm
+        },
+        callback: function(r) {
 			if (r.message) {
-				$('#receivable-so-table-content1').html(r.message);
+				
+                $("#to-table-content1").html(r.message.html);
+            }
+            else {
+                $("#to-table-content1").html(
+                    `<div style="padding:10px;text-align:center">
+                        No data found
+                    </div>`
+                );
+            }
+        }
+    });
+}
+
+
+load_turnover_overall_table();
+function load_to_book_table() {
+    let service = tb_service_filter.get_value();
+    let am = tb_am_filter.get_value();
+    let pm = tb_pm_filter.get_value();
+
+    frappe.call({
+        method: "teampro.teampro.page.finance_details.tfp_dashboard.to_book_table_overall",
+        args: {
+            overall_service: service,
+            account_manager: am,
+            project_manager: pm
+        },
+        callback: function(r) {
+            if (r.message) {
+                $("#tb-table").html(r.message.html);
+            } else {
+                $("#tb-table").html(
+                    `<div style="padding:10px;text-align:center">No data found</div>`
+                );
+            }
+        }
+    });
+}
+
+load_to_book_table();
+load_payable_table();
+	function load_payable_table() {
+		let service = pay_service_filter.get_value();
+		let am = pay_am_filter.get_value();
+		let pm = pay_pm_filter.get_value();
+
+		frappe.call({
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.payable_table_overall",
+			args: {
+				overall_service: service,
+				account_manager: am,
+				project_manager: pm
+			},
+			callback: function(r) {
+				if (r.message) {
+					$("#payable-so-table-content").html(r.message);
+				} else {
+					$("#payable-so-table-content").html(
+						`<div style="padding:10px;text-align:center">No data found</div>`
+					);
+				}
 			}
-			else {
-				$('#receivable-so-table-content1').html(`<div style="padding: 10px;text-align:center">No data found</div>`);
-			}
+		});
+	}
+
+	// frappe.call({
+	// 	method: 'teampro.teampro.page.finance_details.tfp_dashboard.payable_table_overall',
+	// 	// args: { from_date, to_date },
+	// 	callback: function(r) {
+	// 		if (r.message) {
+	// 			$('#payable-so-table-content').html(r.message);
+	// 		}
+	// 		else {
+	// 			$('#payable-so-table-content').html(`<div style="padding: 10px;text-align:center">No data found</div>`);
+	// 		}
+	// 	}
+	// });
+	async function load_overall_dashboard() {
+
+	let overall_service = overall_service_filter.get_value();
+
+	let r = await frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_overall_dashboard_data_combined",
+		args: {
+			overall_service: overall_service
 		}
 	});
-	frappe.call({
-		method: 'teampro.teampro.page.finance_details.tfp_dashboard.tfp_tobill_table',
-		// args: { from_date, to_date },
-		callback: function(r) {
-			if (r.message) {
-				$('#tobill-so-table-content1').html(r.message);
-			}
-			else {
-				$('#tobill-so-table-content1').html(`<div style="padding: 10px;text-align:center">No data found</div>`);
-			}
-		}
+
+	let d = r.message;
+
+	const financialMonth = getFinancialMonth();
+
+	// CARDS
+	renderCard_new('.order-booking-card1', 'Order Booking', d.order_booking, financialMonth, 160);
+	renderCard_new('.turnover-card1', 'Turnover', d.turnover, financialMonth, 160);
+	renderCard_new('.receivable-card1', 'Receivable', d.receivable, financialMonth, 150);
+	renderCard_new('.tobill-card1', 'To Bill', d.to_bill, financialMonth, 150);
+	renderCard_new('.todeliverbill-card1', 'To Deliver and Bill', d.to_deliver_bill, financialMonth, 168);
+	renderCard_new('.payable-card1', 'Payable', d.payable, financialMonth, 140);
+
+	// TABLES
+	$('#ob-table').html(d.ob_table || noData());
+	$('#to-table-content1').html(d.turnover_table || noData());
+	$('#receivable-so-table-content1').html(d.receivable_table || noData());
+	$('#tobill-so-table-content1').html(d.tobill_table || noData());
+	$('#payable-so-table-content').html(d.payable_table || noData());
+	$('#tb-table').html(d.to_book_table || noData());
+	frappe.dom.unfreeze();
+}
+
+function getFinancialMonth() {
+
+	const currentMonth = new Date().getMonth() + 1;
+
+	return currentMonth >= 4
+		? currentMonth - 3
+		: currentMonth + 9;
+}
+
+function formatCurrency(value) {
+
+	return parseFloat(value || 0).toLocaleString('en-IN', {
+		style: 'currency',
+		currency: 'INR',
+		maximumFractionDigits: 0
 	});
-	frappe.call({
-		method: 'teampro.teampro.page.finance_details.tfp_dashboard.tfp_payable_table',
-		// args: { from_date, to_date },
-		callback: function(r) {
-			if (r.message) {
-				$('#payable-so-table-content').html(r.message);
-			}
-			else {
-				$('#payable-so-table-content').html(`<div style="padding: 10px;text-align:center">No data found</div>`);
-			}
-		}
-	});
+}
+
+function renderCard_new(selector, title, value, financialMonth, width=160) {
+
+	const avg = Math.round((value || 0) / financialMonth);
+
+	const formattedTotal = formatCurrency(value);
+
+	const formattedAvg = avg.toLocaleString('en-IN');
+
+	$(wrapper).find(selector).html(`
+		<div class="card blink-border"
+			style="width:${width}px;padding:15px;border-radius:8px;">
+
+			<h3 style="
+				margin:0;
+				text-align:center;
+				font-size:17px;
+				white-space:nowrap;
+			">
+				${title}
+			</h3>
+
+			<div style="
+				font-size:20px;
+				font-weight:bold;
+				margin-top:10px;
+				color:green;
+				text-align:center;
+			">
+				${formattedTotal}
+			</div>
+
+			<div style="
+				font-size:12px;
+				text-align:center;
+				color:red;
+				margin-top:5px;
+			">
+				[${formattedAvg}]
+			</div>
+
+			<div style="
+				font-size:10px;
+				color:black;
+				text-align:center;
+			">
+				[Avg]
+			</div>
+		</div>
+	`);
+}
+
+function noData() {
+	return `<div style="padding:10px;text-align:center">No data found</div>`;
+}
 	$(wrapper).on('click', '#download9-dashboard', function () {
-		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_receivable_table";
-		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+		const service = rec_service_filter.get_value() || "";
+		const am = rec_am_filter.get_value() || "";
+		const pm = rec_pm_filter.get_value() || "";
+
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_receivable_table_overall";
+		window.location.href = frappe.request.url
+			+ '?cmd=' + path
+			+ '&service=' + encodeURIComponent(service)
+			+ '&am=' + encodeURIComponent(am)
+			+ '&pm=' + encodeURIComponent(pm);
 	});
+
+	
+	$(wrapper).on('click', '#download-to-dashboard', function () {
+
+		const overall_service = to_service_filter.get_value() || "";
+		const account_manager = to_am_filter.get_value() || "";
+		const project_manager = to_pm_filter.get_value() || "";
+
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_to_table_overall_excel";
+
+		window.location.href = frappe.request.url
+			+ '?cmd=' + path
+			+ '&overall_service=' + encodeURIComponent(overall_service)
+			+ '&account_manager=' + encodeURIComponent(account_manager)
+			+ '&project_manager=' + encodeURIComponent(project_manager);
+
+	});
+
+	$(wrapper).on('click', '#download-ob', function () {
+
+		const overall_service = ob_service_filter.get_value() || "";
+		const account_manager = ob_am_filter.get_value() || "";
+		const project_manager = ob_pm_filter.get_value() || "";
+
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_ob_excel";
+
+		window.location.href = frappe.request.url
+			+ '?cmd=' + path
+			+ '&overall_service=' + encodeURIComponent(overall_service)
+			+ '&account_manager=' + encodeURIComponent(account_manager)
+			+ '&project_manager=' + encodeURIComponent(project_manager);
+
+	});
+	$(wrapper).on('click', '#download-tb', function () {
+
+		const overall_service = tb_service_filter.get_value() || "";
+		const account_manager = tb_am_filter.get_value() || "";
+		const project_manager = tb_pm_filter.get_value() || "";
+
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_to_book_excel";
+
+		window.location.href = frappe.request.url
+			+ '?cmd=' + path
+			+ '&overall_service=' + encodeURIComponent(overall_service)
+			+ '&account_manager=' + encodeURIComponent(account_manager)
+			+ '&project_manager=' + encodeURIComponent(project_manager);
+
+	});
+
+	// $(wrapper).on('click', '#download10-dashboard', function () {
+	// 	const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_tobill_excel";
+	// 	window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	// });
+
 	$(wrapper).on('click', '#download10-dashboard', function () {
-		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_tobill_table";
-		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+
+		const overall_service = bill_service_filter.get_value() || "";
+		const account_manager = bill_am_filter.get_value() || "";
+		const project_manager = bill_pm_filter.get_value() || "";
+
+		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_tobill_excel";
+
+		window.location.href = frappe.request.url
+			+ '?cmd=' + path
+			+ '&overall_service=' + encodeURIComponent(overall_service)
+			+ '&account_manager=' + encodeURIComponent(account_manager)
+			+ '&project_manager=' + encodeURIComponent(project_manager);
+
 	});
+	// $(wrapper).on('click', '#download11-dashboard', function () {
+	// 	const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_payable_table1";
+	// 	window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+	// });
+
 	$(wrapper).on('click', '#download11-dashboard', function () {
+
+		const overall_service = pay_service_filter.get_value() || "";
+		const account_manager = pay_am_filter.get_value() || "";
+		const project_manager = pay_pm_filter.get_value() || "";
+
 		const path = "teampro.teampro.page.finance_details.tfp_dashboard.download_payable_table1";
-		window.location.href = repl(frappe.request.url + '?cmd=%(cmd)s', { cmd: path });
+
+		window.location.href = frappe.request.url
+			+ '?cmd=' + path
+			+ '&overall_service=' + encodeURIComponent(overall_service)
+			+ '&account_manager=' + encodeURIComponent(account_manager)
+			+ '&project_manager=' + encodeURIComponent(project_manager);
+
 	});
 	function renderCard(selector, title, value) {
 			const now = new Date();
@@ -2343,10 +3126,13 @@ frappe.call({
 		// loadreceivabletable(from_date, to_date);
 		loadpayabletable1(from_date, to_date);
 		loadtotalsoqty1(from_date, to_date);
+			if (from && to) {
+			load_order_booking_table(from, to);
+		}
 	});
 	function loadOrderBooking1(from_date = null, to_date = null) {
 		frappe.call({
-			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking",
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking_overall",
 			args: { from_date, to_date },
 			callback: function(r) {
 				const value = r.message || 0;
@@ -2369,9 +3155,9 @@ frappe.call({
 </svg>`;
 				// const count = r.message || 0;
 				$(wrapper).find('.order-booking-card1').html(`
-					<div class="card blink-border" style="width: 250px; padding: 15px; border-radius: 8px;">
-						<h3 style="margin: 0;text-align:center;font-size:17px;">Order Booking</h3>
-						<div style="font-size: 32px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+					<div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+						<h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">Order Booking</h3>
+						<div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 					</div>
 				`);
 			}
@@ -2379,7 +3165,7 @@ frappe.call({
 	}
 	function loadturnover1(from_date = null, to_date = null) {
 		frappe.call({
-			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover",
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover_overall",
 			args: { from_date, to_date },
 			callback: function(r) {
 				const value = r.message || 0;
@@ -2401,7 +3187,7 @@ frappe.call({
 	}
 	function loadtcollection1(from_date = null, to_date = null) {
 		frappe.call({
-			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_collection_value",
+			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_collection_value_overall",
 			args: { from_date, to_date },
 			callback: function(r) {
 				const value = r.message || 0;
@@ -2703,28 +3489,88 @@ function loadtcollection3(from_date = null, to_date = null) {
 	}
 }
 //click
-	function loadCard(fromDate = null, toDate = null) {
+// 	function loadCard(fromDate = null, toDate = null) {
+//     frappe.call({
+//         method: "teampro.teampro.page.finance.finance_dashboard.card",
+//         args: {
+//             from_date: fromDate,
+//             to_date: toDate
+//         },
+//         callback: function(r) {
+//             const value = r.message || 0;
+//             const inLakhs = value / 100000;
+//             const formatted = `₹ ${inLakhs.toFixed(2)}L`;
+
+//             $('.order-booking-card').html(`
+//                 <div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+//                     <h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">Receivable</h3>
+//                     <div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+//                 </div>
+//             `);
+//         }
+//     });
+// }
+function loadCard(fromDate = null, toDate = null, overallService = null) {
     frappe.call({
         method: "teampro.teampro.page.finance.finance_dashboard.card",
         args: {
             from_date: fromDate,
-            to_date: toDate
+            to_date: toDate,
+            overall_service: overallService
         },
         callback: function(r) {
-            const value = r.message || 0;
-            const inLakhs = value / 100000;
-            const formatted = `₹ ${inLakhs.toFixed(2)}L`;
+            const data = r.message || {};
+            const value = data.total || 0;
+            const groups = data.groups || {};
+
+            function formatToLakhs(val) {
+                return '₹' + (val / 100000).toFixed(2) + 'L';
+            }
+
+            const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT"];
+
+            const serviceItems = groupOrder.map(key => {
+			const val = groups[key] || 0;
+			return `
+				<div style="display:flex; align-items:center; padding:1px 0;">
+					<span style="font-weight:bold; font-size:10px; color:black;">${key}:</span>
+					<span style="font-size:10px; color:red; font-weight:bold; margin-left:1px;">${formatToLakhs(val)}</span>
+				</div>
+			`;
+		});
+
+		const gridHtml = `
+			<div style="display:flex; justify-content:space-around; gap:15px; margin-top:5px;margin-left:-22px;">
+				${serviceItems.slice(0, 3).join('')}
+			</div>
+			<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;">
+				${serviceItems.slice(3, 5).join('')}
+			</div>
+		`;	
 
             $('.order-booking-card').html(`
-                <div class="card blink-border" style="width: 230px; padding: 15px; border-radius: 8px;margin-top:15px;">
-                    <h3 style="margin: 0;text-align:center;white-space:nowrap;font-size:17px;">Collection Outstanding</h3>
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+				<div  style="width:200px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+             
+                <h3 style="margin:0; text-align:center; margin-top:-20px; white-space:nowrap; font-size:16px;">
+                    Receivable
+                </h3>
+
+                <div style="text-align:center; margin-top:8px;">
+                    <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+                        <span style="font-size:16px; font-weight:bold; color:green;">
+                            ${formatToLakhs(value)}
+                        </span>
+                    </div>
                 </div>
+
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+                    ${gridHtml}
+                </div>
+				</div>
             `);
         }
     });
 }
-
 
 // Initial load without filter
 loadCard();
@@ -2737,6 +3583,112 @@ document.getElementById("apply-tfp-filter").addEventListener("click", function (
 });
 
   //card
+// function load_billing_outstanding_card() {
+//     const from_date = document.getElementById("tfp-from-date")?.value;
+//     const to_date = document.getElementById("tfp-to-date")?.value;
+
+//     const args = {};
+//     if (from_date && to_date) {
+//         args.from_date = from_date;
+//         args.to_date = to_date;
+//     }
+
+//     frappe.call({
+//         method: "teampro.teampro.page.finance.finance_dashboard.card_1",
+//         args: args,
+//         callback: function (r) {
+//             const value = r.message || 0;
+//             const formatted = formatInLakhsOrCrores(value);
+//             $(wrapper).find('.turnover-card').html(`
+//                 <div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:9px;">
+//                     <h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;font-size:14px;">To Bill</h3>
+//                     <div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+//                 </div>
+//             `);
+//         }
+//     });
+// }
+
+// function load_billing_outstanding_card() {
+//     const from_date = document.getElementById("tfp-from-date")?.value;
+//     const to_date = document.getElementById("tfp-to-date")?.value;
+
+//     const args = {};
+//     if (from_date && to_date) {
+//         args.from_date = from_date;
+//         args.to_date = to_date;
+//     }
+
+//     frappe.call({
+//         method: "teampro.teampro.page.finance.finance_dashboard.card_1",
+//         args: args,
+//         callback: function(r) {
+//             const data = r.message || {};
+//             const value = data.total || 0;
+//             const groups = data.groups || {};
+//             const clr = data.clr || 0;
+//             const cln = data.cln || 0;
+
+//             function formatToLakhs(val) {
+//                 return '₹' + (val / 100000).toFixed(2) + 'L';
+//             }
+
+//             function formatToCrores(val) {
+//                 return '₹' + (val / 10000000).toFixed(2) + 'Cr';
+//             }
+
+//             const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT", "CLR", "CLN"];
+
+// 			const serviceItems = groupOrder.map(key => {
+// 				let val = 0;
+// 				if (key === "CLR") val = clr;
+// 				else if (key === "CLN") val = cln;
+// 				else val = groups[key] || 0;
+
+// 				return `
+// 					<div style="display:flex; align-items:center; gap:2px; padding:2px 0;">
+// 						<span style="font-weight:bold; font-size:10px; color:black; width:35px; text-align:right;">${key}:</span>
+// 						<span style="font-size:10px; color:red; font-weight:bold; width:45px; text-align:left;">${formatToLakhs(val)}</span>
+// 					</div>
+// 				`;
+// 			});
+
+// 			const gridHtml = `
+// 				<div style="display:flex; justify-content:space-around; gap:1px; margin-top:5px;margin-left:-35px;">
+// 					${serviceItems.slice(0, 3).join('')}
+// 				</div>
+// 				<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;margin-left:-37px;">
+// 					${serviceItems.slice(3, 6).join('')}
+// 				</div>
+// 				<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;">
+// 					${serviceItems.slice(6, 7).join('')}
+// 				</div>
+// 			`;
+
+//             $(wrapper).find('.turnover-card').html(`
+//             <div  style="width:220px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+//                 <h3 style="margin:0; text-align:center; margin-top:-20px; white-space:nowrap; font-size:16px;">
+//                     To Bill
+//                 </h3>
+
+//                 <div style="text-align:center; margin-top:8px;">
+//                     <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+//                         <span style="font-size:16px; font-weight:bold; color:green;">
+//                             ${formatToLakhs(value)}
+//                         </span>
+//                     </div>
+//                 </div>
+
+//                 <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+//                     ${gridHtml}
+//                 </div>
+// 				</div>
+//             `);
+//         }
+//     });
+// }
+
+
 function load_billing_outstanding_card() {
     const from_date = document.getElementById("tfp-from-date")?.value;
     const to_date = document.getElementById("tfp-to-date")?.value;
@@ -2750,14 +3702,65 @@ function load_billing_outstanding_card() {
     frappe.call({
         method: "teampro.teampro.page.finance.finance_dashboard.card_1",
         args: args,
-        callback: function (r) {
-            const value = r.message || 0;
-            const formatted = formatInLakhsOrCrores(value);
+        callback: function(r) {
+            const data = r.message || {};
+            const value = data.total || 0;
+            const groups = data.groups || {};
+            const clr = data.clr || 0;
+            const cln = data.cln || 0;
+
+            function formatToLakhs(val) {
+                return '₹' + (val / 100000).toFixed(2) + 'L';
+            }
+
+            function formatToCrores(val) {
+                return '₹' + (val / 10000000).toFixed(2) + 'Cr';
+            }
+
+            const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT", "CLR", "CLN"];
+
+			const serviceItems = groupOrder.map(key => {
+				let val = 0;
+				if (key === "CLR") val = clr;
+				else if (key === "CLN") val = cln;
+				else val = groups[key] || 0;
+
+				return `
+					<div style="display:flex; align-items:center; gap:2px; padding:2px 0;">
+						<span style="font-weight:bold; font-size:10px; color:black; width:35px; text-align:right;">${key}:</span>
+						<span style="font-size:10px; color:red; font-weight:bold; width:45px; text-align:left;">${formatToLakhs(val)}</span>
+					</div>
+				`;
+			});
+
+			const gridHtml = `
+				<div style="display:flex; justify-content:space-around; gap:1px; margin-top:5px;margin-left:-35px;">
+					${serviceItems.slice(0, 3).join('')}
+				</div>
+				<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;margin-left:-37px;">
+					${serviceItems.slice(3, 6).join('')}
+				</div>
+				
+			`;
+
             $(wrapper).find('.turnover-card').html(`
-                <div class="card blink-border" style="width: 230px; padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0;text-align:center;font-size:17px;">Sales Order - Billing Outstanding</h3>
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+            <div  style="width:220px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+                <h3 style="margin:0; text-align:center; margin-top:-15px; white-space:nowrap; font-size:16px;">
+                    To Bill
+                </h3>
+
+                <div style="text-align:center; margin-top:8px;margin-top:0px;margin-bottom:20px;">
+                    <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+                        <span style="font-size:19px; font-weight:bold; color:green;">
+                            ${formatToLakhs(value)}
+                        </span>
+                    </div>
                 </div>
+
+                <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+                    ${gridHtml}
+                </div>
+				</div>
             `);
         }
     });
@@ -2787,9 +3790,9 @@ document.getElementById("apply-tfp-filter").addEventListener("click", load_billi
             const value = r.message || 0;
             const formatted = formatInLakhsOrCrores(value);
             $(wrapper).find('.collection-card').html(`
-                <div class="card blink-border" style="width: 230px; padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0;text-align:center;font-size:17px;">Sales Order - Billing & Payment Outstanding</h3>
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+                <div class="card blink-border-name" style=" width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:8px;">
+                    <h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">To Bill(C)</h3>
+                    <div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
                 </div>
             `);
         }
@@ -2826,9 +3829,9 @@ function load_card_3() {
             const value = r.message || 0;
             const formatted = formatInLakhsOrCrores(value);
             document.querySelector('.receivable-card').innerHTML = `
-                <div class="card blink-border" style="width: 230px; padding: 20px; border-radius: 8px;">
-                    <h3 style="margin: 0; text-align: center;">Closure - Sales Order Outstanding</h3>
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
+                <div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+                    <h3 style="width: 80px; hight: 80px;margin: 0; text-align: center;font-size:14px;white-space:nowrap;">To Bill(CLR)</h3>
+                    <div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
                         ${formatted}
                     </div>
                 </div>
@@ -2968,6 +3971,61 @@ frappe.call({
 	});
 }
 
+
+function load_fund_card(from_date = null, to_date = null) {
+    frappe.call({
+        method: "teampro.teampro.page.finance.finance_dashboard.fund_card",
+        args: { from_date, to_date },
+        callback: function (r) {
+            const data = r.message || {};
+            const bank  = data.bank  || 0;
+            const cash  = data.cash  || 0;
+            const sfd   = data.sfd   || 0;
+            const lfd   = data.lfd   || 0;
+            const total = data.total || 0;
+
+            function formatToLakhs(val) {
+                return '₹' + (val / 100000).toFixed(2) + 'L';
+            }
+
+            const items = [
+                { label: "BANK", val: bank },
+                { label: "CASH", val: cash },
+                { label: "SFD",  val: sfd  },
+                { label: "LFD",  val: lfd  },
+            ];
+
+            const serviceItems = items.map(item => `
+                <div style="display:flex; align-items:center; gap:2px; padding:2px 0;">
+                    <span style="font-weight:bold; font-size:10px; color:black; width:35px; text-align:right;">${item.label}:</span>
+                    <span style="font-size:10px; color:red; font-weight:bold; width:45px; text-align:left;">${formatToLakhs(item.val)}</span>
+                </div>
+            `);
+
+            // 2 + 2 layout
+            const gridHtml = `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:2px; margin-top:5px;">
+                    ${serviceItems.join('')}
+                </div>
+            `;
+
+            $(wrapper).find('.amount').html(`
+                <div  style="width:180px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+                    <h3 style="margin:0; text-align:center;margin-top:-20px; font-size:14px; white-space:nowrap;">Fund</h3>
+                    <div style="text-align:center; margin-top:8px;">
+                        <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+                            <span style="font-size:16px; font-weight:bold; color:green;">${formatToLakhs(total)}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+                        ${gridHtml}
+                    </div>
+                </div>
+            `);
+        }
+    });
+}
+
 	// cards-bank
 	function load_bank_balance(from_date = null, to_date = null) {
 	frappe.call({
@@ -2990,6 +4048,7 @@ frappe.call({
 }
 
 load_bank_balance();
+load_fund_card();
 
 $('#apply-tfp-filter').on('click', function () {
 	const from_date = $('#tfp-from-date').val();
@@ -3092,25 +4151,78 @@ $('#apply-tfp-filter').on('click', function () {
 	
 
 	// cards-po
-	function load_po_balance(from_date = null, to_date = null) {
-	frappe.call({
-		method: "teampro.teampro.page.finance.finance_dashboard.po",
-		args: {
-			from_date: from_date,
-			to_date: to_date
-		},
-		callback: function (r) {
-			const value = r.message || 0;
-			const formatted = formatInLakhsOrCrores(value);
-			$(wrapper).find('.po').html(`
-				<div class="card blink-border" style="width: 230px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;font-size:17px;">Purchase Order - Billing Outstanding</h3>
-					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
-				</div>
-			`);
-		}
-	});
+// 	function load_po_balance(from_date = null, to_date = null) {
+// 	frappe.call({
+// 		method: "teampro.teampro.page.finance.finance_dashboard.po",
+// 		args: {
+// 			from_date: from_date,
+// 			to_date: to_date
+// 		},
+// 		callback: function (r) {
+// 			const value = r.message || 0;
+// 			const formatted = formatInLakhsOrCrores(value);
+// 			$(wrapper).find('.po').html(`
+// 				<div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+// 					<h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">To Book</h3>
+// 					<div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+// 				</div>
+// 			`);
+// 		}
+// 	});
+// }
+
+
+
+function load_po_balance(from_date = null, to_date = null) {
+    frappe.call({
+        method: "teampro.teampro.page.finance.finance_dashboard.po",
+        args: { from_date, to_date },
+        callback: function (r) {
+            const data = r.message || {};
+            const value = data.total || 0;
+            const groups = data.groups || {};
+            const cln = data.cln || 0;
+
+            function formatToLakhs(val) {
+                return '₹' + (val / 100000).toFixed(2) + 'L';
+            }
+
+            const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT", "CLN"];
+
+            const serviceItems = groupOrder.map(key => {
+                const val = key === "CLN" ? cln : (groups[key] || 0);
+                return `
+                    <div style="display:flex; align-items:center; gap:2px; padding:2px 0;">
+                        <span style="font-weight:bold; font-size:10px; color:black; width:35px; text-align:right;">${key}:</span>
+                        <span style="font-size:10px; color:red; font-weight:bold; width:45px; text-align:left;">${formatToLakhs(val)}</span>
+                    </div>
+                `;
+            });
+
+            // 3 + 3 layout (row1: HRS ITS CMN, row2: TFP HR-IT CLN)
+            const gridHtml = `
+                <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:2px; margin-top:5px;margin-left:-30px;">
+                    ${serviceItems.join('')}
+                </div>
+            `;
+
+            $(wrapper).find('.po').html(`
+                <div  style="width:220px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+                    <h3 style="margin:0; text-align:center; margin-top:-20px; font-size:14px; white-space:nowrap;">To Book</h3>
+                    <div style="text-align:center; margin-top:8px;">
+                        <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+                            <span style="font-size:16px; font-weight:bold; color:green;">${formatToLakhs(value)}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+                        ${gridHtml}
+                    </div>
+                </div>
+            `);
+        }
+    });
 }
+
 
 load_po_balance();
 
@@ -3132,9 +4244,9 @@ $('#apply-tfp-filter').on('click', function () {
 			const value = r.message || 0;
 			const formatted = formatInLakhsOrCrores(value);
 			$(wrapper).find('.po_payment').html(`
-				<div class="card blink-border" style="width: 230px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;font-size:17px;">Purchase Order O/S (Payment) Gr.</h3>
-					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+				<div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+					<h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">To Book(P)</h3>
+					<div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
 				</div>
 			`);
 		}
@@ -3149,24 +4261,72 @@ $('#apply-tfp-filter').on('click', function () {
 	load_po_payment_balance(from_date, to_date);
 });
 	// cards-po_out
-	function load_po_out_balance(from_date = null, to_date = null) {
-	frappe.call({
-		method: "teampro.teampro.page.finance.finance_dashboard.po_out",
-		args: {
-			from_date: from_date,
-			to_date: to_date
-		},
-		callback: function (r) {
-			const value = r.message || 0;
-			const formatted = formatInLakhsOrCrores(value);
-			$(wrapper).find('.po_out').html(`
-				<div class="card blink-border" style="width: 230px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;font-size:17px;">Payment Outstanding on Purchase Invoice</h3>
-					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+// 	function load_po_out_balance(from_date = null, to_date = null) {
+// 	frappe.call({
+// 		method: "teampro.teampro.page.finance.finance_dashboard.po_out",
+// 		args: {
+// 			from_date: from_date,
+// 			to_date: to_date
+// 		},
+// 		callback: function (r) {
+// 			const value = r.message || 0;
+// 			const formatted = formatInLakhsOrCrores(value);
+// 			$(wrapper).find('.po_out').html(`
+// 				<div class="card blink-border-name" style="width: 100px; hight: 100px; padding: 12px; border-radius: 8px;margin-top:0px;margin-left:10px;">
+// 					<h3 style="width: 80px; hight: 80px; margin: 0;text-align:center;white-space:nowrap;font-size:14px;">Payable</h3>
+// 					<div class="card blink-border" style="font-size: 12px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formatted}</div>
+// 				</div>
+// 			`);
+// 		}
+// 	});
+// }
+
+function load_po_out_balance(from_date = null, to_date = null) {
+    frappe.call({
+        method: "teampro.teampro.page.finance.finance_dashboard.po_out",
+        args: { from_date, to_date },
+        callback: function (r) {
+            const data = r.message || {};
+            const value = data.total || 0;
+            const groups = data.groups || {};
+
+            function formatToLakhs(val) {
+                return '₹' + (val / 100000).toFixed(2) + 'L';
+            }
+
+            const groupOrder = ["HRS", "ITS", "CMN", "TFP", "HRIT"];
+
+            const serviceItems = groupOrder.map(key => `
+                <div style="display:flex; align-items:center; gap:2px; padding:2px 0;">
+                    <span style="font-weight:bold; font-size:10px; color:black; width:35px; text-align:right;">${key}:</span>
+                    <span style="font-size:10px; color:red; font-weight:bold; width:45px; text-align:left;">${formatToLakhs(groups[key] || 0)}</span>
+                </div>
+            `);
+
+            const gridHtml = `
+				<div style="display:flex; justify-content:space-around; gap:1px; margin-top:5px;margin-left:-30px;">
+					${serviceItems.slice(0, 3).join('')}
 				</div>
-			`);
-		}
-	});
+				<div style="display:flex; justify-content:space-around; gap:0px; margin-top:5px;">
+					${serviceItems.slice(3, 5).join('')}
+				</div>
+			`;
+
+            $(wrapper).find('.po_out').html(`
+                <div style="width:210px; padding:12px; border-radius:8px; margin-top:0px; margin-left:10px;">
+                    <h3 style="margin:0; text-align:center; margin-top:-20px;font-size:14px; white-space:nowrap;">Payable</h3>
+                    <div style="text-align:center; margin-top:8px;">
+                        <div style="display:inline-block; border-radius:50px; background:#e8f5e9; padding:4px 14px;">
+                            <span style="font-size:16px; font-weight:bold; color:green;">${formatToLakhs(value)}</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px; border-top:1px solid #eee; padding-top:6px;">
+                        ${gridHtml}
+                    </div>
+                </div>
+            `);
+        }
+    });
 }
 
 load_po_out_balance();
@@ -3561,6 +4721,183 @@ $(wrapper).on('click', '#download-dashboard', function () {
 	const full_url = `${base}?cmd=${path}&from_date=${from_date}&to_date=${to_date}`;
 
 	window.location.href = full_url;
+});
+
+
+
+$(document).off("click", ".po_out").on("click", ".po_out", function (e) {
+    e.preventDefault();
+
+    const targetElement = document.getElementById("tfp-receivable-table5");
+
+    if (targetElement) {
+        const targetSection = targetElement.parentElement;
+
+        //  Approvals model standard block native layout configuration override calculation
+        targetSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        setTimeout(function() {
+            let $frappeScroll = $('.layout-main-section, .page-container, .layout-main-section-html');
+            if ($frappeScroll.scrollTop() === 0) {
+                let elementTopOffset = $(targetSection).offset().top;
+                $frappeScroll.stop().animate({
+                    scrollTop: elementTopOffset - 20
+                }, 400);
+            }
+        }, 100);
+
+    } else {
+        console.warn("PAYABLE Table matrix reference element structure is currently missing.");
+    }
+});
+
+$(document).off("click", ".turnover-card1").on("click", ".turnover-card1", function (e) {
+    e.preventDefault();
+
+    const targetElement = document.getElementById("tfp-receivable-table1");
+
+    if (targetElement) {
+        const targetSection = targetElement.parentElement;
+
+        //  Approvals model standard block native layout configuration override calculation
+        targetSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        setTimeout(function() {
+            let $frappeScroll = $('.layout-main-section, .page-container, .layout-main-section-html');
+            if ($frappeScroll.scrollTop() === 0) {
+                let elementTopOffset = $(targetSection).offset().top;
+                $frappeScroll.stop().animate({
+                    scrollTop: elementTopOffset - 20
+                }, 400);
+            }
+        }, 100);
+
+    } else {
+        console.warn("TURNOVER Table matrix reference element structure is currently missing.");
+    }
+});
+
+$(document).off("click", ".order-booking-card1").on("click", ".order-booking-card1", function (e) {
+    e.preventDefault();
+
+    const targetElement = document.getElementById("tfp-receivable-table2");
+
+    if (targetElement) {
+        const targetSection = targetElement.parentElement;
+
+        //  Approvals model standard block native layout configuration override calculation
+        targetSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        setTimeout(function() {
+            let $frappeScroll = $('.layout-main-section, .page-container, .layout-main-section-html');
+            if ($frappeScroll.scrollTop() === 0) {
+                let elementTopOffset = $(targetSection).offset().top;
+                $frappeScroll.stop().animate({
+                    scrollTop: elementTopOffset - 20
+                }, 400);
+            }
+        }, 100);
+
+    } else {
+        console.warn("ORDER BOOKING Table matrix reference element structure is currently missing.");
+    }
+});
+
+$(document).off("click", ".order-booking-card").on("click", ".order-booking-card", function (e) {
+    e.preventDefault();
+
+    const targetElement = document.getElementById("tfp-receivable-table3");
+
+    if (targetElement) {
+        const targetSection = targetElement.parentElement;
+
+        //  Approvals model standard block native layout configuration override calculation
+        targetSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        setTimeout(function() {
+            let $frappeScroll = $('.layout-main-section, .page-container, .layout-main-section-html');
+            if ($frappeScroll.scrollTop() === 0) {
+                let elementTopOffset = $(targetSection).offset().top;
+                $frappeScroll.stop().animate({
+                    scrollTop: elementTopOffset - 20
+                }, 400);
+            }
+        }, 100);
+
+    } else {
+        console.warn("RECEIVABLE Table matrix reference element structure is currently missing.");
+    }
+});
+
+
+$(document).off("click", ".turnover-card").on("click", ".turnover-card", function (e) {
+    e.preventDefault();
+
+    const targetElement = document.getElementById("tfp-receivable-table4");
+
+    if (targetElement) {
+        const targetSection = targetElement.parentElement;
+
+        //  Approvals model standard block native layout configuration override calculation
+        targetSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        setTimeout(function() {
+            let $frappeScroll = $('.layout-main-section, .page-container, .layout-main-section-html');
+            if ($frappeScroll.scrollTop() === 0) {
+                let elementTopOffset = $(targetSection).offset().top;
+                $frappeScroll.stop().animate({
+                    scrollTop: elementTopOffset - 20
+                }, 400);
+            }
+        }, 100);
+
+    } else {
+        console.warn("TO BILL Table matrix reference element structure is currently missing.");
+    }
+});
+
+$(document).off("click", ".po").on("click", ".po", function (e) {
+    e.preventDefault();
+
+    const targetElement = document.getElementById("tfp-receivable-table6");
+
+    if (targetElement) {
+        const targetSection = targetElement.parentElement;
+
+        //  Approvals model standard block native layout configuration override calculation
+        targetSection.scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+
+        setTimeout(function() {
+            let $frappeScroll = $('.layout-main-section, .page-container, .layout-main-section-html');
+            if ($frappeScroll.scrollTop() === 0) {
+                let elementTopOffset = $(targetSection).offset().top;
+                $frappeScroll.stop().animate({
+                    scrollTop: elementTopOffset - 20
+                }, 400);
+            }
+        }, 100);
+
+    } else {
+        console.warn("TO BOOK Table matrix reference element structure is currently missing.");
+    }
 });
 
 }

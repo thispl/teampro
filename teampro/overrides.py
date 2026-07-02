@@ -110,6 +110,33 @@ class CustomAttendanceRequest(AttendanceRequest):
                     if current_date.day > check_date.day and from_date.year == previous_month_year and from_date.month == previous_month:
                         frappe.throw("Attendance Request for the previous month are not allowed")
 
+
+
+
+from erpnext.accounts.doctype.pos_opening_entry.pos_opening_entry import POSOpeningEntry
+
+class CustomPOSOpeningEntry(POSOpeningEntry):
+
+    def check_user_already_assigned(self):
+        existing_entry = frappe.db.get_value(
+            "POS Opening Entry",
+            {
+                "user": self.user,
+                "status": "Open"
+            },
+            ["name", "pos_profile"],
+            as_dict=True
+        )
+
+        if existing_entry:
+            if existing_entry.pos_profile == self.pos_profile:
+                frappe.throw(
+                    "Cashier is already assigned to this POS Profile."
+                )
+
+
+
+
 @frappe.whitelist()
 def check_holiday(date, emp):
     holiday_list = frappe.db.get_value('Employee', emp, 'holiday_list')

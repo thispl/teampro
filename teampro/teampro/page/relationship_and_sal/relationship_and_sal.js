@@ -6,6 +6,13 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 	});
 
 	frappe.breadcrumbs.add('Teampro');
+    if (!document.getElementById('tabler-icons-css')) {
+        const link = document.createElement('link');
+        link.id = 'tabler-icons-css';
+        link.rel = 'stylesheet';
+        link.href = 'https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css';
+        document.head.appendChild(link);
+    }
 	const style=document.createElement('style');
 	style.innerHTML=`
 	.dashboard-wrapper {
@@ -81,17 +88,7 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 
 		
 
-		.dashboard-cards-rs >div {
-		padding:15px;
-		border-radius:12px;
-		color:white;
-		box-shadow:0 4px 12px rgba(0, 0, 0, 0.1);
-		text-align: center;
-		font-size: 18px;
-		font-weight: bold;
-		min-width: 150px;
-		flex-shrink: 0;
-		}
+		
 
 		.order-booking-card {
 			background-color: #0a9396; /* Teal Blue - calm and modern */
@@ -114,12 +111,21 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 
 		.opp-count-card {
 		background-color: #693967; /* Dark Red */
+        width: 150px;
+        height: 120px;
+        min-width: 220px;
+        max-width: 130px;
+        flex: 0 0 220px;
 		}
 
 		.opp-amount-card {
 		background-color: #746337; /* Dark Red */
+        width: 150px;
+        height: 120px;
+        min-width: 220px;
+        max-width: 130px;
+        flex: 0 0 220px;
 		}
-
 .fup-card {
     width: 140px;
     height: 70px;
@@ -197,72 +203,83 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 
 
 
-.rs-status-card{
-
-    min-width:140px;
-    max-width:140px;
-    height:85px;
-
-    border:2px solid;
-    border-radius:10px;
-
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    align-items:center;
-
-    font-weight:600;
-
-    box-shadow:0 1px 4px rgba(0,0,0,0.08);
-
-    transition:0.2s;
+.rs-status-card {
+    width: 175px;
+    height: 82px;
+    border-radius: 16px;
+    background: #fff;
+    border: 1px solid #ebebeb;
+    border-right: 4px solid;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 0 16px;
+    box-sizing: border-box;
+    cursor: pointer;
+    transition: transform 0.18s;
 }
 
-.rs-status-card:hover{
-    transform:translateY(-2px);
+.rs-status-card:hover {
+    transform: translateY(-3px);
 }
 
-/* ACTIVE CUSTOMER */
-.rs-card-active{
-    border-color:#28a745;
-    background:#eaf7ee;
-    color:#28a745;
+.rs-icon-circle {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
 }
 
-/* INACTIVE CUSTOMER */
-.rs-card-inactive{
-    border-color:#dc3545;
-    background:#fdeaea;
-    color:#dc3545;
+.rs-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-/* INTERESTED */
-.rs-card-interested{
-    border-color:#007bff;
-    background:#eaf2ff;
-    color:#007bff;
+.rs-card-title {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #999;
 }
 
-/* REPLIED */
-.rs-card-replied{
-    border-color:#fd7e14;
-    background:#fff3e8;
-    color:#fd7e14;
+.rs-card-value {
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1;
+    color: #222;
 }
 
-/* OPEN */
-.rs-card-open{
-    border-color:#6f42c1;
-    background:#f3efff;
-    color:#6f42c1;
-}
+/* Active */
+.rs-card-active { border-right-color: #28a745; }
+.rs-card-active .rs-icon-circle { background: #eaf7ee; color: #28a745; }
 
-/* LEAD */
-.rs-card-lead{
-    border-color:#20c997;
-    background:#e8f9f5;
-    color:#20c997;
-}
+/* Inactive */
+.rs-card-inactive { border-right-color: #dc3545; }
+.rs-card-inactive .rs-icon-circle { background: #fdeaea; color: #dc3545; }
+
+/* Interested */
+.rs-card-interested { border-right-color: #007bff; }
+.rs-card-interested .rs-icon-circle { background: #e6f0ff; color: #007bff; }
+
+/* Replied */
+.rs-card-replied { border-right-color: #fd7e14; }
+.rs-card-replied .rs-icon-circle { background: #fff3e6; color: #fd7e14; }
+
+/* Open */
+.rs-card-open { border-right-color: #6f42c1; }
+.rs-card-open .rs-icon-circle { background: #f0ebfa; color: #6f42c1; }
+
+/* Lead */
+.rs-card-lead { border-right-color: #17a2b8; }
+.rs-card-lead .rs-icon-circle { background: #e5f6f9; color: #17a2b8; }
+
+
 
 /* ========================================= */
 /* CARD TEXT */
@@ -280,6 +297,61 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 }
 
 
+
+
+.dashboard-card{
+    position:relative;
+    width:200px;
+    height:170px;
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+
+.card-top-line{
+    height:4px;
+    width:100%;
+    margin:0px;
+}
+
+.card-body{
+    height:calc(100% - 4px);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+}
+
+.card-icon{
+    font-size:24px;
+    margin-bottom:8px;
+}
+
+.card-title{
+    font-size:15px;
+    font-weight:700;
+    color:#000;
+}
+
+.card-value{
+    font-size:24px;
+    font-weight:bold;
+    color:green;
+    margin-top:10px;
+}
+
+.card-sub{
+    font-size:12px;
+    color:red;
+    font-weight:bold;
+    margin-top:6px;
+}
+
+.card-sub-title{
+    font-size:11px;
+    color:#555;
+}
 
 		<style>
 
@@ -334,6 +406,7 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
             padding:10px 12px;
             border-radius:8px;
             background:#fff;
+            display:none;
             
         ">
 
@@ -351,31 +424,73 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 			
 		
 			<div class="active-customer-wrapper" style="background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
-			<div class="dashboard-cards-rs" style="display:flex; gap:30px;  overflow-x:auto; morgin-bottom:30px;">
+			<div class="dashboard-cards-rs" style="display:flex; gap:60px;  overflow-x:auto; morgin-bottom:30px;justify-content:center;">
 				<div class="dashboard-card order-booking-card"> </div>
+                <div class="dashboard-card tobill-card"></div>
 				<div class="dashboard-card turnover-card"></div>
 				<div class="dashboard-card receivable-card"></div>
-				<div class="dashboard-card tobill-card"></div>
-				<div class="dashboard-card opp-count-card"></div>
-				<div class="dashboard-card opp-amount-card"></div>
+				
 
 			</div>	 
 		</div>
         <br>
-    <div class="active-customer-wrapper" style="background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px;">
-        <h3> Opportunity Count </h3>
+        <div style="
+        background-color:#f5f5f5;
+        border:1px solid #ddd;
+        border-radius:8px;
+        margin:15px;
+        padding:10px;
+        
+    ">
+
+        <!-- HEADER -->
+        <div style="
+            position:sticky;
+            top:0;
+            background:#fff;
+            z-index:10;
+            padding:10px;
+            border-bottom:1px solid #eee;
+
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+        ">
+
+            <h4 style="
+                margin:0;
+                text-align:left;
+                font-weight:600;
+                white-space:nowrap;
+                flex-shrink:0;
+            ">
+                OPPORTUNITY COUNT
+            </h4>
+
+        </div>
+
+        <!-- CARDS -->
         <div id="dynamic-service-cards"
             style="
                 display:flex;
-                gap:20px;
-                flex-wrap:wrap;
-                margin-top:20px;
-                padding:6px 3px;
+                gap:35px;
+                flex-wrap:nowrap;
+                padding:10px;
+                overflow-x:auto;
+                justify-content:center;
+                
             ">
-        </div>
-    </div>
+            
+            <div class="dashboard-card opp-count-card"></div>
 
-    <br>
+            <div class="dashboard-card opp-amount-card"></div>
+
+        </div>
+
+</div>
     <div class="active-customer-wrapper"
     style="
         background-color:#f5f5f5;
@@ -386,14 +501,17 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
         margin-left:15px;
         margin-right:15px;
         margin-top:15px;
+        
     ">
 
     <div id="sfp-status-cards"
         style="
             display:flex;
-            gap:18px;
+            gap:30px;
             flex-wrap:wrap;
             align-items:center;
+            justify-content:center;
+            
         ">
     </div>
 
@@ -401,9 +519,9 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
 
 
 
-    <div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 15px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
+   <div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 15px;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
 
-        <div id="opportunity-table"
+    <div id="opportunity-table"
         style="
             width: 100%;
             border: 1px solid #ddd;
@@ -413,6 +531,8 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
             margin: 15px 15px 0 15px;
         ">
 
+        <!-- SINGLE LINE HEADER -->
+
         <div style="
             position: sticky;
             top: 0;
@@ -420,67 +540,104 @@ frappe.pages['relationship-and-sal'].on_page_load = function(wrapper) {
             z-index: 10;
             padding: 10px;
             border-bottom: 1px solid #eee;
+
             display:flex;
             align-items:center;
-            justify-content:center;
-        ">        
-        <h4 style="
-            position: sticky;
-            top: 0;
-            background: #fff;
-            z-index: 10;
-            margin: 0;
-            text-align: center;
-            font-weight: 600;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+            overflow-x:auto;
         ">
-            OPPORTUNITY DETAILS
-        </h4>
-        <button class="btn btn-sm btn-primary"
-            onclick="download_opportunity_excel()"
-            style="
-                position:absolute;
-                right:10px;
+
+            <!-- HEADING -->
+
+            <h4 style="
+                margin: 0;
+                text-align: left;
+                font-weight: 600;
+                white-space:nowrap;
+                flex-shrink:0;
             ">
-            Download
-        </button>
-        </div>
-        <!-- FILTERS -->
-        <div id="opportunity-filters"
-            style="
-                margin-top: 10px;
-                display: flex;
-                gap: 15px;
-                justify-content: flex-end;
-                flex-wrap: wrap;
-            ">
+                OPPORTUNITY DETAILS
+            </h4>
 
-            <select id="opportunity-filter-owner"
-                class="form-control"
-                style="width: 250px; border: 1px solid #ccc; border-radius: 4px;">
-                <option value="">Select Owner</option>
-            </select>
+            <!-- FILTERS -->
 
-            <select id="opportunity-filter-service"
-                class="form-control"
-                style="width: 180px; border: 1px solid #ccc; border-radius: 4px;">
-                <option value="">Select Service</option>
-            </select>
+            <div id="opportunity-filters"
+                style="
+                    display:flex;
+                    gap:15px;
+                    align-items:right;
+                    justify-content:right;
 
-            <select id="opportunity-filter-expweek"
-                class="form-control"
-                style="width: 180px; border: 1px solid #ccc; border-radius: 4px; display:none;">
-                <option value="">Select Exp.Week</option>
-            </select>
+                    flex:1;
+                    flex-wrap:nowrap;
+                    min-width:max-content;
+                ">
+
+                <select id="opportunity-filter-owner"
+                    class="form-control"
+                    style="width: 250px; border: 1px solid #ccc; border-radius: 4px;">
+
+                    <option value="">Select Owner</option>
+
+                </select>
+
+                <select id="opportunity-filter-service"
+                    class="form-control"
+                    style="width: 180px; border: 1px solid #ccc; border-radius: 4px;">
+
+                    <option value="">Select Service</option>
+
+                </select>
+
+                <select id="opportunity-filter-expweek"
+                    class="form-control"
+                    style="width: 180px; border: 1px solid #ccc; border-radius: 4px; display:none;">
+
+                    <option value="">Select Exp.Week</option>
+
+                </select>
+
+                    <select id="opportunity-filter-type"
+                    class="form-control"
+                    style="width: 250px; border: 1px solid #ccc; border-radius: 4px;">
+
+                    <option value="">Select Type</option>
+
+                </select>
+
+            </div>
+
+            <!-- DOWNLOAD -->
+
+            <button
+                onclick="download_opportunity_excel()"
+                style="
+                    background: transparent;
+                    border: none;
+                    padding: 0;
+                    cursor:pointer;
+                    flex-shrink:0;
+                ">
+
+                <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                    style="width:24px;height:24px;">
+
+            </button>
 
         </div>
 
         <!-- TABLE -->
+
         <div id="opportunity-table-content"
-            style="margin-top: 20px; width: 100%; overflow-x: auto;">
+            style="margin-top: 0px; width: 100%; overflow-x: auto;">
         </div>
 
     </div>
-</div>	
+
+</div>
 
 <div style="background-color: #f5f5f5; display: flex; gap: 10px; margin-top: 30px; 
 overflow-x: auto; flex-wrap: nowrap; padding-bottom: 15px; margin-left: 10px; 
@@ -506,123 +663,250 @@ margin-right: 10px; border: 1px solid #ddd; border-radius: 8px;">
     </div>
 
 
-    <!-- APPOINTMENT DETAILS (LEFT SIDE) -->
-    <div id="appointment-table" style="flex: 1; min-width: 0px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin:5px;">
-        <div style="
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 1;
-    padding: 5px;
-    text-align: center;
-">
+   <!-- APPOINTMENT DETAILS (LEFT SIDE) -->
+<div id="appointment-table" style="flex: 1; min-width: 0px; border: 1px solid #dddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin:5px;">
 
-    <h4 style="
-        margin: 0;
-        text-align:center;
-        font-weight:600;
+    <div style="
+        position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding: 10px !important;
+            border-bottom: 1px solid #eee;
+
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+            overflow-x:auto;
     ">
-        APPOINTMENT DETAILS
-    </h4>
+    
 
-    <button class="btn btn-sm btn-primary"
-        onclick="download_appointment_excel()"
-        style="
-            position:absolute;
-            right:10px;
-            top:5px;
+        <!-- HEADING -->
+
+        <h4 style="
+            margin: 0;
+            text-align:left;
+            font-weight:600;
+            white-space:nowrap;
+            
         ">
-        Download
-    </button>
+            APPOINTMENT DETAILS
+        </h4>
 
-</div>
-        <div style="margin-top: 10px; margin-bottom: 20px;">
-            <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;">
+        <!-- FILTERS -->
 
-                <select id="appointment-filter-owner" class="form-control" style="width: 190px; border: 1px solid #ccc; border-radius: 4px;">
-                    <option value="">Select Owner</option>
-                </select>
+        <div style="
+            display:flex;
+            gap:5px;
+            flex-wrap:wrap;
+            justify-content:center;
+            flex:1;
+        ">
 
-                <select id="appointment-filter-service" class="form-control" style="width: 170px; border: 1px solid #ccc; border-radius: 4px;">
-                    <option value="">Select Service</option>
-                </select>
+            <select id="appointment-filter-owner" class="form-control"
+                style="width: 60px; border: 1px solid #ccc; border-radius: 4px;">
 
-                <input type="text" id="rs-from-date1" class="form-control" 
+                <option value="">Select Owner</option>
+
+            </select>
+
+            <select id="appointment-filter-service" class="form-control"
+                style="width: 60px; border: 1px solid #ccc; border-radius: 4px;">
+
+                <option value="">Select Service</option>
+
+            </select>
+
+            <input type="text" id="rs-from-date1" class="form-control" 
                 placeholder="App. On From"
-                style="width: 120px; border: 1px solid #ccc; border-radius: 4px;"
+                style="width: 60px; border: 1px solid #ccc; border-radius: 4px;"
                 onfocus="(this.type='date')" 
                 onblur="if(!this.value) this.type='text'">
 
-                <input type="text" id="rs-to-date1" class="form-control" 
+            <input type="text" id="rs-to-date1" class="form-control" 
                 placeholder="App. On To"
-                style="width: 100px; border: 1px solid #ccc; border-radius: 4px;"
+                style="width: 60px; border: 1px solid #ccc; border-radius: 4px;"
                 onfocus="(this.type='date')" 
                 onblur="if(!this.value) this.type='text'">
-            </div>
+
         </div>
 
-        <div id="appointment-table-content" style="margin-top: 10px; overflow-x: auto;"></div>
+        <!-- DOWNLOAD BUTTON -->
+
+        <button
+            onclick="download_appointment_excel()"
+            style="
+                background:none;
+                border:none;
+                padding:0;
+                cursor:pointer;
+            ">
+
+            <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                style="width:24px;height:24px;display:block;">
+
+        </button>
+
     </div>
 
+    <div id="appointment-table-content"
+        style="margin-top: 0px; overflow-x: auto;">
+    </div>
 
-    <!-- TODO STATUS (RIGHT SIDE) -->
-    <div id="rs-todo-table" style="flex: 1; min-width: 0px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin:5px;display:none">
-        
-        <h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 5px; text-align: center;">
+</div>
+
+   <!-- TODO STATUS (RIGHT SIDE) -->
+<div id="rs-todo-table" style="flex: 1; min-width: 0px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box; margin:5px;display:none">
+
+    <!-- HEADER ROW -->
+
+    <div style="
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 1;
+        padding: 5px;
+
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:10px;
+        flex-wrap:wrap;
+    ">
+
+        <!-- HEADING -->
+
+        <h4 style="
+            margin: 0;
+            padding: 5px;
+            text-align: left;
+            font-weight:600;
+            white-space:nowrap;
+        ">
             TODO STATUS
         </h4>
 
-        <div id="todo-filters" style="margin-top: 10px; margin-bottom: 20px; display: flex; gap: 15px; flex-wrap: wrap; justify-content: flex-end;">    
-
-            <select id="todo-filter-owner" class="form-control" style="width: 250px; border: 1px solid #ccc; border-radius: 4px;">
-                <option value="">Allocated To</option>
-            </select>
-
-            <select id="todo-filter-service" class="form-control" style="width: 180px; border: 1px solid #ccc; border-radius: 4px;">
-                <option value="">Select Service</option>
-            </select>
-        </div>
-
-        <div id="todo-table-content" style="margin-top: 10px; overflow-x: auto;"></div>
-    </div>
-
-    <div id="meetlog-table-wrapper"
-        style="flex:1;min-width:0;border:1px solid #ddd;border-radius:8px;padding:10px;box-sizing:border-box;margin:5px;">
-
-        <!-- HEADER -->
-        <div style="position:sticky;top:0;background:white;z-index:10;padding-bottom:5px;">
-
-            <div style="position:relative;display:flex;justify-content:center;align-items:center;">
-
-                <h4 style="margin:0;padding:5px;text-align:center;font-weight:600;">
-                    MEETLOG TABLE
-                </h4>
-
-                <button class="btn btn-sm btn-primary"  onclick="download_meetlog_excel()" style="position:absolute;right:0;">
-                    Download
-                </button>
-            </div>
-        </div>
         <!-- FILTERS -->
 
-            <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:10px;flex-wrap:wrap;">
+        <div id="todo-filters" style="
+            display:flex;
+            gap:15px;
+            flex-wrap:wrap;
+            justify-content:center;
+            flex:1;
+        ">
 
-                <div id="meetlog_from_date" style="width:120px;"></div>
+            <select id="todo-filter-owner" class="form-control"
+                style="width: 250px; border: 1px solid #ccc; border-radius: 4px;">
 
-                <div id="meetlog_to_date" style="width:120px;"></div>
+                <option value="">Allocated To</option>
 
-                <div id="meetlog_employee" style="width:120px;"></div>
+            </select>
 
+            <select id="todo-filter-service" class="form-control"
+                style="width: 180px; border: 1px solid #ccc; border-radius: 4px;">
 
-            </div>
+                <option value="">Select Service</option>
 
-        <!-- TABLE -->
+            </select>
 
-        <div id="meetlog-table" style="margin-top: 10px;overflow-y: auto;height: 100px;overflow-x: auto;"></div>
         </div>
 
     </div>
 
+    <div id="todo-table-content"
+        style="margin-top: 10px; overflow-x: auto;">
+    </div>
+
+</div>
+
+<div id="meetlog-table-wrapper"
+    style="flex:1;
+        min-width:0;
+        border:1px solid #ddd;
+        border-radius:8px;
+        padding:10px;
+        box-sizing:border-box;
+        margin:5px;
+        overflow:hidden;">
+
+    <!-- HEADER -->
+
+    <div style="
+        position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+            height:55px;
+    ">
+
+        <!-- HEADING -->
+
+        <h4 style="
+            margin: 0;
+            text-align:left;
+            font-weight:600;
+            white-space:nowrap;
+        ">
+            MEETLOG TABLE
+        </h4>
+
+        <!-- FILTERS -->
+
+        <div style="
+            display:flex;
+            gap:15px;
+            flex-wrap:wrap;
+            justify-content:center;
+            flex:1;
+        ">
+
+            <div id="meetlog_from_date" style="width:100px;"></div>
+
+            <div id="meetlog_to_date" style="width:100px;"></div>
+
+            <div id="meetlog_employee" style="width:100px;"></div>
+
+        </div>
+
+        <!-- DOWNLOAD BUTTON -->
+
+        <button
+            onclick="download_appointment_excel()"
+            style="
+                background:none;
+                border:none;
+                padding:0;
+                cursor:pointer;
+                marign-right:10px;
+            ">
+
+            <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                style="width:24px;height:24px;display:block;">
+
+        </button>
+
+    </div>
+
+    <!-- TABLE -->
+
+    <div id="meetlog-table"
+        style="margin-top:20px;overflow-y: auto;height: 100px;overflow-x: auto;">
+    </div>
+
+</div>
 </div>
 
 <!-- Active / Inactive Customer Report Wrapper -->
@@ -646,44 +930,42 @@ margin-right: 10px; border: 1px solid #ddd; border-radius: 8px;">
 ">
 
     <div style="
-        position:sticky;
-        top:0;
-        background:white;
-        z-index:1;
-        padding:12px 15px;
-        border-radius:6px;
-        border:1px solid #ffffff;
+        position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
 
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        position:relative;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+            height:55px;
     ">
 
         <!-- Heading -->
 
-        <div style="
-            text-align:center;
-            width:100%;
-            font-size:18px;
-            font-weight:700;
-            text-color:black;
-            letter-spacing:0.5px;
+        <h4 style="
+            margin: 0;
+            text-align:left;
+            font-weight:600;
+            white-space:nowrap;
         ">
-            Active Customer Report
-        </div>
+           ACTIVE CUSTOMER REPORT
+        </h4>
+<button
+    onclick="window.download_active_customer_report()"
+    style="
+        position:absolute;right:10px;background:none;border:none;padding:0;cursor:pointer;
+    ">
 
-        <!-- Button -->
+    <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:24px;height:24px;display:block;">
 
-        <div style="
-            position:absolute;
-            right:15px;
-        ">
-            <button class="btn btn-primary btn-sm"
-                onclick="window.download_active_customer_report()">
-                Download
-            </button>
-        </div>
+</button>
 
     </div>
 
@@ -693,7 +975,7 @@ margin-right: 10px; border: 1px solid #ddd; border-radius: 8px;">
             max-height:450px;
             min-height:450px;
             background:white;
-            border:1px solid #ccc;
+            border:1px solid #f8f8f8;
             margin-top:10px;
         ">
     </div>
@@ -713,43 +995,44 @@ margin-right: 10px; border: 1px solid #ddd; border-radius: 8px;">
 ">
 
     <div style="
-        position:sticky;
-        top:0;
-        background:white;
-        z-index:1;
-        padding:12px 15px;
-        border-radius:6px;
-        border:1px solid #ffffff;
+        position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
 
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        position:relative;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+            height:55px;
     ">
 
         <!-- Heading -->
 
-        <div style="
-            text-align:center;
-            width:100%;
-            font-size:18px;
-            font-weight:700;
-            letter-spacing:0.5px;
+        <h4 style="
+            margin: 0;
+            text-align:left;
+            font-weight:600;
+            white-space:nowrap;
         ">
-            In-Active Customer Report
-        </div>
+            IN-ACTIVE CUSTOMER REPORT
+        </h4>
 
         <!-- Button -->
+<button
+    onclick="window.download_inactive_customer_report()"
+    style="
+        position:absolute;right:10px;top:;background:none;border:none;padding:0;cursor:pointer;
+    ">
 
-        <div style="
-            position:absolute;
-            right:15px;
-        ">
-            <button class="btn btn-primary btn-sm"
-                onclick="window.download_inactive_customer_report()">
-                Download
-            </button>
-        </div>
+    <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:24px;height:24px;display:block;">
+
+</button>
 
     </div>
 
@@ -769,114 +1052,152 @@ margin-right: 10px; border: 1px solid #ddd; border-radius: 8px;">
 </div>
 
 
-<div style="background-color: #f5f5f5;display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 15x;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
+<div style="display: flex; gap: 20px; margin-top: 30px; overflow-x: auto; flex-wrap: nowrap; padding-bottom: 15x;margin-left: 15px;margin-right: 15px;border: 1px solid #ddd; border-radius: 8px;">
+<div id="fup-table" style="
+    width:100%;
+    border:1px solid #ffffff;
+    border-radius:8px;
+    padding:10px;
+    box-sizing:border-box;
+    margin:15px 0;
+     background:#f5f5f5;
+">
 
-	<!-- Sales follow Up Details Block -->
-	<div id="fup-table" style="min-width: 420px; border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-left: 15px;margin-right: 15px; margin-top:15px;margin-bottom: 15px;">	
-		<h4 style="position: sticky; top: 0; background: white; z-index: 1; margin: 0; padding: 5px; text-align: center;">
-		SALES FOLLOW UP DETAILS
-		</h4>
-		<div style="margin-top: 10px; margin-bottom: 20px;">
-			<div style="display: flex; gap: 15px; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 10px;">
-				<select id="fup-filter-call-status" class="form-control" style="width: 180px;border: 1px solid #ccc; border-radius: 4px;">
-					<option value="">Select Call Status</option>
-				</select>
-				
-				<input type="text" id="fup-last-fdate" class="form-control" placeholder="Last Contaced From" style="width: 160px;border: 1px solid #ccc; border-radius: 4px;"
-					onfocus="(this.type='date')" 
-					onblur="if(!this.value) this.type='text'">
-				<input type="text" id="fup-last-tdate" class="form-control" placeholder="Last Contaced to" style="width: 140px;border: 1px solid #ccc; border-radius: 4px;"
-					onfocus="(this.type='date')" 
-					onblur="if(!this.value) this.type='text'">	
-				<input type="text" id="fup-next-fdate" class="form-control" placeholder="Next Contaced From" style="width: 160px;border: 1px solid #ccc; border-radius: 4px;"
-					onfocus="(this.type='date')" 
-					onblur="if(!this.value) this.type='text'">
-				<input type="text" id="fup-next-tdate" class="form-control" placeholder="Next Contaced to" style="width: 140px;border: 1px solid #ccc; border-radius: 4px;"
-					onfocus="(this.type='date')" 
-					onblur="if(!this.value) this.type='text'">		
-			</div>
-		</div>
-		<div id="fup-cards" style="display:flex; gap:20px; flex-wrap:wrap; margin-top:10px;display:none">
-
-			<div class="fup-card" id="card-active"></div>
-			<div class="fup-card" id="card-inactive"></div>
-			<div class="fup-card" id="card-opportunity"></div>
-			<div class="fup-card" id="card-opportunity-amount"></div>
-			<div class="fup-card" id="card-replied"></div>
-			<div class="fup-card" id="card-open"></div>
-			<div class="fup-card" id="card-closed"></div>
-
-		</div>
-      <div style="margin:20px 0 10px 0;">
+    <!-- HEADER -->
 
     <div style="
-        position:sticky;
-        top:0;
-        background:#f9e6fa;
-        z-index:1;
-        padding:12px 15px;
-        border-radius:6px;
-        font-weight:600;
-        letter-spacing:0.5px;
-        box-shadow:0 2px 4px rgba(0,0,0,0.08);
-        border:1px solid #f3c6ef;
+        position: sticky;
+            top: 0;
+            background: #fff;
+            z-index: 10;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
 
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        position:relative;
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:15px;
+
+            flex-wrap:nowrap;
+            height:55px;
+        
     ">
 
-        <!-- CENTER HEADING -->
+        <!-- LEFT -->
 
-        <div style="
-            text-align:center;
-            width:100%;
-            font-size:16px;
-            color:black
+        <h4 style="
+            margin:0;
+            color:black;
+            font-weight:600;
+            white-space:nowrap;
         ">
-            SALES FOLLOW UP SUMMARY
-        </div>
+            SALES FOLLOW UP DETAILS
+        </h4>
 
-        <!-- RIGHT SIDE BUTTONS -->
+        <!-- CENTER FILTERS -->
 
         <div style="
-            position:absolute;
-            right:15px;
             display:flex;
             gap:10px;
+            flex:1;
+            justify-content:center;
+            align-items:center;
             flex-wrap:wrap;
         ">
 
-            <button class="btn btn-primary btn-sm"
-                onclick="window.download_fup_excel()">
-                Download Service
+            <select id="fup-filter-call-status"
+                class="form-control"
+                style="width:180px;border:1px solid #ccc;border-radius:4px;">
+
+                <option value="">Select Call Status</option>
+
+            </select>
+
+            <input type="text"
+                id="fup-last-fdate"
+                class="form-control"
+                placeholder="Last Contaced From"
+                style="width:160px;border:1px solid #ccc;border-radius:4px;"
+                onfocus="(this.type='date')"
+                onblur="if(!this.value) this.type='text'">
+
+            <input type="text"
+                id="fup-last-tdate"
+                class="form-control"
+                placeholder="Last Contaced To"
+                style="width:140px;border:1px solid #ccc;border-radius:4px;"
+                onfocus="(this.type='date')"
+                onblur="if(!this.value) this.type='text'">
+
+            <input type="text"
+                id="fup-next-fdate"
+                class="form-control"
+                placeholder="Next Contaced From"
+                style="width:160px;border:1px solid #ccc;border-radius:4px;"
+                onfocus="(this.type='date')"
+                onblur="if(!this.value) this.type='text'">
+
+            <input type="text"
+                id="fup-next-tdate"
+                class="form-control"
+                placeholder="Next Contaced To"
+                style="width:140px;border:1px solid #ccc;border-radius:4px;"
+                onfocus="(this.type='date')"
+                onblur="if(!this.value) this.type='text'">
+
+        </div>
+
+        <!-- RIGHT BUTTONS -->
+
+        <div style="
+            display:flex;
+            gap:30px;
+            align-items:center;
+            white-space:nowrap;
+        ">
+
+            <button
+                onclick="window.download_fup_excel()"
+                style="
+                    background:none;
+                    border:none;
+                    padding:0;
+                    cursor:pointer;
+                ">
+
+                <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                    style="width:22px;height:22px;">
+
             </button>
 
-            <button class="btn btn-primary btn-sm"
-                onclick="window.download_fup_terr_excel()">
-                Download Territory
+            <button
+                onclick="window.download_fup_terr_excel()"
+                style="
+                    background:none;
+                    border:none;
+                    padding:0;
+                    cursor:pointer;
+                ">
+
+                <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+                    style="width:22px;height:22px;">
+
             </button>
 
         </div>
 
     </div>
 
-</div>
+    <!-- TABLE -->
 
+    <div id="fup-table-content"
+        style="margin-top:5px;width:100%;overflow-x:auto;">
+    </div>
 
-		<div id="fup-table-content" 
-            style="margin-top: 5px; width:100%; overflow-x:auto;">
-        </div>
-        
-		<div id="fup-table-terr-content" style="margin-top: 5px; overflow-x: auto;"></div>
+    <div id="fup-table-terr-content"
+        style="margin-top:5px;width:100%;overflow-x:auto;">
+    </div>
 
-        
-
-		</div>
-
-        
-	</div>
 </div>
 		`)
 		
@@ -967,50 +1288,130 @@ frappe.call({
             },
         ];
 
-        let html = "";
+        // let html = "";
+    let html = `
+    </div>
+        <div class="dashboard-card opp-count-card" style="
+        min-width:50px;
+        height:180px;
+        border-radius:20px;
+        position:relative;
+        overflow:hidden;
+
+        justify-content:center;   /* Vertical Center */
+        align-items:center;       /* Horizontal Center */
+        flex-direction:column;    /* Icon, Title, Value one below another */
+    ">
+    </div>
+    
+    <div class="dashboard-card opp-amount-card" style="
+        min-width:50px;
+        height:180px;
+        border-radius:20px;
+        position:relative;
+        overflow:hidden;
+    ">
+        <div style="
+            position:absolute;
+            top:-25px;
+            width:80px;
+            height:80px;
+            border-radius:50%;
+            background:#fff7ed;
+        "></div>
+    </div>
+`;
+
+
 
         data.forEach((row, idx) => {
 
-            let clr = colors[idx % colors.length];
+    let clr = colors[idx % colors.length];
 
-            html += `
+    // html += `
 
-                <div style="
-                    min-width:140px;
-                    min-hight:80px;
-                    border:2px solid ${clr.border};
-                    background:${clr.bg};
-                    border-radius:10px;
-                    padding:15px;
-                    text-align:center;
-                    box-shadow:0 1px 4px rgba(0,0,0,0.08);
-                ">
+    //     <div style="
+    //         min-width:100px;
+    //         height:100px;
+    //         background:#fff;
+    //         border-radius:18px;
+    //         padding:18px;
+    //         position:relative;
+    //         overflow:hidden;
+    //         border-top:5px solid ${clr.border};
+    //         box-shadow:0 4px 14px rgba(0,0,0,0.08);
+    //         transition:all .3s ease;
+    //     ">
 
-                    <!-- SERVICE -->
+    //         <div style="
+    //             position:absolute;
+    //             top:-18px;
+    //             right:-18px;
+    //             width:70px;
+    //             height:70px;
+    //             border-radius:50%;
+    //             background:${clr.bg};
+    //             opacity:.5;
+    //         "></div>
 
-                    <div style="
-                        font-size:18px;
-                        font-weight:700;
-                        color:${clr.text};
-                        margin-bottom:10px;
-                    ">
-                        ${row.service}
-                    </div>
+    //         <!-- SERVICE -->
+    //         <div style="
+    //             font-size:14px;
+    //             font-weight:600;
+    //             color:#6b7280;
+    //             text-transform:uppercase;
+    //             letter-spacing:.8px;
+    //             margin-bottom:18px;
+    //             position:relative;
+    //             z-index:1;
+    //         ">
+    //             ${row.service}
+    //         </div>
 
+    //         <!-- COUNT -->
+    //         <div style="
+    //             font-size:16px;
+    //             font-weight:700;
+    //             color:${clr.text};
+    //             line-height:1;
+    //             position:relative;
+    //             z-index:1;
+    //         ">
+    //             ${row.total}
+    //         </div>
 
-                    <div style="
-                        font-size:28px;
-                        font-weight:bold;
-                        color:${clr.text};
-                    ">
-                        ${row.total}
-                    </div>
+    //     </div>
+    // `;
 
-                </div>
-            `;
-        });
+    html += `
+<div class="dashboard-card">
 
-        $("#dynamic-service-cards").html(html);
+    <div class="card-top-line"
+         style="background:${clr.border}">
+    </div>
+
+    <div class="card-body">
+
+        <div class="card-icon">
+            📂
+        </div>
+
+        <div class="card-title">
+            ${row.service}
+        </div>
+
+        <div class="card-value"
+             style="color:${clr.text}">
+            ${row.total}
+        </div>
+
+    </div>
+
+</div>
+`;
+});
+
+$("#dynamic-service-cards").html(html);
 
     }
 
@@ -1025,37 +1426,19 @@ function load_sfp_status_cards() {
 
             let data = r.message || {};
 
-            let html = `
-                <div class="rs-status-card rs-card-active">
-                    <div class="rs-card-title">Active Customer</div>
-                    <div class="rs-card-value">${data.active_customer || 0}</div>
-                </div>
+            let html = "";
 
-                <div class="rs-status-card rs-card-inactive">
-                    <div class="rs-card-title">Inactive Customer</div>
-                    <div class="rs-card-value">${data.inactive_customer || 0}</div>
-                </div>
+            html += getStatusCard("#22c55e","🟢","Active",data.active_customer || 0);
 
-                <div class="rs-status-card rs-card-interested">
-                    <div class="rs-card-title">Interested</div>
-                    <div class="rs-card-value">${data.interested || 0}</div>
-                </div>
+            html += getStatusCard("#ef4444","🔴","Inactive",data.inactive_customer || 0);
 
-                <div class="rs-status-card rs-card-replied">
-                    <div class="rs-card-title">Replied</div>
-                    <div class="rs-card-value">${data.replied || 0}</div>
-                </div>
+            html += getStatusCard("#3b82f6","⭐","Interested",data.interested || 0);
 
-                <div class="rs-status-card rs-card-open">
-                    <div class="rs-card-title">Open</div>
-                    <div class="rs-card-value">${data.open || 0}</div>
-                </div>
+            html += getStatusCard("#f97316","💬","Replied",data.replied || 0);
 
-                <div class="rs-status-card rs-card-lead">
-                    <div class="rs-card-title">Lead</div>
-                    <div class="rs-card-value">${data.lead || 0}</div>
-                </div>
-            `;
+            html += getStatusCard("#8b5cf6","📂","Open",data.open || 0);
+
+            html += getStatusCard("#06b6d4","📊","Lead",data.lead || 0);
 
             $("#sfp-status-cards").html(html);
         }
@@ -1063,8 +1446,34 @@ function load_sfp_status_cards() {
 }
 
 
+function getStatusCard(topColor, icon, title, value, valueColor="#16a34a") {
+    return `
+        <div class="dashboard-card" style="height:180px;width:140px;">
+            <div class="card-top-line" style="background:${topColor}"></div>
 
+            <div class="card-body" style="
+                display:flex;
+                flex-direction:column;
+                justify-content:center;
+                align-items:center;
+                text-align:center;
+                height:calc(100% - 4px);
+            ">
 
+                <div class="card-icon">${icon}</div>
+
+                <div class="card-title">
+                    ${title}
+                </div>
+
+                <div class="card-value" style="color:${valueColor};">
+                    ${value}
+                </div>
+
+            </div>
+        </div>
+    `;
+}
 
 // =========================================
 // PAGE LOAD
@@ -1263,7 +1672,6 @@ frappe.call({
 });
 
 
-// Step 2: Load services based on selected owner or all users
 function loadoppServices(owner = null) {
     let filters = {
 		docstatus: ["!=", 2],
@@ -1296,7 +1704,6 @@ function loadoppServices(owner = null) {
 					serviceSelect.appendChild(option);
 				});
 
-				// 🔥 Expected Week filter populate
 				const expectedWeekSelect = document.getElementById("opportunity-filter-expweek");
 				const weeks = [...new Set(res.message.map(row => row.expected_week).filter(Boolean))];
 
@@ -1313,7 +1720,6 @@ function loadoppServices(owner = null) {
     });
 }
 
-// Step 3: On owner change, re-fetch services
 ownerSelect.addEventListener("change", function () {
     const selected_owner = this.value;
     loadoppServices(selected_owner); 
@@ -1652,31 +2058,78 @@ function loadCallStatuses() {
 
 
 
-	loadopportunityfilter();
-	loadquotationfilter();
-	loadappointmentfilter();
-	loadtodofilter();
-	loadfupfilter();
-    loadfupterr();
-	loadopportunitylogo();	
+// Add these lines right before calling loadopportunityfilter() to build your options layout matrix
+const typeSelectElement = document.getElementById("opportunity-filter-type");
+if (typeSelectElement) {
+    typeSelectElement.innerHTML = `
+        <option value="">Select Type</option>
+        <option value="Regular">Regular</option>
+        <option value="Recurring">Recurring</option>
+    `;
+}
+
+loadopportunityfilter();
+loadquotationfilter();
+loadappointmentfilter();
+loadtodofilter();
+loadfupfilter();
+loadfupterr();
+loadopportunitylogo();
 
 // Opportunity filter
 
-    $(wrapper).on('change', 
-        '#opportunity-filter-owner, #opportunity-filter-service, #opportunity-filter-expweek', 
-        function () {
+   // Opportunity filter event listener block (Including Type selection metrics tracking)
+$(wrapper).on('change', 
+    '#opportunity-filter-owner, #opportunity-filter-service, #opportunity-filter-expweek, #opportunity-filter-type', 
+    function () {
 
-            const owner = $('#opportunity-filter-owner').val();
-            const service = $('#opportunity-filter-service').val();
-            const expweek = $('#opportunity-filter-expweek').val();
+        const owner = $('#opportunity-filter-owner').val();
+        const service = $('#opportunity-filter-service').val();
+        const expweek = $('#opportunity-filter-expweek').val();
+        const selectedType = $('#opportunity-filter-type').val(); // Captures "Regular" or "Recurring"
 
-            const owner_list = owner ? [owner] : [];
-            const service_list = service ? [service] : [];
-            const expweek_list = expweek ? [expweek] : [];
+        const owner_list = owner ? [owner] : [];
+        const service_list = service ? [service] : [];
+        const expweek_list = expweek ? [expweek] : [];
 
-            loadopportunityfilter(owner_list, service_list, expweek_list);
-    });
+        // 1. Fetch data from your working, original python endpoint signature safely
+        frappe.call({
+            method: "teampro.teampro.page.relationship_and_sal.relationship_and_sal.opportunity_details",
+            args: {
+                owner: owner_list.length ? JSON.stringify(owner_list) : null,
+                services: service_list.length ? JSON.stringify(service_list) : null,
+                weeks: expweek_list.length ? JSON.stringify(expweek_list) : null
+            },
+            callback: function (r) {
+                if (r.message) {
+                    // Create a virtual DOM container to hold the returned HTML table string safely
+                    let $tempHtml = $('<div>').html(r.message);
+                    
+                    // 2. If a Type filter option is selected, loop through rows and sort
+                    if (selectedType) {
+                        let serialCounter = 1;
+                        
+                        // Finds every row inside the table body
+                        $tempHtml.find('table tbody tr').each(function () {
+                            // Grabs the text inside the Type column cell (14th column is eq(13) index)
+                            let rowType = $(this).find('td:eq(13)').text().trim();
+                            
+                            if (rowType === selectedType) {
+                                $(this).show();
+                                $(this).find('td:eq(0)').text(serialCounter); // Updates the 'Sr' column to be sequential
+                                serialCounter++;
+                            } else {
+                                $(this).remove(); // Drops the row out of the DOM structure if it mismatch
+                            }
+                        });
+                    }
 
+                    // 3. Inject the clean filtered layout block into your dashboard container canvas
+                    $("#opportunity-table-content").html($tempHtml.html());
+                }
+            }
+        });
+});
 // Quotation filter
 	$(wrapper).on('change', 
         '#quotation-filter-owner, #quotation-filter-service', 
@@ -1843,21 +2296,47 @@ function loadOrderBooking() {
 				maximumFractionDigits: 0
 			});
 
-			$(wrapper).find('.order-booking-card').html(`
-				<div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-					<h3 style="margin: 0;text-align:center;font-size:17px;">Order Booking</h3>
-					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
-						${formattedTotal}
-					</div>
-					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
-						[${formattedAvg}]
-					</div>
-					<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
-					[Avg]
-				</div>
-				</div>
-			`);
-		}
+			// $(wrapper).find('.order-booking-card').html(`
+			// 	<div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
+			// 		<h3 style="margin: 0;text-align:center;font-size:17px;">Order Booking</h3>
+			// 		<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
+			// 			${formattedTotal}
+			// 		</div>
+			// 		<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
+			// 			[${formattedAvg}]
+			// 		</div>
+			// 		<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
+			// 		[Avg]
+			// 	</div>
+			// 	</div>
+			// `);
+            $(wrapper).find('.order-booking-card').html(`
+            <div class="dashboard-card">
+
+                <div class="card-top-line" style="background:#0a9396"></div>
+
+                <div class="card-body">
+
+                    <div class="card-icon">📦</div>
+
+                    <div class="card-title">
+                        Order Booking
+                    </div>
+
+                    <div class="card-value">
+                        ${formattedTotal}
+                    </div>
+
+                    <div class="card-sub">
+                        ${formattedAvg}
+                    </div>
+
+
+                </div>
+
+            </div>
+            `);
+        }
 	});
 }
 
@@ -1887,143 +2366,50 @@ function loadTurnover() {
                 maximumFractionDigits: 0
             });
 
+            // $(wrapper).find('.turnover-card').html(`
+            //     <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
+            //         <h3 style="margin: 0;text-align:center;font-size:17px;">Turnover</h3>
+            //         <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
+            //             ${formatted}
+            //         </div>
+            //         <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
+            //             [${formattedAvg1}]
+            //         </div>
+            //         <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
+            //             [Avg]
+            //         </div>
+            //     </div>
+            // `);
+        
             $(wrapper).find('.turnover-card').html(`
-                <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0;text-align:center;font-size:17px;">Turnover</h3>
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
-                        ${formatted}
-                    </div>
-                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
-                        [${formattedAvg1}]
-                    </div>
-                    <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
-                        [Avg]
-                    </div>
-                </div>
-            `);
+<div class="dashboard-card">
+
+    <div class="card-top-line" style="background:#2e8b57"></div>
+
+    <div class="card-body">
+
+        <div class="card-icon">💰</div>
+
+        <div class="card-title">
+            Turnover
+        </div>
+
+        <div class="card-value">
+            ${formatted}
+        </div>
+
+        <div class="card-sub">
+            ${formattedAvg1}
+        </div>
+
+
+    </div>
+
+</div>
+`);
         }
     });
 }
-
-// 	frappe.call({
-// 		method: "teampro.teampro.page.relationship_and_sal.relationship_and_sal.get_collection_value",
-// 		callback: function(r) {
-// 			const total2 = r.message?.total || 0;
-// 			const avg2 = r.message?.average || 0;
-// 			const formattedtotal2 = parseFloat(total2).toLocaleString('en-IN', {
-// 				style: 'currency',
-// 				currency: 'INR',
-// 				maximumFractionDigits: 0 
-				
-// 			});
-// 			const formattedAvg2 = parseFloat(avg2).toLocaleString('en-IN', {
-// 					maximumFractionDigits: 0
-// 				});	
-// 				let arrowSvg = `
-// <svg width="70" height="20" viewBox="0 0 60 40">
-//     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-//           stroke="black" stroke-width="2" fill="none" 
-//           stroke-linecap="round" stroke-linejoin="round" 
-//           style="stroke-dasharray: 4,1;" />
-//     <polygon points="57,10 52,0 58,0" fill="black"/>
-// </svg>`;
-// 				// const count = r.message || 0;
-// 			$(wrapper).find('.collection-card').html(`
-// 				<div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-// 					<h3 style="margin: 0;text-align:center;font-size:17px;">Collection</h3>
-// 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedtotal2}</div>
-// 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg2}]
-//                 </div>
-// 				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
-//             </div>
-// 					</div>
-// 			`);
-// 		}
-// 	});
-
-// function loadCollection() {
-
-//     let owners = normalize(rs_multi_filter.get_value());
-//     let services = normalize(ser_filter.get_value());
-
-//     frappe.call({
-//         method: "teampro.teampro.page.relationship_and_sal.relationship_and_sal.get_collection_value",
-//         args: {
-//             employee_ids: JSON.stringify(owners),
-//             services: JSON.stringify(services)
-//         },
-//         callback: function(r) {
-
-//             const total2 = r.message?.total || 0;
-//             const avg2 = r.message?.average || 0;
-
-//             const formattedtotal2 = parseFloat(total2).toLocaleString('en-IN', {
-//                 style: 'currency',
-//                 currency: 'INR',
-//                 maximumFractionDigits: 0
-//             });
-
-//             const formattedAvg2 = parseFloat(avg2).toLocaleString('en-IN', {
-//                 maximumFractionDigits: 0
-//             });
-
-//             $(wrapper).find('.collection-card').html(`
-//                 <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-//                     <h3 style="margin: 0;text-align:center;font-size:17px;">Collection</h3>
-
-//                     <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
-//                         ${formattedtotal2}
-//                     </div>
-
-//                     <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
-//                         [${formattedAvg2}]
-//                     </div>
-
-//                     <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
-//                         [Avg]
-//                     </div>
-//                 </div>
-//             `);
-//         }
-//     });
-// }
-
-// 	frappe.call({
-// 		method: "teampro.teampro.page.relationship_and_sal.relationship_and_sal.rs_receivable",
-// 		callback: function(r) {
-// 			const total3 = r.message?.total || 0;
-// 			const avg3 = r.message?.average || 0;
-// 			const formattedtotal3 = parseFloat(total3).toLocaleString('en-IN', {
-// 				style: 'currency',
-// 				currency: 'INR',
-// 				maximumFractionDigits: 0 
-				
-// 			});
-// 			const formattedAvg3 = parseFloat(avg3).toLocaleString('en-IN', {
-// 				maximumFractionDigits: 0
-// 			});	
-// 			let arrowSvg = `
-// <svg width="70" height="20" viewBox="0 0 60 40">
-//     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-//           stroke="black" stroke-width="2" fill="none" 
-//           stroke-linecap="round" stroke-linejoin="round" 
-//           style="stroke-dasharray: 4,1;" />
-//     <polygon points="57,10 52,0 58,0" fill="black"/>
-// </svg>`;
-// 			// const count = r.message || 0;
-// 			$(wrapper).find('.receivable-card').html(`
-// 				<div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-// 					<h3 style="margin: 0;text-align:center;font-size:17px;">Receivable</h3>
-// 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedtotal3}</div>
-// 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg3}]
-//                 </div>
-// 				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
-//             </div>
-// 					</div>
-// 			`);
-// 		}
-// 	});
-	
 
 function loadReceivable() {
 
@@ -2051,63 +2437,53 @@ function loadReceivable() {
                 maximumFractionDigits: 0
             });
 
+            // $(wrapper).find('.receivable-card').html(`
+            //     <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
+            //         <h3 style="margin: 0;text-align:center;font-size:17px;">Receivable</h3>
+
+            //         <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
+            //             ${formattedtotal3}
+            //         </div>
+
+            //         <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
+            //             [${formattedAvg3}]
+            //         </div>
+
+            //         <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
+            //             [Avg]
+            //         </div>
+            //     </div>
+            // `);
+       
             $(wrapper).find('.receivable-card').html(`
-                <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-                    <h3 style="margin: 0;text-align:center;font-size:17px;">Receivable</h3>
+<div class="dashboard-card">
 
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
-                        ${formattedtotal3}
-                    </div>
+    <div class="card-top-line" style="background:#4b0082"></div>
 
-                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
-                        [${formattedAvg3}]
-                    </div>
+    <div class="card-body">
 
-                    <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
-                        [Avg]
-                    </div>
-                </div>
-            `);
+        <div class="card-icon">💳</div>
+
+        <div class="card-title">
+            Receivable
+        </div>
+
+        <div class="card-value">
+            ${formattedtotal3}
+        </div>
+
+        <div class="card-sub">
+            ${formattedAvg3}
+        </div>
+
+
+    </div>
+
+</div>
+`);
         }
     });
 }
-
-// 	frappe.call({
-// 		method: "teampro.teampro.page.relationship_and_sal.relationship_and_sal.rs_to_bill_value",
-// 		callback: function(r) {
-// 			const total4 = r.message?.total || 0;
-// 				const avg4 = r.message?.average || 0;
-// 				const formattedtotal4 = parseFloat(total4).toLocaleString('en-IN', {
-// 					style: 'currency',
-// 					currency: 'INR',
-// 					maximumFractionDigits: 0 
-					
-// 				});
-// 				const formattedAvg4 = parseFloat(avg4).toLocaleString('en-IN', {
-// 					maximumFractionDigits: 0
-// 				});	
-// 			let arrowSvg = `
-// <svg width="70" height="20" viewBox="0 0 60 40">
-// <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-// 		stroke="black" stroke-width="2" fill="none" 
-// 		stroke-linecap="round" stroke-linejoin="round" 
-// 		style="stroke-dasharray: 4,1;" />
-// <polygon points="57,10 52,0 58,0" fill="black"/>
-// </svg>`;
-// 				// const count = r.message || 0;
-// 			$(wrapper).find('.tobill-card').html(`
-// 				<div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-// 					<h3 style="margin: 0;text-align:center;font-size:17px;">To Bill</h3>
-// 					<div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">${formattedtotal4}</div>
-// 					<div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg4}]
-// 			</div>
-// 			<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
-// 		</div>
-// 				</div>
-// 			`);
-// 		}
-// 	});
-
 function loadToBill() {
 
     let owners = normalize(rs_multi_filter.get_value());
@@ -2134,27 +2510,54 @@ function loadToBill() {
                 maximumFractionDigits: 0
             });
 
+            // $(wrapper).find('.tobill-card').html(`
+            //     <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
+
+            //         <h3 style="margin: 0;text-align:center;font-size:17px;">
+            //             To Bill
+            //         </h3>
+
+            //         <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
+            //             ${formattedtotal4}
+            //         </div>
+
+            //         <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
+            //             [${formattedAvg4}]
+            //         </div>
+
+            //         <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
+            //             [Avg]
+            //         </div>
+
+            //     </div>
+            // `);
+        
             $(wrapper).find('.tobill-card').html(`
-                <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
+<div class="dashboard-card">
 
-                    <h3 style="margin: 0;text-align:center;font-size:17px;">
-                        To Bill & To Deliver & Bill
-                    </h3>
+    <div class="card-top-line" style="background:#8b0000"></div>
 
-                    <div style="font-size: 20px; font-weight: bold; margin-top: 10px; color: green; text-align: center;">
-                        ${formattedtotal4}
-                    </div>
+    <div class="card-body">
 
-                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">
-                        [${formattedAvg4}]
-                    </div>
+        <div class="card-icon">🧾</div>
 
-                    <div style="font-size: 10px;color:black;text-align: center;font-weight:bold">
-                        [Avg]
-                    </div>
+        <div class="card-title">
+            To Bill
+        </div>
 
-                </div>
-            `);
+        <div class="card-value">
+            ${formattedtotal4}
+        </div>
+
+        <div class="card-sub">
+            ${formattedAvg4}
+        </div>
+
+
+    </div>
+
+</div>
+`);
         }
     });
 }
@@ -2270,27 +2673,157 @@ function loadOppCount() {
                 currency: 'INR',
                 maximumFractionDigits: 0
             });
+            // OPPORTUNITY COUNT CARD
+                // $(wrapper).find('.opp-count-card').html(`
+                //     <div style="
+                //         width:100%;
+                //         height:100%;
+                //         padding:18px;
+                //         position:relative;
+                //         overflow:hidden;
+                //     ">
 
-            //  COUNT CARD
+                //         <div style="
+                //             position:absolute;
+                //             top:-18px;
+                //             right:-18px;
+                //             width:70px;
+                //             height:40px;
+                //             border-radius:50%;
+                //             background:#eef2ff;
+                //             opacity:.8;
+                //         "></div>
+
+                //         <div style="
+                //             font-size:14px;
+                //             font-weight:600;
+                //             color:#6b7280;
+                //             text-transform:uppercase;
+                //             letter-spacing:.8px;
+                //             margin-bottom:20px;
+                //             position:relative;
+                //             z-index:1;
+                //         ">
+                //             OPP
+                //         </div>
+
+                //         <div style="
+                //             font-size:16px;
+                //             font-weight:700;
+                //             color:#4338ca;
+                //             line-height:1;
+                //             position:relative;
+                //             z-index:1;
+                //         ">
+                //             ${count}
+                //         </div>
+
+                //     </div>
+                // `);
+
             $(wrapper).find('.opp-count-card').html(`
-                <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-                    <h3 style="text-align:center;font-size:17px;">Opportunities</h3>
-                    <div style="font-size: 22px; font-weight: bold; color: blue; text-align: center;">
+            <div class="dashboard-card" style="height:100%; width:100%;">
+
+                <div class="card-top-line" style="background:#6366f1"></div>
+
+                <div class="card-body" style="
+                    display:flex;
+                    flex-direction:column;
+                    justify-content:center;
+                    align-items:center;
+                    height:calc(100% - 4px);
+                    text-align:center;
+                ">
+
+                    <div class="card-icon">🎯</div>
+
+                    <div class="card-title">Opptunity</div>
+
+                    <div class="card-value" style="color:#4338ca;">
                         ${count}
                     </div>
+
                 </div>
+
+            </div>
             `);
 
-            //  AMOUNT CARD
+                // OPPORTUNITY AMOUNT CARD
+                // $(wrapper).find('.opp-amount-card').html(`
+                //     <div style="
+                //         width:100%;
+                //         height:100%;
+                //         padding:18px;
+                //         position:relative;
+                //         overflow:hidden;
+                //     ">
+
+                //         <div style="
+                //             position:absolute;
+                //             width:70px;
+                //             height:40px;
+                //             border-radius:50%;
+                //             background:#fff7ed;
+                //             opacity:.8;
+                //         "></div>
+
+                //         <div style="
+                //             font-size:14px;
+                //             font-weight:600;
+                //             color:#6b7280;
+                //             text-transform:uppercase;
+                //             letter-spacing:.8px;
+                //             margin-bottom:20px;
+                //             position:relative;
+                //             z-index:1;
+                //         ">
+                //             OPP AMT
+                //         </div>
+
+                //         <div style="
+                //             font-size:16px;
+                //             font-weight:700;
+                //             color:#b45309;
+                //             line-height:1.2;
+                //             position:relative;
+                //             z-index:1;
+                //         ">
+                //             ${formattedAmount}
+                //         </div>
+
+                //     </div>
+                // `);
+        
             $(wrapper).find('.opp-amount-card').html(`
-                <div class="card blink-border" style="width: 200px; padding: 15px; border-radius: 8px;">
-                    <h3 style="text-align:center;font-size:17px;">Opportunity Amount</h3>
-                    <div style="font-size: 20px; font-weight: bold; color: green; text-align: center;">
-                        ${formattedAmount}
+                <div class="dashboard-card" style="width:100%; height:100%;">
+
+                    <div class="card-top-line" style="background:#f59e0b"></div>
+
+                    <div class="card-body" style="
+                        height:calc(100% - 4px);
+                        display:flex;
+                        flex-direction:column;
+                        justify-content:center;
+                        align-items:center;
+                        text-align:center;
+                    ">
+
+                        <div class="card-icon">💰</div>
+
+                        <div class="card-title">
+                            Opp Amount
+                        </div>
+
+                        <div class="card-value"
+                            style="font-size:18px;color:#b45309;">
+                            ${formattedAmount}
+                        </div>
+
                     </div>
+
                 </div>
             `);
-        }
+            }
     });
 }
 	frappe.call({
@@ -2379,30 +2912,25 @@ function loadopportunityfilter(owner = null, service = null, expweek = null) {
 }
 
 window.download_opportunity_excel = function () {
-    console.log("HI J")
-    let owner = $("#opportunity-filter-owner").val() || "";
-    let services = $("#opportunity-filter-service").val() || "";
-    let weeks = $("#opportunity-filter-expweek").val() || "";
+    const owner = $('#opportunity-filter-owner').val();
+    const service = $('#opportunity-filter-service').val();
+    const expweek = $('#opportunity-filter-expweek').val();
+    const opp_type = $('#opportunity-filter-type').val(); // Captures "Regular" or "Recurring"
 
-    let params = new URLSearchParams();
+    const owner_list = owner ? [owner] : [];
+    const service_list = service ? [service] : [];
+    const expweek_list = expweek ? [expweek] : [];
+    const type_list = opp_type ? [opp_type] : [];
 
-    if (owner) {
-        params.append("owner", JSON.stringify([owner]));
-    }
+    // We pass it to the backend using a clean, safe parameter mapping string
+    let url = "/api/method/teampro.teampro.page.relationship_and_sal.relationship_and_sal.download_opportunity_excel"
+        + "?owner=" + encodeURIComponent(JSON.stringify(owner_list))
+        + "&services=" + encodeURIComponent(JSON.stringify(service_list))
+        + "&weeks=" + encodeURIComponent(JSON.stringify(expweek_list))
+        + "&opportunity_type=" + encodeURIComponent(JSON.stringify(type_list));
 
-    if (services) {
-        params.append("services", JSON.stringify([services]));
-    }
-
-    if (weeks) {
-        params.append("weeks", JSON.stringify([weeks]));
-    }
-
-    window.open(
-        "/api/method/teampro.teampro.page.relationship_and_sal.relationship_and_sal.download_opportunity_excel?"
-        + params.toString()
-    );
-}
+    window.open(url);
+};
 
 
 
@@ -2899,40 +3427,33 @@ function loadFupCards() {
 
             let d = r.message || {};
 
-            $('#card-active').html(`
-                <div>Active</div>
-                <div class="count">${d.active || 0}</div>
-            `);
+            $('#card-active').html(
+                getStatusCard("#22c55e","🟢","Active",d.active || 0)
+            );
 
-            $('#card-inactive').html(`
-                <div>Inactive</div>
-                <div class="count">${d.inactive || 0}</div>
-            `);
+            $('#card-inactive').html(
+                getStatusCard("#ef4444","🔴","Inactive",d.inactive || 0)
+            );
 
-            $('#card-opportunity').html(`
-                <div>Opportunity</div>
-                <div class="count">${d.opportunity || 0}</div>
-            `);
+            $('#card-opportunity').html(
+                getStatusCard("#3b82f6","🎯","Opportunity",d.opportunity || 0)
+            );
 
-            $('#card-opportunity-amount').html(`
-                <div>Opportunity Amount</div>
-                <div class="count">${d.opportunity_amount || 0}</div>
-            `);
+            $('#card-opportunity-amount').html(
+                getStatusCard("#f59e0b","💰","Opp Amount",d.opportunity_amount || 0,"#b45309")
+            );
 
-            $('#card-replied').html(`
-                <div>Replied</div>
-                <div class="count">${d.replied || 0}</div>
-            `);
+            $('#card-replied').html(
+                getStatusCard("#f97316","💬","Replied",d.replied || 0)
+            );
 
-            $('#card-open').html(`
-                <div>Open</div>
-                <div class="count">${d.open || 0}</div>
-            `);
+            $('#card-open').html(
+                getStatusCard("#8b5cf6","📂","Open",d.open || 0)
+            );
 
-            $('#card-closed').html(`
-                <div>Closed</div>
-                <div class="count">${d.closed || 0}</div>
-            `);
+            $('#card-closed').html(
+                getStatusCard("#6b7280","✅","Closed",d.closed || 0)
+            );
         }
     });
 }

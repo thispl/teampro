@@ -27,7 +27,7 @@ frappe.ui.form.on("Daily Monitor",{
         //     })
       user = frappe.session.user
       tl = frappe.get_doc("Employee",{"user_id":user},["name"])
-    //   if(frm.doc.dm_status=="DPR Completed"){
+      if(frm.doc.dm_status=="DPR Completed"){
         frm.add_custom_button(__('Update DM'), function() {
             frappe.call({
                 method: "teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_update_team",
@@ -60,7 +60,7 @@ frappe.ui.form.on("Daily Monitor",{
         
             })
         }
-    //   }
+      }
     //   frm.add_custom_button(__('Send DSR'), function() {
 
     //         frappe.call({

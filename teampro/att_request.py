@@ -150,22 +150,23 @@ def update_permission_req_in_att_submission(doc,method):
 
 @frappe.whitelist()
 def update_perm_req_in_att_cancel(doc,method):
-    attendance=frappe.get_doc("Attendance",{"attendance_date":doc.from_date,"docstatus":("!=",2),"employee":doc.employee})
-    hours=0
-    if attendance:
-        attendance.attendance_request=""
-        attendance.custom_session=""
-        if attendance.bt_difference:
-            diff=(attendance.bt_difference)
-            hours = diff
-        if hours>=8:
-            attendance.status="Present"
-        elif hours>=4 and hours < 8:
-            attendance.status="Half Day"
-        else:
-            attendance.status="Absent"
-    attendance.save()
-    frappe.db.commit()
+    if frappe.db.exists("Attendance",{"attendance_request":doc.name,"employee":doc.employee,'docstatus':['!=',2]}):
+        attendance=frappe.get_doc("Attendance",{"attendance_date":doc.from_date,"docstatus":("!=",2),"employee":doc.employee})
+        hours=0
+        if attendance:
+            attendance.attendance_request=""
+            attendance.custom_session=""
+            if attendance.bt_difference:
+                diff=(attendance.bt_difference)
+                hours = diff
+            if hours>=8:
+                attendance.status="Present"
+            elif hours>=4 and hours < 8:
+                attendance.status="Half Day"
+            else:
+                attendance.status="Absent"
+        attendance.save()
+        frappe.db.commit()
 
 @frappe.whitelist()
 def validate_and_update_mispunch(doc, method):

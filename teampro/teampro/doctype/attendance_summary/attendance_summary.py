@@ -62,13 +62,21 @@ def get_data_summary(emp, from_date, to_date):
 				present += 0.5
 			if status == 'Absent':
 				absent +=1
+			# if od_request:
+			# 	req = frappe.get_doc("Attendance Request",{"reason":("not in",["Permission","Mispunch"])}, od_request)
+			# 	if req:
+			# 		if req.half_day and req.half_day_date == att.attendance_date:
+			# 			on_duty += 0.5
+			# 		else:
+			# 			on_duty +=1
 			if od_request:
-				req = frappe.get_doc("Attendance Request",{"reason":("not in",["Permission","Mispunch"])}, od_request)
-				if req:
+				req = frappe.get_doc("Attendance Request", od_request)
+
+				if req.reason not in ["Permission", "Mispunch"]:
 					if req.half_day and req.half_day_date == att.attendance_date:
 						on_duty += 0.5
 					else:
-						on_duty +=1
+						on_duty += 1
 			if status == 'On Leave':
 				on_leave += 1
 			
@@ -441,3 +449,9 @@ def format_timedelta(td):
     
     return formatted_time
 
+@frappe.whitelist()
+#return the last execution time of attendance cron
+def update_last_execution():
+    doc=frappe.db.get_value("Scheduled Job Log",{"scheduled_job_type":"mark_attendance.mark_att","status":"Complete"},["creation"])
+    if doc:
+        return doc

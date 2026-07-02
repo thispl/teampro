@@ -19,7 +19,7 @@ def get_today_task_data():
 	task_data = frappe.db.sql("""
 		SELECT name, project, subject, custom_allocated_to, status,
 			   expected_time, rt, actual_time, priority, custom_spot_task,
-			   status as current_status, custom_remarks, custom_dev_team, custom_sprint,kt_confirmed
+			   status as current_status, custom_remarks, custom_dev_team, custom_sprint,kt_confirmed, custom_production_date_count, revisions, is_confirmed
 		FROM `tabTask`
 		WHERE custom_production_date = %s
 		  AND custom_sprint IN %s
@@ -30,9 +30,10 @@ def get_today_task_data():
 	employee_list = set()
 
 	for task in task_data:
-		emp = frappe.get_value("Employee", {"user_id": task.custom_allocated_to}, ["short_code", "name"], as_dict=True)
+		emp = frappe.get_value("Employee", {"user_id": task.custom_allocated_to}, ["short_code", "name", "image"], as_dict=True)
 		short_code = emp.short_code if emp else ""
 		emp_name = emp.name if emp else ""
+		photo = emp.image if emp and emp.image else ""
 		employee_list.add(emp_name)
 		is_tl = frappe.db.get_value('Employee', emp_name, 'custom_is_tl') or 0
 
@@ -66,7 +67,7 @@ def get_today_task_data():
 			round(task.expected_time or 0, 2), round(task.rt or 0, 2),
 			round(actual_time, 2), task.priority, spot_task,
 			task.current_status, task.custom_remarks, task.custom_dev_team,
-			round(today_at, 2), round(today_rt, 2), task.custom_sprint,is_tl,task.kt_confirmed
+			round(today_at, 2), round(today_rt, 2), task.custom_sprint,is_tl,task.is_confirmed, task.custom_production_date_count, task.revisions, photo, task.custom_sprint
 		])
 
 	for emp_name in employee_list:
@@ -74,6 +75,7 @@ def get_today_task_data():
 			continue
 		short_code =  frappe.db.get_value("Employee", emp_name,['short_code']) or ""
 		dev_team = frappe.db.get_value("Employee", emp_name,['custom_dev_team']) or ""
+		photo = frappe.db.get_value("Employee", emp_name,['image']) or ""
 		priority_order = {"Urgent": 1, "High": 2, "Medium": 3, "Low": 4}
 		is_tl = frappe.db.get_value('Employee', {'name': emp_name}, ['custom_is_tl'])
 		allocated_persons = []
@@ -130,6 +132,9 @@ def get_today_task_data():
 			priority = frappe.get_value("Task", row.task, "priority") or ""
 			custom_sprint = frappe.get_value("Task", row.task, "custom_sprint") or ""
 			expected_time = frappe.get_value("Task", row.task, "expected_time") or 0
+			production_date_count = frappe.get_value("Task", row.task, "custom_production_date_count") or 0
+			revision_count = frappe.get_value("Task", row.task, "revisions") or 0
+			
 			
 			spot_task = frappe.db.get_value('Sprint Task', {
 				'production_date': today, 'task': row.task, 'cb': short_code
@@ -168,7 +173,7 @@ def get_today_task_data():
 				row.task, row.project, row.subject, short_code, status,
 				round(expected_time,2), 0, round(actual_time,2), priority, spot_task,
 				row.task_status, '', dev_team,
-				round(today_at, 2), today_rt, custom_sprint,is_tl,kt_confirmed
+				round(today_at, 2), today_rt, custom_sprint,is_tl,kt_confirmed, production_date_count, revision_count, photo
 			])
 
 		# Timesheet Issues
@@ -213,21 +218,20 @@ def get_today_task_data():
 
 	html = '''
 	
-	<table id="task-report-table" style="width: 100%; border-collapse: collapse;" border="1">
+	<table id="task-report-table" style="width: 100%; border-collapse: collapse;table-layout:auto;" border="1">
 		<thead>
 			<tr>
 				<th style="background-color:#0F1568;color:black;">Sl No</th>
 				<th style="background-color:#0F1568;color:black;">Sprint</th>
-				<th style="background-color:#0F1568;color:black;">Team</th>
-				<th style="background-color:#0F1568;color:black;">Project</th>
+				<th style="background-color:#0F1568;color:black;width:80px;">Project</th>
 				<th style="background-color:#0F1568;color:black;">Task</th>
-				<th style="background-color:#0F1568;color:black;">Subject</th>
-				<th style="background-color:#0F1568;color:black;">KT Confirmed</th>
+				<th style="background-color:#0F1568;color:black;width:80px;">Subject</th>
+				<th style="background-color:#0F1568;color:black;">S/P</th>
+				<th style="background-color:#0F1568;color:black;">RO</th>
+				<th style="background-color:#0F1568;color:black;">CF</th>
 				<th style="background-color:#0F1568;color:black;">ET</th>
-				<th style="background-color:#0F1568;color:black;">RT</th>
 				<th style="background-color:#0F1568;color:black;">AT</th>
 				<th style="background-color:#0F1568;color:black;">Today RT</th>
-				<th style="background-color:#0F1568;color:black;">AT Period</th>
 				<th style="background-color:#0F1568;color:black;">Priority</th>
 				<th style="background-color:#0F1568;color:black;">Status</th>
 			</tr>
@@ -241,7 +245,15 @@ def get_today_task_data():
 		team_id = f"team-{team.replace(' ', '_')}"
 		cb_groups = grouped[team]
 
-		sorted_cbs = sorted(cb_groups.items(), key=lambda x: (-x[1]["is_tl"], x[0]))
+		# sorted_cbs = sorted(cb_groups.items(), key=lambda x: (-x[1]["is_tl"], x[0]))
+		sorted_cbs = sorted(
+			cb_groups.items(),
+			key=lambda x: frappe.db.get_value(
+				"Employee",
+				{"short_code": x[0]},
+				"custom_order_for_it_dashboard"
+			) or 999
+		)
 
 		team_et = team_rt = team_at = team_at_period = team_task_count = team_today_rt = 0
 		for cb, cb_data in sorted_cbs:
@@ -253,10 +265,48 @@ def get_today_task_data():
 				team_today_rt += float(row[14] or 0)
 				team_task_count += 1
 
-		cb_buttons = f'<td colspan="6" class="left-align"><span data-team="{team_id}" data-type="all" style="cursor:pointer; font-weight:bold; margin-right:10px;">+ ALL</span>'
-		for cb in cb_groups.keys():
+		# cb_buttons = f'<td colspan="7" class="left-align"><span data-team="{team_id}" data-type="all" style="cursor:pointer; font-weight:bold; margin-right:10px;">+ ALL</span>'
+		# for cb in cb_groups.keys():
+		# 	cb_id = f"cb-{team.replace(' ', '_')}-{cb.replace(' ', '_')}"
+		# 	cb_buttons += f'<span data-target="{cb_id}" style="cursor:pointer; font-weight:bold; margin-right:10px;">+ {cb}</span>'
+		# cb_buttons += '</td>'
+		cb_buttons = f'''
+		<td colspan="7" class="left-align">
+			<span data-team="{team_id}" data-type="all"
+				style="cursor:pointer;font-weight:bold;margin-right:10px;">
+				+ ALL
+			</span>
+		'''
+
+		for cb, cb_data in sorted_cbs:
 			cb_id = f"cb-{team.replace(' ', '_')}-{cb.replace(' ', '_')}"
-			cb_buttons += f'<span data-target="{cb_id}" style="cursor:pointer; font-weight:bold; margin-right:10px;">+ {cb}</span>'
+
+			photo = ""
+			if cb_data["tasks"]:
+				photo = cb_data["tasks"][0][20] or ""
+
+			if photo:
+				cb_buttons += f'''
+				<img src="{photo}"
+					data-target="{cb_id}"
+					title="{cb}"
+					style="
+						width:35px;
+						height:35px;
+						border-radius:50%;
+						cursor:pointer;
+						margin-right:8px;
+						vertical-align:middle;
+					">
+				'''
+			else:
+				cb_buttons += f'''
+				<span data-target="{cb_id}"
+					style="cursor:pointer;font-weight:bold;margin-right:10px;">
+					+ {cb}
+				</span>
+				'''
+
 		cb_buttons += '</td>'
 
 		html += f'''
@@ -264,10 +314,8 @@ def get_today_task_data():
 			<td colspan="1" class="left-align"><b>{escape(team)}</b></td>
 			{cb_buttons}
 			<td><b>{team_et:.2f}</b></td>
-			<td><b>{team_rt:.2f}</b></td>
 			<td><b>{team_at:.2f}</b></td>
 			<td><b>{team_today_rt:.2f}</b></td>
-			<td><b>{team_at_period:.2f}</b></td>
 			<td colspan="2"></td>
 		</tr>
 		'''
@@ -332,33 +380,178 @@ def get_today_task_data():
 			html += f'''
 			<tr class="toggle-cb {cb_id} {team_id}">
 				<td></td>
-				<td colspan="6" class="left-align"><b>{escape(cb)}</b></td>
+				<td colspan="7" class="left-align"><b>{escape(cb)}</b></td>
 				<td><b>{cb_et:.2f}</b></td>
-				<td><b>{cb_rt:.2f}</b></td>
 				<td><b>{cb_at:.2f}</b></td>
 				<td><b>{cb_today_rt:.2f}</b></td>
-				<td><b>{cb_today_at:.2f}</b></td>
 				<td colspan="2"></td>
 			</tr>
 			'''
 
 			for row in tasks:
+				status = row[10] or ""
+
+				percent = 0
+				if float(row[14] or 0) > 0:
+					percent = round((float(row[13] or 0) / float(row[14])) * 100)
+
+				kt_confirmed = row[17] or 0
+
+				if kt_confirmed == 0:
+					status_html = """
+					<span style="
+						color:green;
+						font-size:20px;
+						font-weight:bold;
+					">✓</span>
+					"""
+
+				else:  
+
+					if status == "Client Review" and percent > 0:
+						bar_color = "#4CAF50"
+
+						if percent > 100:
+							bar_color = "red"
+						elif percent > 75:
+							bar_color = "orange"
+						elif percent > 50:
+							bar_color = "#2196F3"
+						else:
+							bar_color = "#9E9E9E"
+
+						status_html = f"""
+						<div style="width:80px;">
+							<div style="
+								background:#eee;
+								border-radius:10px;
+								height:4px;
+								overflow:hidden;
+							">
+								<div style="
+									width:{min(percent,100)}%;
+									background:{bar_color};
+									height:100%;
+								"></div>
+							</div>
+
+							<div style="
+								font-size:8px;
+								margin-top:2px;
+								width:30px;
+								word-break:break-word;
+							">
+								{percent}% ({status})
+							</div>
+						</div>
+						"""
+
+					elif status == "Working" and percent > 0:
+						bar_color = "#4CAF50"
+
+						if percent > 100:
+							bar_color = "red"
+						elif percent > 75:
+							bar_color = "orange"
+						elif percent > 50:
+							bar_color = "#2196F3"
+						else:
+							bar_color = "#9E9E9E"
+
+						status_html = f"""
+						<div style="width:80px;">
+							<div style="
+								background:#eee;
+								border-radius:10px;
+								height:4px;
+								overflow:hidden;
+							">
+								<div style="
+									width:{min(percent,100)}%;
+									background:{bar_color};
+									height:100%;
+								"></div>
+							</div>
+
+							<div style="
+								font-size:8px;
+								margin-top:2px;
+								width:30px;
+								word-break:break-word;
+							">
+								{percent}% ({status})
+							</div>
+						</div>
+						"""
+
+					elif status == "Pending Review" and percent > 0:
+						bar_color = "#4CAF50"
+
+						if percent > 100:
+							bar_color = "red"
+						elif percent > 75:
+							bar_color = "orange"
+						elif percent > 50:
+							bar_color = "#2196F3"
+						else:
+							bar_color = "#9E9E9E"
+
+						status_html = f"""
+						<div style="width:80px;">
+							<div style="
+								background:#eee;
+								border-radius:10px;
+								height:4px;
+								overflow:hidden;
+							">
+								<div style="
+									width:{min(percent,100)}%;
+									background:{bar_color};
+									height:100%;
+								"></div>
+							</div>
+
+							<div style="
+								font-size:8px;
+								margin-top:2px;
+								width:30px;
+								word-break:break-word;
+							">
+								{percent}% ({status})
+							</div>
+						</div>
+						"""
+
+					else:
+						status_html = """
+						<span style="
+							display:inline-block;
+							width:30px;
+							height:30px;
+							line-height:30px;
+							border:1px solid red;
+							border-radius:50%;
+							color:red;
+							font-weight:bold;
+							text-align:center;
+						">C</span>
+						"""
+				
 				html += f'''
 				<tr class="task-row {cb_id} {team_id}">
 					<td>{task_serial}</td>
-					<td>{row[15]}</td>
-					<td>{row[12]}</td>
-					<td class="left-align">{escape(row[1])}</td>
+					<td>{row[21] if len(row) > 21 else ''}</td>
+					<td class="left-align" style="width:80px;white-space: normal !important;overflow-wrap: break-word !important;word-break: break-word !important;">{escape(row[1])}</td>
 					<td><a href="/app/task/{row[0]}" target="_blank">{row[0]}</a></td>
-					<td class="left-align">{escape(row[2])}</td>
-					<td>{row[17]}</td>
+					<td class="left-align" style="width:80px;">{escape(row[2])}</td>
+					<td>{row[9]}</td>
+					<td>{row[19]}</td>
+					<td>{row[18]}</td>
 					<td>{row[5]}</td>
-					<td>{row[6]}</td>
 					<td>{row[7]}</td>
-					<td>{row[14]}</td>
-					<td style="color:red;">{row[13]}</td>
+					<td style="color:red;">{row[14]}</td>
 					<td class="left-align">{row[8]}</td>
-					<td class="left-align">{row[10]}</td>
+					<td class="left-align" style="white-space: normal !important;overflow-wrap: break-word !important;word-break: break-word !important;">{status_html}</td>
 				</tr>
 				'''
 				task_serial += 1

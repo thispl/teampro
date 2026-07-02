@@ -84,32 +84,37 @@ def issue_status(doc,method):
     if doc.service == 'IT-SW':
         if doc.issue is not None:
             if doc.status in ["Open","Working"]:
-                issue = frappe.get_doc("Issue", doc.issue)
-                if issue and issue.status != "Replied":
-                    issue.status = "Replied"
-                    issue.task = doc.name
-                    issue.assigned_to = doc.completed_by
-                    issue.project = doc.project
-                    issue.save()
-            if doc.status == "Pending Review":
-                issue = frappe.get_doc("Issue", doc.issue)
-                if issue and issue.status != "Resolved":
-                    issue.status ="Resolved"
-                    issue.assigned_to = doc.completed_by
-                    issue.project = doc.project
-                    issue.save()
-            if doc.status == "Completed":
-                issue = frappe.get_doc("Issue", doc.issue)
-                if issue and issue.status != "Closed":
-                    issue.status ="Closed"
-                    issue.assigned_to = doc.completed_by
-                    issue.project = doc.project
-                    issue.save()
+                current_status = frappe.db.get_value("Issue", doc.issue, "status")
+                if current_status != "Replied":
+                    frappe.db.set_value("Issue", doc.issue, {
+                        "status": "Replied",
+                        "task": doc.name,
+                        "assigned_to": doc.completed_by,
+                        "project": doc.project,
+                    })
+            elif doc.status == "Pending Review":
+                current_status = frappe.db.get_value("Issue", doc.issue, "status")
+                if current_status != "Resolved":
+                    frappe.db.set_value("Issue", doc.issue, {
+                        "status": "Resolved",
+                        "assigned_to": doc.completed_by,
+                        "project": doc.project,
+                    })
+            elif doc.status == "Completed":
+                current_status = frappe.db.get_value("Issue", doc.issue, "status")
+                if current_status != "Closed":
+                    frappe.db.set_value("Issue", doc.issue, {
+                        "status": "Closed",
+                        "assigned_to": doc.completed_by,
+                        "project": doc.project,
+                    })
 
 
 
 from frappe.utils import getdate
 import frappe
+
+
 
 
 # @frappe.whitelist()
@@ -123,11 +128,12 @@ import frappe
 
 #     if not doc.custom_sprint:
 #         return
-
+#     if doc.service != "IT-SW":
+#         return
 #     dm = frappe.get_all(
 #         "Daily Monitor",
 #         filters={
-#             "docstatus": ["!=", 2],
+#             "docstatus": ["not in", [1, 2]],
 #             "custom_dm_production_date": doc.custom_production_date,
 #             "dev_team": doc.custom_dev_team,
 #             "sprint": doc.custom_sprint
@@ -139,24 +145,31 @@ import frappe
 #     if not dm:
 #         return
 
-#     dm_doc = frappe.get_doc("Daily Monitor", dm[0].name)
+#     dm_name = dm[0].name
 
-    
-#     rows_to_keep = []
+#     # Check if task already exists in the child table — single SQL query instead of loading the full doc
+#     exists = frappe.db.exists("Allocated Tasks", {"parent": dm_name, "id": doc.name})
+#     if exists:
+#         return
 
-#     for d in dm_doc.task_details:
+#     # Insert the child table row directly via SQL to avoid triggering Daily Monitor's
+#     # validate hook (update_sprint_avl_time) which performs O(k) SQL queries per unique cb.
+#     idx = frappe.db.sql(
+#         "SELECT COALESCE(MAX(idx), 0) + 1 FROM `tabAllocated Tasks` WHERE parent = %s",
+#         dm_name,
+#     )[0][0]
 
-#         if d.id != doc.name:
-#             rows_to_keep.append(d)
+#     row_name = frappe.generate_hash("Allocated Tasks", 10)
+#     frappe.db.sql(
+#         """INSERT INTO `tabAllocated Tasks`
+#             (name, parent, parenttype, parentfield, idx, docstatus,
+#              creation, modified, modified_by, owner, id, today_rt)
+#            VALUES (%s, %s, %s, %s, %s, 0,
+#                    NOW(), NOW(), %s, %s, %s, %s)""",
+#         (row_name, dm_name, "Daily Monitor", "task_details", idx,
+#          frappe.session.user, frappe.session.user, doc.name, doc.rt),
+#     )
 
-#     dm_doc.set("task_details", rows_to_keep)
-
-#     dm_doc.append("task_details", {
-#         "id": doc.name,
-#         "today_rt": doc.rt
-#     })
-
-#     dm_doc.save(ignore_permissions=True)
 
 
 @frappe.whitelist()
@@ -170,11 +183,12 @@ def update_dm(doc, method=None):
 
     if not doc.custom_sprint:
         return
-
+    if doc.service != "IT-SW":
+        return
     dm = frappe.get_all(
         "Daily Monitor",
         filters={
-            "docstatus": ["!=", 2],
+            "docstatus": ["not in", [1, 2]],
             "custom_dm_production_date": doc.custom_production_date,
             "dev_team": doc.custom_dev_team,
             "sprint": doc.custom_sprint
@@ -186,29 +200,110 @@ def update_dm(doc, method=None):
     if not dm:
         return
 
-    dm_doc = frappe.get_doc("Daily Monitor", dm[0].name)
+    dm_name = dm[0].name
 
-    task_found = False
+    # Check if task already exists in the child table — single SQL query instead of loading the full doc
+    exists = frappe.db.exists(
+        "Allocated Tasks",
+        {"parent": dm_name, "id": doc.name}
+    )
 
-    for d in dm_doc.task_details:
+    task = frappe.get_doc("Task", doc.name)
 
-        if d.id == doc.name:
-            
-            d.id = doc.name
-            d.today_rt = doc.rt
-            d.project_name = doc.project
+    if exists:
+        frappe.db.set_value(
+            "Allocated Tasks",
+            exists,
+            {
+                "project_name": task.project,
+                "subject": task.subject,
+                "cb": task.cb,
+                "status": task.status,
+                "revisions": task.revisions,
+                "at": task.actual_time,
+                "rt": task.rt,
+                "et": task.expected_time,
+                "priority": task.priority,
+                "allocated_on": task.custom_allocated_on,
+                "current_status": task.status,
+                "spot_task": task.custom_spot_task,
+                "remark": task.custom_remarks,
+                "et_vs_at_remark": task.custom_et_vs_at_remark,
+                "allocated_to": task.custom_allocated_to,
+                "kt_confirmed": task.kt_confirmed,
+                "is_confirmed": task.is_confirmed,
+                "production_date_count": task.custom_production_date_count
+            }
+        )
+        return
 
-            task_found = True
-            break
+    # Insert the child table row directly via SQL to avoid triggering Daily Monitor's
+    # validate hook (update_sprint_avl_time) which performs O(k) SQL queries per unique cb.
+    idx = frappe.db.sql(
+        "SELECT COALESCE(MAX(idx), 0) + 1 FROM `tabAllocated Tasks` WHERE parent = %s",
+        dm_name,
+    )[0][0]
 
-    if not task_found:
+    row_name = frappe.generate_hash("Allocated Tasks", 10)
+    task = frappe.get_doc("Task", doc.name)
+    frappe.db.sql("""
+        INSERT INTO `tabAllocated Tasks`
+        (
+            name, parent, parenttype, parentfield, idx, docstatus,
+            creation, modified, modified_by, owner,
+            id, today_rt, project_name, subject, cb, status,
+            revisions, at, rt, et, priority,
+            allocated_on, current_status, spot_task,
+            remark, et_vs_at_remark,
+            allocated_to, cb_against_task,
+            kt_confirmed, is_confirmed,
+            production_date_count
+        )
+        VALUES (
+            %s, %s, %s, %s, %s, 0,
+            NOW(), NOW(), %s, %s,
+            %s, %s, %s, %s, %s, %s,
+            %s, %s, %s, %s, %s,
+            %s, %s, %s,
+            %s, %s,
+            %s, %s,
+            %s, %s,
+            %s
+        )
+    """,
+    (
+        row_name,
+        dm_name,
+        "Daily Monitor",
+        "task_details",
+        idx,
+        frappe.session.user,
+        frappe.session.user,
+        doc.name,
+        doc.rt,
+        task.project,
+        task.subject,
+        task.cb,
+        doc.status,
+        task.revisions,
+        task.actual_time,
+        task.rt,
+        task.expected_time,
+        task.priority,
+        task.custom_allocated_on,
+        task.status,
+        task.custom_spot_task,
+        task.custom_remarks,
+        task.custom_et_vs_at_remark,
+        task.custom_allocated_to,
+        task.cb,
+        task.kt_confirmed,
+        task.is_confirmed,
+        task.custom_production_date_count
+    ))
 
-        dm_doc.append("task_details", {
-            "id": doc.name,
-            "today_rt": doc.rt
-        })
 
-    dm_doc.save(ignore_permissions=True)
+
 
 import frappe
 import requests
@@ -218,8 +313,8 @@ from datetime import datetime
 @frappe.whitelist()
 def update_issue_wonjin(doc,method):
     if not doc.is_new():
-        doc_task = frappe.get_doc("Task",doc.name)
-        if doc.project == 'Wonjin_ERP_19.12.2023' and not doc.is_new():
+        if doc.project == 'Wonjin_ERP_19.12.2023':
+            doc_task = frappe.get_doc("Task",doc.name)
             subject = f"{doc.subject} - {doc_task.creation.strftime('%d-%m-%Y')}"
             creation = doc_task.creation.strftime('%d-%m-%Y')
 
@@ -234,29 +329,32 @@ def update_issue_wonjin(doc,method):
                 'proof': doc.custom_proof_of_closure_review,
                 'issue_id': doc.issue,
                 'allocated_to': doc.custom_allocated_to,
-
             }
 
-            url = "https://erp.onegeneindia.in/api/method/onegene.www.update_issue.update_issue_from_teampro"
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': 'token 7503af112f2692c:812bd60c48b22ed'
-            }
-
-
-            try:
-                response = requests.post(url, headers=headers, json=params, verify=False)
-                response.raise_for_status()  # raises exception for 4xx/5xx errors
-
-                res = response.json()
-                return res
-
-            except requests.exceptions.RequestException as e:
-                frappe.throw(f"HTTP error: {str(e)}")
-            except json.JSONDecodeError:
-                frappe.throw("Failed to decode JSON response from server")
+            frappe.enqueue(
+                "teampro.teampro_hooks_method.send_wonjin_issue_update",
+                queue="default",
+                timeout=30,
+                now=False,
+                params=params,
+            )
 
         return "No matching task found or it's new"
+
+
+def send_wonjin_issue_update(params):
+    import requests, json
+    url = "https://erp.onegeneindia.in/api/method/onegene.www.update_issue.update_issue_from_teampro"
+    headers = {
+        'Content-Type': 'application/json',
+        'Authorization': 'token 7503af112f2692c:812bd60c48b22ed'
+    }
+    try:
+        response = requests.post(url, headers=headers, json=params, verify=False, timeout=15)
+        response.raise_for_status()
+        return response.json()
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Wonjin Issue Update Failed")
 
 
 @frappe.whitelist()
@@ -275,21 +373,35 @@ def task_status_complete_wonjin(task_id):
     
 @frappe.whitelist()
 def update_issue_type(doc,method):
-    frappe.db.set_value("Issue",doc.issue,"custom_issue_status",doc.status)
-    frappe.db.set_value("Issue",doc.issue,"issue_type",doc.custom_issue_type)
-    if doc.status=="Open" or doc.status=="Overdue":
-        frappe.db.set_value("Issue",doc.issue,"status","Open")
-    elif doc.status=="Hold":
-        frappe.db.set_value("Issue",doc.issue,"status","On Hold")
-    elif doc.status=="Working":
-        frappe.db.set_value("Issue",doc.issue,"status","Replied")
-    elif doc.status=="Pending Review" or doc.status=="Client Review":
-        frappe.db.set_value("Issue",doc.issue,"status","Resolved")
-    elif doc.status=="Completed" or doc.status=="Cancelled":
-        frappe.db.set_value("Issue",doc.issue,"status","Closed")
+    if not doc.issue:
+        return
+
+    issue_status_map = {
+        "Open": "Open",
+        "Overdue": "Open",
+        "Hold": "On Hold",
+        "Working": "Replied",
+        "Pending Review": "Resolved",
+        "Client Review": "Resolved",
+        "Completed": "Closed",
+        "Cancelled": "Closed",
+    }
+
+    values = {
+        "custom_issue_status": doc.status,
+        "issue_type": doc.custom_issue_type,
+    }
+
+    mapped_status = issue_status_map.get(doc.status)
+    if mapped_status:
+        values["status"] = mapped_status
+
+    frappe.db.set_value("Issue", doc.issue, values)
 
 @frappe.whitelist()
 def update_issue_typein_issue(doc,method):
+    if not doc.issue:
+        return
     frappe.db.set_value("Issue",doc.issue,"task",doc.name)
 
 @frappe.whitelist()
@@ -426,14 +538,13 @@ def update_color_grade_specification(doc,method):
 
 @frappe.whitelist()
 def update_sfp_remarks(doc,method):
-    if doc.status in ['Open','Overdue','Enquiry']:
-        if doc.customer:
-            status=frappe.db.get_value('Customer',{'name':doc.customer},['disabled'])
-            sfp=frappe.db.get_all("Sales Follow Up",{'party_from':'Customer','party_name':doc.customer,'service':doc.service},['active','name'])
-            if status==0 and sfp:
-                for s in sfp:
-                    if s.active==0:
-                        frappe.db.set_value("Sales Follow Up",s.name,'active',True)
+    if doc.status in ['Open','Overdue','Enquiry'] and doc.customer:
+        status=frappe.db.get_value('Customer',{'name':doc.customer},['disabled'])
+        sfp=frappe.db.get_all("Sales Follow Up",{'party_from':'Customer','party_name':doc.customer,'service':doc.service},['active','name'])
+        if status==0 and sfp:
+            for s in sfp:
+                if s.active==0:
+                    frappe.db.set_value("Sales Follow Up",s.name,'active',True)
 
 
 @frappe.whitelist()
@@ -882,11 +993,13 @@ def update_sams_by(doc,method):
        
 @frappe.whitelist()     
 def on_creation_of_psl_mail(doc,method):
-    creates=frappe.get_doc("Closure",doc)
-    candidate_mail=frappe.db.get_value("Candidate",{"name":doc.candidate},['mail_id'])
-    acc=frappe.db.get_value("Candidate",{"name":doc.candidate},['task'])
-    acc_manager=frappe.db.get_value("Task",{'name':acc},['account_manager'])
-    spoc=frappe.db.get_value("Task",{'name':acc},['spoc'])
+    acc=''
+    acc_manager=''
+    spoc=''
+    if doc.candidate:
+        acc=frappe.db.get_value("Candidate",{"name":doc.candidate},['task'])
+        acc_manager=frappe.db.get_value("Task",{'name':acc},['account_manager'])
+        spoc=frappe.db.get_value("Task",{'name':acc},['spoc'])
     frappe.sendmail(
         # recipients=["divya.p@groupteampro.com"],
         recipients=["sangeetha.s@groupteampro.com","dc@groupteampro.com",acc_manager,spoc],
@@ -1200,3 +1313,202 @@ def old_sprint_alert(doc,method):
                 frappe.msgprint(
                     "In the task, the selected sprint does not match the latest sprint. Kindly check."
                 )
+
+
+
+@frappe.whitelist()
+def create_user_notification(doc,method):
+	if doc.service in ['REC-I','REC-D']:
+		un=frappe.new_doc("User Notifications")
+		un.subject=doc.subject + " - JOB ALERT🔥"
+		un.content="A new Job "+doc.subject+" has been added"
+		un.save(ignore_permissions=True)
+
+
+import frappe
+from frappe.utils import nowdate, getdate
+
+@frappe.whitelist()
+def get_user_target():
+	user = frappe.session.user
+
+	employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	if not employee:
+		return {"has_target": False}
+
+	target_name = frappe.db.get_value("Target Manager", {"employee": employee}, "name")
+	if not target_name:
+		return {"has_target": False}
+
+	target = frappe.get_doc("Target Manager", target_name)
+
+	today = getdate(nowdate())
+
+	if target.custom_year_start_date and target.custom_year_end_date:
+		if not (target.custom_year_start_date <= today <= target.custom_year_end_date):
+			return {"has_target": False}
+
+	return {
+		"has_target": True,
+		"custom_total_achieved_point": target.custom_total_achieved_point,
+		"custom_total_target_point": target.custom_total_target_point,
+		"custom_sr": target.custom_sr
+	}
+
+
+import frappe
+from frappe.utils import getdate, nowdate
+from datetime import datetime
+
+@frappe.whitelist()
+def get_user_target_month():
+	user = frappe.session.user
+
+	# Get employee linked to this user
+	employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+	if not employee:
+		return {"has_target": False}
+
+	today = getdate(nowdate())
+	current_month = datetime.today().strftime("%b").lower()
+
+	# Get the Target Manager where today is within start and end date
+	target_name = frappe.db.get_value(
+		"Target Manager",
+		filters={
+			"employee": employee,
+			"custom_year_start_date": ("<=", today),
+			"custom_year_end_date": (">=", today)
+		},
+		fieldname="name"
+	)
+
+	if not target_name:
+		# No target for current date range
+		return {"has_target": False}
+
+	target = frappe.get_doc("Target Manager", target_name)
+
+	achieved = 0
+	total = 0
+	percent = 0
+
+	# Calculate points only for current month
+	for row in target.target_child:
+		if row.month and row.month.strip().lower() == current_month:
+			achieved += row.achieved_point or 0
+			total += row.cr_ct_point or 0
+
+	if total:
+		percent = (achieved / total) * 100
+
+	return {
+		"has_target": True if total else False,
+		"month_achieved": achieved,
+		"month_target": total,
+		"month_percent": percent
+	}
+
+@frappe.whitelist()
+def emp_short_code_check(doc, method):
+    if not doc.short_code:
+        return
+
+    
+    if doc.is_new():
+        if frappe.db.exists("Employee", {"short_code": doc.short_code}):
+            frappe.throw("Short Code must be unique")
+        return
+
+    
+    old_doc = doc.get_doc_before_save()
+    if not old_doc:
+        return
+
+    if old_doc.short_code != doc.short_code:
+        if frappe.db.exists(
+            "Employee",
+            {
+                "short_code": doc.short_code,
+                "name": ["!=", doc.name],
+            }
+        ):
+            frappe.throw("Short Code must be unique")
+
+@frappe.whitelist()
+def update_cb_bulk(doc,method):
+    if doc.service=="IT-SW":
+        if not doc.custom_allocated_to:
+            return
+        employee = frappe.db.get_value(
+            "Employee",
+            {"user_id": doc.custom_allocated_to},
+            ["name", "short_code"],
+            as_dict=True
+        )
+
+        if not employee:
+            return
+        if employee.short_code:
+            doc.cb = employee.short_code
+
+from frappe import enqueue
+
+@frappe.whitelist()
+def send_notification(doc, method):
+	device_ids = user_id()
+	if device_ids:
+		for device_id in device_ids:
+			enqueue(
+				process_notification,
+				queue="default",
+				now=False,
+				device_id=device_id,
+				notification=doc,
+			)
+
+
+@frappe.whitelist()
+def process_notification(device_id, notification):
+	message = notification.subject
+	title = notification.content
+	url = "https://fcm.googleapis.com/v1/projects/jobpro-f8bef/messages:send"
+	body = {
+		"message":{
+			"token": device_id.custom_device_id,
+			"notification": {"title": message, "body": title},
+		}
+	}
+
+	server_key = _get_access_token()
+	auth = f"Bearer {server_key}"
+	req = requests.post(
+		url=url,
+		data=json.dumps(body),
+		headers={
+			"Authorization": auth,
+			"Content-Type": "application/json",
+		},
+	)
+
+
+@frappe.whitelist()
+def user_id():
+	# user_email = doc.for_user
+	user_device_id = frappe.get_all(
+		"Candidate", filters={"custom_device_id": ('!=','')}, fields=["custom_device_id"]
+	)
+	return user_device_id
+
+
+import google.auth.transport.requests
+from google.oauth2 import service_account
+import os
+SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
+@frappe.whitelist()
+def _get_access_token():
+	json_path = os.getenv('SERVICE_ACCOUNT_JSON', '/home/frappe/teampro-bench/apps/teampro/teampro/jobpro-f8bef-f2152785d551.json')
+	credentials = service_account.Credentials.from_service_account_file(json_path, scopes=SCOPES)
+	request = google.auth.transport.requests.Request()
+	credentials.refresh(request)
+	return credentials.token

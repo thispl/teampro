@@ -388,38 +388,38 @@ def return_detailed_ts(timesheet):
     cdr_list = []
     is_tl=frappe.db.get_value('Employee', {'name': emp}, ['custom_is_tl'])
     sub_tl=frappe.db.get_value('Employee', {'name': emp}, ['custom_is_sub_tl'])
-    if is_tl==1:
-        allocated_persons=[]
-        if sub_tl==0:
-            user=frappe.db.get_value('Employee', {'name': emp}, ['user_id'])
-            team=frappe.db.get_value('Dev Team', {'code_reviewer': user}, ['name'])
-            if team:
-                team_tl=frappe.db.get_value('Employee', {'status':'Active','custom_is_tl': 1,'custom_is_sub_tl':0,'custom_dev_team':team,"department":"IT. Development - THIS"}, ['user_id'])
-                if team_tl:
-                    allocated_persons.append(team_tl)
+    # if is_tl==1:
+    #     allocated_persons=[]
+    #     if sub_tl==0:
+    #         user=frappe.db.get_value('Employee', {'name': emp}, ['user_id'])
+    #         team=frappe.db.get_value('Dev Team', {'code_reviewer': user}, ['name'])
+    #         if team:
+    #             team_tl=frappe.db.get_value('Employee', {'status':'Active','custom_is_tl': 1,'custom_is_sub_tl':0,'custom_dev_team':team,"department":"IT. Development - THIS"}, ['user_id'])
+    #             if team_tl:
+    #                 allocated_persons.append(team_tl)
 
-        cdr_employees = frappe.db.get_all('Employee', {'custom_tl': emp}, ['user_id'])
-        for cdr in cdr_employees:
-            allocated_persons.append(cdr.user_id)
-        cdr_tasks = frappe.db.get_all(
-            'Task',
-            {
-                'custom_allocated_to': ('in',(allocated_persons)),
-                'custom_new_pr_date': start_date,
-                'status':'Pending Review'
-            },
-            ['name', 'subject', 'project', 'status']
-        )
-        for tsk in cdr_tasks:
-            if tsk['name'] not in task_list:
-                task.append({
-                        'task': tsk['name'],
-                        'subject': tsk.get('subject', ''),
-                        'project': tsk.get('project', ''),
-                        'hours': 0,
-                        'task_status': tsk.get('status', ''),
-                        'description': ''
-                    })
+    #     cdr_employees = frappe.db.get_all('Employee', {'custom_tl': emp}, ['user_id'])
+    #     for cdr in cdr_employees:
+    #         allocated_persons.append(cdr.user_id)
+    #     cdr_tasks = frappe.db.get_all(
+    #         'Task',
+    #         {
+    #             'custom_allocated_to': ('in',(allocated_persons)),
+    #             'custom_new_pr_date': start_date,
+    #             'status':'Pending Review'
+    #         },
+    #         ['name', 'subject', 'project', 'status']
+    #     )
+    #     for tsk in cdr_tasks:
+    #         if tsk['name'] not in task_list:
+    #             task.append({
+    #                     'task': tsk['name'],
+    #                     'subject': tsk.get('subject', ''),
+    #                     'project': tsk.get('project', ''),
+    #                     'hours': 0,
+    #                     'task_status': tsk.get('status', ''),
+    #                     'description': ''
+    #                 })
 
     meeting_query = """
         SELECT `tabTimesheet Detail`.custom_meeting,
@@ -486,83 +486,83 @@ def get_tasks_by_date_and_employee(employee, date, custom_dev_team):
     is_sub_tl = frappe.db.get_value('Employee', {'name': employee}, ['custom_is_sub_tl'])
     allocated_persons = []
     # if not has_sub_tl:
-    if is_tl == 1 and is_sub_tl==0:
-        user = frappe.db.get_value('Employee', {'name': employee}, ['user_id'])
-        team = frappe.db.get_value('Dev Team', {'code_reviewer': user}, ['name'])
-        if team:
-            team_tl = frappe.db.get_value('Employee', {
-                'status': 'Active',
-                'custom_is_tl': 1,
-                "custom_is_sub_tl":0,
-                'custom_dev_team': team,
-                'department':'IT. Development - THIS'
-            }, ['user_id'])
-            if team_tl:
-                allocated_persons.append(team_tl)
-        cdr_employees = frappe.db.get_all(
-            'Employee',
-            {'custom_tl': employee},
-            ['user_id']
-        )
-        for cdr in cdr_employees:
-            allocated_persons.append(cdr.user_id)
-        cdr_tasks = frappe.db.get_all(
-            'Task',
-            filters={
-                'custom_allocated_to': ('in', allocated_persons),
-                'custom_new_pr_date': date,
-                'status':'Pending Review'
-            },
-            fields=['name', 'subject', 'project', 'status', 'priority','custom_dev_team','cb']
-        )
+    # if is_tl == 1 and is_sub_tl==0:
+    #     user = frappe.db.get_value('Employee', {'name': employee}, ['user_id'])
+    #     team = frappe.db.get_value('Dev Team', {'code_reviewer': user}, ['name'])
+    #     if team:
+    #         team_tl = frappe.db.get_value('Employee', {
+    #             'status': 'Active',
+    #             'custom_is_tl': 1,
+    #             "custom_is_sub_tl":0,
+    #             'custom_dev_team': team,
+    #             'department':'IT. Development - THIS'
+    #         }, ['user_id'])
+    #         if team_tl:
+    #             allocated_persons.append(team_tl)
+    #     cdr_employees = frappe.db.get_all(
+    #         'Employee',
+    #         {'custom_tl': employee},
+    #         ['user_id']
+    #     )
+    #     for cdr in cdr_employees:
+    #         allocated_persons.append(cdr.user_id)
+    #     cdr_tasks = frappe.db.get_all(
+    #         'Task',
+    #         filters={
+    #             'custom_allocated_to': ('in', allocated_persons),
+    #             'custom_new_pr_date': date,
+    #             'status':'Pending Review'
+    #         },
+    #         fields=['name', 'subject', 'project', 'status', 'priority','custom_dev_team','cb']
+    #     )
 
-        frappe.errprint(cdr_tasks)
+    #     frappe.errprint(cdr_tasks)
 
 
-        cdr_tasks.sort(key=lambda x: priority_order.get(x.get("priority") or "Low", 5))
-        for tsk in cdr_tasks:
-            cdr_list.append({
-                'task': tsk['name'],
-                'subject': tsk.get('subject', ''),
-                'project': tsk.get('project', ''),
-                'hours': 0,
-                'task_status': tsk.get('status', ''),
-                'priority':tsk.get('priority', ''),
-                'description': ''
-            })
-    if is_tl == 1 and is_sub_tl==1:
+    #     cdr_tasks.sort(key=lambda x: priority_order.get(x.get("priority") or "Low", 5))
+    #     for tsk in cdr_tasks:
+    #         cdr_list.append({
+    #             'task': tsk['name'],
+    #             'subject': tsk.get('subject', ''),
+    #             'project': tsk.get('project', ''),
+    #             'hours': 0,
+    #             'task_status': tsk.get('status', ''),
+    #             'priority':tsk.get('priority', ''),
+    #             'description': ''
+    #         })
+    # if is_tl == 1 and is_sub_tl==1:
         
-        cdr_employees = frappe.db.get_all(
-            'Employee',
-            {'custom_tl': employee},
-            ['user_id']
-        )
-        for cdr in cdr_employees:
-            allocated_persons.append(cdr.user_id)
-        cdr_tasks = frappe.db.get_all(
-            'Task',
-            filters={
-                'custom_allocated_to': ('in', allocated_persons),
-                'custom_new_pr_date': date,
-                'status':'Pending Review'
-            },
-            fields=['name', 'subject', 'project', 'status', 'priority','custom_dev_team','cb']
-        )
+    #     cdr_employees = frappe.db.get_all(
+    #         'Employee',
+    #         {'custom_tl': employee},
+    #         ['user_id']
+    #     )
+    #     for cdr in cdr_employees:
+    #         allocated_persons.append(cdr.user_id)
+    #     cdr_tasks = frappe.db.get_all(
+    #         'Task',
+    #         filters={
+    #             'custom_allocated_to': ('in', allocated_persons),
+    #             'custom_new_pr_date': date,
+    #             'status':'Pending Review'
+    #         },
+    #         fields=['name', 'subject', 'project', 'status', 'priority','custom_dev_team','cb']
+    #     )
 
-        frappe.errprint(cdr_tasks)
+    #     frappe.errprint(cdr_tasks)
 
 
-        cdr_tasks.sort(key=lambda x: priority_order.get(x.get("priority") or "Low", 5))
-        for tsk in cdr_tasks:
-            cdr_list.append({
-                'task': tsk['name'],
-                'subject': tsk.get('subject', ''),
-                'project': tsk.get('project', ''),
-                'hours': 0,
-                'task_status': tsk.get('status', ''),
-                'priority':tsk.get('priority', ''),
-                'description': ''
-            })
+    #     cdr_tasks.sort(key=lambda x: priority_order.get(x.get("priority") or "Low", 5))
+    #     for tsk in cdr_tasks:
+    #         cdr_list.append({
+    #             'task': tsk['name'],
+    #             'subject': tsk.get('subject', ''),
+    #             'project': tsk.get('project', ''),
+    #             'hours': 0,
+    #             'task_status': tsk.get('status', ''),
+    #             'priority':tsk.get('priority', ''),
+    #             'description': ''
+    #         })
 
 
 

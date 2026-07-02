@@ -22,6 +22,7 @@
   "priority",
   "atet",
   "rtet_",
+  "created_on",
   "column_break_illy",
   "production_date",
   "cr_status",
@@ -31,6 +32,7 @@
   "allocated_to",
   "revisions",
   "et_vs_at_remarks",
+  "remarks",
   "section_break_btsq",
   "action_taken"
  ],
@@ -240,17 +242,28 @@
    "fieldname": "action_taken",
    "fieldtype": "Small Text",
    "label": "Action Taken"
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Date",
+   "label": "Created On"
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-05-16 15:18:33.642221",
- "modified_by": "Administrator",
+ "modified": "2026-06-10 14:59:19.605060",
+ "modified_by": "bhuvaneswari.a@groupteampro.com",
  "module": "Teampro",
  "name": "Sprint Task",
  "owner": "Administrator",
  "permissions": [],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

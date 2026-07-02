@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@source "../../teampro/public/js/**/*.js";
+@source "../../teampro/public/**/*.html";
+@source "../../teampro/templates/**/*.html";
+@source "../../teampro/www/**/*.html";

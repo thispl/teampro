@@ -264,3 +264,21 @@ def update_lead_sfp_existing():
         frappe.db.set_value("Sales Follow Up",i.name,"active",0)
         ind+=1
     print(ind)
+
+
+@frappe.whitelist()
+def organization_update_sp_lead(lead):
+    company_name=frappe.db.get_value("Lead",{"name":lead},["company_name"])
+    return company_name
+
+@frappe.whitelist()
+def organization_update_sp(customer):
+    customer=frappe.db.get_value("Customer",{"name":customer},["name"])
+    return customer
+
+@frappe.whitelist()
+def update_app_visit_status(lead,visit):
+    doc=frappe.get_doc('Lead',lead)
+    doc.visit_status=visit
+    doc.save()
+    doc.reload()

@@ -90,9 +90,9 @@ boot_session = "teampro.boot.get_boot_data"
 # Hook on document methods and events
 
 doc_events = {
-    "Website Item":{
-        "after_insert":"teampro.custom.create_website_item",
-	},
+    # "Website Item":{
+    #     "after_insert":"teampro.custom.create_website_item",
+	# },
     "ToDo":{
         "before_save":"teampro.utility.update_subject_from_description",
         "before_insert":"teampro.utility.set_creation_date",
@@ -111,20 +111,19 @@ doc_events = {
         "after_insert":"teampro.teampro_hooks_method.set_quotation"
 	},
 	"Employee":{
-		"validate": ["teampro.teampro_hooks_method.update_custodian","teampro.teampro_hooks_method.inactive_employee","teampro.custom.emp_short_code_check"],
-        # "after_insert": "checkpro.custom.after_insert_employee_onboarding"
+		"validate": ["teampro.teampro_hooks_method.update_custodian","teampro.teampro_hooks_method.inactive_employee","teampro.teampro_hooks_method.emp_short_code_check"],
 	},
     "Employee Onboarding": {
-        "after_insert": "checkpro.custom.after_insert_employee_onboarding",
-        "on_submit": "checkpro.custom.on_submit_employee_onboarding"
+        "after_insert": "teampro.teampro_py.employee_onboarding.after_insert_employee_onboarding",
+        "on_submit": "teampro.teampro_py.employee_onboarding.on_submit_employee_onboarding"
     },
 	"Task":{
         "before_save":"teampro.utility.update_task_subject_from_description",
-		"on_update": ["teampro.teampro_hooks_method.update_dm","teampro.teampro_hooks_method.issue_status","jobpro.custom.update_project_count"],
+		"on_update": ["teampro.teampro_hooks_method.update_dm","teampro.teampro_hooks_method.issue_status","teampro.teampro_py.project.update_project_count"],
 		
-		"validate": ["teampro.teampro_hooks_method.update_issue_type","teampro.teampro_hooks_method.update_issue_typein_issue","teampro.teampro_hooks_method.old_sprint_alert","teampro.teampro_hooks_method.update_country_flag","jobpro.custom.update_project_count", "teampro.custom.update_cb_bulk", "teampro.teampro_hooks_method.update_issue_wonjin"],
+		"validate": ["teampro.teampro_hooks_method.update_issue_type","teampro.teampro_hooks_method.update_issue_typein_issue","teampro.teampro_hooks_method.old_sprint_alert","teampro.teampro_hooks_method.update_country_flag", "teampro.teampro_hooks_method.update_cb_bulk", "teampro.teampro_hooks_method.update_issue_wonjin", "teampro.teampro_py.task.update_prd_sprint_task"],
   
-		"after_insert":["teampro.api.create_user_notification","checkpro.custom.send_task_creation_email","teampro.teampro_hooks_method.update_criteria_table", "teampro.teampro.doctype.daily_monitor.dm_it_dev.update_daily_monitor_task"]
+		"after_insert":["teampro.teampro_hooks_method.create_user_notification","teampro.teampro_hooks_method.update_criteria_table", "teampro.teampro.doctype.daily_monitor.dm_it_dev.update_daily_monitor_task"]
 
 	},
     "Issue":{
@@ -132,7 +131,7 @@ doc_events = {
        
 	},
 	"User Notifications":{
-		"after_insert":"teampro.api.send_notification"
+		"after_insert":"teampro.teampro_hooks_method.send_notification"
 	},
 	"Target Manager":{
         "after_insert":["teampro.teampro_hooks_method.update_service_tm","teampro.api.notify_target_change"],
@@ -140,12 +139,10 @@ doc_events = {
         "after_update": "teampro.api.notify_target_change"
 	},
     
-    # "Court":{
-    #     "on_update":["teampro.custom.update_tat_completion_date_court","teampro.custom.update_tat_completion_date_court_ch"]
-	# },
+    
 	"Project":{
 		"after_insert": ["teampro.teampro_hooks_method.create_project_completion_task","teampro.teampro_hooks_method.update_color_grade"],
-        "validate":["teampro.teampro_hooks_method.update_sfp_remarks","jobpro.custom.update_sa_details_in_task","jobpro.custom.update_proj_position"],
+        "validate":["teampro.teampro_hooks_method.update_sfp_remarks","teampro.teampro_py.project.update_sa_details_in_task","teampro.teampro_py.project.update_proj_position"],
         "on_update":['teampro.teampro_hooks_method.update_color_grade_specification',"teampro.teampro_hooks_method.update_project_image"]
 	},
 	"Journal Entry": {
@@ -153,7 +150,6 @@ doc_events = {
 	},
 	"Timesheet":{
 		"on_update": "teampro.teampro_hooks_method.fetch_start_time",
-		# "before_submit":"teampro.custom.return_detailed_ts"
         "before_submit":"teampro.teampro_hooks_method.validate_timesheet",
         "on_submit":"teampro.teampro_hooks_method.update_working_remarks",
        
@@ -163,21 +159,15 @@ doc_events = {
                "teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.teampro_hooks_method.update_so_priority_on_submit"],
         "on_cancel": "teampro.teampro_hooks_method.update_pi_workflow",
         "validate": ["teampro.sales_invoice_method.calc_cut_off_prize"],
-        # "after_insert":"teampro.custom.update_cover_count",
-		# "after_submit": "teampro.teampro.doctype.target_manager.target_manager.calculate_target_on_update_manager",
-		# "on_update":"teampro.custom.skip_dn_so",
-        # "validate":"teampro.custom.child_table_calc"
+       
 	},
-    # "Target Manager":{
-    #     "validate":["teampro.teampro.doctype.target_manager.updated_target_manager.calculate_target_for_manager_inso_test"]
-	# },
+   
     "Sales Follow Up":{
         "after_insert": ["teampro.teampro_hooks_method.update_lead_contacts_sfp","teampro.teampro_hooks_method.update_spf_details_lead"]
 	},
 	"Opportunity": {
         "on_update":["teampro.teampro_hooks_method.update_lead_status","teampro.teampro_hooks_method.update_sfp_opportunity"]
-		# "on_cancel": "method",
-		# "on_trash": "method"
+		
 	},
     "Daily Monitor":{
         "after_insert":"teampro.teampro.doctype.daily_monitor.daily_monitor.load_sprint_data",
@@ -185,75 +175,44 @@ doc_events = {
 	},
     "Sprint":{
         "validate":["teampro.teampro.doctype.sprint.sprint.update_sprint_hours","teampro.teampro.doctype.sprint.sprint.update_allocated_hrs","teampro.teampro.doctype.sprint.sprint.update_sprint_status"],
-        # "validate":["teampro.teampro.doctype.sprint.sprint.validate_allocate_hrs"]
 	},
-    # "Attendance Permission":{
-    #     "validate":["teampro.teampro_hooks_method.validate_permission_request"],
-    #     "on_submit":["teampro.teampro_hooks_method.update_permission_req_in_att"],
-    #     "on_cancel":["teampro.teampro_hooks_method.update_permission_req_in_att_cancel"],
-    #     "after_insert":["jobpro.custom.mesg_for_permission"]
-	# },
-	# "Payment Entry":{
-	# 	"on_submit":"jobpro.jobpro.doctype.closure.closure.closure_payment_entry"
-	# },
+    
 	"Sales Invoice":{
        
-		"on_submit": ["teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.sales_invoice_method.update_case_status_billed"],
+		"on_submit": ["teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.sales_invoice_method.update_case_status_billed", "teampro.utility.update_submitted_si",],
         "on_trash":"teampro.utility.si_on_trash",
-        "validate": ["teampro.sales_invoice_method.clear_payment_table_si","teampro.sales_invoice_method.calc_cut_off_prize","teampro.sales_invoice_method.calculate_advances_invoice","teampro.sales_invoice_method.validate_maintain_stok_si"],
+        "on_cancel": "teampro.utility.update_canceled_si",
+        "validate": ["teampro.sales_invoice_method.calc_cut_off_prize","teampro.sales_invoice_method.calculate_advances_invoice","teampro.sales_invoice_method.validate_maintain_stok_si", "teampro.teampro_py.sales_invoice.update_payment_schedule_due_date"],
         
-		# "validate":["teampro.sales_invoice_method.validate_maintain_stok_si"]
 	},
 	"Attendance Request":{
 		"on_cancel": ["teampro.teampro_hooks_method.update_wh_att","teampro.att_request.on_cancel_attendance_request","teampro.att_request.update_perm_req_in_att_cancel","checkpro.custom.update_session_ar_cancel","teampro.att_request.update_att_oncancel_mispunch"],
 		"on_submit":["checkpro.custom.update_session_ar","teampro.att_request.on_submit_attendance_request","teampro.att_request.update_permission_req_in_att_submission"],
         "validate":["teampro.att_request.validate_att_working_day"],
-        # "after_insert": "jobpro.custom.restrict_att_req",
         
 	},
     
 	"Purchase Invoice": {
-        # "before_submit": "teampro.custom.validate_date",
         "on_update":"teampro.teampro_hooks_method.update_workflow_state",
-        "validate":"teampro.teampro_hooks_method.calc_cost_prize"
+        "validate":"teampro.teampro_hooks_method.calc_cost_prize",
+        "on_submit":"teampro.utility.update_submitted_pi",
+        "on_cancel":"teampro.utility.update_canceled_pi"
     },
     "Purchase Order":{
         "validate":"teampro.teampro_hooks_method.calc_cost_prize",
 		"on_submit":["teampro.teampro_hooks_method.update_ordered_qty", "teampro.teampro_hooks_method.update_material_request_status_on_submit"],
         "on_cancel":["teampro.teampro_hooks_method.update_ordered_qty_on_cancel"]
 	},
-    # "Customer":{
-    #     "validate":"teampro.teampro.doctype.update_status.sla.update_sla_status",
-	# },
-    # "Stock Counting":{
-    #     "validate":"teampro.custom.validate_stock_counting"
-	# },
-    # "Task":{
-    #     "validate": ["teampro.custom.update_issue_type","teampro.custom.update_issue_typein_issue"]
-	# },
-	# "Sales Invoice": {
-    #     "on_submit": "teampro.custom.validate_date_salesinvoice"
-    # },
-
-	# "Payroll Entry":{
-	# 	"before_save": ["teampro.utility.attendance_calc","teampro.utility.additional_salary"]
-	# },
-
-	# "Delivery Note":{
-	# "after_insert": "teampro.custom.get_delivery_note"
-	# },
+    
 	"Delivery Note":{
 	"after_insert": "teampro.delivery_note_method.get_so_item_details",
     "validate":["teampro.delivery_note_method.set_totals_in_delivery_note","teampro.delivery_note_method.validate_packing_items_on_dn"],
     "on_submit":["teampro.delivery_note_method.update_so_priority","teampro.delivery_note_method.create_material_issue"],
-    # "on_cancel":"teampro.custom.cancel_material_isse"
 	},
     "Salary Slip":{
         'validate':'teampro.teampro_hooks_method.update_employer_pf'
 	},
     "VM Stock Register":{
-        # "on_submit":["teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_re_filling_stock_entries","teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_packing_stock_entries"],
-        # "validate":"teampro.teampro.doctype.vm_stock_register.vm_stock_register.create_packing_stock_entries",
         "on_cancel":["teampro.teampro_hooks_method.update_stock_against_vm"]
 	},
 	"BG Entry Form": {
@@ -274,12 +233,9 @@ doc_events = {
 		"on_cancel":["teampro.teampro_hooks_method.cancel_packing_issue_stock_entry"]
 	},
     
-	# "Job Applicant": {
-    #     "after_insert": "teampro.utility.mark_files_public"
-	# },
+	
     
 	"Attendance":{
-        # "on_cancel":"teampro.mark_attendance.cancel_comp_off",
         "validate":"teampro.mark_attendance.update_att_as_present",
 	},
     "Customer":{
@@ -288,7 +244,6 @@ doc_events = {
         "validate":["teampro.teampro_hooks_method.set_customer_id"]
 	},
     "Lead":{
-        # "after_insert": ["teampro.custom.update_existing_lead","teampro.custom.update_check_existing_lead"]
         "after_insert": ["teampro.teampro_hooks_method.update_check_existing_lead"]
 	},
    
@@ -301,14 +256,14 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"teampro.email_alerts.next_contact_alert",
-		# "teampro.custom.create_food_count",
+		"teampro.email_alerts.meeting_status_check",
 		"teampro.mark_attendance.mark_att",
 		"teampro.email_alerts.checkin_alert",
-        # "checkpro.checkpro.doctype.case.case.tat_monitor",
-        "teampro.custom.update_case_age",
-		"teampro.custom.update_batch_age",
-        "teampro.custom.update_check_age",
-        "teampro.custom.update_cv_age",
+        "teampro.teampro.doctype.document_manager.document_manager.update_statuses",
+        "checkpro.checkpro.doctype.case.case.update_case_age",
+		"checkpro.checkpro.doctype.batch.batch.update_batch_age",
+        "checkpro.checkpro.doctype.case.case.update_check_age",
+        "jobpro.jobpro.doctype.candidate.candidate.update_cv_age",
         "checkpro.checkpro.doctype.case.case.tat_variation",
         "checkpro.checkpro.doctype.case.case.tat_calculation",
         "checkpro.checkpro.doctype.case.case.tat_monitor",
@@ -317,10 +272,123 @@ scheduler_events = {
 		"teampro.utility.create_update_leave_allocation",
         "teampro.custom.epnc_send_mail",
         "teampro.custom.ep_mail",
+        "teampro.teampro_hooks_method.submit_previous_month_attendance"
 	],
 	"cron": {
+        "45 23 * * *":[
+            "teampro.teampro_py.project.update_proj_position_value"
+		],
+        "5 21 * * *":[
+            "teampro.email_alerts.send_closure_report_with_table_dpr"
+		],
+        "00 00 * * 0":[
+            'teampro.email_alerts.send_mail_for_expenseapproval_weekly_md',
+            'teampro.email_alerts.send_mail_for_expenseapproval_weekly_ceo',
+            'teampro.email_alerts.send_mail_for_expenseapproval_weekly_hod'
+		],
+        "15 15 * * *":[
+            'teampro.email_alerts.send_project_spoc_report_weekly'
+		],
+        
+        "00 00 1 * *":[
+            'teampro.email_alerts.send_mail_for_update_checkpro_holiday',
+			'teampro.teampro.doctype.energy_point_and_non_conformity.energy_point_and_non_conformity.create_new_epnc_review'
+		],
+        "00 09 * * *":[
+            'teampro.email_alerts.update_sla_status_and_notify',
+            "teampro.email_alerts.case_status_report_excel"
+		],
+        "00 00 * * *":[
+            "teampro.teampro_py.task.task_age_calculation"
+		],
+        "30 23 * * *":[
+            'teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_updates',
+            'teampro.teampro_py.project.update_proj_positions_count',
+           
+		],
+		"30 23 * * *":[
+            "teampro.teampro.doctype.rec_week_plan.rec_week_plan.run_week_monitor_dsr"
+		],
+        "50 23 * * *":[
+            'teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_dsr',
+            "teampro.teampro_py.customer.update_sla_value"
+		],
+        "00 09 * * *":[
+            'teampro.teampro.doctype.stock_counting.stock_counting.stock_counting_report_excel'
+		],
+        "0 9 * * *":[
+            'teampro.teampro.doctype.psr_report_dashboard.psr_report_dashboard.send_daily_psr_report_in_htmt_view'
+		],
+        
+        "00 20 * * *":[
+            'teampro.teampro.doctype.daily_monitor.dm_it_dev.dsr_task_mail_for_cmn_service'
+		],
+        
+        "0 0 * * *":[
+            'teampro.teampro.energy_point_and_non_conformity.energy_point_and_non_conformity.auto_submit_ep1',
+            "checkpro.checkpro.doctype.batch.batch.update_case_status_existing_batch",
+            "checkpro.checkpro.doctype.case.case.update_holiday_tat_case",
+            "checkpro.checkpro.doctype.case.case.update_tat_case"
+		],
+        "30 11 * * *":[
+            'teampro.email_alerts.send_daily_candidate_status_alert'
+		],
+        "00 13 * * *":[
+            'teampro.email_alerts.send_daily_candidate_status_alert1'
+		],
+        "00 15 * * *":[
+            'teampro.email_alerts.send_daily_candidate_status_alert2'
+		],
+        "30 16 * * *":[
+            'teampro.email_alerts.send_daily_candidate_status_alert3'
+		],
+        "00 21 * * *":[
+            'teampro.email_alerts.send_daily_candidate_status_alert4',
+			"teampro.email_alerts.send_closure_report_with_table_dsr",
+		],
+        "50 23 * * 0":[
+            'teampro.teampro.doctype.rec_week_plan.rec_week_plan.create_nc_for_weekplan'
+		],
+        "30 18 * * *":[
+            'teampro.teampro.doctype.rec_week_plan.rec_week_plan.run_week_monitor_rec_dpr',
+            "teampro.email_alerts.dpr_excel_format_bcs",
+            "teampro.email_alerts.send_closure_mail"
+		],
+		"00 7 * * *":[
+            "teampro.email_alerts.kt_email"
+		],
+        "0 1 * * *":[
+            "teampro.utility.create_update_leave_allocation_new",
+            "teampro.email_alerts.task_mail"
+		],
+        "0 0 * * *":[
+            "teampro.email_alerts.check_daily_attendance"
+		],
+        "0 * * * *":[
+            "teampro.teampro_py.task.update_task_positions_count_hourly",
+			"teampro.teampro_py.project.update_proj_positions_count_hourly",
+            "teampro.teampro.doctype.target_manager.target_manager.calculate_target"
+		],
+       
+        "0 21 * * *":[
+            "teampro.email_alerts.send_fp_mail"
+		],
+        "0 23 * * *":[
+            "teampro.att_request.create_comp_off_requests"
+		],
+        
+        "00 23 * * *":[
+            "teampro.teampro.doctype.daily_monitor.dm_it_dev.send_daily_pr_report",
+			"teampro.teampro.doctype.daily_monitor.dm_it_dev.kt_not_confirmed_task",
+            "teampro.email_alerts.statement_of_account_test_1"
+            'teampro.teampro.doctype.rec_week_plan.rec_week_plan.update_week_plan_ac_by_cron'
+		],
+        "00 10 * * *":[
+            "teampro.teampro.doctype.daily_monitor.dm_it_dev.send_next_contact_by_report"
+		],
         "00 9 * * *" : [
-			"teampro.teampro.doctype.food_count.food_count.create_food_count"
+			"teampro.teampro.doctype.food_count.food_count.create_food_count",
+            "teampro.email_alerts.sendmail_luo_nad_alert"
 		],
         "00 1 1 * *" : [
 			"teampro.utility.update_leave_ledger_entry"
@@ -335,16 +403,19 @@ scheduler_events = {
 			"teampro.email_alerts.validate_for_easytimepro"
 		],
         "00 11 * * *" : [
-			"jobpro.custom.fp_candidate_to_acc_manager"
+			"teampro.email_alerts.fp_candidate_to_acc_manager"
 		],
         "00 11 * * *" : [
-			"jobpro.custom.fp_candidate_to_spoc"
+			"teampro.email_alerts.fp_candidate_to_spoc"
+		],
+        "00 10 * * *" : [
+			"teampro.email_alerts.attendance_alert_mail"
 		],
         "00 11 * * *" : [
-			"jobpro.custom.fp_candidate_list_send_mails"
+			"teampro.email_alerts.fp_candidate_list_send_mails"
 		],
         "00 11 * * *" : [
-			"jobpro.custom.fp_candidate_list_send_mail_to_spoc"
+			"teampro.email_alerts.fp_candidate_list_send_mail_to_spoc"
 		],
         "0 18 * * *" : [
 			"teampro.email_alerts.send_miss_punch"
@@ -362,10 +433,10 @@ scheduler_events = {
 			"checkpro.custom.task_mail"
 		],
         "00 18 * * *" : [
-			"checkpro.custom.candidate_excel_format"
+			"teampro.email_alerts.candidate_excel_format"
 		],
         "00 10 * * 1,4" : [
-			"checkpro.custom.sales_invoice_follow_up_test"
+			"teampro.email_alerts.sales_invoice_follow_up_test"
 		],
         "00 10 * * 2,5" : [
 			"checkpro.custom.sales_order_follow_up_test"
@@ -373,41 +444,39 @@ scheduler_events = {
         "00 10 * * 2,5" : [
 			"checkpro.custom.sales_order_follow_up"
 		],
-        "00 23 * * *" : [
-			"checkpro.custom.statement_of_account_test_1"
+       
+        "00 18 * * *" : [
+			"teampro.email_alerts.cases_with_generate_report_status"
 		],
         "00 18 * * *" : [
-			"checkpro.custom.cases_with_generate_report_status"
+			"teampro.email_alerts.cases_with_to_be_billed_status"
 		],
         "00 18 * * *" : [
-			"checkpro.custom.cases_with_to_be_billed_status"
+			"teampro.email_alerts.cases_with_gr_daily_report"
 		],
         "00 18 * * *" : [
-			"checkpro.custom.cases_with_gr_daily_report"
+			"teampro.email_alerts.insuff_consolidated_mail"
 		],
         "00 18 * * *" : [
-			"checkpro.custom.insuff_consolidated_mail"
-		],
-        "00 18 * * *" : [
-			"checkpro.custom.submitted_bg_entry"
+			"teampro.email_alerts.submitted_bg_entry"
 		],
         "00 09 * * *" : [
 			"checkpro.custom.dpr_excel_format"
 		],
         "30 18 * * *" : [
-			"checkpro.custom.dsr_mail"
+			"teampro.email_alerts.dsr_mail"
 		],
         "00 18 * * *" : [
-			"checkpro.custom.cases_with_insuff_daily_report"
+			"teampro.email_alerts.cases_with_insuff_daily_report"
 		],
         "00 9 * * *" : [
-			"checkpro.custom.cases_beyond_tat_age_10"
+			"teampro.email_alerts.cases_beyond_tat_age_10"
 		],
         "0 18 * * *" : [
 			"teampro.custom.send_project_spoc_report_daily"
 		],
         "30 9 * * *" : [
-			"teampro.custom.update_opportunity_age"
+			"teampro.teampro_py.opportunity.update_opportunity_age"
 		],
         "30 20 * * *" : [
 			"teampro.custom.send_sales_dsr_daily"
@@ -416,10 +485,10 @@ scheduler_events = {
 			"teampro.custom.sales_dpr"
 		],
         "30 9 * * *" : [
-			"teampro.custom.purchase_invoice_beyond_duedate"
+			"teampro.email_alerts.purchase_invoice_beyond_duedate"
 		],
         "30 9 * * *" : [
-			"teampro.custom.purchase_invoice_due_above"
+			"teampro.email_alerts.purchase_invoice_due_above"
 		],
         "0 0 * * *" : [
 			"teampro.custom.update_issue_status"
@@ -431,16 +500,16 @@ scheduler_events = {
 			"teampro.custom.dpr_send_alert"
 		],
 		"30 18 * * *" : [
-			"teampro.custom.dpnd_excel_format"
+			"teampro.email_alerts.dpnd_excel_format"
 		],
         "00 06 * * *" : [
-			"teampro.custom.update_cv_age"
+			"jobpro.jobpro.doctype.candidate.candidate.update_cv_age"
 		],
         "00 19 * * *" : [
 			"teampro.custom.send_project_report"
 		],
         "00 07 * * *" : [
-			"teampro.custom.update_case_age"
+			"checkpro.checkpro.doctype.case.case.update_case_age"
 		],
 		"30 18 * * *" : [
 			"teampro.custom.send_closure_report_with_table"
@@ -460,29 +529,24 @@ scheduler_events = {
         "30 10 * * *" : [
 			"teampro.email_alerts.daily_att_report"
 		],
-        "0 * * * *" : [
-			"teampro.teampro.doctype.target_manager.target_manager.calculate_target"
-		],
+       
 		"*/10 * * * *" : [
 			"teampro.mark_attendance.mark_att"
 		],
 		"00 18 * * *" : [
-			"checkpro.custom.cases_with_to_be_billed_status"
+			"teampro.email_alerts.cases_with_to_be_billed_status",
+			"teampro.email_alerts.cases_with_generate_report_status",
+            "teampro.email_alerts.insuff_consolidated_mail"
 		],
-		"00 18 * * *" : [
-			"checkpro.custom.cases_with_generate_report_status"
-		],
-		"00 18 * * *" : [
-			"checkpro.custom.insuff_consolidated_mail"
-		],
+		
 		"00 09 * * *" : [
 			"checkpro.custom.dpr_excel_format"
 		],
 		"00 18 * * *" : [
-			"checkpro.custom.cases_with_gr_daily_report"
+			"teampro.email_alerts.cases_with_gr_daily_report"
 		],
 		"00 18 * * *" : [
-			"checkpro.custom.submitted_bg_entry"
+			"teampro.email_alerts.submitted_bg_entry"
 		],
 		"00 09 * * *" : [
 			"jobpro.jobpro.doctype.closure.closure.visa_expiry_alert"
@@ -491,16 +555,16 @@ scheduler_events = {
 			"jobpro.jobpro.doctype.closure.closure.fm_expiry_alert"
 		],
 		"30 18 * * *" : [
-			"checkpro.custom.dsr_mail"
+			"teampro.email_alerts.dsr_mail"
 		],
 		"00 18 * * *" : [
-			"checkpro.custom.cases_with_insuff_daily_report"
+			"teampro.email_alerts.cases_with_insuff_daily_report"
 		],
 		"00 09 * * *" : [
-			"checkpro.custom.cases_with_insuff"
+			"teampro.email_alerts.cases_with_insuff"
 		],
 		"00 09 * * *" : [
-			"checkpro.custom.cases_beyond_tat_age_10"
+			"teampro.email_alerts.cases_beyond_tat_age_10"
 		],
 		"00 1 1 * *" : [
 			"teampro.utility.update_leave_ledger_entry"
@@ -516,9 +580,7 @@ scheduler_events = {
 		],'00 10 * * 1':[
             'checkpro.custom.task_mail_notification_status'
 		],
-        "00 23 * * *" : [
-			"checkpro.custom.statement_of_account_test_1"
-		],"00 10 * * 1":[
+       "00 10 * * 1":[
             'checkpro.custom.sales_order_follow_up_test'
 		],"00 10 * * 1":[
             'checkpro.custom.sales_invoice_follow_up_test'
@@ -534,6 +596,8 @@ scheduler_events = {
             'checkpro.custom.dpr_over_all_meeting'
 		],"0 1 * * * ":[
             'checkpro.custom.dpr_over_all'
+		],"00 10 * * *":[
+            'teampro.email_alerts.attendance_alert_mail'
 		]
 	}
 }
@@ -626,6 +690,7 @@ scheduler_events={
 
 override_doctype_class = {
     "Event": "teampro.overrides.customEvent",
+    # "POS Opening Entry": "teampro.overrides.CustomPOSOpeningEntry",
     # "Task": "teampro.overrides.customTask",
     # "Leave Application": "teampro.overrides.CustomLeaveApplication",
     # "Attendance Request": "teampro.overrides.CustomAttendanceRequest",

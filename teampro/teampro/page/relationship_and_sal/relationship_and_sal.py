@@ -41,7 +41,7 @@ def get_order_booking(from_date=None, to_date=None, employee_ids=None, services=
                             "docstatus": 1
                         },
 
-                        fields=["distinct account_manager"]
+                        fields=["account_manager"]
 
                     )
 
@@ -138,7 +138,7 @@ def get_turnover(from_date=None, to_date=None, employee_ids=None, services=None)
                 "docstatus": 1
             },
 
-            fields=["distinct account_manager"]
+            fields=["account_manager"]
 
         )
 
@@ -172,8 +172,8 @@ def get_turnover(from_date=None, to_date=None, employee_ids=None, services=None)
         "account_manager IN %(employee_ids)s",
         "docstatus = 1",
         "status NOT IN ('Return', 'Credit Note Issued', 'Cancelled')",
-        "posting_date >= %(from_date)s",
-        "posting_date <= %(to_date)s"
+        # "posting_date >= %(from_date)s",
+        # "posting_date <= %(to_date)s"
     ]
 
     if services:
@@ -327,7 +327,7 @@ def rs_receivable(from_date=None, to_date=None, employee_ids=None, services=None
                 "docstatus": 1
             },
 
-            fields=["distinct account_manager"]
+            fields=["account_manager"]
 
         )
 
@@ -362,8 +362,8 @@ def rs_receivable(from_date=None, to_date=None, employee_ids=None, services=None
         "account_manager IN %(rs_emails)s",
         "docstatus = 1",
         "outstanding_amount > 0",
-        "posting_date >= %(from_date)s",
-        "posting_date <= %(to_date)s"
+        # "posting_date >= %(from_date)s",
+        # "posting_date <= %(to_date)s"
     ]
 
     if employee_ids:
@@ -376,7 +376,7 @@ def rs_receivable(from_date=None, to_date=None, employee_ids=None, services=None
     # QUERY
     # -------------------------
     query = f"""
-        SELECT SUM(outstanding_amount)
+        SELECT SUM(base_grand_total)
         FROM `tabSales Invoice`
         WHERE {' AND '.join(conditions)}
     """
@@ -446,7 +446,7 @@ def rs_to_bill_value(from_date=None, to_date=None, employee_ids=None, services=N
                 "docstatus": 1
             },
 
-            fields=["distinct account_manager"]
+            fields=["account_manager"]
 
         )
 
@@ -570,7 +570,9 @@ def oppcount(employee_ids=None, services=None):
                 "status": ["not in", ["Lost", "Closed"]]
             },
 
-            fields=["distinct lead_owner"]
+            # fields=["distinct lead_owner"]
+            fields=["lead_owner"],
+            distinct=True
 
         )
 
@@ -1004,7 +1006,7 @@ def get_sfp_status_cards():
             "Sales Order",
             {
                 "customer": customer,
-                "status": ["not in", ["Closed", "Cancelled"]]
+                "status": ["not in", ["Closed", "Cancelled","Completed"]]
             }
         )
 
@@ -1080,6 +1082,7 @@ def get_active_inactive_customer_report():
         <table style="border-collapse:collapse; width:100%; table-layout:fixed;border:1px solid #ffffff;">
 
             <tr style="background:#002060; color:white; position:sticky; top:0; z-index:1;">
+                <td style="text-align:center; font-weight:bold; width:60px; border:1px solid #ffffff;">Sr</td>
                 <td style="text-align:center; font-weight:bold; width:100px; border:1px solid #ffffff;">Sales Follow Up ID</td>
                 <td style="text-align:center; font-weight:bold; width:80px; border:1px solid #ffffff;">AM</td>
                 <td style="text-align:center; font-weight:bold; width:70px; border:1px solid #ffffff;">SVC</td>
@@ -1094,6 +1097,7 @@ def get_active_inactive_customer_report():
         <table style="border-collapse:collapse; width:100%;border:1px solid #ffffff;">
 
             <tr style="background:#002060; color:white; position:sticky; top:0; z-index:1;">
+                <td style="text-align:center; font-weight:bold; width:60px; border:1px solid #ffffff;">Sr</td>
                 <td style="text-align:center; font-weight:bold; border:1px solid #ffffff;">Sales Follow Up ID</td>
                 <td style="text-align:center; font-weight:bold; border:1px solid #ffffff;">AM</td>
                 <td style="text-align:center; font-weight:bold; border:1px solid #ffffff;">SVC</td>
@@ -1128,7 +1132,7 @@ def get_active_inactive_customer_report():
             "Sales Order",
             {
                 "customer": customer,
-                "status": ["not in", ["Closed", "Cancelled"]]
+                "status": ["not in", ["Closed", "Cancelled","Completed"]]
             },
             "name"
         )
@@ -1143,6 +1147,9 @@ def get_active_inactive_customer_report():
 
             active_html += f'''
             <tr style="background:{bg};border:1px solid #ffffff;">
+                <td style="text-align:center; width:60px; border:1px solid #ffffff">
+                    {active_row}
+                </td>
                 <td style="text-align:center; width:100px; border:1px solid #ffffff"><a href="/app/sales-follow-up/{row.name}" target="_blank">{row.name or ""}</a></td>
                 <td style="text-align:center; width:80px; border:1px solid #ffffff">{am_shortcode}</td>
                 <td style="text-align:center; width:90px; border:1px solid #ffffff">{row.service or ""}</td>
@@ -1161,7 +1168,9 @@ def get_active_inactive_customer_report():
 
             inactive_html += f'''
             <tr style="background:{bg};border:1px solid #ffffff;">
-
+                <td style="text-align:center; width:60px; border:1px solid #ffffff">
+                    {inactive_row}
+                </td>
                 <td style="text-align:center; width:140px; border:1px solid #ffffff"><a href="/app/sales-follow-up/{row.name}" target="_blank">{row.name or ""}</a></td>
                 <td style="text-align:center; width:80px; border:1px solid #ffffff">{am_shortcode}</td>
                 <td style="text-align:center; width:70px; border:1px solid #ffffff">{row.service or ""}</td>
@@ -1194,6 +1203,7 @@ def download_active_customer_report():
     ws.title = "Active Customer Report"
 
     headers = [
+        "Sr",
         "Sales Follow Up ID",
         "AM",
         "SVC",
@@ -1266,6 +1276,7 @@ def download_active_customer_report():
             unique_customers[customer] = row
 
     row_no = 2
+    sr_no = 1
 
     for customer, row in unique_customers.items():
 
@@ -1302,6 +1313,7 @@ def download_active_customer_report():
         project_so = project if project else sales_order
 
         ws.append([
+            sr_no,
             row.name or "",
             am_shortcode,
             row.service or "",
@@ -1331,15 +1343,17 @@ def download_active_customer_report():
             cell.border = thin_border
 
         row_no += 1
+        sr_no += 1
 
     column_widths = {
-        "A": 28,
+        "A": 10,
+        "B": 28,
         "B": 12,
-        "C": 10,
-        "D": 28,
-        "E": 35,
-        "F": 20,
-        "G": 50
+        "D": 10,
+        "E": 28,
+        "F": 35,
+        "G": 20,
+        "H": 50
     }
 
     for col, width in column_widths.items():
@@ -1370,6 +1384,7 @@ def download_inactive_customer_report():
     ws.title = "Inactive Customer Report"
 
     headers = [
+        "Sr",
         "Sales Follow Up ID",
         "AM",
         "SVC",
@@ -1441,6 +1456,7 @@ def download_inactive_customer_report():
             unique_customers[customer] = row
 
     row_no = 2
+    s_no=1
 
     for customer, row in unique_customers.items():
 
@@ -1475,6 +1491,7 @@ def download_inactive_customer_report():
         am_shortcode = employee.short_code if employee else ""
 
         ws.append([
+            s_no,
             row.name or "",
             am_shortcode,
             row.service or "",
@@ -1503,14 +1520,17 @@ def download_inactive_customer_report():
             cell.border = thin_border
 
         row_no += 1
+        s_no+=1
 
     column_widths = {
-        "A": 28,
+        "A": 10,
+        "B": 28,
         "B": 12,
-        "C": 10,
-        "D": 35,
-        "E": 20,
-        "F": 50
+        "D": 10,
+        "E": 28,
+        "F": 35,
+        "G": 20,
+        "H": 50
     }
 
     for col, width in column_widths.items():
@@ -1594,7 +1614,8 @@ def opportunity_details(owner=None, services=None, weeks=None):
             opp.remark,
             opp.expected_week,
             opp.custom_type,
-            opp.territory
+            opp.territory,
+            opp.custom_sales_follow_up
         FROM `tabOpportunity` opp
         LEFT JOIN `tabEmployee` emp
             ON emp.user_id = opp.lead_owner
@@ -1637,7 +1658,7 @@ def opportunity_details(owner=None, services=None, weeks=None):
         <thead>
             <tr style='background:#002060; color:white; text-align:center;'>
                 <th style="position: sticky; top: 0; background: #002060; width:40px;">Sr</th>
-                <th style="position: sticky; top: 0; background: #002060; width:100px;">Opp. ID</th>
+                <th style="position: sticky; top: 0; background: #002060; width:20px;">Opp. ID</th>
                 <th style="position: sticky; top: 0; background: #002060; width:40px;">AM</th>
                 <th style="position: sticky; top: 0; background: #002060; width:60px;">SVC</th>
                 <th style="position: sticky; top: 0; background: #002060; width:60px;">From</th>
@@ -1681,11 +1702,29 @@ def opportunity_details(owner=None, services=None, weeks=None):
         html += f"""
         <tr style="background:{bg_color};">
             <td style="text-align:center;">{i}</td>
-            <td style="text-align:center;color:#007bff;">
-                <a href="/app/opportunity/{row.name}" target="_blank">
-                    {row.name}
-                </a>
-            </td>
+     <td style="text-align: center; color: #000000; width: 110px; max-width: 110px; padding: 6px 4px; font-size: 12px; line-height: 1.3;">
+    <a href="/desk/opportunity/{row.name}" 
+       target="_blank" 
+       style="color: #000000; 
+              text-decoration: none; 
+              display: inline-block; 
+              max-width: 100px; 
+              word-break: normal; 
+              line-height: 1.3;">
+        {row.name}
+    </a>
+    
+    <div style="color: #000000; margin: 1px 0; font-weight: normal;">/</div>
+
+    <a href="/desk/sales-follow-up/{row.custom_sales_follow_up}" 
+       target="_blank" 
+       style="color: #000000; 
+              text-decoration: none;
+              display: inline-block; 
+              max-width: 100px;">
+        {row.custom_sales_follow_up}
+    </a>
+</td>
             <td style="text-align:center;">{row.short_code or row.lead_owner or ''}</td>
             <td style="text-align:center;">{row.service or ''}</td>
             <td style="text-align:center;">{row.opportunity_from or ''}</td>
@@ -1714,9 +1753,8 @@ def opportunity_details(owner=None, services=None, weeks=None):
     return html
 
 
-
 @frappe.whitelist()
-def download_opportunity_excel(owner=None, services=None, weeks=None):
+def download_opportunity_excel(owner=None, services=None, weeks=None, opportunity_type=None):
 
     import frappe
     import json
@@ -1726,45 +1764,38 @@ def download_opportunity_excel(owner=None, services=None, weeks=None):
     from frappe.utils import formatdate, getdate, nowdate
     from openpyxl.styles import Font, PatternFill, Alignment
 
+    # 1. Parse all 4 incoming arguments safely within the validation block
     try:
         owner = json.loads(owner) if owner else []
         services = json.loads(services) if services else []
         weeks = json.loads(weeks) if weeks else []
-
+        opportunity_type = json.loads(opportunity_type) if opportunity_type else []
     except:
-        owner, services, weeks = [], [], []
+        owner, services, weeks, opportunity_type = [], [], [], []
 
     weeks = [w.strip().upper().replace(" ", "") for w in weeks]
 
     # ---------------------------------
     # USER IDS
     # ---------------------------------
-
     if owner:
         rs_user_ids = owner
-
     else:
         rs_employees = frappe.get_all(
             "Employee",
             filters={"status": "Active"},
             fields=["user_id"]
         )
-
-        rs_user_ids = [
-            emp.user_id for emp in rs_employees
-            if emp.user_id
-        ]
+        rs_user_ids = [emp.user_id for emp in rs_employees if emp.user_id]
 
     if not rs_user_ids and not owner:
         lead_owner_condition = "1=1"
-
     else:
         lead_owner_condition = "lead_owner IN %(user_ids)s"
 
     # ---------------------------------
-    # CONDITIONS
+    # CONDITIONS ASSEMBLY
     # ---------------------------------
-
     conditions = [
         lead_owner_condition,
         "opp.docstatus != 2",
@@ -1778,12 +1809,14 @@ def download_opportunity_excel(owner=None, services=None, weeks=None):
     if weeks:
         conditions.append("opp.expected_week IN %(weeks)s")
 
+    if opportunity_type:
+        conditions.append("opp.custom_type IN %(opportunity_type)s")
+
     condition_str = " AND ".join(conditions)
 
     # ---------------------------------
-    # QUERY
+    # SQL QUERY
     # ---------------------------------
-
     query = f"""
         SELECT 
             opp.name,
@@ -1800,30 +1833,29 @@ def download_opportunity_excel(owner=None, services=None, weeks=None):
             opp.remark,
             opp.expected_week,
             opp.custom_type,
-            opp.territory
+            opp.territory,
+            opp.custom_sales_follow_up
         FROM `tabOpportunity` opp
         LEFT JOIN `tabEmployee` emp
             ON emp.user_id = opp.lead_owner
         WHERE {condition_str}
-        ORDER BY emp.short_code ASC , opp.service
+        ORDER BY emp.short_code ASC, opp.service
     """
 
     data = frappe.db.sql(query, {
         "user_ids": tuple(rs_user_ids),
         "services": tuple(services),
-        "weeks": tuple(weeks)
+        "weeks": tuple(weeks),
+        "opportunity_type": tuple(opportunity_type)
     }, as_dict=True)
 
     # ---------------------------------
     # QUOTATIONS
     # ---------------------------------
-
     opp_ids = [row.name for row in data]
-
     quote_map = {}
 
     if opp_ids:
-
         quotations = frappe.get_all(
             "Quotation",
             filters={
@@ -1832,111 +1864,68 @@ def download_opportunity_excel(owner=None, services=None, weeks=None):
             },
             fields=["name", "custom_opportunity"]
         )
-
         for q in quotations:
-            quote_map.setdefault(
-                q.custom_opportunity,
-                []
-            ).append(q.name)
+            quote_map.setdefault(q.custom_opportunity, []).append(q.name)
 
     # ---------------------------------
-    # EXCEL
+    # EXCEL GENERATION
     # ---------------------------------
-
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Opportunity Details"
 
     headers = [
-        "Sr",
-        "Opp ID",
-        "AM",
-        "SVC",
-        "From",
-        "Status",
-        "Organization",
-        "Date",
-        "Age",
-        "Amount",
-        "PB%",
-        "ECD",
-        "Remarks",
-        "Type",
-        "Territory",
-        "Quo ID"
+        "Sr", "Opp ID", "AM", "SVC", "From", "Status", "Organization", 
+        "Date", "Age", "Amount", "PB%", "ECD", "Remarks", "Type", "Territory", "Quo ID"
     ]
-
     ws.append(headers)
 
-    # ---------------------------------
-    # HEADER STYLE
-    # ---------------------------------
-
-    header_fill = PatternFill(
-        start_color="002060",
-        end_color="002060",
-        fill_type="solid"
-    )
-
-    header_font = Font(
-        bold=True,
-        color="FFFFFF"
-    )
-
-    center_align = Alignment(
-        horizontal="center",
-        vertical="center"
-    )
+    header_fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    center_align = Alignment(horizontal="center", vertical="center")
 
     for cell in ws[1]:
-
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = center_align
 
     # ---------------------------------
-    # ROWS
+    # ROWS INJECTION
     # ---------------------------------
-
     today = getdate(nowdate())
-
-    odd_fill = PatternFill(
-        start_color="FFFFFF",
-        end_color="FFFFFF",
-        fill_type="solid"
-    )
-
-    even_fill = PatternFill(
-        start_color="E7E6EC",
-        end_color="E7E6EC",
-        fill_type="solid"
-    )
+    odd_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    even_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
 
     for idx, row in enumerate(data, start=1):
-
-        age = (
-            today - getdate(row.transaction_date)
-        ).days if row.transaction_date else 0
-
+        age = (today - getdate(row.transaction_date)).days if row.transaction_date else 0
         quotes = quote_map.get(row.name, [])
-
         quote_links = ", ".join(quotes) if quotes else "-"
+
+        # 🌟 FIXED: Format Opp ID cleanly across multiple lines inside a single cell variable
+        opp_id_raw = row.name or ""
+        sfp_id_raw = row.custom_sales_follow_up or ""
+        
+        if len(opp_id_raw) > 13:
+            opp_formatted = f"{opp_id_raw[:13]}\n{opp_id_raw[13:]}"
+        else:
+            opp_formatted = opp_id_raw
+
+        # Combine Opportunity, slash line break, and Sales Follow-Up data string
+        combined_opp_cell = f"{opp_formatted}\n/\n{sfp_id_raw}" if sfp_id_raw else opp_formatted
 
         ws.append([
             idx,
-            row.name,
+            combined_opp_cell,  # 👈 Dynamic multi-line cell injected here
             row.short_code or row.lead_owner or "",
             row.service or "",
             row.opportunity_from or "",
             row.status or "",
             row.organization_name or "",
-            formatdate(row.transaction_date, "dd-MM-yyyy")
-                if row.transaction_date else "",
+            formatdate(row.transaction_date, "dd-MM-yyyy") if row.transaction_date else "",
             age,
             row.opportunity_amount or "",
             row.probability or "",
-            formatdate(row.expected_closing, "dd-MM-yyyy")
-                if row.expected_closing else "",
+            formatdate(row.expected_closing, "dd-MM-yyyy") if row.expected_closing else "",
             row.remark or "",
             row.custom_type or "",
             row.territory or "",
@@ -1944,44 +1933,27 @@ def download_opportunity_excel(owner=None, services=None, weeks=None):
         ])
 
         fill = odd_fill if idx % 2 != 0 else even_fill
-
         for cell in ws[idx + 1]:
-
             cell.fill = fill
+            cell.alignment = Alignment(horizontal="left", vertical="center")
 
-            cell.alignment = Alignment(
-                horizontal="left",
-                vertical="center"
-            )
+    # 🌟 FIXED: Iterate down column B (Opp ID) and force alignment wrap_text to True
+    for excel_row in ws.iter_rows(min_row=2, min_col=2, max_col=2):
+        for cell in excel_row:
+            cell.alignment = Alignment(wrap_text=True, vertical="center", horizontal="center")
 
-    # ---------------------------------
-    # COLUMN WIDTH
-    # ---------------------------------
-
+    # Column Width Auto-Fit Calculation
     for column_cells in ws.columns:
-
-        length = max(
-            len(str(cell.value or ""))
-            for cell in column_cells
-        )
-
-        ws.column_dimensions[
-            column_cells[0].column_letter
-        ].width = length + 5
-
-    # ---------------------------------
-    # RESPONSE
-    # ---------------------------------
+        # Avoid breaking sizes based on cells containing long newline layout breaks
+        length = max(len(max(str(cell.value or " ").split('\n'), key=len)) for cell in column_cells)
+        ws.column_dimensions[column_cells[0].column_letter].width = length + 5
 
     xlsx_file = BytesIO()
-
     wb.save(xlsx_file)
 
     frappe.response["filename"] = "Opportunity_Details.xlsx"
     frappe.response["filecontent"] = xlsx_file.getvalue()
     frappe.response["type"] = "download"
-
-
 
 @frappe.whitelist()
 def get_opportunity_logo():
@@ -2576,8 +2548,11 @@ def fup_details(call_status=None,
     import json
     from frappe.utils import nowdate
     import urllib.parse
+    from frappe.utils import add_days, nowdate
 
     today = nowdate()
+    yesterday = add_days(today, -1)
+    # today = nowdate()
 
     owner = json.loads(owner) if owner else []
     service = json.loads(service) if service else []
@@ -2599,7 +2574,13 @@ def fup_details(call_status=None,
             SUM(CASE WHEN DATE(f.next_contact_date) = %(today)s THEN 1 ELSE 0 END) AS A,
             SUM(CASE WHEN DATE(f.last_contacted_on) = %(today)s THEN 1 ELSE 0 END) AS B,
             COUNT(*) AS C,
-            SUM(CASE WHEN DATE(f.next_contact_date) < %(today)s THEN 1 ELSE 0 END) AS D
+            SUM(
+                CASE
+                    WHEN DATE(f.next_contact_date) < %(today)s
+                    THEN 1
+                    ELSE 0
+                END
+            ) AS D
 
         FROM `tabSales Follow Up` f
         LEFT JOIN `tabEmployee` emp
@@ -2663,8 +2644,6 @@ def fup_details(call_status=None,
         B = int(val.get('B',0))
         C = int(val.get('C',0))
         D = int(val.get('D',0))
-
-        
         def make_link(count, color, key):
 
             if count == 0:
@@ -2676,8 +2655,21 @@ def fup_details(call_status=None,
                 "status1": json.dumps(["!=", "Do Not Contact"])
             }
 
+            # Status Filter
             if status:
                 params["status"] = status.title()
+            else:
+                params["status"] = json.dumps([
+                    "in",
+                    [
+                        "Lead",
+                        "Open",
+                        "Opportunity",
+                        "Converted",
+                        "Interested",
+                        "Replied"
+                    ]
+                ])
 
             if user:
                 params["next_contact_by"] = val.get("user_id")
@@ -2695,8 +2687,13 @@ def fup_details(call_status=None,
                 pass
 
             # D
+            # elif key == "D":
+            #     params["next_contact_date"] = json.dumps(["<", today])
+
             elif key == "D":
-                params["next_contact_date"] = json.dumps(["<", today])
+                params["next_contact_date"] = json.dumps(
+                    ["between", ["1900-01-01", yesterday]]
+                )
 
             query_string = urllib.parse.urlencode(params)
 
@@ -2707,6 +2704,50 @@ def fup_details(call_status=None,
                 {count}
             </a>
             """
+
+        
+        # def make_link(count, color, key):
+
+        #     if count == 0:
+        #         return f"""<span style="color:{color};">-</span>"""
+
+        #     base_url = "/app/sales-follow-up?"
+
+        #     params = {
+        #         "status1": json.dumps(["!=", "Do Not Contact"])
+        #     }
+
+        #     if status:
+        #         params["status"] = status.title()
+
+        #     if user:
+        #         params["next_contact_by"] = val.get("user_id")
+
+        #     # A
+        #     if key == "A":
+        #         params["next_contact_date"] = today
+
+        #     # B
+        #     elif key == "B":
+        #         params["last_contacted_on"] = today
+
+        #     # C
+        #     elif key == "C":
+        #         pass
+
+        #     # D
+        #     elif key == "D":
+        #         params["next_contact_date"] = json.dumps(["<", today])
+
+        #     query_string = urllib.parse.urlencode(params)
+
+        #     url = base_url + query_string
+
+        #     return f"""
+        #     <a href="{url}" target="_blank" style="color:{color}; text-decoration:none;">
+        #         {count}
+        #     </a>
+        #     """
 
         dsm = f"""
         {make_link(A, 'orange', 'A')}
@@ -2854,19 +2895,32 @@ def fup_details(call_status=None,
                 row_total["D"] += D
 
         # TOTAL COLUMN (no "-")
-        html += f"""
-        <td style="font-weight:bold;">
-            <span style="color:orange;">{row_total['A']}</span>
-            <span style="color:black;"> / </span>
-            <span style="color:green;">{row_total['B']}</span>
-        </td>
+        # html += f"""
+        # <td style="font-weight:bold;">
+        #     <span style="color:orange;">{row_total['A']}</span>
+        #     <span style="color:black;"> / </span>
+        #     <span style="color:green;">{row_total['B']}</span>
+        # </td>
 
-        <td style="font-weight:bold;">
-            <span style="color:blue;">{row_total['C']}</span>
-            <span style="color:black;"> / </span>
-            <span style="color:red;">{row_total['D']}</span>
-        </td>
-        """
+        # <td style="font-weight:bold;">
+        #     <span style="color:blue;">{row_total['C']}</span>
+        #     <span style="color:black;"> / </span>
+        #     <span style="color:red;">{row_total['D']}</span>
+        # </td>
+        # """ 
+        user_id = None
+        for status_data in val.values():
+            if isinstance(status_data, dict) and status_data.get("user_id"):
+                user_id = status_data.get("user_id")
+                break
+
+        html += cell({
+            "A": row_total["A"],
+            "B": row_total["B"],
+            "C": row_total["C"],
+            "D": row_total["D"],
+            "user_id": user_id
+        }, user=user)
 
         totals_all["A"] += row_total["A"]
         totals_all["B"] += row_total["B"]
@@ -2884,19 +2938,25 @@ def fup_details(call_status=None,
     for key in totals.keys():
         html += cell(totals[key])
 
-    html += f"""
-    <td>
-        <span style="color:orange;">{totals_all['A']}</span>
-        <span style="color:black;"> / </span>
-        <span style="color:green;">{totals_all['B']}</span>
-    </td>
+    # html += f"""
+    # <td>
+    #     <span style="color:orange;">{totals_all['A']}</span>
+    #     <span style="color:black;"> / </span>
+    #     <span style="color:green;">{totals_all['B']}</span>
+    # </td>
 
-    <td>
-        <span style="color:blue;">{totals_all['C']}</span>
-        <span style="color:black;"> / </span>
-        <span style="color:red;">{totals_all['D']}</span>
-    </td>
-    """
+    # <td>
+    #     <span style="color:blue;">{totals_all['C']}</span>
+    #     <span style="color:black;"> / </span>
+    #     <span style="color:red;">{totals_all['D']}</span>
+    # </td>
+    # """
+    html += cell({
+            "A": totals_all["A"],
+            "B": totals_all["B"],
+            "C": totals_all["C"],
+            "D": totals_all["D"]
+        })
 
     html += "</tr>"
 
@@ -2942,7 +3002,8 @@ def fup_details_terr(call_status=None,
         filters={
             "sfp_territory": ["!=", ""],
         },
-        fields=["distinct sfp_territory as territory"]
+        fields=["sfp_territory as territory"],
+        distinct = True
     )
 
     territories = sorted([t.territory for t in all_territories if t.territory])
@@ -3138,6 +3199,46 @@ def fup_details_terr(call_status=None,
         <td>{all_val}</td>
         """
 
+    def total_cell(val, user_id=None, service_val=None):
+
+        if not val:
+            return "<td>-</td><td>-</td>"
+
+        A = int(val.get('A', 0))
+        B = int(val.get('B', 0))
+        C = int(val.get('C', 0))
+        D = int(val.get('D', 0))
+
+        def make_link(count, color, key):
+            if count == 0:
+                return f'<span style="color:{color};">-</span>'
+
+            base_url = "/app/sales-follow-up?"
+            params = {"status": json.dumps(["!=", "Do Not Contact"])}
+
+            if user_id:
+                params["next_contact_by"] = user_id
+            if service_val:
+                params["service"] = service_val
+
+            if key == "A":
+                params["next_contact_date"] = today
+            elif key == "B":
+                params["last_contacted_on"] = today
+            elif key == "D":
+                params["filters"] = json.dumps([
+                    ["next_contact_date", "<", today],
+                    ["next_contact_date", "is", "set"]
+                ])
+
+            url = base_url + urllib.parse.urlencode(params)
+            return f'<a href="{url}" target="_blank" style="color:{color}; text-decoration:none;">{count}</a>'
+
+        dsm = f'{make_link(A, "orange", "A")} <span style="color:black;"> / </span> {make_link(B, "green", "B")}'
+        all_val = f'{make_link(C, "blue", "C")} <span style="color:black;"> / </span> {make_link(D, "red", "D")}'
+
+        return f"<td>{dsm}</td><td>{all_val}</td>"
+
     # -----------------------------
     # INIT TOTALS
     # -----------------------------
@@ -3244,7 +3345,6 @@ def fup_details_terr(call_status=None,
         html += '<th style="width:150px; min-width:90px;">DSM</th>'
         html += '<th style="width:150px; min-width:90px;">ALL</th>'
 
-    # 👉 Total column
     html += '<th style="width:180px; min-width:90px;">DSM</th>'
     html += '<th style="width:180px; min-width:90px;">ALL</th>'
 
@@ -3320,7 +3420,7 @@ def fup_details_terr(call_status=None,
                     row_total["C"] += C
                     row_total["D"] += D
 
-            html += cell(row_total)
+            html += total_cell(row_total, user_id=user, service_val=service)
 
             html += "</tr>"
 
@@ -3364,6 +3464,9 @@ def fup_details_terr(call_status=None,
     html += "</tbody></table></div>"
 
     return html
+
+
+
 
 @frappe.whitelist()
 def download_fup_excel(owner=None, service=None):
@@ -4245,7 +4348,7 @@ def get_meetlog_table(from_date=None,to_date=None,employee=None):
                     style="
                         text-decoration:none;
                         color:black;
-                        font-weight:600;
+                        
                     ">
 
                     {row.name}

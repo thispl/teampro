@@ -11,7 +11,7 @@ def get_allocated_tasks_for_it_dev(date,name,service,type,dev_team,sprint):
     parent_doc.dm_summary=[]
     if service == "IT-SW":
         task_id=frappe.db.get_all("Task",{"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint},['*'],order_by='cb asc, project asc, priority asc')
-        task_det=frappe.db.get_all("Task",{"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint},['*'],order_by='cb asc',group_by='custom_allocated_to asc')
+        task_det=frappe.db.get_all("Task",{"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint},['*'],order_by='cb asc',group_by='custom_allocated_to')
         for i in task_id:
             parent_doc.append("task_details", {"id": i.name,"a_task_type":i.type,"cb":i.cb})
             frappe.db.set_value("Task",i.name,"allocated",1)
@@ -40,7 +40,7 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
     if service =="IT-SW":
         emp=frappe.db.get_all("Employee",{'status':'Active','custom_dev_team':dev_team,'department':'IT. Development - THIS'},['*'])
         recievers.append('abdulla.pi@groupteampro.com')
-        recievers.append('gifty.p@groupteampro.com')
+        # recievers.append('gifty.p@groupteampro.com')
         for i in emp:
             recievers.append(i.user_id)
         if dev_team == "BRAVO":
@@ -49,7 +49,7 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
     task_data=frappe.get_doc("Daily Monitor",name)
     # tl_email=frappe.db.get_value("Employee",{"custom_is_tl":1,"custom_is_sub_tl":0,"custom_dev_team":dev_team,'department':'IT. Development - THIS'},["user_id"])
     tl_email=frappe.session.user
-    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to asc')
+    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to')
     if task_data.dsr_check==1:
         if service =="IT-SW":
             count=1
@@ -372,7 +372,7 @@ def send_sprint_panned_mail(name,sprint_id,team):
             recievers.append(n.user_id)
         recievers.append('dineshbabu.k@groupteampro.com')
         recievers.append('abdulla.pi@groupteampro.com')
-        recievers.append('gifty.p@groupteampro.com')
+        # recievers.append('gifty.p@groupteampro.com')
         if team == "BRAVO":
             recievers.append('kmoorthy.paulraj@gmail.com')
         # tl_email=frappe.db.get_value("Employee",{"custom_is_tl":1,"custom_is_sub_tl":0,"custom_dev_team":sprint_doc.team,'department':'IT. Development - THIS'},["user_id"])
@@ -844,16 +844,17 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                     """, (log.task, emp.name, date), as_dict=True)[0].total or 0.0
 
                     if log.activity_type =="Code Review":
+                        continue
                         
-                        data = {
-                            "id": log.task,
-                            "at_taken": round(sum_task,2),
-                            "cb": short_code,
-                            "current_status": status,
-                            "status": status,
-                            "rt":0.5,
-                            'today_rt':0.5
-                        }
+                        # data = {
+                        #     "id": log.task,
+                        #     "at_taken": round(sum_task,2),
+                        #     "cb": short_code,
+                        #     "current_status": status,
+                        #     "status": status,
+                        #     "rt":0.5,
+                        #     'today_rt':0.5
+                        # }
                         
                     else:
                         
@@ -897,15 +898,16 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                         alloc=frappe.db.get_value('Employee',{'short_code':short_code},['user_id']) 
                         allocated_person=frappe.db.get_value('Task',{'name':log.id},['custom_allocated_to']) 
                         if alloc != allocated_person:
-                            data = {
-                            "id": log.id,
-                            "at_taken": round(sum_task,2),
-                            "cb": short_code,
-                            "current_status": status,
-                            "status": status,
-                            "rt": frappe.db.get_value("Task", log.task, "rt"),
-                            "today_rt": 0.5,
-                            }
+                            continue
+                            # data = {
+                            # "id": log.id,
+                            # "at_taken": round(sum_task,2),
+                            # "cb": short_code,
+                            # "current_status": status,
+                            # "status": status,
+                            # "rt": frappe.db.get_value("Task", log.task, "rt"),
+                            # "today_rt": 0.5,
+                            # }
                         else:
                             data = {
                             "id": log.id,
@@ -1025,18 +1027,19 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                     alloc=frappe.db.get_value('Task',{'name':task_id},['custom_allocated_to'])
                     sub=frappe.db.get_value('Task',{'name':task_id},['subject'])
                     if alloc!=allocated_to:
-                        sprint_doc.append("sprint_task", {
-                            "task": task_id,
-                            "project": project,
-                            "cb": cb,
-                            'subject':sub,
-                            "at": round(total_hours,2),
-                            "at_period": total_period,
-                            "cr_status": task_status,
-                            'status':task_status,
-                            'spot_task':1,
-                            'rt':0.5
-                        })
+                        continue
+                        # sprint_doc.append("sprint_task", {
+                        #     "task": task_id,
+                        #     "project": project,
+                        #     "cb": cb,
+                        #     'subject':sub,
+                        #     "at": round(total_hours,2),
+                        #     "at_period": total_period,
+                        #     "cr_status": task_status,
+                        #     'status':task_status,
+                        #     'spot_task':1,
+                        #     'rt':0.5
+                        # })
                     else:
                         sprint_doc.append("sprint_task", {
                             "task": task_id,
@@ -1795,7 +1798,7 @@ def dpr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
     task_data=frappe.get_doc("Daily Monitor",name)
     # tl_email=frappe.db.get_value("Employee",{"custom_is_tl":1,"custom_is_sub_tl":0,"custom_dev_team":dev_team,'department':'IT. Development - THIS'},["user_id"])
     tl_email = frappe.session.user
-    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to asc')
+    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to')
     count=1
     if service =="IT-SW":
         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
@@ -1981,7 +1984,7 @@ def dpr_task_mail_it_dev_md(date,name,service,dev_team,sprint):
     task_data=frappe.get_doc("Daily Monitor",name)
     # tl_email=frappe.db.get_value("Employee",{"custom_is_tl":1,"custom_is_sub_tl":0,"custom_dev_team":dev_team,'department':'IT. Development - THIS'},["user_id"])
     tl_email = frappe.session.user
-    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to asc')
+    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to')
     count=1
     if service =="IT-SW":
         data = '<table border="1" width="100%" style="border-collapse: collapse;">'
@@ -2169,7 +2172,7 @@ def dsr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
     task_data=frappe.get_doc("Daily Monitor",name)
     # tl_email=frappe.db.get_value("Employee",{"custom_is_tl":1,"custom_is_sub_tl":0,"custom_dev_team":dev_team,'department':'IT. Development - THIS'},["user_id"])
     tl_email = frappe.session.user
-    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to asc')
+    task = frappe.db.get_all("Task", {"custom_production_date":date,"service":service,"custom_dev_team":dev_team,"custom_sprint":sprint}, ['*'], order_by='cb asc',group_by='custom_allocated_to')
     if task_data.dsr_check==1:
         if service =="IT-SW":
             count=1
@@ -2495,7 +2498,7 @@ def send_daily_pr_report():
 
 
     frappe.sendmail(
-        recipients=["gifty.p@groupteampro.com"],
+        recipients=[spoc_mail],
         subject="Pending Review Tasks - Reg",
         message=full_html
     )
@@ -2523,7 +2526,8 @@ def kt_not_confirmed_task():
         ],
         filters={
             "kt_confirmed": 0,
-            "service": "IT-SW"
+            "service": "IT-SW",
+            "status": ["in", ["Open", "Working"]]
         }
     )
 
@@ -2678,7 +2682,7 @@ def kt_not_confirmed_task():
 
 
     frappe.sendmail(
-        recipients=["gifty.p@groupteampro.com"],
+        recipients=[spoc_mail],
         subject="KT Not Confirmed Tasks - Reg",
         message=full_html
     )
@@ -2855,8 +2859,132 @@ def send_next_contact_by_report():
     """
 
     frappe.sendmail(
-        recipients=["gifty.p@groupteampro.com"],
+        recipients=["spoc_mail"],
         subject="CR Reminder Mail - Reg",
         message=full_html
     )
+
+
+
+# @frappe.whitelist()
+# def current_sprint():
+#     sprint_doc = frappe.get_doc("Sprint", {"sprint_id": "SPRINT 61", "team": "DELTA"})
+#     print(sprint_doc)
+#     existing_sprint_entries = {(d.task, d.cb): d for d in sprint_doc.sprint_task}
+#     parent_doc = frappe.get_doc("Daily Monitor", "DM-01746")
+
+#     for d in parent_doc.task_details:
+#         task_id = d.id
+#         allocated_to=frappe.db.get_value('Employee',{'short_code':d.cb},['user_id'])
+#         cb = d.cb
+#         if not task_id or not cb:
+#             continue
+
+#         emp_name = frappe.db.get_value("Employee", {"short_code": cb}, "name")
+#         if not emp_name:
+#             continue
+
+#         task_status = frappe.db.get_value("Task", task_id, "status")
+#         project = frappe.db.get_value("Task", task_id, "project")
+
+#         total_hours = frappe.db.sql("""
+#             SELECT SUM(cs.hours) AS total_hours 
+#             FROM `tabTimesheet` c  
+#             INNER JOIN `tabTimesheet Detail` cs ON c.name = cs.parent 
+#             WHERE cs.task = %s AND c.employee = %s
+#         """, (task_id, emp_name), as_dict=True)[0].total_hours or 0
+
+#         total_period = frappe.db.sql("""
+#             SELECT SUM(cs.hours) AS hours 
+#             FROM `tabTimesheet` c  
+#             INNER JOIN `tabTimesheet Detail` cs ON c.name = cs.parent 
+#             WHERE cs.task = %s AND c.employee = %s AND c.start_date BETWEEN %s AND %s
+#         """, (task_id, emp_name, sprint_doc.from_date, sprint_doc.to_date), as_dict=True)[0].hours or 0
+#         # Check if (task, cb) already exists
+#         key = (task_id, cb)
+#         if key in existing_sprint_entries:
+#             # Update existing entry's at_period
+#             if frappe.db.exists('Issue',{'name':task_id}):
+#                 cr_status=frappe.db.get_value('Issue',{'name':task_id},['custom_issue_status'])
+#                 alloc=frappe.db.get_value('Issue',{'name':task_id},['assigned_to'])
+#                 project=frappe.db.get_value('Issue',{'name':task_id},['project'])
+#                 subject=frappe.db.get_value('Issue',{'name':task_id},['subject'])
+#                 total_period = frappe.db.sql("""
+#                 SELECT SUM(cs.hours) AS hours 
+#                 FROM `tabTimesheet` c  
+#                 INNER JOIN `tabTimesheet Detail` cs ON c.name = cs.parent 
+#                 WHERE cs.custom_issue = %s AND c.employee = %s AND c.start_date BETWEEN %s AND %s
+#             """, (task_id, emp_name, sprint_doc.from_date, sprint_doc.to_date), as_dict=True)[0].hours or 0
+#                 existing_entry = existing_sprint_entries[key]
+#                 existing_entry.at_period = total_period
+#                 existing_entry.at = 0.5
+#                 existing_entry.cr_status = cr_status
+#                 existing_entry.project= project
+#                 existing_entry.subject= subject
+#                 if alloc!=allocated_to:
+#                     existing_entry.rt=0.5
+#             else:
+#                 alloc=frappe.db.get_value('Task',{'name':task_id},['custom_allocated_to'])
+#                 existing_entry = existing_sprint_entries[key]
+#                 existing_entry.at_period = total_period
+#                 existing_entry.at = round(total_hours,2)
+#                 existing_entry.cr_status = task_status
+#                 if alloc!=allocated_to:
+#                     existing_entry.rt=0.5
+#         else:
+#             # Add new entry and mark it as spot task
+#             if frappe.db.exists('Task',{'name':task_id}):
+#                 alloc=frappe.db.get_value('Task',{'name':task_id},['custom_allocated_to'])
+#                 sub=frappe.db.get_value('Task',{'name':task_id},['subject'])
+#                 if alloc!=allocated_to:
+#                     sprint_doc.append("sprint_task", {
+#                         "task": task_id,
+#                         "project": project,
+#                         "cb": cb,
+#                         'subject':sub,
+#                         "at": round(total_hours,2),
+#                         "at_period": total_period,
+#                         "cr_status": task_status,
+#                         'status':task_status,
+#                         'spot_task':1,
+#                         'rt':0.5
+#                     })
+#                 else:
+#                     sprint_doc.append("sprint_task", {
+#                         "task": task_id,
+#                         "project": project,
+#                         "cb": cb,
+#                         'subject':sub,
+#                         "at": round(total_hours,2),
+#                         "at_period": total_period,
+#                         "cr_status": task_status,
+#                         'status':task_status,
+#                         'spot_task':1,
+#                     })
+#             elif frappe.db.exists('Issue',{'name':task_id}):
+#                 issue_doc=frappe.get_doc('Issue',{'name':task_id})
+#                 sprint_doc.append("sprint_task", {
+#                     "task": task_id,
+#                     "project": issue_doc.project,
+#                     "cb": cb,
+#                     "at": round(total_hours,2),
+#                     "at_period": total_period,
+#                     "cr_status": issue_doc.custom_issue_status,
+#                     'status':issue_doc.custom_issue_status,
+#                     'spot_task':1,
+#                 })
+#             else:
+#                 sprint_doc.append("sprint_task", {
+#                     "task": task_id,
+#                     "project": project,
+#                     "cb": cb,
+#                     "at": round(total_hours,2),
+#                     "at_period": total_period,
+#                     "cr_status": task_status,
+#                     'status':task_status,
+#                     'spot_task':1,
+#                 })
+#     sprint_doc.save()
+#     sprint_doc.reload()
+
 

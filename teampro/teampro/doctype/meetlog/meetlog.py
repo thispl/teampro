@@ -19,7 +19,7 @@ class MeetLog(Document):
     def on_submit(self):
         if not self.reached_location:
             frappe.throw('Reached Location not Captured. Use <b>Reached</b> Button.')
-        if not self.submitted_area:
+        if not self.submitted_location:
             frappe.throw('Completed Location not Captured. Use <b>Completed</b> Button.')
     def validate(self):
         if self.latitude and self.longitude and self.reached_latitude and self.reached_longitude:
@@ -74,6 +74,7 @@ def submit_meetlog(name):
                 sfu.appointment_remarks = doc.visit_remarks
                 sfu.custom_person_met = doc.person_to_meet
                 sfu.custom_contact_email = doc.mail_id
+                sfu.custom_attach_vc = doc.attachments
                 sfu.appointment_fixed_on = ""
                 sfu.custom_appointment_fixed_for = ""
                 sfu.visted_by = frappe.session.user

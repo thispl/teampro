@@ -967,10 +967,10 @@ frappe.call({
 	fiscal_year(frm){
 		frm.set_value("date","")
 	},
-	onload(frm) {
-		frappe.breadcrumbs.add("Formatted Reports  Download","Teampro");
+	// onload(frm) {
+	// 	frappe.breadcrumbs.add("Formatted Reports  Download","Teampro");
 
-	},
+	// },
 	mr_title(frm){
 		if(frm.doc.mr_title=="MR:01 – Sales Follow-Up Report"||frm.doc.mr_title=="MR:02 – Customer Follow-Up Report (CFR)"||frm.doc.mr_title=="MR:06 – Project Task Issue Status Report (PTISR)"){
 			frappe.msgprint("Currently this report in working")

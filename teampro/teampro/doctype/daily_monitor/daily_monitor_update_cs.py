@@ -19,7 +19,7 @@ def get_allocated_tasks_for_it_cs_update(date,name,service,type):
     client_review=0
     issue_count=0
     if type == "CS":
-        task_det=frappe.db.get_all("Task",{"custom_production_date_cs":date,"service":service,"type":type,"status":("in",["Working","Pending Review","Client Review"])},['*'],order_by='spoc asc',group_by='spoc asc')
+        task_det=frappe.db.get_all("Task",{"custom_production_date_cs":date,"service":service,"type":type,"status":("in",["Working","Pending Review","Client Review"])},['*'],order_by='spoc asc',group_by='spoc')
         task_id_cs=frappe.db.get_all("Task",{"custom_production_date_cs":date,"service":service,"type":type,"status":("in",["Working","Pending Review","Client Review"])},['*'],order_by='spoc asc, project asc, priority asc')
         joint_task=frappe.db.get_all("Task",{"custom_production_date_cs":date,"service":service,"type":"Joint","status":("in",["Working","Pending Review","Client Review"])},['*'],order_by='spoc asc, project asc, priority asc')
         issue=frappe.db.get_all("Issue",{"custom_production_date":date},["*"])
@@ -113,7 +113,7 @@ def dpr_task_mail_cs_it_update(name,date,service,task_type):
     recievers.append('dineshbabu.k@groupteampro.com')
     task_data=frappe.get_doc("Daily Monitor",name)
     # task = frappe.db.get_all("Task", {"custom_production_date_cs":date,"type":task_type,"service":service}, ['*'], order_by='cb asc',group_by='spoc asc')
-    cs_task = frappe.db.get_all("Task", {"custom_production_date_cs":date,"type":task_type,"service":service,"status":("in",["Working","Pending Review"])}, ['*'], order_by='spoc asc',group_by='spoc asc')
+    cs_task = frappe.db.get_all("Task", {"custom_production_date_cs":date,"type":task_type,"service":service,"status":("in",["Working","Pending Review"])}, ['*'], order_by='spoc asc',group_by='spoc')
     # cs_task = frappe.db.get_all("Task", {"custom_production_date_cs":date,"type":task_type,"service":service}, ['*'], order_by='spoc asc',group_by='spoc asc')    
     total_at=0
     or_total=0
@@ -417,7 +417,7 @@ def dpr_task_mail_cs_it_update(name,date,service,task_type):
             </tr>
             '''
 
-            task_det=frappe.db.get_all("Task",{"custom_production_date_cs":date,"type":task_type,"service":service,"status":("in",["Working","Pending Review","Client Review"])},['*'],order_by='spoc asc',group_by='spoc asc')
+            task_det=frappe.db.get_all("Task",{"custom_production_date_cs":date,"type":task_type,"service":service,"status":("in",["Working","Pending Review","Client Review"])},['*'],order_by='spoc asc',group_by='spoc')
 
             value=0
             pending_total=0

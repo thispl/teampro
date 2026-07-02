@@ -1425,25 +1425,37 @@ def update_sprint_avl_time(doc, method):
             grouped[row.cb]["at_taken"] += float(row.at_taken or 0)
 
     # Clear and rebuild sprint_avl_time
-    
+
     doc.sprint_avl_time = []
+
+    # Batch: get all TL employee short_codes in a single query
+    cbs = list(grouped.keys())
+    tl_short_codes = set()
+    if cbs:
+        tl_emps = frappe.db.get_all(
+            "Employee",
+            filters={
+                "short_code": ["in", cbs],
+                "department": "IT. Development - THIS",
+                "custom_is_tl": 1,
+                "custom_is_sub_tl": 0,
+            },
+            fields=["short_code"],
+        )
+        tl_short_codes = {e.short_code for e in tl_emps}
 
     for cb, values in grouped.items():
         allocated = values["allocated_hours"]
         at = values["at_taken"]
-        available = 6 if frappe.db.get_value(
-            "Employee",
-            {
-                "short_code": cb,
-                "department": "IT. Development - THIS",
-                "custom_is_tl": 1,
-                "custom_is_sub_tl": 0
-            },
-            "custom_is_tl"
-        ) else 8
-        # available = 5.0  if(frappe.db.get_value("Employee",{'short_code':cb,'department':"IT. Development - THIS"},['custom_is_tl'])) else 6.0
+
+        if cb == "GP":
+            available = 5
+        elif cb in tl_short_codes:
+            available = 6
+        else:
+            available = 8
         if doc.service == 'CMN':
-            available =8.0
+            available = 8.0
         occupancy = (allocated / available * 100) if allocated else 0
 
         doc.append("sprint_avl_time", {

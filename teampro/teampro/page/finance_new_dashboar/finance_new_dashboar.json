@@ -1,0 +1,19 @@
+{
+ "content": null,
+ "creation": "2026-06-27 11:55:11.298620",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-06-27 11:55:11.298620",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "finance-new-dashboar",
+ "owner": "Administrator",
+ "page_name": "finance-new-dashboar",
+ "roles": [],
+ "script": null,
+ "standard": "Yes",
+ "style": "/assets/teampro/css/fin_new.css",
+ "system_page": 0,
+ "title": "Finance New Dashboard"
+}

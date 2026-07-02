@@ -261,7 +261,7 @@ frappe.ui.form.on("VM Stock Register", {
 					open_return_dialog(frm);
 				},"Status");
 			frm.add_custom_button(__("Completed"), function () {
-					if(!frm.doc.refill_attachment){
+					if(!frm.doc.refill_attachment && frm.doc.machine_id!="VM2_INFAC - TFP"){
 						frappe.throw("Please attach the Refill Attachment before marking as Completed.")
 					}
 					let now = frappe.datetime.now_datetime();
@@ -526,6 +526,7 @@ frappe.ui.form.on("VM Stock Register", {
 									file_url: values.attach_grn,
 									attached_to_doctype: frm.doc.doctype,
 									attached_to_name: frm.doc.name,
+									attached_to_field: "grn_received",
 									is_private: 0
 								}
 							}

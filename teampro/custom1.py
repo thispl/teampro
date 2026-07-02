@@ -2762,7 +2762,7 @@ def get_allocated_tasks(date,name,service,type):
     else:
         task_id=frappe.db.get_all("Task",{"custom_production_date":date,"service":service},['*'],order_by='cb asc, project asc, priority asc')
 
-    task_det=frappe.db.get_all("Task",{"custom_production_date":date,"service":service},['*'],order_by='cb asc',group_by='custom_allocated_to asc')
+    task_det=frappe.db.get_all("Task",{"custom_production_date":date,"service":service},['*'],order_by='cb asc',group_by='custom_allocated_to')
     parent_doc = frappe.get_doc("Daily Monitor", name)
     parent_doc.task_details=[]
     parent_doc.dm_summary=[]
@@ -2803,7 +2803,7 @@ def update_dsr(date, name,service,type):
     else:
         task_id_list = frappe.db.get_all("Task", {"custom_production_date": date,"service":service}, ['*'], order_by='custom_allocated_to asc, project asc, priority asc')
        
-    task_list = frappe.db.get_all("Task", {"custom_production_date":date}, ['*'], order_by='cb asc, project asc, priority asc',group_by='custom_allocated_to asc')
+    task_list = frappe.db.get_all("Task", {"custom_production_date":date}, ['*'], order_by='cb asc, project asc, priority asc',group_by='custom_allocated_to')
     issues = []
     meetings = []
     tasks = []
@@ -2897,7 +2897,7 @@ def dpr_task_mail(name,date,service,task_type):
     recievers.append('dineshbabu.k@groupteampro.com')
     task_data=frappe.get_doc("Daily Monitor",name)
     # # priority = {"High": 1, "Medium": 2, "Low": 3}
-    task=frappe.db.get_all("Task",{"custom_production_date":date},['*'],group_by='custom_allocated_to asc',order_by='cb asc, project asc, priority asc')
+    task=frappe.db.get_all("Task",{"custom_production_date":date},['*'],group_by='custom_allocated_to',order_by='cb asc, project asc, priority asc')
     total_at=0
     if task_data.dsr_check==1:
         count=1
@@ -3039,7 +3039,7 @@ def dpr_task_mail(name,date,service,task_type):
             data+='<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>'%(count,i.id or i.issue,i.project_name or '-',i.subject,i.cb,i.status,i.revisions,value_taken,i.et,i.rt,i.priority,i.allocated_on or '')
             count+=1
         data += '</table>'
-        task_det=frappe.db.get_all("Task",{"custom_production_date":date,"type":task_type,"service":service},['*'],order_by='cb asc',group_by='custom_allocated_to asc')
+        task_det=frappe.db.get_all("Task",{"custom_production_date":date,"type":task_type,"service":service},['*'],order_by='cb asc',group_by='custom_allocated_to')
         for k in task_det:
             employee_id=frappe.db.get_value('Employee',{'user_id':k.custom_allocated_to},['user_id'])
             emp_cb=frappe.db.get_value('Employee',{'user_id':k.custom_allocated_to},['short_code'])
@@ -8741,7 +8741,7 @@ def cron_failed_method():
 
     for job_type in unique_job_types:
         frappe.sendmail(
-            recipients = ["erp@groupteampro.com","jenisha.p@groupteampro.com","pavithra.s@groupteampro.com","gifty.p@groupteampro.com"],
+            recipients = ["erp@groupteampro.com","pavithra.s@groupteampro.com"],
             subject = 'Failed Cron List - Internal',
             message = 'Dear Sir / Mam <br> Kindly find the below failed Scheduled Job  %s'%(job_type)
         )

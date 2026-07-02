@@ -139,6 +139,7 @@
    "fieldname": "lead",
    "fieldtype": "Link",
    "hidden": 1,
+   "ignore_user_permissions": 1,
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Lead",
@@ -530,12 +531,14 @@
   {
    "fieldname": "party_name",
    "fieldtype": "Dynamic Link",
+   "ignore_user_permissions": 1,
    "label": "Party Name",
    "options": "party_from"
   },
   {
    "fieldname": "party_from",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Follow Up From",
    "options": "DocType"
   },
@@ -643,11 +646,11 @@
    "link_fieldname": "custom_sales_follow_up"
   }
  ],
- "modified": "2026-05-08 13:58:22.663323",
- "modified_by": "Administrator",
+ "modified": "2026-06-16 15:23:44.951096",
+ "modified_by": "divya.p@groupteampro.com",
  "module": "Teampro",
  "name": "Sales Follow Up",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -663,6 +666,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "show_title_field_in_link": 1,
  "sort_field": "modified",
  "sort_order": "DESC",

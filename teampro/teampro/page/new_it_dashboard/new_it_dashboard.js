@@ -1,4 +1,4 @@
-frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
+frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
     frappe.require([
         "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
         "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
@@ -6,14 +6,26 @@ frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
         "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
 
     ]);
+    let currentNonAllocatedView = "overall";
 
-	var page = frappe.ui.make_app_page({
-		parent: wrapper,
-		title: 'IT-SW Dashboard',
-		single_column: true
-	});
-	const style = document.createElement('style');
-  style.innerHTML = `
+    
+    $(document).off("click", ".toggle-btn").on("click", ".toggle-btn", function () {
+        $(".toggle-btn").removeClass("active");
+        $(this).addClass("active");
+        currentNonAllocatedView = $(this).data("view");
+        loadNonAllocatedTable();
+    });
+    // KT filter change
+    $(document).off("change", "#kt_confirmed_filter").on("change", "#kt_confirmed_filter", function () {
+    loadNonAllocatedTable();   // same function, view stays as currentNonAllocatedView
+});
+    var page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: 'IT-SW Dashboard',
+        single_column: true
+    });
+    const style = document.createElement('style');
+    style.innerHTML = `
     
     .top-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: -40px; margin-right: 20px; }
     .dashboard-cards-finaince { display: flex; gap: 25px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 20px; }
@@ -85,10 +97,55 @@ frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
     color: white;
 }
  
+.toggle-btn {
+    padding: 4px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    border-radius: 4px;
+    color: #333;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.toggle-btn:hover {
+    background: #e8f5e9;
+    border-color: #021750;
+    color: #021750;
+}
+
+.toggle-btn.active {
+    background: #021750;   /* green fill */
+    color: white;
+    border-color: #021750;
+    font-weight: bold;
+}
+.na-view-btn {
+    padding: 4px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    border-radius: 4px;
+    color: #333;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.na-view-btn:hover {
+    background: #e8f5e9;
+    border-color: #021750;
+    color: #021750;
+}
+
+.na-view-btn.active {
+    background: #021750;
+    color: white;
+    border-color: #021750;
+    font-weight: bold;
+}
     
 
 .top-actions-date {
-    border: 1px solid #ccc; /* light grey border */
     padding: 8px;           /* optional spacing */
     border-radius: 4px;     /* optional rounded corners */
 }
@@ -97,20 +154,17 @@ frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
 
 
   `;
-  
-  document.head.appendChild(style);
 
-  $(wrapper).html(`
+    document.head.appendChild(style);
+
+    $(wrapper).html(`
     <div class="dashboard-wrapper" style="padding: 0 30px;">
       <div style="position: relative; padding: 10px;">
         <h2 style="text-align: center; font-weight: bold; margin: 0;">IT SERVICES</h2>
 		
         <div id="current-datetime" style="font-size: 16px; color: #666; text-align: center; margin-top: 5px;"></div>
 		
-        <div class="top-actions">
-          <div class="top-actions-date"></div>
-          <div class="top-actions-date1"></div>
-        </div>
+        
 		
       </div>
 
@@ -138,71 +192,216 @@ frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
         <!-- RIGHT SIDE -->
         <div id="pivot-project-summary-container"
             style="flex:1;border:1px solid #2ac1db;border-radius:8px;padding:10px;
-                    max-height:500px;overflow-y:auto;background:#f5f5f5;">
+                    max-height:580px;overflow-y:auto;background:#f5f5f5;">
             <div id="pivot-summary-table-content"></div>
         </div>
 
     </div>
+<br>
+<div class="card-container equal-height"
+    style="
+        margin-right:20px;
+        background:#f5f5f5;
+        border:1px solid #ddd;
+        border-radius:8px;
+        padding:8px;
+    ">
 
-      <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
-        <div style="margin: 0; padding: 0px 0; text-align: center; background: white; position: relative;">
-            <h4 style="margin: 0;">PRODUCTION SUMMARY</h4>
-                
+    <!-- WHITE HEADER BOX -->
+    <div style="
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:20px;
+        background:white;
+        border-radius:8px;
+        height:50px;
+        padding:0 15px;
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        white-space:nowrap;
+    ">
+
+        <!-- LEFT : TITLE -->
+        <h4 style="
+            margin:0;
+            display:flex;
+            align-items:center;
+            height:100%;
+            flex-shrink:0;
+        ">
+            PRODUCTION SUMMARY
+        </h4>
+
+        <!-- CENTER : FILTERS -->
+        <div style="
+            display:flex;
+            align-items:center;
+            gap:15px;
+            justify-content:center;
+            flex:1;
+            flex-wrap:nowrap;
+            white-space:nowrap;
+            min-width:max-content;
+            height:100%;
+        ">
+
+            <!-- + ALL -->
+            <span id="open-all-teams-btn-1"
+                style="
+                    cursor:pointer;
+                    font-weight:bold;
+                    flex-shrink:0;
+                ">
+                + ALL
+            </span>
+
+            <!-- Priority -->
+            <div style="
+                display:flex;
+                gap:8px;
+                align-items:center;
+                flex-shrink:0;
+            ">
+                <span style="color:green; font-weight:bold;">Priority :</span>
+                <span class="filter-btn" data-group="priority" data-filter="Low">Low</span>
+                <span class="filter-btn" data-group="priority" data-filter="Medium">Medium</span>
+                <span class="filter-btn" data-group="priority" data-filter="High">High</span>
+                <span class="filter-btn" data-group="priority" data-filter="Critical">Urgent</span>
             </div>
-            
-        <br>
-    
 
-        <div id="today-task-table-container1" class="table-scrollable">Loading...</div>
+            <!-- SP -->
+            <div style="
+                display:flex;
+                gap:8px;
+                align-items:center;
+                flex-shrink:0;
+            ">
+                <span style="color:green; font-weight:bold;">S/P :</span>
+                <span class="filter-btn" data-group="sp" data-filter="S">Spot</span>
+                <span class="filter-btn" data-group="sp" data-filter="P">Plan</span>
+            </div>
+
+            <!-- RO -->
+            <div style="
+                display:flex;
+                gap:8px;
+                align-items:center;
+                flex-shrink:0;
+            ">
+                <span style="color:green; font-weight:bold;">RO :</span>
+                <span class="filter-btn" data-group="ro" data-filter="RO">Reopen</span>
+            </div>
+
+            <!-- CF -->
+            <div style="
+                display:flex;
+                gap:8px;
+                align-items:center;
+                flex-shrink:0;
+            ">
+                <span style="color:green; font-weight:bold;">CF :</span>
+                <span class="filter-btn" data-group="cf" data-filter="CF">Carry Forward</span>
+            </div>
+
         </div>
 
-    <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
-  <div style="margin: 0; padding: 0px 0; text-align: center; background: white; position: relative;">
+        <!-- RIGHT : DATE -->
+        <div style="
+            display:flex;
+            gap:10px;
+            align-items:center;
+            height:100%;
+            flex-shrink:0;
+        ">
+            <div class="top-actions-date"></div>
+            <div class="top-actions-date1"></div>
+        </div>
+        
+
+    </div>
+    
+
+    <!-- TABLE -->
+    <div id="today-task-table-container1"
+        class="table-scrollable"
+        style="margin-top:10px;">
+        Loading...
+    </div>
+
+</div>
+
+
+  <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
+  <div style="margin: 5; padding: 5px 5px; text-align: center; background: white; position: relative;border-radius:8px;">
   <h4 style="margin: 0;">PRODUCTION TABLE</h4>
      <div style="position: absolute; right: 0; top: 50%; transform: translateY(-50%); display: flex; gap: 10px; background: #f5f5f5; padding: 5px; border-radius: 4px;">
     <button id="download-task-table-all"
             style="border: none; color: black; cursor: pointer;">
       ALL
     </button>
-    <button id="download-task-table"
-            style="border: none; color: black; cursor: pointer;">
-      Download
+    <button 
+    id="download-task-table"
+    style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+    <img 
+        src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:16px;height:16px;">
     </button>
     <button id="download-task-table-pdf" style="border: none; color: black; cursor: pointer;">Download PDF</button>
   </div>
+ 
   </div>
-  
-  <br>
+   <br>
     
 
         <div id="today-task-table-container" class="table-scrollable">Loading...</div>
         </div>
 
-    <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
-        <div style="position: relative; background: white; padding: 10px; border-radius: 6px; text-align: center;">
-            <h4 style="margin: 0;">NON-ALLOCATED TASKS</h4>
-           <button id="download-non-allocated"
-            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: #f5f5f5; color: black; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-            Download
-            </button>
-    </div>
+
+
+        
+    
+    
+    
 
         <br>
-        <div id="non_allocated_task_table_new" class="table-scrollable">Loading...</div>
-    </div>
+        
+        <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
+    <div style="position: relative; background: white; padding: 10px; border-radius: 6px;">
+    
+   <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: nowrap; gap: 10px;">
 
-    <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;">
-        <div style="position: relative; background: white; padding: 10px; border-radius: 6px; text-align: center;">
-            <h4 style="margin: 0;">AMC PROJECTS</h4>
-           <button id="download-amc"
-            style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: #f5f5f5; color: black; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-            Download
-            </button>
-    </div>
+    <!-- LEFT: empty spacer to balance the right side -->
+    <div style="flex:1;"></div>
 
-        <br>
-        <div id="amc_table" class="table-scrollable">Loading...</div>
+    <!-- CENTER: Title -->
+    <h4 style="margin: 0; white-space: nowrap; flex:1; text-align:center;">NON-ALLOCATED TOTAL</h4>
+
+    <!-- RIGHT: Toggle Buttons + KT Filter + Download -->
+    <div style="display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; flex:1; justify-content:flex-end;">
+
+        <!-- Toggle Buttons -->
+            <button class="toggle-btn active" data-view="overall">Overall</button>
+            <button class="toggle-btn" data-view="sprint">NA</button>
+
+        <select id="kt_confirmed_filter" style="width:110px; height:28px;">
+            <option value="">KT Confirm</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+        </select>
+
+        <button id="download-non-allocated" style="border:none; background:none; outline:none; padding:0; cursor:pointer; display:flex; align-items:center;">
+            <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png" style="width:22px; height:22px;">
+        </button>
+
     </div>
+</div>
+</div>
+
+    <br>
+    <!-- Single container — content swaps based on active view -->
+    <div id="non_allocated_task_table_new" class="table-scrollable">Loading Overall...</div>
+</div>
 
     <div class="card-container equal-height" 
         style="margin-top:40px; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
@@ -217,10 +416,25 @@ frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
                 <div id="dsr_date_filter"></div>
                 
             </div>
-            <button id="download-dsr"
-                style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: #f5f5f5; color: black; padding: 5px 10px; border-radius: 4px; cursor: pointer;">
-                Download
-            </button>
+            <button 
+    id="download-dsr"
+    style="
+        border:none;
+        background:none;
+        outline:none;
+        padding:0;
+        cursor:pointer;
+        position:absolute;
+        right:10px;
+        top:50%;
+        transform:translateY(-50%);
+    "
+>
+    <img 
+        src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:22px;height:22px;"
+    >
+</button>
 
         </div>
 
@@ -249,477 +463,776 @@ frappe.pages['new-it-dashboard'].on_page_load = function(wrapper) {
   `);
 
 
-get_today_task_data1();
-// load_opportunity_table();
-loadDashboardData();
+    get_today_task_data1();
+    // load_opportunity_table();
+    loadDashboardData();
 
-get_today_task_data11();
-load_amc_project_sla_table();
-load_dsr_table();
+    get_today_task_data11();
+    load_amc_project_sla_table();
+    load_dsr_table();
 
-// setInterval(function () {
-//     get_today_task_data1();
-// }, 300000);
+    // setInterval(function () {
+    //     get_today_task_data1();
+    // }, 300000);
 
-// setInterval(function () {
-//     get_today_task_data11();
-// }, 300000);
+    // setInterval(function () {
+    //     get_today_task_data11();
+    // }, 300000);
 
 
-// ---- Create Frappe Date Controls ----
-let from_date_filter = frappe.ui.form.make_control({
-    parent: $('.top-actions-date'),
-    df: { fieldtype: "Date", fieldname: "from_date", placeholder: "From Date" },
-    render_input: true
-});
+    // ---- Create Frappe Date Controls ----
+    let from_date_filter = frappe.ui.form.make_control({
+        parent: $('.top-actions-date'),
+        df: { fieldtype: "Date", fieldname: "from_date", placeholder: "From Date" },
+        render_input: true
+    });
 
-let to_date_filter = frappe.ui.form.make_control({
-    parent: $('.top-actions-date1'),
-    df: { fieldtype: "Date", fieldname: "to_date", placeholder: "To Date" },
-    render_input: true
-});
-to_date_filter.$wrapper.hide(); 
+    let to_date_filter = frappe.ui.form.make_control({
+        parent: $('.top-actions-date1'),
+        df: { fieldtype: "Date", fieldname: "to_date", placeholder: "To Date" },
+        render_input: true
+    });
+    to_date_filter.$wrapper.hide();
+    function loadNonAllocatedTable() {
+    const view = currentNonAllocatedView;           // "overall" | "na" | "sprint"
+    const kt_confirmed = $("#kt_confirmed_filter").val(); // "" | "Yes" | "No"
 
-// ---- Function to fetch data ----
-function load_dashboard_data(from_date, to_date) {
-    get_today_task_data11(from_date, to_date);
-    get_today_task_data1(from_date, to_date);
+    $("#non_allocated_task_table_new").html(`
+        <div style="padding:20px; text-align:center;">Loading...</div>
+    `);
+
+    frappe.call({
+        method: "teampro.teampro.page.new_it_dashboard.new_it.get_non_allocated_tasks_test",
+        args: {
+            view: view,           // pass to backend
+            kt_confirmed: kt_confirmed
+        },
+        callback: function (r) {
+            let $container = $("#non_allocated_task_table_new");
+
+            if (!(r.message && r.message.data && r.message.data.length)) {
+                $container.html("<p style='padding:20px;text-align:center;'>No tasks found.</p>");
+                return;
+            }
+
+            const tasks = r.message.data;
+
+            // Group by project
+            grouped = {};
+            tasks.forEach(task => {
+                const project = task.project || "No Project";
+                if (!grouped[project]) grouped[project] = [];
+                grouped[project].push(task);
+            });
+
+            // Build table
+            let grandET = 0, grandRT = 0, grandAT = 0;
+
+            let html = `
+            <table class="table table-bordered" style="width:100%; text-align:center; border-collapse:collapse;">
+                <thead style="background:#0F1568; color:white;">
+                    <tr>
+                        <th id="toggle-all-na" style="cursor:pointer;">+ ALL</th>
+                        <th>Sprint</th>
+                        <th>Task</th>
+                        <th>Subject</th>
+                        <th>ET</th>
+                        <th>RT</th>
+                        <th>AT</th>
+                        <th>AGE</th>
+                        <th>CF</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+
+            Object.keys(grouped).sort().forEach(project => {
+                const projectTasks = grouped[project];
+                const projectRowId = "proj-" + project.replace(/[^a-zA-Z0-9]/g, "_");
+
+                const totalET = projectTasks.reduce((s, t) => s + (parseFloat(t.expected_time) || 0), 0);
+                const totalRT = projectTasks.reduce((s, t) => s + (parseFloat(t.rt) || 0), 0);
+                const totalAT = projectTasks.reduce((s, t) => s + (parseFloat(t.actual_time) || 0), 0);
+
+                grandET += totalET;
+                grandRT += totalRT;
+                grandAT += totalAT;
+
+                // Project header row
+                html += `
+                <tr class="na-project-row" data-target="${projectRowId}"
+                    style="cursor:pointer; font-weight:bold; background:#85819e; color:#fff;">
+                    <td colspan="4" style="text-align:left; padding-left:10px;">
+                        <span class="na-toggle-sign">+</span> ${project}
+                    </td>
+                    <td>${totalET.toFixed(2)}</td>
+                    <td>${totalRT.toFixed(2)}</td>
+                    <td>${totalAT.toFixed(2)}</td>
+                    <td colspan="4"></td>
+                </tr>`;
+
+                // Task rows
+                projectTasks.forEach((task, idx) => {
+                    const bg = idx % 2 === 0 ? "#ffffff" : "#e7e6ec";
+                    const age = parseFloat(task.custom_age) || 0;
+                    const textColor = age > 3 ? "#f54545" : "#000000";
+
+                    html += `
+                    <tr class="na-task-row" data-parent="${projectRowId}"
+                        style="display:none; background:${bg}; color:${textColor};">
+                        <td>${task.cb || ""}</td>
+                        <td>${task.custom_sprint || ""}</td>
+                        <td>
+                            <a href="/app/task/${task.name}" target="_blank"
+                               style="color:inherit; text-decoration:none;">
+                                ${task.name}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${task.subject || ""}</td>
+                        <td>${parseFloat(task.expected_time || 0).toFixed(2)}</td>
+                        <td>${parseFloat(task.rt || 0).toFixed(2)}</td>
+                        <td>${parseFloat(task.actual_time || 0).toFixed(2)}</td>
+                        <td>${task.custom_age || ""}</td>
+                        <td>${task.custom_production_date_count || ""}</td>
+                        <td>${task.priority || ""}</td>
+                        <td>${task.status || ""}</td>
+                    </tr>`;
+                });
+            });
+
+            // Grand total row
+            html += `
+            <tr style="font-weight:bold; background:#0F1568; color:white;">
+                <td colspan="4" style="text-align:right;">GRAND TOTAL</td>
+                <td>${grandET.toFixed(2)}</td>
+                <td>${grandRT.toFixed(2)}</td>
+                <td>${grandAT.toFixed(2)}</td>
+                <td colspan="4"></td>
+            </tr>`;
+
+            html += `</tbody></table>`;
+            $container.html(html);
+
+            // ---- Bind toggle events ----
+            let allExpanded = false;
+
+            $("#toggle-all-na").off("click").on("click", function () {
+                allExpanded = !allExpanded;
+                $(".na-task-row").toggle(allExpanded);
+                $(".na-toggle-sign").text(allExpanded ? "-" : "+");
+                $(this).text(allExpanded ? "- ALL" : "+ ALL");
+            });
+
+            $(".na-project-row").off("click").on("click", function () {
+                const target = $(this).data("target");
+                const $rows = $(`.na-task-row[data-parent="${target}"]`);
+                const $sign = $(this).find(".na-toggle-sign");
+                const isVisible = $rows.is(":visible");
+                $rows.toggle(!isVisible);
+                $sign.text(isVisible ? "+" : "-");
+            });
+        }
+    });
 }
 
-
-
-// From Date change handler
-from_date_filter.$input.on('change', function () {
-    const selectedDate = from_date_filter.get_value();
-    to_date_filter.set_value(selectedDate);
-
-    // Show full-page overlay like Apply button
-    if ($('#fetching-overlay').length === 0) {
-        $('body').append(`
-            <div id="fetching-overlay" style="
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0,0,0,0.5);
-                z-index: 9999;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: #fff;
-                font-size: 24px;
-                font-weight: bold;
-            ">
-                Fetching Data...
-            </div>
-        `);
-    } else {
-        $('#fetching-overlay').show();
+// Initial load
+loadNonAllocatedTable();
+    // ---- Function to fetch data ----
+    function load_dashboard_data(from_date, to_date) {
+        get_today_task_data11(from_date, to_date);
+        get_today_task_data1(from_date, to_date);
     }
 
-    // Show overlay
-    $('#fetching-overlay').show();
-
-    // Run immediately
-    loadOrderBooking(selectedDate, selectedDate);
-    loadturnover(selectedDate, selectedDate);
-    loadtcollection(selectedDate, selectedDate);
-    get_today_task_data11(selectedDate, selectedDate);
-    get_today_task_data1(selectedDate, selectedDate);
-    load_dashboard_data(selectedDate, selectedDate);
-
-    // Hide overlay after 20 sec (optional)
-    setTimeout(function () {
-        $('#fetching-overlay').hide();
-    }, 20000);
-});
 
 
+    // // From Date change handler
+    from_date_filter.$input.on('change', function () {
+        const selectedDate = from_date_filter.get_value();
+        to_date_filter.set_value(selectedDate);
 
+        // Show full-page overlay like Apply button
+        // if ($('#fetching-overlay').length === 0) {
+        //     $('body').append(`
+        //     <div id="fetching-overlay" style="
+        //         position: fixed;
+        //         top: 0;
+        //         left: 0;
+        //         width: 100%;
+        //         height: 100%;
+        //         background: rgba(0,0,0,0.5);
+        //         z-index: 9999;
+        //         display: flex;
+        //         align-items: center;
+        //         justify-content: center;
+        //         color: #fff;
+        //         font-size: 24px;
+        //         font-weight: bold;
+        //     ">
+        //         Fetching Data...
+        //     </div>
+        // `);
+        // } else {
+        //     $('#fetching-overlay').show();
+        // }
 
+        // Show overlay
+        // $('#fetching-overlay').show();
 
-$(document).ready(function () {
-    const today = frappe.datetime.get_today();
-    from_date_filter.set_value(today);
-    to_date_filter.set_value(today);
-    load_dashboard_data(today, today);
-});
-
-
-$(document).ready(function () {
-    const today = frappe.datetime.get_today();
-
-    // Set both dates to today initially
-    $('#tfp-from-date').val(today);
-    $('#tfp-to-date').val(today);
-
-    // Load tasks for today
-    get_today_task_data11(today, today);
-    get_today_task_data1(today, today);
-    
-
-    // When the From Date changes, set To Date to the same value
-    $('#tfp-from-date').on('change', function () {
-        const selectedDate = $(this).val();
-        $('#tfp-to-date').val(selectedDate);
-
-        // Optionally, reload tasks for the selected date
+        // Run immediately
+        loadOrderBooking(selectedDate, selectedDate);
+        loadturnover(selectedDate, selectedDate);
+        loadtcollection(selectedDate, selectedDate);
         get_today_task_data11(selectedDate, selectedDate);
         get_today_task_data1(selectedDate, selectedDate);
+        load_dashboard_data(selectedDate, selectedDate);
+
+        // Hide overlay after 20 sec (optional)
+        setTimeout(function () {
+            $('#fetching-overlay').hide();
+        }, 20000);
     });
-});
 
 
 
-// load_retro_summary_html(sprint=null);
-load_retro_summary(sprint=null);
-// load_retro_summary(sprint);
-// load_retro_summary(sprint=null);
 
 
-let $filtersSection = $('#filters');
+    $(document).ready(function () {
+        const today = frappe.datetime.get_today();
+        from_date_filter.set_value(today);
+        to_date_filter.set_value(today);
+        load_dashboard_data(today, today);
+    });
 
-// Combined container with Sprint filter + Dev Team buttons
-$filtersSection.html(`
+
+    $(document).ready(function () {
+        const today = frappe.datetime.get_today();
+
+        // Set both dates to today initially
+        $('#tfp-from-date').val(today);
+        $('#tfp-to-date').val(today);
+
+        // Load tasks for today
+        get_today_task_data11(today, today);
+        get_today_task_data1(today, today);
+
+
+        // When the From Date changes, set To Date to the same value
+        $('#tfp-from-date').on('change', function () {
+            const selectedDate = $(this).val();
+            $('#tfp-to-date').val(selectedDate);
+
+            // Optionally, reload tasks for the selected date
+            get_today_task_data11(selectedDate, selectedDate);
+            get_today_task_data1(selectedDate, selectedDate);
+        });
+    });
+
+
+
+    // load_retro_summary_html(sprint=null);
+    load_retro_summary(sprint = null);
+    // load_retro_summary(sprint);
+    // load_retro_summary(sprint=null);
+
+
+    let $filtersSection = $('#filters');
+
+    // Combined container with Sprint filter + Dev Team buttons
+    $filtersSection.html(`
     <div id="filter-container" class="row align-items-center flex-wrap gap-3 mb-3 p-3 rounded"
          style="background: #f5f5f5; border:1px solid #dee2e6; margin-left: 0px; margin-right:0px;">
         <div id="sprint-filter-wrapper" class="d-flex align-items-center me-3" style="min-width: 220px; "></div>
         <div id="filter-row" class="d-flex flex-wrap align-items-center gap-2" ></div>
     </div>
 `);
-$(document).on('click', '#download-task-table', function () {
-    const table = document.getElementById('task-report-table');
-    if (!table) {
-        frappe.msgprint("No Data found.");
-        return;
-    }
+    // $(document).on('click', '#download-task-table', function () {
+    //     const table = document.getElementById('task-report-table');
+    //     if (!table) {
+    //         frappe.msgprint("No Data found.");
+    //         return;
+    //     }
 
-    // Show hidden rows temporarily for export
-    const hiddenRows = $(table).find('tr:hidden');
-    hiddenRows.show();
+    //     // Show hidden rows temporarily for export
+    //     const hiddenRows = $(table).find('tr:hidden');
+    //     hiddenRows.show();
 
-    // Style the table headers
-    $(table).find('thead th').each(function () {
-        $(this).css({
-            'background-color': '#0F1568',
-            'color': 'white',
-            'text-align': 'center',
-            'font-size': '14px',
-            'border': '1px solid black'
-        });
-    });
+    //     // Style the table headers
+    //     $(table).find('thead th').each(function () {
+    //         $(this).css({
+    //             'background-color': '#0F1568',
+    //             'color': 'white',
+    //             'text-align': 'center',
+    //             'font-size': '14px',
+    //             'border': '1px solid black'
+    //         });
+    //     });
 
-    // Style the body rows
-    $(table).find('tbody tr').each(function () {
-        const $row = $(this);
+    //     // Style the body rows
+    //     $(table).find('tbody tr').each(function () {
+    //         const $row = $(this);
 
-        // Retain row-level styling up to column M
-        const isTeamRow = $row.hasClass('toggle-team');
-        const isCBRow = $row.hasClass('toggle-cb');
+    //         // Retain row-level styling up to column M
+    //         const isTeamRow = $row.hasClass('toggle-team');
+    //         const isCBRow = $row.hasClass('toggle-cb');
 
-        $row.find('td').each(function (index) {
-    let backgroundColor = '#ffffff'; // default white
+    //         $row.find('td').each(function (index) {
+    //             let backgroundColor = '#ffffff'; // default white
 
-    if (index <= 13) {
-        if (isTeamRow) {
-            backgroundColor = '#eaf0f6';
-        } else if (isCBRow) {
-            backgroundColor = '#f2f2f2';
-        }
-    }
+    //             if (index <= 13) {
+    //                 if (isTeamRow) {
+    //                     backgroundColor = '#eaf0f6';
+    //                 } else if (isCBRow) {
+    //                     backgroundColor = '#85819e';
+    //                 }
+    //             }
 
-    // For column E (index 4), replace <a> with plain text to avoid underline
-    if (index === 4 && !isCBRow && !isTeamRow) {
-        const anchor = $(this).find('a');
-        if (anchor.length) {
-            const text = anchor.text();
-            $(this).html(text);  // Replace anchor with plain text
-        }
-    }
+    //             if (index === 3 && !isCBRow && !isTeamRow) {
+    //                 const match = $(this).text().trim().match(/TS\d+/);
 
-    $(this).css({
-        'background-color': backgroundColor,
-        'border': '1px solid black',
-        'font-size': '12px',
-        'text-align': $(this).hasClass('left-align') ? 'left' : 'center'
-    });
-});
+    //                 if (match) {
+    //                     $(this).text(match[0]);
+    //                 }
+    //             }
 
+    //             // For column E (index 4), replace <a> with plain text to avoid underline
+    //             if (index === 4 && !isCBRow && !isTeamRow) {
+    //                 const anchor = $(this).find('a');
+    //                 if (anchor.length) {
+    //                     const text = anchor.text();
+    //                     $(this).html(text);  // Replace anchor with plain text
+    //                 }
+    //             }
+    //             if (index === 12 || index === 13) {   // M,N columns index
+    //                 let text = $(this).text().trim();
 
+    //                 text = text.replace(/✓/g, '✓');
+    //                 text = text.replace(/✔/g, '✓');
 
-    });
+    //                 $(this).text(text);
+    //             }
 
-    // Create Excel-compatible HTML
-    const html = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" 
-              xmlns:x="urn:schemas-microsoft-com:office:excel" 
-              xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <!--[if gte mso 9]>
-            <xml>
-                <x:ExcelWorkbook>
-                    <x:ExcelWorksheets>
-                        <x:ExcelWorksheet>
-                            <x:Name>Production Tasks</x:Name>
-                            <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
-                        </x:ExcelWorksheet>
-                    </x:ExcelWorksheets>
-                </x:ExcelWorkbook>
-            </xml>
-            <![endif]-->
-        </head>
-        <body>
-            ${table.outerHTML}
-        </body>
-        </html>`;
-
-    const blob = new Blob([html], {
-        type: "application/vnd.ms-excel"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Production_Tasks_${frappe.datetime.now_date()}.xls`;
-    a.click(); // Trigger download
-    URL.revokeObjectURL(url); // Clean up
-
-    // Re-hide previously hidden rows
-    hiddenRows.hide();
-});
-
- // PDF Download
-// $(document).on('click', '#download-task-table-pdf', function () {
-//     const table = document.getElementById('task-report-table');
-//     if (!table) {
-//         frappe.msgprint("No Data found.");
-//         return;
-//     }
-
-//     // Show hidden rows temporarily
-//     const hiddenRows = $(table).find('tr:hidden');
-//     hiddenRows.show();
-
-//     // Extract headers
-//     const headers = [];
-//     $(table).find('thead th').each(function () {
-//         headers.push($(this).text().trim());
-//     });
-
-//     // Extract rows
-//     const data = [];
-//     $(table).find('tbody tr').each(function () {
-//         const rowData = [];
-//         $(this).find('td').each(function () {
-//             let cellText = $(this).text().trim();
-
-//             // If there's an anchor tag, get its text
-//             const anchor = $(this).find('a');
-//             if (anchor.length) {
-//                 cellText = anchor.text().trim();
-//             }
-
-//             rowData.push(cellText);
-//         });
-//         data.push(rowData);
-//     });
-
-//     // Create PDF
-//     const { jsPDF } = window.jspdf;
-//     const doc = new jsPDF('l', 'pt', 'a4'); // landscape
-
-//     doc.text("Production Task Report", 40, 30);
-//     doc.autoTable({
-//         head: [headers],
-//         body: data,
-//         startY: 50,
-//         styles: {
-//             fontSize: 8,
-//             cellPadding: 3,
-//         },
-//         headStyles: {
-//             fillColor: [15, 21, 104], // #0F1568
-//             textColor: 255,
-//             halign: 'center'
-//         },
-//         bodyStyles: {
-//             halign: 'center'
-//         }
-//     });
-
-//     doc.save(`Production_Tasks_${frappe.datetime.now_date()}.pdf`);
-
-//     // Re-hide previously hidden rows
-//     hiddenRows.hide();
-// });
-// $(document).on('click', '#download-task-table-pdf', function () {
-//     const table = document.getElementById('task-report-table');
-//     if (!table) {
-//         frappe.msgprint("No Data found.");
-//         return;
-//     }
-
-//     // Show hidden rows temporarily
-//     const hiddenRows = $(table).find('tr:hidden');
-//     hiddenRows.show();
-
-//     const { jsPDF } = window.jspdf;
-//     const doc = new jsPDF('l', 'pt', 'a4'); // Landscape mode
-
-//     const rows = [];
-//     let headers = [];
-
-//     // Extract table header
-//     $(table).find('thead tr').each(function () {
-//         const headerRow = [];
-//         $(this).find('th').each(function () {
-//             headerRow.push($(this).text().trim());
-//         });
-//         if (headerRow.length) headers = headerRow;
-//     });
-
-//     // Extract body rows
-//     $(table).find('tbody tr').each(function () {
-//         const $tr = $(this);
-//         const $tds = $tr.find('td');
-
-//         // Handle group row
-//         const isGroupRow = $tds.length === 1 && $tds.attr('colspan');
-//         if (isGroupRow) {
-//             const colspan = parseInt($tds.attr('colspan')) || headers.length;
-//             const text = $tds.text().trim();
-
-//             rows.push({
-//                 content: [
-//                     {
-//                         content: text,
-//                         colSpan: colspan,
-//                         styles: {
-//                             fillColor: [245, 245, 245],
-//                             fontStyle: 'bold',
-//                             halign: 'left'
-//                         }
-//                     }
-//                 ]
-//             });
-//         } else {
-//             // Regular row
-//             const rowData = [];
-//             $tds.each(function () {
-//                 let text = $(this).text().trim();
-//                 const anchor = $(this).find('a');
-//                 if (anchor.length) text = anchor.text().trim();
-//                 rowData.push({ content: text });
-//             });
-//             rows.push({ content: rowData });
-//         }
-//     });
-
-//     // Add title
-//     doc.setFontSize(12);
-//     doc.text("Production Task Report", 40, 30);
-
-//     // Generate table
-//     doc.autoTable({
-//         head: [headers],
-//         body: rows.map(row => row.content),
-//         startY: 50,
-//         styles: {
-//             fontSize: 8,
-//             cellPadding: 4,
-//             valign: 'middle'
-//         },
-//         headStyles: {
-//             fillColor: [15, 21, 104],
-//             textColor: 255,
-//             halign: 'center'
-//         },
-//         bodyStyles: {
-//             halign: 'center'
-//         },
-//         didParseCell: function (data) {
-//             const row = rows[data.row.index];
-//             if (row && row.content && row.content[0] && row.content[0].styles) {
-//                 Object.assign(data.cell.styles, row.content[0].styles);
-//             }
-//         }
-//     });
-
-//     // Save PDF
-//     doc.save(`Production_Tasks_${frappe.datetime.now_date()}.pdf`);
-
-//     // Re-hide rows
-//     hiddenRows.hide();
-// });
-$(document).on('click', '#download-task-table-pdf', function () {
-	const doctype = "Task";
-	const docname = "TS12590";
-	const print_format = "Task Monitor";
-	const no_letterhead = 0;
-
-	const url = frappe.urllib.get_full_url(
-		`/api/method/frappe.utils.print_format.download_pdf?doctype=${encodeURIComponent(doctype)}`
-		+ `&name=${encodeURIComponent(docname)}`
-		+ `&format=${encodeURIComponent(print_format)}`
-		+ `&no_letterhead=${no_letterhead}`
-		+ `&trigger_print=1`
-	);
-
-	window.open(url);
-});
-
-
-$(document).on('click', '#download-task-table-all', function () {
-    const table = document.getElementById('task-report-table');
-    if (!table) {
-        frappe.msgprint("No Data found.");
-        return;
-    }
-
-    const hiddenRows = $(table).find('tr:hidden');
-    hiddenRows.show();  
-
-});
+    //             $(this).css({
+    //                 'background-color': backgroundColor,
+    //                 'border': '1px solid black',
+    //                 'font-size': '12px',
+    //                 'text-align': $(this).hasClass('left-align') ? 'left' : 'center'
+    //             });
+    //         });
 
 
 
-function add_filter(df) {
-    const control = frappe.ui.form.make_control({
-        df: Object.assign({
-            reqd: 0,
-            onchange: function () {
-                // load_retro_summary_html(control.get_value());
-                load_retro_summary(control.get_value());
+    //     });
+
+    //     // Create Excel-compatible HTML
+    //     const html = `
+    //     <html xmlns:o="urn:schemas-microsoft-com:office:office" 
+    //           xmlns:x="urn:schemas-microsoft-com:office:excel" 
+    //           xmlns="http://www.w3.org/TR/REC-html40">
+    //     <head>
+    //         <!--[if gte mso 9]>
+    //         <xml>
+    //             <x:ExcelWorkbook>
+    //                 <x:ExcelWorksheets>
+    //                     <x:ExcelWorksheet>
+    //                         <x:Name>Production Tasks</x:Name>
+    //                         <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+    //                     </x:ExcelWorksheet>
+    //                 </x:ExcelWorksheets>
+    //             </x:ExcelWorkbook>
+    //         </xml>
+    //         <![endif]-->
+    //     </head>
+    //     <body>
+    //         ${table.outerHTML}
+    //     </body>
+    //     </html>`;
+
+    //     const blob = new Blob([html], {
+    //         type: "application/vnd.ms-excel"
+    //     });
+
+    //     const url = URL.createObjectURL(blob);
+    //     const a = document.createElement("a");
+    //     a.href = url;
+    //     a.download = `Production_Tasks_${frappe.datetime.now_date()}.xls`;
+    //     a.click(); // Trigger download
+    //     URL.revokeObjectURL(url); // Clean up
+
+    //     // Re-hide previously hidden rows
+    //     hiddenRows.hide();
+    // });
+
+    $(document).on('click', '#download-task-table', function () {
+            const table = document.getElementById('task-report-table');
+
+            if (!table) {
+                frappe.msgprint("No Data found.");
+                return;
             }
-        }, df),
-        parent: $('#sprint-filter-wrapper'),
-        render_input: true
+
+            // Clone table for Excel export
+            const exportTable = table.cloneNode(true);
+            const $exportTable = $(exportTable);
+
+            // Show hidden rows in cloned table
+            $exportTable.find('tr:hidden').show();
+
+            // Style headers
+            $exportTable.find('thead th').each(function () {
+                $(this).css({
+                    'background-color': '#0F1568',
+                    'color': 'white',
+                    'text-align': 'center',
+                    'font-size': '14px',
+                    'border': '1px solid black'
+                });
+            });
+
+            // Style body rows
+            $exportTable.find('tbody tr').each(function () {
+
+                const $row = $(this);
+                const isTeamRow = $row.hasClass('toggle-team');
+                const isCBRow = $row.hasClass('toggle-cb');
+
+                $row.find('td').each(function (index) {
+
+                    let backgroundColor = '#ffffff';
+
+                    if (index <= 13) {
+                        if (isTeamRow) {
+                            backgroundColor = '#eaf0f6';
+                        } else if (isCBRow) {
+                            backgroundColor = '#85819e';
+                        }
+                    }
+
+                    if (index === 3 && !isCBRow && !isTeamRow) {
+                        const match = $(this).text().trim().match(/TS\d+/);
+
+                        if (match) {
+                            $(this).text(match[0]);
+                        }
+                    }
+
+
+                    if (index === 4 || index == 2  && !isCBRow && !isTeamRow) {
+                        const anchor = $(this).find('a');
+
+                        if (anchor.length) {
+                            anchor.replaceWith(anchor.text());
+                        }
+                    }
+
+                    // M/N Columns - tick symbol cleanup
+                    if (index === 12 || index === 13) {
+                        let text = $(this).text().trim();
+
+                        text = text.replace(/✔/g, '✓');
+                        text = text.replace(/âœ“/g, '✓');
+
+                        $(this).text(text);
+                    }
+
+                    $(this).css({
+                        'background-color': backgroundColor,
+                        'border': '1px solid black',
+                        'font-size': '12px',
+                        'text-align': $(this).hasClass('left-align') ? 'left' : 'center'
+                    });
+
+                });
+            });
+
+            // Excel HTML
+            const html = `
+            <html xmlns:o="urn:schemas-microsoft-com:office:office"
+                xmlns:x="urn:schemas-microsoft-com:office:excel"
+                xmlns="http://www.w3.org/TR/REC-html40">
+            <head>
+                <meta charset="UTF-8">
+                <!--[if gte mso 9]>
+                <xml>
+                    <x:ExcelWorkbook>
+                        <x:ExcelWorksheets>
+                            <x:ExcelWorksheet>
+                                <x:Name>Production Tasks</x:Name>
+                                <x:WorksheetOptions>
+                                    <x:DisplayGridlines/>
+                                </x:WorksheetOptions>
+                            </x:ExcelWorksheet>
+                        </x:ExcelWorksheets>
+                    </x:ExcelWorkbook>
+                </xml>
+                <![endif]-->
+            </head>
+            <body>
+                ${exportTable.outerHTML}
+            </body>
+            </html>`;
+
+            const blob = new Blob(
+                ['\ufeff', html],   // UTF-8 BOM for Excel encoding
+                { type: 'application/vnd.ms-excel;charset=utf-8;' }
+            );
+
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Production_Tasks_${frappe.datetime.now_date()}.xls`;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            URL.revokeObjectURL(url);
+        });
+
+    // PDF Download
+    // $(document).on('click', '#download-task-table-pdf', function () {
+    //     const table = document.getElementById('task-report-table');
+    //     if (!table) {
+    //         frappe.msgprint("No Data found.");
+    //         return;
+    //     }
+
+    //     // Show hidden rows temporarily
+    //     const hiddenRows = $(table).find('tr:hidden');
+    //     hiddenRows.show();
+
+    //     // Extract headers
+    //     const headers = [];
+    //     $(table).find('thead th').each(function () {
+    //         headers.push($(this).text().trim());
+    //     });
+
+    //     // Extract rows
+    //     const data = [];
+    //     $(table).find('tbody tr').each(function () {
+    //         const rowData = [];
+    //         $(this).find('td').each(function () {
+    //             let cellText = $(this).text().trim();
+
+    //             // If there's an anchor tag, get its text
+    //             const anchor = $(this).find('a');
+    //             if (anchor.length) {
+    //                 cellText = anchor.text().trim();
+    //             }
+
+    //             rowData.push(cellText);
+    //         });
+    //         data.push(rowData);
+    //     });
+
+    //     // Create PDF
+    //     const { jsPDF } = window.jspdf;
+    //     const doc = new jsPDF('l', 'pt', 'a4'); // landscape
+
+    //     doc.text("Production Task Report", 40, 30);
+    //     doc.autoTable({
+    //         head: [headers],
+    //         body: data,
+    //         startY: 50,
+    //         styles: {
+    //             fontSize: 8,
+    //             cellPadding: 3,
+    //         },
+    //         headStyles: {
+    //             fillColor: [15, 21, 104], // #0F1568
+    //             textColor: 255,
+    //             halign: 'center'
+    //         },
+    //         bodyStyles: {
+    //             halign: 'center'
+    //         }
+    //     });
+
+    //     doc.save(`Production_Tasks_${frappe.datetime.now_date()}.pdf`);
+
+    //     // Re-hide previously hidden rows
+    //     hiddenRows.hide();
+    // });
+    // $(document).on('click', '#download-task-table-pdf', function () {
+    //     const table = document.getElementById('task-report-table');
+    //     if (!table) {
+    //         frappe.msgprint("No Data found.");
+    //         return;
+    //     }
+
+    //     // Show hidden rows temporarily
+    //     const hiddenRows = $(table).find('tr:hidden');
+    //     hiddenRows.show();
+
+    //     const { jsPDF } = window.jspdf;
+    //     const doc = new jsPDF('l', 'pt', 'a4'); // Landscape mode
+
+    //     const rows = [];
+    //     let headers = [];
+
+    //     // Extract table header
+    //     $(table).find('thead tr').each(function () {
+    //         const headerRow = [];
+    //         $(this).find('th').each(function () {
+    //             headerRow.push($(this).text().trim());
+    //         });
+    //         if (headerRow.length) headers = headerRow;
+    //     });
+
+    //     // Extract body rows
+    //     $(table).find('tbody tr').each(function () {
+    //         const $tr = $(this);
+    //         const $tds = $tr.find('td');
+
+    //         // Handle group row
+    //         const isGroupRow = $tds.length === 1 && $tds.attr('colspan');
+    //         if (isGroupRow) {
+    //             const colspan = parseInt($tds.attr('colspan')) || headers.length;
+    //             const text = $tds.text().trim();
+
+    //             rows.push({
+    //                 content: [
+    //                     {
+    //                         content: text,
+    //                         colSpan: colspan,
+    //                         styles: {
+    //                             fillColor: [245, 245, 245],
+    //                             fontStyle: 'bold',
+    //                             halign: 'left'
+    //                         }
+    //                     }
+    //                 ]
+    //             });
+    //         } else {
+    //             // Regular row
+    //             const rowData = [];
+    //             $tds.each(function () {
+    //                 let text = $(this).text().trim();
+    //                 const anchor = $(this).find('a');
+    //                 if (anchor.length) text = anchor.text().trim();
+    //                 rowData.push({ content: text });
+    //             });
+    //             rows.push({ content: rowData });
+    //         }
+    //     });
+
+    //     // Add title
+    //     doc.setFontSize(12);
+    //     doc.text("Production Task Report", 40, 30);
+
+    //     // Generate table
+    //     doc.autoTable({
+    //         head: [headers],
+    //         body: rows.map(row => row.content),
+    //         startY: 50,
+    //         styles: {
+    //             fontSize: 8,
+    //             cellPadding: 4,
+    //             valign: 'middle'
+    //         },
+    //         headStyles: {
+    //             fillColor: [15, 21, 104],
+    //             textColor: 255,
+    //             halign: 'center'
+    //         },
+    //         bodyStyles: {
+    //             halign: 'center'
+    //         },
+    //         didParseCell: function (data) {
+    //             const row = rows[data.row.index];
+    //             if (row && row.content && row.content[0] && row.content[0].styles) {
+    //                 Object.assign(data.cell.styles, row.content[0].styles);
+    //             }
+    //         }
+    //     });
+
+    //     // Save PDF
+    //     doc.save(`Production_Tasks_${frappe.datetime.now_date()}.pdf`);
+
+    //     // Re-hide rows
+    //     hiddenRows.hide();
+    // });
+    $(document).on('click', '#download-task-table-pdf', function () {
+        const doctype = "Task";
+        const docname = "TS12590";
+        const print_format = "Task Monitor";
+        const no_letterhead = 0;
+
+        const url = frappe.urllib.get_full_url(
+            `/api/method/frappe.utils.print_format.download_pdf?doctype=${encodeURIComponent(doctype)}`
+            + `&name=${encodeURIComponent(docname)}`
+            + `&format=${encodeURIComponent(print_format)}`
+            + `&no_letterhead=${no_letterhead}`
+            + `&trigger_print=1`
+        );
+
+        window.open(url);
     });
-    return control;
-}
 
-// Add Sprint Filter
-let sprint_filter = add_filter({
-    fieldtype: 'Link',
-    options: 'Task Sprint',
-    fieldname: 'sprint',
-    placeholder: 'Sprint',
-    in_standard_filter: true
-});
 
-// Set default Sprint value
-frappe.call({
-    method: "teampro.teampro.page.new_it_dashboard.new_it.update_sprint_filter",
-    callback: function (r) {
-        if (r && r.message) {
-            sprint_filter.set_value(r.message);
+    $(document)
+    .off("click", "#download-task-table-all")
+    .on("click", "#download-task-table-all", function () {
+
+        const table = document.getElementById('task-report-table');
+        if (!table) {
+            frappe.msgprint("No Data found.");
+            return;
         }
-    }
-});
 
-// Style
-$(`<style>
+        let btn = $(this);
+
+        let rows3 = $("#today-task-table-container")
+            .find(".toggle-cb, .task-row");
+
+        if (rows3.is(":visible")) {
+            rows3.hide();
+            btn.text("+ ALL");
+        } else {
+            rows3.show();
+            btn.text("- ALL");
+        }
+
+    });
+
+
+    function add_filter(df) {
+        const control = frappe.ui.form.make_control({
+            df: Object.assign({
+                reqd: 0,
+                onchange: function () {
+                    // load_retro_summary_html(control.get_value());
+                    load_retro_summary(control.get_value());
+                }
+            }, df),
+            parent: $('#sprint-filter-wrapper'),
+            render_input: true
+        });
+        return control;
+    }
+
+    // Add Sprint Filter
+    let sprint_filter = add_filter({
+        fieldtype: 'Link',
+        options: 'Task Sprint',
+        fieldname: 'sprint',
+        placeholder: 'Sprint',
+        in_standard_filter: true
+    });
+
+    // Set default Sprint value
+    frappe.call({
+        method: "teampro.teampro.page.new_it_dashboard.new_it.update_sprint_filter",
+        callback: function (r) {
+            if (r && r.message) {
+                sprint_filter.set_value(r.message);
+            }
+        }
+    });
+
+    // Style
+    $(`<style>
     #filter-container {
         background: #f8f9fa;
         border: 1px solid #dee2e6;
@@ -769,92 +1282,112 @@ $(`<style>
 
 
 </style>`).appendTo("head");
+let current_view = "hrs";
 
-// Create Dev Team button
-function createDevTeamButton(name) {
-    const $button = $(`<button class="btn btn-outline-primary m-1 dev-team-button" data-team="${name}">${name}</button>`);
-    $button.on('click', function () {
-        // Remove active class from all buttons first
-        $('.dev-team-button').removeClass('active');
+    // Create Dev Team button
+    function createDevTeamButton(name) {
+        const $button = $(`<button class="btn btn-outline-primary m-1 dev-team-button" data-team="${name}">${name}</button>`);
+        $button.on('click', function () {
+            // Remove active class from all buttons first
+            $('.dev-team-button').removeClass('active');
 
-        // Add active class to clicked button
-        $(this).addClass('active');
+            // Add active class to clicked button
+            $(this).addClass('active');
 
-        let dev_team= name
-        let selected_sprint = sprint_filter.get_value();
-        if (dev_team ==='ALL'){
-            dev_team =''
-        }
-        if (dev_team === 'Summary'){
-            load_retro_summary(selected_sprint)
-            //   frappe.call({
-            //     method: "teampro.teampro.page.it_sw_dashboard_1.it_sw_dashbord_1.get_retro_summary_overall",
-            //     args:{
-            //         name:selected_sprint
-            //     },
-            //     callback: function(r) {
-            //         if (r.message) {
-            //             $('#retro-summary-html').html(r.message);
-            //         } else {
-            //             $('#retro-summary-html').html("No Data Found");
-            //         }
-            //     }
-            // });
-        }
-        else
-            frappe.call({
-                method: "teampro.teampro.page.new_it_dashboard.new_it.get_retro_summary_html",
-                args:{
-                    name:selected_sprint,
-                    dev_team:dev_team,
-                },
-                callback: function (r) {
-                    const data = r.message || [];
-                    $('#retro-summary-html').html('');
+            let dev_team = name
+            let selected_sprint = sprint_filter.get_value();
+            if (dev_team === 'ALL') {
+                dev_team = ''
+            }
+            if (dev_team === 'Summary') {
+                load_retro_summary(selected_sprint)
+                //   frappe.call({
+                //     method: "teampro.teampro.page.it_sw_dashboard_1.it_sw_dashbord_1.get_retro_summary_overall",
+                //     args:{
+                //         name:selected_sprint
+                //     },
+                //     callback: function(r) {
+                //         if (r.message) {
+                //             $('#retro-summary-html').html(r.message);
+                //         } else {
+                //             $('#retro-summary-html').html("No Data Found");
+                //         }
+                //     }
+                // });
+            }
+            else
+                frappe.call({
+                    method: "teampro.teampro.page.new_it_dashboard.new_it.get_retro_summary_html",
+                    args: {
+                        name: selected_sprint,
+                        dev_team: dev_team,
+                    },
+                    callback: function (r) {
+                        const data = r.message || [];
+                        $('#retro-summary-html').html('');
 
-                    if (data.length === 0) {
-                    $('#retro-summary-html').html(`
+                        if (data.length === 0) {
+                            $('#retro-summary-html').html(`
                         <div class="team-section" style="padding: 0 30px;">
                             <h4>${dev_team}</h4>
                             <strong>No Data Found in this Sprint</strong>
                         </div>
                     `);
-                    return;
-                }
-                    data.forEach(section => {
-                        $('#retro-summary-html').append(`
+                            return;
+                        }
+                        data.forEach(section => {
+                            $('#retro-summary-html').append(`
                             <div class="team-section" style="padding: 0 30px;">
                                 <h4>${section.team}</h4>
                                 ${section.html}
                                 <br>
                             </div>
                         `);
-                    });
-                }
-            });
+                        });
+                        // Apply current view after rendering
+                        if (current_view === "hrs") {
+                            $('.hrs-col').show();
+                            $('.count-col').hide();
+                        } else {
+                            $('.hrs-col').hide();
+                            $('.count-col').show();
+                        }
+                    }
+                });
+        });
+        $('#filter-row').append($button);
+    }
+    
+
+
+    // Add "ALL" first
+    createDevTeamButton("Summary")
+    createDevTeamButton("ALL");
+
+
+
+    // Load other Dev Teams from DB (excluding "Others")
+    frappe.db.get_list("Dev Team", {
+        filters: { name: ["!=", "Others"] },
+        fields: ["name"],
+        order_by: 'name'
+    }).then(dev_teams => {
+        dev_teams.forEach(team => {
+            createDevTeamButton(team.name);
+        });
+        console.log('filter length')
+        console.log($('.hrs-col').length);
+        console.log($('.count-col').length);
+
+        $('#filter-row').append(`
+            <span style="margin-left:70px;">
+                <button class="btn btn-primary m-1 view-btn active" data-view="hrs">HRS</button>
+                <button class="btn btn-outline-primary m-1 view-btn" data-view="count">COUNT</button>
+            </span>
+        `);
     });
-    $('#filter-row').append($button);
-}
 
-// Add "ALL" first
-createDevTeamButton("Summary")
-createDevTeamButton("ALL");
-
-
-
-// Load other Dev Teams from DB (excluding "Others")
-frappe.db.get_list("Dev Team", {
-    filters: { name: ["!=", "Others"] },
-    fields: ["name"],
-    order_by: 'name'
-}).then(dev_teams => {
-    dev_teams.forEach(team => {
-        createDevTeamButton(team.name);
-    });
-});
-
-
-const sprintStyle = document.createElement("style");
+    const sprintStyle = document.createElement("style");
     sprintStyle.innerHTML = `
         .frappe-control[data-fieldname="sprint"] .control-input-wrapper {
             background-color:rgb(81, 182, 188) !important;
@@ -874,139 +1407,110 @@ const sprintStyle = document.createElement("style");
         }
     `;
     document.head.appendChild(sprintStyle);
-	
-
-
-
-//  setInterval(() => {
-//     frappe.show_alert({ message: 'Refreshing IT-SW Dashboard...', indicator: 'blue' });
-//     loadDashboardData();
-//     get_today_task_data();
-// 	// load_retro_summary_html(sprint=null);
-//     load_retro_summary(sprint=null);
-//   }, 300000);
-
- 
-
-    
-
-
-
-	// Clock
-	function updateDateTime() {
-		const now = new Date();
-		const dateStr = now.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
-		const timeStr = now.toLocaleTimeString();
-		document.getElementById('current-datetime').innerHTML = `${dateStr} | ${timeStr}`;
-	}
-	updateDateTime();
-	setInterval(updateDateTime, 1000);
 
 
 
 
-    
+    //  setInterval(() => {
+    //     frappe.show_alert({ message: 'Refreshing IT-SW Dashboard...', indicator: 'blue' });
+    //     loadDashboardData();
+    //     get_today_task_data();
+    // 	// load_retro_summary_html(sprint=null);
+    //     load_retro_summary(sprint=null);
+    //   }, 300000);
 
-	// Reusable function to render cards
-	function renderCard(selector, label, value) {
-		const formatted = parseFloat(value).toLocaleString('en-IN', {
-			style: 'currency',
-			currency: 'INR',
-			maximumFractionDigits: 0
-		});
-		$(wrapper).find(selector).html(`
+    $(document).on("click", ".view-btn", function () {
+
+            $('.view-btn')
+                .removeClass('btn-primary active')
+                .addClass('btn-outline-primary');
+
+            $(this)
+                .removeClass('btn-outline-primary')
+                .addClass('btn-primary active');
+
+            current_view = $(this).data("view");
+
+            if (current_view === "hrs") {
+                $('.hrs-col').show();
+                $('.count-col').hide();
+            } else {
+                $('.hrs-col').hide();
+                $('.count-col').show();
+            }
+        });
+
+
+
+
+
+
+    // Clock
+    function updateDateTime() {
+        const now = new Date();
+        const dateStr = now.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+        const timeStr = now.toLocaleTimeString();
+        document.getElementById('current-datetime').innerHTML = `${dateStr} | ${timeStr}`;
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
+
+
+
+
+
+    // Reusable function to render cards
+    function renderCard(selector, label, value) {
+        const formatted = parseFloat(value).toLocaleString('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+        });
+        $(wrapper).find(selector).html(`
 			<div class="card-inner">
 				<h3>${label}</h3>
 				<div class="amount">${formatted}</div>
 			</div>
 		`);
-	}
-	function renderSimpleCard(selector, label, value, color = 'green') {
-	$(wrapper).find(selector).html(`
+    }
+    function renderSimpleCard(selector, label, value, color = 'green') {
+        $(wrapper).find(selector).html(`
 		<div class="card-inner">
 			<h3>${label}</h3>
 			<div class="amount" style="color: ${color}">${value}</div>
 		</div>
 	`);
-}
+    }
 
-// 	function loadOrderBooking(from_date = null, to_date = null) {
-// 	frappe.call({
-// 		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it",
-// 		args: { from_date, to_date },
-// 		callback: function(r) {
-// 			const value = r.message || 0;
-// 			const formatted = parseFloat(value).toLocaleString('en-IN', {
-// 				style: 'currency',
-// 				currency: 'INR',
-// 				maximumFractionDigits: 0
-// 			});
-// 			$(wrapper).find('.order-booking-card').html(`
-// 				<div class="card-inner">
-// 					<h3>Order Booking</h3>
-// 					<div class="amount">${formatted}</div>
-// 				</div>
-// 			`);
-// 		}
-// 	});
-// }
+    // 	function loadOrderBooking(from_date = null, to_date = null) {
+    // 	frappe.call({
+    // 		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it",
+    // 		args: { from_date, to_date },
+    // 		callback: function(r) {
+    // 			const value = r.message || 0;
+    // 			const formatted = parseFloat(value).toLocaleString('en-IN', {
+    // 				style: 'currency',
+    // 				currency: 'INR',
+    // 				maximumFractionDigits: 0
+    // 			});
+    // 			$(wrapper).find('.order-booking-card').html(`
+    // 				<div class="card-inner">
+    // 					<h3>Order Booking</h3>
+    // 					<div class="amount">${formatted}</div>
+    // 				</div>
+    // 			`);
+    // 		}
+    // 	});
+    // }
 
-function loadOrderBooking(from_date = null, to_date = null) {
-	frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it",
-		args: { from_date, to_date },
-		callback: function(r) {
-			const value = r.message || 0;
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1; // 1-12
-            const currentYear = now.getFullYear();
-
-            // Calculate current financial month number
-            // April (4) is month 1, March (3) is month 12
-            let financialMonth;
-            if (currentMonth >= 4) {
-                financialMonth = currentMonth - 3;
-            } else {
-                financialMonth = currentMonth + 9;
-            }
-            const avg = value / financialMonth;
-		    const avg_value=Math.round(avg || 0);
-			const formattedtotal = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
-            const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                let arrowSvg = `
-<svg width="60" height="20" viewBox="0 0 60 40">
-    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-          stroke="black" stroke-width="2" fill="none" 
-          stroke-linecap="round" stroke-linejoin="round" 
-          style="stroke-dasharray: 4,1;" />
-    <polygon points="57,10 52,0 58,0" fill="black"/>
-</svg>`;
-			$(wrapper).find('.order-booking-card').html(`
-				<div class="card-inner">
-					<h3>Order Booking</h3>
-					<div class="amount">${formattedtotal}</div>
-<div style="text-align:center; margin-top:5px;">
-    <span style="color:red; font-weight:bold; display:block;">[${formattedAvg}]</span>
-    <span style="display:inline-block; vertical-align:middle;">${arrowSvg}</span>
-</div>
-
-				</div>
-			`);
-		}
-	});
-}
-
-		frappe.call({
-			method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it",
-			callback: function(r) {
-				const value = r.message || 0;
-				const now = new Date();
+    function loadOrderBooking(from_date = null, to_date = null) {
+        frappe.call({
+            method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it",
+            args: { from_date, to_date },
+            callback: function (r) {
+                const value = r.message || 0;
+                const now = new Date();
                 const currentMonth = now.getMonth() + 1; // 1-12
                 const currentYear = now.getFullYear();
 
@@ -1019,18 +1523,67 @@ function loadOrderBooking(from_date = null, to_date = null) {
                     financialMonth = currentMonth + 9;
                 }
                 const avg = value / financialMonth;
-                const avg_value=Math.round(avg || 0);
+                const avg_value = Math.round(avg || 0);
+                const formattedtotal = parseFloat(value).toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                });
+                const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+                    maximumFractionDigits: 0
+                });
+                let arrowSvg = `
+<svg width="60" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+                $(wrapper).find('.order-booking-card').html(`
+				<div class="card-inner">
+					<h3>Order Booking</h3>
+					<div class="amount">${formattedtotal}</div>
+<div style="text-align:center; margin-top:5px;">
+    <span style="color:red; font-weight:bold; display:block;">[${formattedAvg}]</span>
+    <span style="display:inline-block; vertical-align:middle;">${arrowSvg}</span>
+</div>
 
-				const formattedtotal = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			    });
+				</div>
+			`);
+            }
+        });
+    }
 
-				const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                  let arrowSvg = `
+    frappe.call({
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it",
+        callback: function (r) {
+            const value = r.message || 0;
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1; // 1-12
+            const currentYear = now.getFullYear();
+
+            // Calculate current financial month number
+            // April (4) is month 1, March (3) is month 12
+            let financialMonth;
+            if (currentMonth >= 4) {
+                financialMonth = currentMonth - 3;
+            } else {
+                financialMonth = currentMonth + 9;
+            }
+            const avg = value / financialMonth;
+            const avg_value = Math.round(avg || 0);
+
+            const formattedtotal = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
+
+            const formattedAvg = parseFloat(avg_value).toLocaleString('en-IN', {
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
           stroke="black" stroke-width="2" fill="none" 
@@ -1039,7 +1592,7 @@ function loadOrderBooking(from_date = null, to_date = null) {
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
 
-				$(wrapper).find('.order-booking-card').html(`
+            $(wrapper).find('.order-booking-card').html(`
 				<div class="card-inner">
 					<h3>Order Booking</h3>
 					<div class="amount">${formattedtotal}</div>
@@ -1050,140 +1603,39 @@ function loadOrderBooking(from_date = null, to_date = null) {
             </div>
 			`);
 
-			}
-		});
+        }
+    });
 
-function loadturnover(from_date = null, to_date = null) {
-	frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_turnover_it",
-		args: { from_date, to_date },
-		callback: function(r) {
-			const value = r.message || 0;
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1; // 1-12
-            const currentYear = now.getFullYear();
+    function loadturnover(from_date = null, to_date = null) {
+        frappe.call({
+            method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_turnover_it",
+            args: { from_date, to_date },
+            callback: function (r) {
+                const value = r.message || 0;
+                const now = new Date();
+                const currentMonth = now.getMonth() + 1; // 1-12
+                const currentYear = now.getFullYear();
 
-            // Calculate current financial month number
-            // April (4) is month 1, March (3) is month 12
-            let financialMonth;
-            if (currentMonth >= 4) {
-                financialMonth = currentMonth - 3;
-            } else {
-                financialMonth = currentMonth + 9;
-            }
+                // Calculate current financial month number
+                // April (4) is month 1, March (3) is month 12
+                let financialMonth;
+                if (currentMonth >= 4) {
+                    financialMonth = currentMonth - 3;
+                } else {
+                    financialMonth = currentMonth + 9;
+                }
 
-            // Calculate average
-            const avg = value / financialMonth;
-		    const avg_value1=Math.round(avg || 0);
-			const formattedtotal1 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
-            const formattedAvg1 = parseFloat(avg_value1).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                 let arrowSvg = `
-<svg width="60" height="20" viewBox="0 0 60 40">
-    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-          stroke="black" stroke-width="2" fill="none" 
-          stroke-linecap="round" stroke-linejoin="round" 
-          style="stroke-dasharray: 4,1;" />
-    <polygon points="57,10 52,0 58,0" fill="black"/>
-</svg>`;
-			$(wrapper).find('.turnover-card').html(`
-				<div class="card-inner">
-					<h3>Turnover</h3>
-					<div class="amount">${formattedtotal1}</div>
-                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg1}]
-                </div>
-				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
-            </div>
-                    
-
-			`);
-		}
-	});
-}
-
-frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_turnover_it",
-		callback: function(r) {
-			const value = r.message || 0;
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1; // 1-12
-            const currentYear = now.getFullYear();
-
-            // Calculate current financial month number
-            // April (4) is month 1, March (3) is month 12
-            let financialMonth;
-            if (currentMonth >= 4) {
-                financialMonth = currentMonth - 3;
-            } else {
-                financialMonth = currentMonth + 9;
-            }
-
-            // Calculate average
-            const avg = value / financialMonth;
-		    const avg_value1=Math.round(avg || 0);
-			const formattedtotal1 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
-            const formattedAvg1 = parseFloat(avg_value1).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                  let arrowSvg = `
-<svg width="60" height="20" viewBox="0 0 60 40">
-    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
-          stroke="black" stroke-width="2" fill="none" 
-          stroke-linecap="round" stroke-linejoin="round" 
-          style="stroke-dasharray: 4,1;" />
-    <polygon points="57,10 52,0 58,0" fill="black"/>
-</svg>`;
-			$(wrapper).find('.turnover-card').html(`
-				<div class="card-inner">
-					<h3>Turnover</h3>
-					<div class="amount">${formattedtotal1}</div>
-                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg1}]
-                </div>
-				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
-            </div>
-                    
-			`);
-		}
-	});
-	function loadtcollection(from_date = null, to_date = null) {
-	frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_collection_value_it",
-		args: { from_date, to_date },
-		callback: function(r) {
-			const value = r.message || 0;
-            const now = new Date();
-            const currentMonth = now.getMonth() + 1; // 1-12
-            const currentYear = now.getFullYear();
-
-            // Calculate current financial month number
-            // April (4) is month 1, March (3) is month 12
-            let financialMonth;
-            if (currentMonth >= 4) {
-                financialMonth = currentMonth - 3;
-            } else {
-                financialMonth = currentMonth + 9;
-            }
-
-            // Calculate average
-            const avg = value / financialMonth;
-		    const avg_value2=Math.round(avg || 0);
-			const formattedtotal2 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
-            const formattedAvg2 = parseFloat(avg_value2).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
+                // Calculate average
+                const avg = value / financialMonth;
+                const avg_value1 = Math.round(avg || 0);
+                const formattedtotal1 = parseFloat(value).toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                });
+                const formattedAvg1 = parseFloat(avg_value1).toLocaleString('en-IN', {
+                    maximumFractionDigits: 0
+                });
                 let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
@@ -1192,7 +1644,108 @@ frappe.call({
           style="stroke-dasharray: 4,1;" />
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
-			$(wrapper).find('.collection-card').html(`
+                $(wrapper).find('.turnover-card').html(`
+				<div class="card-inner">
+					<h3>Turnover</h3>
+					<div class="amount">${formattedtotal1}</div>
+                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg1}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
+            </div>
+                    
+
+			`);
+            }
+        });
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_turnover_it",
+        callback: function (r) {
+            const value = r.message || 0;
+            const now = new Date();
+            const currentMonth = now.getMonth() + 1; // 1-12
+            const currentYear = now.getFullYear();
+
+            // Calculate current financial month number
+            // April (4) is month 1, March (3) is month 12
+            let financialMonth;
+            if (currentMonth >= 4) {
+                financialMonth = currentMonth - 3;
+            } else {
+                financialMonth = currentMonth + 9;
+            }
+
+            // Calculate average
+            const avg = value / financialMonth;
+            const avg_value1 = Math.round(avg || 0);
+            const formattedtotal1 = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
+            const formattedAvg1 = parseFloat(avg_value1).toLocaleString('en-IN', {
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
+<svg width="60" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+            $(wrapper).find('.turnover-card').html(`
+				<div class="card-inner">
+					<h3>Turnover</h3>
+					<div class="amount">${formattedtotal1}</div>
+                    <div style="font-size: 12px; text-align: center;color:red; margin-top: 5px;font-weight:bold">[${formattedAvg1}]
+                </div>
+				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
+            </div>
+                    
+			`);
+        }
+    });
+    function loadtcollection(from_date = null, to_date = null) {
+        frappe.call({
+            method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_collection_value_it",
+            args: { from_date, to_date },
+            callback: function (r) {
+                const value = r.message || 0;
+                const now = new Date();
+                const currentMonth = now.getMonth() + 1; // 1-12
+                const currentYear = now.getFullYear();
+
+                // Calculate current financial month number
+                // April (4) is month 1, March (3) is month 12
+                let financialMonth;
+                if (currentMonth >= 4) {
+                    financialMonth = currentMonth - 3;
+                } else {
+                    financialMonth = currentMonth + 9;
+                }
+
+                // Calculate average
+                const avg = value / financialMonth;
+                const avg_value2 = Math.round(avg || 0);
+                const formattedtotal2 = parseFloat(value).toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                });
+                const formattedAvg2 = parseFloat(avg_value2).toLocaleString('en-IN', {
+                    maximumFractionDigits: 0
+                });
+                let arrowSvg = `
+<svg width="60" height="20" viewBox="0 0 60 40">
+    <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
+          stroke="black" stroke-width="2" fill="none" 
+          stroke-linecap="round" stroke-linejoin="round" 
+          style="stroke-dasharray: 4,1;" />
+    <polygon points="57,10 52,0 58,0" fill="black"/>
+</svg>`;
+                $(wrapper).find('.collection-card').html(`
 				<div class="card-inner">
 					<h3>Collection</h3>
 					<div class="amount">${formattedtotal2}</div>
@@ -1202,14 +1755,14 @@ frappe.call({
             </div>
 
 			`);
-		}
-	});
-}
+            }
+        });
+    }
 
-frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_collection_value_it",
-		callback: function(r) {
-			const value = r.message || 0;
+    frappe.call({
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_collection_value_it",
+        callback: function (r) {
+            const value = r.message || 0;
             const now = new Date();
             const currentMonth = now.getMonth() + 1; // 1-12
             const currentYear = now.getFullYear();
@@ -1225,16 +1778,16 @@ frappe.call({
 
             // Calculate average
             const avg = value / financialMonth;
-		    const avg_value2=Math.round(avg || 0);
-			const formattedtotal2 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
+            const avg_value2 = Math.round(avg || 0);
+            const formattedtotal2 = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
             const formattedAvg2 = parseFloat(avg_value2).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                let arrowSvg = `
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
           stroke="black" stroke-width="2" fill="none" 
@@ -1242,7 +1795,7 @@ frappe.call({
           style="stroke-dasharray: 4,1;" />
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
-			$(wrapper).find('.collection-card').html(`
+            $(wrapper).find('.collection-card').html(`
 				<div class="card-inner">
 					<h3>Collection</h3>
 					<div class="amount">${formattedtotal2}</div>
@@ -1252,13 +1805,13 @@ frappe.call({
             </div>
                   
 			`);
-		}
-	});
+        }
+    });
 
-frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_receivable",
-		callback: function(r) {
-			const value = r.message || 0;
+    frappe.call({
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_receivable",
+        callback: function (r) {
+            const value = r.message || 0;
             const now = new Date();
             const currentMonth = now.getMonth() + 1; // 1-12
             const currentYear = now.getFullYear();
@@ -1274,16 +1827,16 @@ frappe.call({
 
             // Calculate average
             const avg = value / financialMonth;
-		    const avg_value3=Math.round(avg || 0);
-			const formattedtotal3 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
+            const avg_value3 = Math.round(avg || 0);
+            const formattedtotal3 = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
             const formattedAvg3 = parseFloat(avg_value3).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                  let arrowSvg = `
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
           stroke="black" stroke-width="2" fill="none" 
@@ -1291,7 +1844,7 @@ frappe.call({
           style="stroke-dasharray: 4,1;" />
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
-			$(wrapper).find('.receivable-card').html(`
+            $(wrapper).find('.receivable-card').html(`
 				<div class="card-inner">
 					<h3>Receivable</h3>
 					<div class="amount">${formattedtotal3}</div>
@@ -1301,13 +1854,13 @@ frappe.call({
             </div>
 
 			`);
-		}
-	});
+        }
+    });
 
     frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_bill_value",
-		callback: function(r) {
-			const value = r.message || 0;
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_bill_value",
+        callback: function (r) {
+            const value = r.message || 0;
             const now = new Date();
             const currentMonth = now.getMonth() + 1; // 1-12
             const currentYear = now.getFullYear();
@@ -1323,16 +1876,16 @@ frappe.call({
 
             // Calculate average
             const avg = value / financialMonth;
-		    const avg_value4=Math.round(avg || 0);
-			const formattedtotal4 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
+            const avg_value4 = Math.round(avg || 0);
+            const formattedtotal4 = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
             const formattedAvg4 = parseFloat(avg_value4).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                   let arrowSvg = `
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
           stroke="black" stroke-width="2" fill="none" 
@@ -1340,7 +1893,7 @@ frappe.call({
           style="stroke-dasharray: 4,1;" />
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
-			$(wrapper).find('.tobill-card').html(`
+            $(wrapper).find('.tobill-card').html(`
 				<div class="card-inner">
 					<h3>To Bill</h3>
 					<div class="amount">${formattedtotal4}</div>
@@ -1349,13 +1902,13 @@ frappe.call({
 				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
             </div>
 			`);
-		}
-	});
+        }
+    });
 
     frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_deliver_bill_value",
-		callback: function(r) {
-			const value = r.message || 0;
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_deliver_bill_value",
+        callback: function (r) {
+            const value = r.message || 0;
             const now = new Date();
             const currentMonth = now.getMonth() + 1; // 1-12
             const currentYear = now.getFullYear();
@@ -1371,16 +1924,16 @@ frappe.call({
 
             // Calculate average
             const avg = value / financialMonth;
-		    const avg_value5=Math.round(avg || 0);
-			const formattedtotal5 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
+            const avg_value5 = Math.round(avg || 0);
+            const formattedtotal5 = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
             const formattedAvg5 = parseFloat(avg_value5).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                  let arrowSvg = `
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
           stroke="black" stroke-width="2" fill="none" 
@@ -1388,7 +1941,7 @@ frappe.call({
           style="stroke-dasharray: 4,1;" />
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
-			$(wrapper).find('.todeliverbill-card').html(`
+            $(wrapper).find('.todeliverbill-card').html(`
 				<div class="card-inner">
 					<h3>To Deliver and Bill</h3>
 					<div class="amount">${formattedtotal5}</div>
@@ -1397,13 +1950,13 @@ frappe.call({
 				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
             </div>
 			`);
-		}
-	});
+        }
+    });
 
     frappe.call({
-		method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_payable",
-		callback: function(r) {
-			const value = r.message || 0;
+        method: "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_payable",
+        callback: function (r) {
+            const value = r.message || 0;
             const now = new Date();
             const currentMonth = now.getMonth() + 1; // 1-12
             const currentYear = now.getFullYear();
@@ -1419,16 +1972,16 @@ frappe.call({
 
             // Calculate average
             const avg = value / financialMonth;
-		    const avg_value6=Math.round(avg || 0);
-			const formattedtotal6 = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
+            const avg_value6 = Math.round(avg || 0);
+            const formattedtotal6 = parseFloat(value).toLocaleString('en-IN', {
+                style: 'currency',
+                currency: 'INR',
+                maximumFractionDigits: 0
+            });
             const formattedAvg6 = parseFloat(avg_value6).toLocaleString('en-IN', {
-					maximumFractionDigits: 0
-				});
-                 let arrowSvg = `
+                maximumFractionDigits: 0
+            });
+            let arrowSvg = `
 <svg width="60" height="20" viewBox="0 0 60 40">
     <path d="M5 30 L20 20 L35 25 L50 10 L55 5" 
           stroke="black" stroke-width="2" fill="none" 
@@ -1436,7 +1989,7 @@ frappe.call({
           style="stroke-dasharray: 4,1;" />
     <polygon points="57,10 52,0 58,0" fill="black"/>
 </svg>`;
-			$(wrapper).find('.payable-card').html(`
+            $(wrapper).find('.payable-card').html(`
 				<div class="card-inner">
 					<h3>Payable</h3>
 					<div class="amount">${formattedtotal6}</div>
@@ -1445,66 +1998,66 @@ frappe.call({
 				<div style="font-size: 10px;color:black;text-align: center;font-weight:bold">[Avg]</div>
             </div>
 			`);
-		}
-	});
+        }
+    });
 
-	function loadDashboardData(from_date = null, to_date = null) {
-		const container = $('.dashboard-wrapper');
-	renderCardFromMethod('.order-booking-card', 'Order Booking', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it", from_date, to_date);
-	renderCardFromMethod('.turnover-card', 'Turnover', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_turnover_it", from_date, to_date);
-	renderCardFromMethod('.collection-card', 'Collection', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_collection_value_it", from_date, to_date);
-	renderCardFromMethod('.receivable-card', 'Receivable', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_receivable");
-	renderCardFromMethod('.tobill-card', 'To Bill', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_bill_value");
-	renderCardFromMethod('.todeliverbill-card', 'To Deliver and Bill', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_deliver_bill_value");
-	renderCardFromMethod('.payable-card', 'Payable', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_payable");
+    function loadDashboardData(from_date = null, to_date = null) {
+        const container = $('.dashboard-wrapper');
+        renderCardFromMethod('.order-booking-card', 'Order Booking', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it", from_date, to_date);
+        renderCardFromMethod('.turnover-card', 'Turnover', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_turnover_it", from_date, to_date);
+        renderCardFromMethod('.collection-card', 'Collection', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_collection_value_it", from_date, to_date);
+        renderCardFromMethod('.receivable-card', 'Receivable', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_receivable");
+        renderCardFromMethod('.tobill-card', 'To Bill', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_bill_value");
+        renderCardFromMethod('.todeliverbill-card', 'To Deliver and Bill', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_to_deliver_bill_value");
+        renderCardFromMethod('.payable-card', 'Payable', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.it_payable");
 
-	// Tables
-	frappe.call({
-		method: 'teampro.teampro.page.new_it_dashboard.new_it.it_receivable_table',
-		callback: function(r) {
-			$('#receivable-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
-		}
-	});
-	frappe.call({
-		method: 'teampro.teampro.page.new_it_dashboard.new_it.it_payable_table',
-		callback: function(r) {
-			$('#payable-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
-		}
-	});
-	frappe.call({
-		method: 'teampro.teampro.page.new_it_dashboard.new_it.it_tobill_table',
-		callback: function(r) {
-			$('#tobill-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
-		}
-	});
-	// Ensure only one set of summary cards is shown
-if (!container.find('#project-summary-wrapper').length) {
-	container.append('<div id="project-summary-wrapper"></div>');
-}
-if (!container.find('#task-summary-wrapper').length) {
-	container.append('<div id="task-summary-wrapper"></div>');
-}
-// if (!container.find('#sprint-summary-wrapper').length) {
-// 	container.append('<div id="sprint-summary-wrapper"></div>');
-// }
+        // Tables
+        frappe.call({
+            method: 'teampro.teampro.page.new_it_dashboard.new_it.it_receivable_table',
+            callback: function (r) {
+                $('#receivable-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
+            }
+        });
+        frappe.call({
+            method: 'teampro.teampro.page.new_it_dashboard.new_it.it_payable_table',
+            callback: function (r) {
+                $('#payable-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
+            }
+        });
+        frappe.call({
+            method: 'teampro.teampro.page.new_it_dashboard.new_it.it_tobill_table',
+            callback: function (r) {
+                $('#tobill-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
+            }
+        });
+        // Ensure only one set of summary cards is shown
+        if (!container.find('#project-summary-wrapper').length) {
+            container.append('<div id="project-summary-wrapper"></div>');
+        }
+        if (!container.find('#task-summary-wrapper').length) {
+            container.append('<div id="task-summary-wrapper"></div>');
+        }
+        // if (!container.find('#sprint-summary-wrapper').length) {
+        // 	container.append('<div id="sprint-summary-wrapper"></div>');
+        // }
 
 
 
-	Promise.all([
-		frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_project_counts" }),
-		frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_task_summary" }),
-		frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_sprint_counts" })
-	]).then(([projRes, taskRes, sprintRes]) => {
-	if (projRes.message) {
-		const { projects = [], total = 0 } = projRes.message;
+        Promise.all([
+            frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_project_counts" }),
+            frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_task_summary" }),
+            frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_sprint_counts" })
+        ]).then(([projRes, taskRes, sprintRes]) => {
+            if (projRes.message) {
+                const { projects = [], total = 0 } = projRes.message;
 
-		const projectColors = [
-			"#2F8F46", "#C29100", "#540D6E",
-			"#006D77", "#4169e1", "#8B0000",
-			"#f9844a", "#bc5090", "#003f5c"
-		];
+                const projectColors = [
+                    "#2F8F46", "#C29100", "#540D6E",
+                    "#006D77", "#4169e1", "#8B0000",
+                    "#f9844a", "#bc5090", "#003f5c"
+                ];
 
-let html = `
+                let html = `
     <style>
         .project-cards-container {
             border: 1px solid #ccc;
@@ -1534,22 +2087,29 @@ let html = `
 			justify-content: center;
 		}
 
-        .project-card {
-            min-width: 120px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 14px;
-            border: 4px solid;
-            border-radius: 10px;
-            padding: 10px;
-            background: #fff;
-        }
+       
 
         .project-card span {
             font-size: 18px;
             display: block;
             margin-top: 5px;
         }
+
+        .card-top-line{
+            width:100%;
+            height:6px;
+            display:block;
+            margin:0;
+        }
+        .card-title{
+            font-size:13px;
+            font-weight:700 !important;   /* Bold */
+            color:#24344d;
+            text-align:center;
+            margin-top:8px;
+            margin-bottom:10px;
+        }
+          
     </style>
 
     <div class="project-cards-container">
@@ -1559,58 +2119,82 @@ let html = `
             <br>
         </table>
         <div class="project-cards-row">
-            <div class="project-card" style="border-color:#0096A6;">
-                Total
-                <span>${total}</span>
+            <div class="dashboard-card project-card">
+                <div class="card-top-line" style="background:#0096A6;"></div>
+                    <div class="card-body">
+                        <div class="card-icon">
+                            <i class="fa fa-folder" style="color:#0096A6;"></i>
+                        </div>
+                        <div class="card-title">
+                            Total
+                        </div>
+                        <div class="card-value" style="color:#0096A6;">
+                            ${total}
+                        </div>
+                    </div>
             </div>`;
 
-            projects.forEach((it, i) => {
-				if (it.project_type === "Products") {
-					return;
-				}
-                html += `
-                    <div class="project-card" data-type="${it.project_type}" style="border-color:${projectColors[i % projectColors.length]};">
-                        ${it.project_type}
-                        <span>${it.count}</span>
-                    </div>`;
-            });
+                projects.forEach((it, i) => {
+                    if (it.project_type === "Products") {
+                        return;
+                    }
+                    const color = projectColors[i % projectColors.length];
+                    const icon = projectIcons[it.project_type] || "fa fa-folder";
 
-            html += `
+                    html += `
+                    <div class="dashboard-card project-card" data-type="${it.project_type}">
+                        <div class="card-top-line" style="background:${color};"></div>
+
+                        <div class="card-body">
+                            <div class="card-icon">
+                                <i class="${icon}" style="color:${color};"></i>
+                            </div>
+
+                            <div class="card-title">${it.project_type}</div>
+
+                            <div class="card-value" style="color:${color};">
+                                ${it.count}
+                            </div>
+                        </div>
+                    </div>`;
+                });
+
+                html += `
                     </div>
                 </div>`;
 
-		container.find('#project-summary-wrapper').html(html);
-	}
+                container.find('#project-summary-wrapper').html(html);
+            }
 
-    container.on('click', '.project-card', function () {
+            container.on('click', '.project-card', function () {
 
-    const type = $(this).data('type');
+                const type = $(this).data('type');
+                console.log("Project clicked:", type);
+                if (!type || type === "Total") {
+                    renderPivotTable(pivotData);
+                    return;
+                }
 
-    if (!type || type === "Total") {
-        renderPivotTable(pivotData);
-        return;
-    }
+                const filtered = pivotData.filter(r =>
+                    r.project_type === type
+                );
 
-    const filtered = pivotData.filter(r =>
-        r.project_type === type
-    );
-
-    renderPivotTable(filtered);
-});
+                renderPivotTable(filtered);
+            });
 
 
-		//  2. Task Summary
-		if (taskRes.message) {
-    const tc = taskRes.message;
-    const taskColors = {
-        total: '#0096A6',
-        open: '#2F8F46',
-        working: '#C29100',
-        pr: '#540D6E',
-        cr: '#006D77'
-    };
+            //  2. Task Summary
+            if (taskRes.message) {
+                const tc = taskRes.message;
+                const taskColors = {
+                    total: '#0096A6',
+                    open: '#2F8F46',
+                    working: '#C29100',
+                    pr: '#540D6E',
+                    cr: '#006D77'
+                };
 
-    let html = `
+                let html = `
     <style>
     .task-cards-container {
         border: 1px solid #ccc;
@@ -1642,25 +2226,83 @@ let html = `
         box-sizing: border-box;
     }
 
-    .task-card {
-        min-width: 120px;
-        text-align: center;
-        font-weight: bold;
-        font-size: 14px;
-        border: 4px solid;
-        border-radius: 50px;
-        padding: 10px;
-        background: #fff;
-        flex: 1 1 auto; /* Helps the cards wrap correctly */
-        box-sizing: border-box;
-        cursor: pointer;
-    }
+    
 
     .task-card span {
         font-size: 18px;
         display: block;
         margin-top: 5px;
     }
+    .dashboard-main-layout{
+            display: grid;
+            grid-template-columns: 70% 30%;
+            gap: 10px;
+            width: 100%;
+            align-items: start;
+        }
+        .dashboard-left{
+            width: 70%;
+        }
+        .dashboard-right{
+            width: 30%;
+            overflow-x: auto;
+        }
+        .project-cards-row{
+            display:flex;
+            gap:15px;
+            flex-wrap:nowrap;
+            justify-content:space-between;
+        }
+
+        .project-card{
+            min-width:0;
+            max-width:none;
+        }
+        .task-cards-row{
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px;
+            justify-content:space-between;
+        }
+
+        
+        .dashboard-card{
+            background:#fff;
+            border-radius:12px;
+            overflow:hidden;
+            border:1px solid #e5e7eb;
+            box-shadow:0 2px 8px rgba(0,0,0,.08);
+            padding:0 !important;
+        }
+        .project-card,
+        .task-card{
+            width:130px;
+            min-width:130px;
+            max-width:130px;
+        }
+        .card-body{
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            text-align:center;
+            padding:18px 10px;
+        }   
+        .card-icon{
+            width:35px;
+            height:35px;
+            border-radius:14px;
+            background:#F2F6FC;      /* Common background */
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            margin-bottom:16px;
+        }
+
+        .card-icon i{
+            font-size:18px;
+        }
+   
 </style>
 
 
@@ -1672,165 +2314,182 @@ let html = `
             </table>
         <div class="task-cards-row">`;
 
-    ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
-        let title = key.toUpperCase();
-        if (key === 'total') title = 'Total';
-        if (key === 'working') title = 'Working';
-        if (key === 'pr') title = 'Internal Review';
-        if (key === 'cr') title = 'Client Review';
-        if (key === 'open') title = 'Open';
+                ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
+                    let title = key.toUpperCase();
+                    if (key === 'total') title = 'Total';
+                    if (key === 'working') title = 'Working';
+                    if (key === 'pr') title = 'Internal Review';
+                    if (key === 'cr') title = 'Client Review';
+                    if (key === 'open') title = 'Open';
 
-        html += `
-    <div class="task-card task-card-${key}" style="border-color:${taskColors[key]};">
-        ${title}
+                    const icon = taskIcons[title] || "fa fa-tasks";
 
-        <span>
-            ${(tc[`${key}_total_hours`] || 0).toFixed(2)} hr/<br>
+html += `
+<div class="dashboard-card task-card task-card-${key}">
+    <div class="card-top-line" style="background:${taskColors[key]};"></div>
+
+    <div class="card-body">
+        <div class="card-icon">
+            <i class="${icon}" style="color:${taskColors[key]};"></i>
+        </div>
+
+        <div class="card-title">${title}</div>
+
+        <div class="card-value" style="color:${taskColors[key]};">
             ${tc[key] || 0}
+        </div>
 
-            <br>
+        <div style="font-size:12px;color:#666;">
+            ${(tc[`${key}_total_hours`] || 0).toFixed(2)} hr
+        </div>
+    </div>
+</div>`;
 
-            <span style="color:red;font-size:12px;font-weight:bold;">
-                ${(tc[`${key}_today_hours`] || 0).toFixed(2)} hr /<br>
-                ${tc[`${key}_today_count`] || 0}
-            </span>
-        </span>
-    </div>`;
+                });
 
-        // html += `
-        // <div class="task-card task-card-${key}" style="border-color:${taskColors[key]};">
-        //     ${title}
-        //     <span>${(tc[`${key}_total_hours`] || 0).toFixed(2)} hr/<br>${tc[key] || 0}</span>
-        // </div>`;
-    });
-
-    html += `
+                html += `
         </div>
     </div>`;
 
-    container.find('#task-summary-wrapper').html(html);
+                container.find('#task-summary-wrapper').html(html);
 
-    ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
-        container.off('click', `.task-card-${key}`);
-        container.on('click', `.task-card-${key}`, () => {
-            frappe.call({
-                method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_wise",
-                args: { type: key },
-                callback: (r) => {
-                    const rows = r.message || [];
-                    let tbl = `<div style="max-height:400px;overflow-y:auto;">
+                ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
+                    container.off('click', `.task-card-${key}`);
+                    container.on('click', `.task-card-${key}`, () => {
+                        frappe.call({
+                            method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_wise",
+                            args: { type: key },
+                            callback: (r) => {
+                                const rows = r.message || [];
+                                let tbl = `<div style="max-height:400px;overflow-y:auto;">
                         <table style="width:100%; border-collapse: collapse; border: 1px solid black;">
                             <thead><tr style="background-color: #0F1568; color: white;">
                                 <th style="border: 1px solid black;">Project</th>
                                 <th style="border: 1px solid black;">Tasks</th>
                                 <th style="border: 1px solid black;">Hours</th>
+                                <th style="border: 1px solid black;">SPOC</th>
                             </tr></thead><tbody>`;
-                    rows.forEach(p => {
-                        tbl += `<tr>
+                                rows.forEach(p => {
+                                    tbl += `<tr>
                             <td style="border: 1px solid black;">${p.project || 'No Project'}</td>
                             <td style="border: 1px solid black;">${p.task_count}</td>
                             <td style="border: 1px solid black;">${(p.total_hours || 0).toFixed(2)}</td>
+                            <td style="border: 1px solid black;text-align: left;">${p.spoc || 'No Spoc'}</td>
                         </tr>`;
+                                });
+                                tbl += `</tbody></table></div>`;
+
+                                let title = '';
+                                if (key == 'open') title = 'Open';
+                                else if (key == 'total') title = 'Total';
+                                else if (key == 'working') title = 'Working';
+                                else if (key == 'pr') title = 'Internal Review';
+                                else if (key == 'cr') title = 'Client Review';
+
+                                new frappe.ui.Dialog({
+                                    title: `${title}`,
+                                    fields: [{ fieldname: "html_table", fieldtype: "HTML", options: tbl }]
+                                }).show();
+                            }
+                        });
                     });
-                    tbl += `</tbody></table></div>`;
+                });
+            }
 
-                    let title = '';
-                    if (key == 'open') title = 'Open';
-                    else if (key == 'total') title = 'Total';
-                    else if (key == 'working') title = 'Working';
-                    else if (key == 'pr') title = 'Internal Review';
-                    else if (key == 'cr') title = 'Client Review';
 
-                    new frappe.ui.Dialog({
-                        title: `${title}`,
-                        fields: [{ fieldname: "html_table", fieldtype: "HTML", options: tbl }]
-                    }).show();
-                }
-            });
         });
-    });
-}
 
 
-	});
+    }
 
+    const projectIcons = {
+        "Total": "fa fa-chart-pie",
+        "External": "fa fa-globe",
+        "AMC": "fa fa-cogs",
+        "Enquiry": "fa fa-search",
+        "Internal": "fa fa-building"
+    };
 
-}
+    const taskIcons = {
+        "Total": "fa fa-list",
+        "Open": "fa fa-folder-open",
+        "Working": "fa fa-spinner",
+        "Internal Review": "fa fa-user",
+        "Client Review": "fa fa-users"
+    };
 
-
-
-function renderCardFromMethod(selector, label, method, from_date = null, to_date = null) {
-	frappe.call({
-		method: method,
-		args: from_date && to_date ? { from_date, to_date } : {},
-		callback: function(r) {
-			const value = r.message || 0;
-			const formatted = parseFloat(value).toLocaleString('en-IN', {
-				style: 'currency',
-				currency: 'INR',
-				maximumFractionDigits: 0
-			});
-			$(selector).html(`
+    function renderCardFromMethod(selector, label, method, from_date = null, to_date = null) {
+        frappe.call({
+            method: method,
+            args: from_date && to_date ? { from_date, to_date } : {},
+            callback: function (r) {
+                const value = r.message || 0;
+                const formatted = parseFloat(value).toLocaleString('en-IN', {
+                    style: 'currency',
+                    currency: 'INR',
+                    maximumFractionDigits: 0
+                });
+                $(selector).html(`
 				<div class="card-inner">
 					<h3>${label}</h3>
 					<div class="amount">${formatted}</div>
 				</div>
 			`);
-		}
-	});
-}
-	
-
-function get_today_task_data11(from_date = null, to_date = null) {
-
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.get_today_task_data11",
-        args: {
-            from_date: from_date,
-            to_date: to_date
-        },
-        callback: function (r) {
-
-            let $container = $("#today-task-table-container1");
-
-            if (!(r.message && r.message.data)) {
-                $container.html("<p>No data found.</p>");
-                return;
             }
+        });
+    }
 
-            const data = r.message.data;
-            const team_order = r.message.team_order;
-            const active_data = data.filter(row => row[3]);
 
-            // -------------------------
-            // GROUPING
-            // -------------------------
-            const grouped = {};
+    function get_today_task_data11(from_date = null, to_date = null) {
 
-            active_data.forEach(row => {
-                const team = row[12] || "No Team";
-                const cb = row[3] || "No CB";   // âœ… ADD THIS
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_today_task_data11",
+            args: {
+                from_date: from_date,
+                to_date: to_date
+            },
+            callback: function (r) {
 
-                const team_safe = team.replace(/\s+/g, '_');
-                const cb_safe = cb.replace(/\s+/g, '_');
+                let $container = $("#today-task-table-container1");
 
-                const cb_id = `cb-${team_safe}-${cb_safe}`;
+                if (!(r.message && r.message.data)) {
+                    $container.html("<p>No data found.</p>");
+                    return;
+                }
 
-                if (!grouped[team]) grouped[team] = {};
-                if (!grouped[team][cb]) grouped[team][cb] = [];
+                const data = r.message.data;
+                const team_order = r.message.team_order;
+                const active_data = data.filter(row => row[3]);
 
-                grouped[team][cb].push(row);
-            });
+                // -------------------------
+                // GROUPING
+                // -------------------------
+                const grouped = {};
 
-            // -------------------------
-            // SORT TEAMS
-            // -------------------------
-            const sorted_teams = team_order.filter(team => grouped[team]);
+                active_data.forEach(row => {
+                    const team = row[12] || "No Team";
+                    const cb = row[3] || "No CB";   // âœ… ADD THIS
 
-            // -------------------------
-            // HTML + CSS
-            // -------------------------
-            let html = `
+                    const team_safe = team.replace(/\s+/g, '_');
+                    const cb_safe = cb.replace(/\s+/g, '_');
+
+                    const cb_id = `cb-${team_safe}-${cb_safe}`;
+
+                    if (!grouped[team]) grouped[team] = {};
+                    if (!grouped[team][cb]) grouped[team][cb] = [];
+
+                    grouped[team][cb].push(row);
+                });
+
+                // -------------------------
+                // SORT TEAMS
+                // -------------------------
+                const sorted_teams = team_order.filter(team => grouped[team]);
+
+                // -------------------------
+                // HTML + CSS
+                // -------------------------
+                let html = `
 <style>
 .team-table {
     border-collapse: collapse;
@@ -1992,7 +2651,7 @@ function get_today_task_data11(from_date = null, to_date = null) {
 
 `;
 
-html += `
+                html += `
 <div style="
     background:#dfe7f5;
     padding:10px;
@@ -2002,6 +2661,7 @@ html += `
     align-items:center;
     gap:10px;
     flex-wrap:wrap;
+    display:none;
 ">
 
     <!-- + ALL BUTTON -->
@@ -2019,6 +2679,7 @@ html += `
         padding:6px 10px;
         border-radius:8px;
         flex-wrap:wrap;
+        
     ">
 
         <!-- Priority -->
@@ -2063,67 +2724,67 @@ html += `
 `;
 
 
-            // -------------------------
-            // SPLIT INTO 3
-            // -------------------------
-            for (let i = 0; i < sorted_teams.length; i += 3) {
+                // -------------------------
+                // SPLIT INTO 3
+                // -------------------------
+                for (let i = 0; i < sorted_teams.length; i += 3) {
 
-                const chunk = sorted_teams.slice(i, i + 3);
+                    const chunk = sorted_teams.slice(i, i + 3);
 
-                html += `<div class="team-row-wrapper">`;
+                    html += `<div class="team-row-wrapper">`;
 
-                chunk.forEach((team ) => {
+                    chunk.forEach((team) => {
 
-                    const cb_groups = grouped[team];
+                        const cb_groups = grouped[team];
 
-                    //  SORT CB BASED ON ORDER (index 25)
-                    const sorted_cbs = Object.entries(cb_groups).sort((a, b) => {
-                        const a_order = a[1][0][25] || 0;
-                        const b_order = b[1][0][25] || 0;
-                        return a_order - b_order;
-                    });
+                        //  SORT CB BASED ON ORDER (index 25)
+                        const sorted_cbs = Object.entries(cb_groups).sort((a, b) => {
+                            const a_order = a[1][0][25] || 0;
+                            const b_order = b[1][0][25] || 0;
+                            return a_order - b_order;
+                        });
 
-                    const first_task = sorted_cbs[0][1][0];
-                    const team_logo = first_task[19] || "/assets/frappe/images/ui/avatar.png";
+                        const first_task = sorted_cbs[0][1][0];
+                        const team_logo = first_task[19] || "/assets/frappe/images/ui/avatar.png";
 
-                    const team_id = `team-${team.replace(/\s+/g, '_')}`;
+                        const team_id = `team-${team.replace(/\s+/g, '_')}`;
 
-                    let cb_row = ``;
-                    // let aph_row = `<td class="label-cell">APH</td>`;
-                    // let rt_row = `<td class="label-cell">RT</td>`;
-                    // let ut_row = `<td class="label-cell">UT</td>`;
-                    // let value_row = `<td class="label-cell">APH / RT / UT / UT%</td>`;
-                    let value_row = ``;
+                        let cb_row = ``;
+                        // let aph_row = `<td class="label-cell">APH</td>`;
+                        // let rt_row = `<td class="label-cell">RT</td>`;
+                        // let ut_row = `<td class="label-cell">UT</td>`;
+                        // let value_row = `<td class="label-cell">APH / RT / UT / UT%</td>`;
+                        let value_row = ``;
 
-                    let total_aph = 0;
-                    let total_rt = 0;
-                    let total_ut = 0;
-                    
-                    sorted_cbs.forEach(([cb, rows]) => {
-                        
-                        const team_safe = team.replace(/\s+/g, '_');
-                        const cb_safe = cb.replace(/\s+/g, '_');
-                        const cb_id = `cb-${team_safe}-${cb_safe}`;
+                        let total_aph = 0;
+                        let total_rt = 0;
+                        let total_ut = 0;
 
-                        const task = rows[0];
+                        sorted_cbs.forEach(([cb, rows]) => {
 
-                        const aph = task[24] || 0;
-                        const rt = task[14] || 0;
-                        const ut = task[13] || 0;
+                            const team_safe = team.replace(/\s+/g, '_');
+                            const cb_safe = cb.replace(/\s+/g, '_');
+                            const cb_id = `cb-${team_safe}-${cb_safe}`;
 
-                        let ut_percent = 0;
-                        if (aph > 0) {
-                            ut_percent = (ut / aph) * 100;
-                        }
+                            const task = rows[0];
 
-                        const cb_img = task[18] || "/assets/frappe/images/ui/avatar.png";
+                            const aph = task[24] || 0;
+                            const rt = task[14] || 0;
+                            const ut = task[13] || 0;
 
-                        total_aph += aph;
-                        total_rt += rt;
-                        total_ut += ut;
+                            let ut_percent = 0;
+                            if (aph > 0) {
+                                ut_percent = (ut / aph) * 100;
+                            }
 
-                        //  CB IMAGE INSTEAD OF TEXT
-                       cb_row += `
+                            const cb_img = task[18] || "/assets/frappe/images/ui/avatar.png";
+
+                            total_aph += aph;
+                            total_rt += rt;
+                            total_ut += ut;
+
+                            //  CB IMAGE INSTEAD OF TEXT
+                            cb_row += `
                         <td>
                             <img src="${cb_img}" 
                                 class="cb-img cb-click"
@@ -2131,15 +2792,15 @@ html += `
                                 style="cursor:pointer;">
                         </td>`;
 
-                        // aph_row += `<td class="aph-val">${aph.toFixed(2)}</td>`;
-                        // rt_row += `<td class="rt-val">${rt.toFixed(2)}</td>`;
-                        // ut_row += `<td class="ut-val">${ut.toFixed(2)}</td>`;
-                        // value_row += `
-                        // <td style="white-space: nowrap;">
-                        //     <span class="aph-val">${aph.toFixed(2)}</span>/<span class="rt-val">${rt.toFixed(2)}</span>/<span class="ut-val">${ut.toFixed(2)}</span>/<span class="utp-val">${ut_percent.toFixed(1)}%</span>
-                        // </td>`;
+                            // aph_row += `<td class="aph-val">${aph.toFixed(2)}</td>`;
+                            // rt_row += `<td class="rt-val">${rt.toFixed(2)}</td>`;
+                            // ut_row += `<td class="ut-val">${ut.toFixed(2)}</td>`;
+                            // value_row += `
+                            // <td style="white-space: nowrap;">
+                            //     <span class="aph-val">${aph.toFixed(2)}</span>/<span class="rt-val">${rt.toFixed(2)}</span>/<span class="ut-val">${ut.toFixed(2)}</span>/<span class="utp-val">${ut_percent.toFixed(1)}%</span>
+                            // </td>`;
 
-                        value_row += `
+                            value_row += `
                             <td style="white-space: nowrap; line-height:16px;">
                                 <div>
                                     <span class="aph-val">${aph.toFixed(2)}</span> /
@@ -2150,14 +2811,14 @@ html += `
                                     <span class="utp-val">${ut_percent.toFixed(1)}%</span>
                                 </div>
                             </td>`;
-                    });
-                    let total_utp = 0;
+                        });
+                        let total_utp = 0;
 
-                    if (total_aph > 0) {
-                        total_utp = (total_ut / total_aph) * 100;
-                    }
+                        if (total_aph > 0) {
+                            total_utp = (total_ut / total_aph) * 100;
+                        }
 
-                    html += `
+                        html += `
 <div class="team-box">
 
     <div class="team-header team-click" 
@@ -2203,16 +2864,16 @@ html += `
   
 
 </div>`;
-                });
+                    });
+
+                    html += `</div>`;
+                }
 
                 html += `</div>`;
+
+                $container.html(html);
             }
-
-            html += `</div>`;
-
-            $container.html(html);
-        }
-    });
+        });
 
         $("#today-task-table-container1")
             .off("click", ".team-click")
@@ -2223,1291 +2884,1292 @@ html += `
                 toggleTeamRows(teamId, this);
 
             });
-    
-}
 
-function toggleTeamRows(teamId) {
-
-    const $rows = $("#today-task-table-container").find("." + teamId);
-
-    if ($rows.is(":visible")) {
-        $rows.hide();
-    } else {
-        $rows.show();
     }
-}
 
-$(document)
-.off("click", ".cb-click")
-.on("click", ".cb-click", function () {
+    function toggleTeamRows(teamId) {
 
-    const cbId = $(this).data("cb");
+        const $rows = $("#today-task-table-container").find("." + teamId);
 
-    toggleCBRowsFromOutside(cbId);
-
-});
-
-
-$(document).ready(function () {
-
-    setTimeout(function () {
-
-        $("#today-task-table-container")
-            .find(".toggle-cb, .task-row")
-            .css("display", "table-row"); // important for table rows
-
-        $("#open-all-teams-btn-1").text("- ALL");
-
-    }, 500); // adjust 300–1000ms if needed
-
+        if ($rows.is(":visible")) {
+            $rows.hide();
+        } else {
+            $rows.show();
+        }
+    }
 
     $(document)
-        .off("click", "#open-all-teams-btn-1")
-        .on("click", "#open-all-teams-btn-1", function () {
+        .off("click", ".cb-click")
+        .on("click", ".cb-click", function () {
 
-            let btn = $(this);
+            const cbId = $(this).data("cb");
 
-            let rows2 = $("#today-task-table-container")
-                .find(".toggle-cb, .task-row");
-
-            if (rows2.is(":visible")) {
-                rows2.hide();
-                btn.text("+ ALL");
-            } else {
-                rows2.show();
-                btn.text("- ALL");
-            }
+            toggleCBRowsFromOutside(cbId);
 
         });
 
-});
-
-frappe.after_ajax(function () {
-    $("#today-task-table-container")
-        .find(".toggle-cb, .task-row")
-        .css("display", "table-row");
-
-    $("#open-all-teams-btn-1").text("- ALL");
-});
-
-
-// function get_today_task_data1(from_date=null, to_date=null) {
-//     let priority = $("#filter-priority").val();
-//     let sp = $("#filter-sp").val();
-//     let ro = $("#filter-ro").val();
-//     frappe.call({
-//         method: "teampro.teampro.page.new_it_dashboard.new_it.get_today_task_data1",
-//         args: {
-//             priority: priority,
-//             sp: sp,
-//             ro: ro,
-//             from_date : from_date,
-//             to_date : to_date
-//         },
-//         callback: function (r) {
-//             let $container = $("#today-task-table-container");
-
-//             if (r.message && r.message.data) {
-                
-//                 // const data = r.message;
-                
-//                 const data = r.message.data;
-//                 const team_order = r.message.team_order;
-//                 const active_data = data.filter(row => row[3]);
-                
-//                 let total_et = 0;
-//                 let total_rt = 0;
-//                 let total_at = 0;
-//                 let total_today_rt = 0;
-//                 let total_at_period = 0;
-
-//                 active_data.forEach(row => {
-//                     total_et += parseFloat(row[5]) || 0;
-//                     total_rt += parseFloat(row[6]) || 0;
-//                     total_at += parseFloat(row[7]) || 0;
-//                     total_today_rt += parseFloat(row[14]) || 0;
-//                     total_at_period += parseFloat(row[13]) || 0;
-//                 });
-
-//                 let html = `
-// <style>
-// .scrollable-table-container {
-//     max-height: 600px;
-//     overflow-y: auto;
-//     border: 1px solid #ccc;
-//     margin-bottom: 10px;
-// }
-// .export-buttons {
-//     margin-bottom: 10px;
-//     text-align: right;
-// }
-// .export-buttons button {
-//     margin-left: 5px;
-// }
-// #task-report-table {
-//     width:100%;
-//     border-collapse:collapse !important;
-//     table-layout:fixed;
-// }
-
-
-// .total-row td {
-//     border: 1px solid black !important;
-// }
-
-// #task-report-table th,
-// #task-report-table td {
-//     border: 1px solid black;
-//     text-align: center;
-//     padding: 8px;
-//     font-size: 14px;
-// }
-
-// #task-report-table thead th {
-//     background-color: #0F1568;
-//     color: white;
-//     font-size: 16px;
-//     padding: 10px;
-//     position: sticky;
-//     top: 0;
-//     z-index: 2;
-// }
-
-// thead th {
-//     background-color: #0F1568 !important;
-//     color: white !important;
-//     text-align: center;
-//     font-size: 16px;
-//     padding: 10px;
-//     position: sticky;
-//     top: 0;
-//     z-index: 2;
-// }
-// td {
-//     padding: 8px;
-//     text-align: center;
-//     font-size: 14px;
-// }
-// .left-align {
-//     text-align: left !important;
-// }
-
-// .toggle-team {
-//     cursor: pointer;
-//     font-weight: bold;
-//     background-color: #eaf0f6;
-// }
-// .toggle-cb {
-//     cursor: pointer;
-//     font-weight: bold;
-//     background-color: #85819e;
-//     color: white;
-// }
-
-// .cb-circle{
-//     display:inline-flex;
-//     flex-direction:column;
-//     align-items:center;
-// }
-
-// .cb-circle img{
-//     width:32px;
-//     height:32px;
-//     border-radius:50%;
-//     border:2px solid #d9e3f0;
-//     object-fit:cover;
-// }
-
-
-
-// .cb-code{
-//     font-size:11px;
-//     margin-top:2px;
-//     font-weight:600;
-// }
-
-// .team-logo img{
-//     width:45px;
-//     height:45px;
-//     border-radius:8px;
-//     border:2px solid #d9e3f0;
-//     padding:3px;
-//     background:white;
-// }
-
-// .task-row:nth-child(odd){
-//     background-color: #ffffff;   /* white */
-//     color: #000000;  
-// }
-
-// .task-row:nth-child(even){
-//     background-color: #eaf0f6;   /* light mild blue */
-//     color: #000000;
-// }
-
-// .all-team-btn{
-//     background:#0F1568;
-//     color:white;
-//     border:none;
-//     padding:3px 9px;
-//     font-size:14px;
-//     border-radius:6px;
-//     cursor:pointer;
-//     transition:all 0.2s ease;
-// }
-
-// .all-team-btn:hover{
-//     transform:scale(1.15);
-//     background:#1b238f;
-// }
-
-// .nav-all-btn{
-//     background:#fff3e0;        /* mild inside color */
-//     color:#e65100;             /* text color */
-//     border:2px solid #ff6f00;  /* strong border */
-//     padding:12px 32px; 
-//     font-size:14px;
-//     border-radius:14px;
-//     cursor:pointer;
-//     margin-right:12px;
-//     margin-left:12px;
-//     font-weight:600;
-//     transition:all 0.25s ease;
-// }
-
-// .nav-all-btn:hover{
-//     background:#ffe0b2;        /* hover mild */
-//     border-color:#e65100;      /* border darker */
-//     transform:scale(1.15);
-// }
-
-// .progress-wrapper{
-//     position:relative;
-//     width:100%;
-//     background:#eee;
-//     border-radius:10px;
-//     height:22px;
-//     overflow:hidden;
-//     border:0.5px solid black;
-// }
-
-// .progress-bar{
-//     height:100%;
-// }
-
-// .progress-text{
-//     position:absolute;
-//     top:0;
-//     left:0;
-//     width:100%;
-//     height:100%;
-//     display:flex;
-//     align-items:center;
-//     justify-content:center;
-//     font-size:12px;
-//     font-weight:bold;
-//     pointer-events:none;
-// }
-
-
-// .hover-text{
-//     display:none;
-// }
-
-// .progress-wrapper:hover .default-text{
-//     display:none;
-// }
-
-// .progress-wrapper:hover .hover-text{
-//     display:flex;
-// }
-
-// .filter-btn{
-//     padding:2px 6px;
-//     font-size:12px;
-//     border-radius:4px;
-//     border:0.5px solid #d0d7de;
-// }
-
-// /* hover */
-// .filter-btn:hover{
-//     background:#e0e7ff;
-//     border-color:#0F1568;
-// }
-
-// /* active (selected) */
-// .filter-btn.active{
-//     background:#0F1568;
-//     color:#fff;
-//     border-color:#0F1568;
-// }
-
-// .filter-btn{
-//     margin-right:4px;
-// }
-
-// .task-row a{
-//     color: inherit;
-//     text-decoration: none;
-// }
-
-// .progress-wrapper{
-//     position:relative;
-//     height:22px;
-//     background:#eee;
-//     border-radius:12px;
-//     overflow:hidden;
-// }
-// .progress-bar{
-//     height:100%;
-// }
-// .progress-text{
-//     position:absolute;
-//     width:100%;
-//     text-align:center;
-//     font-size:12px;
-//     top:0;
-// }
-// .status-icon{
-//     display:inline-flex;
-//     align-items:center;
-//     justify-content:center;
-//     width:28px;
-//     height:28px;
-//     border-radius:50%;
-//     font-size:14px;
-//     font-weight:bold;
-//     cursor:pointer;
-//     transition:all 0.2s ease;
-
-//     border:1.5px solid transparent;  
-// }
-
-// .tick-icon{
-//     background:#e3f2fd;
-//     color:#0d47a1;
-//     border-color:#90caf9;   /* mild blue border */
-// }
-
-// .tick-icon:hover{
-//     background:#bbdefb;
-//     border-color:#64b5f6;   /* little stronger on hover */
-//     transform:scale(1.3);
-// }
-
-// .c-icon{
-//     background:#ffebee;
-//     color:#b71c1c;
-//     border-color:#ef9a9a;   /* mild red border */
-// }
-
-// .c-icon:hover{
-//     background:#ffcdd2;
-//     border-color:#e57373;   /* little stronger on hover */
-//     transform:scale(1.3);
-// }
-
-// .progress-container{
-//     display:flex;
-//     flex-direction:column;
-//     align-items:center;
-//     position:relative;
-// }
-
-// /* âœ… Thin bar */
-// .progress-wrapper{
-//     width:100%;
-//     height:6px;             
-//     background:#eee;
-//     border-radius:10px;
-//     overflow:hidden;
-//     position:relative;
-// }
-
-// /* âœ… Actual progress */
-// .progress-bar{
-//     height:100%;
-//     border-radius:10px;
-//     transition:width 0.3s ease;
-// }
-
-// /* âœ… Bottom text */
-// .progress-bottom-text{
-//     margin-top:6px;
-//     font-size:12px;
-//     text-align:center;
-// }
-
-// /* âœ… Hover text (top) */
-// .progress-hover-text{
-//     position:absolute;
-//     top:-18px;              
-//     font-size:11px;
-//     opacity:0;
-//     transition:0.2s;
-//     white-space:nowrap;
-// }
-
-// /* âœ… Show on hover */
-// .progress-container:hover .progress-hover-text{
-//     opacity:1;
-// }
-
-// #today-task-table-container .team-all-btn {
-//     display: none;
-// }
-
-
-// .priority-critical{
-//     color: #ff0844;
-//     font-weight: 700;
-//     text-shadow: 0 0 6px rgba(255, 8, 68, 0.4);
-// }
-
-// /* Royal Violet */
-// .priority-high{
-//     color: #c026ff;
-//     font-weight: 700;
-//     text-shadow: 0 0 6px rgba(192, 38, 255, 0.5);
-// }
-
-// /* Neon Blue */
-// .priority-medium{
-//     color: #00a8ff;
-//     font-weight: 700;
-//     text-shadow: 0 0 4px rgba(0, 168, 255, 0.3);
-// }
-
-// /* Golden Yellow */
-// .priority-low{
-//     color: #ffb703;
-//     font-weight: 700;
-//     text-shadow: 0 0 4px rgba(255, 183, 3, 0.3);
-// }
-
-
-// </style>
-
-
-
-// <table id="task-report-table">
-// <thead>
-// <tr>
-//     <th style="width:4%">Sl No</th>
-//     <th style="width:8%">Sprint</th>
-//     <th style="width:18%">Project</th>   <!-- smaller -->
-//     <th style="width:9%">Task</th>
-//     <th style="width:20%">Subject</th>  <!-- smaller -->
-//     <th style="width:4%">S/P</th>
-//     <th style="width:4%">RO</th>
-//     <th style="width:4%">CF</th>
-//     <th style="width:5%">ET</th>
-//     <th style="width:5%">AT</th>
-//     <th style="width:5%">Today RT</th>
-//     <th style="width:6%">Priority</th>
-//     <th colspan="2" style="width:12%">Current Status</th> <!-- progress wider -->
-// </tr>
-// </thead>
-// <tbody>
-// `;
-
-//                 const grouped = {};
-//                 active_data.forEach(row => {
-//                     const team = row[12] || "No Team";
-//                     const cb = row[3] || "No CB";
-//                     const is_tl = row[16] || 0;
-
-//                     if (!grouped[team]) grouped[team] = {};
-//                     if (!grouped[team][cb]) grouped[team][cb] = { tasks: [], is_tl };
-//                     grouped[team][cb].tasks.push(row);
-//                 });
-
-//                 const sorted_teams = team_order.filter(team => grouped[team]);
-
-//                 for (const team of sorted_teams) {
-//                     const team_id = `team-${team.replace(/\s+/g, '_')}`;
-//                     const cb_groups = grouped[team];
-
-
-//                     const sorted_cbs = Object.entries(cb_groups).sort((a, b) => {
-//                         const a_order = a[1].tasks[0][25] || 0;
-//                         const b_order = b[1].tasks[0][25] || 0;
-
-//                         return a_order - b_order; // ascending
-//                     });
-
-//                     // Team-level totals
-//                     let team_et = 0, team_rt = 0, team_at = 0, team_at_period = 0, team_task_count = 0, team_today_rt=0;
-
-//                     sorted_cbs.forEach(([cb, cb_data]) => {
-//                         cb_data.tasks.forEach(row => {
-//                             team_et += parseFloat(row[5]) || 0;
-//                             // team_rt += parseFloat(row[6]) || 0;
-//                             team_at += parseFloat(row[7]) || 0;
-//                             // team_at_period += parseFloat(row[13]) || 0;
-//                             team_today_rt += parseFloat(row[14]) || 0;
-//                             team_task_count++;
-//                         });
-//                     });
-
-//                     // Team header with totals
-//                 let cb_buttons = `<td colspan="7" class="left-align">`;
-
-//                     cb_buttons += `<span class="team-all-btn" data-team="${team_id}" data-type="all" style="cursor:pointer; font-weight:bold; text-align:center; margin-right:10px;">+ ALL</span>`;
-
-
-//                     sorted_cbs.forEach(([cb, cb_data]) => {
-
-//                     const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
-//                     const cb_profile = cb_data.tasks[0][18] || "/assets/frappe/images/ui/avatar.png";
-
-//                     cb_buttons += `
-//                         <span class="cb-btn" data-target="${cb_id}"
-//                             style="
-//                                 cursor:pointer;
-//                                 margin-right:20px;
-//                                 display:inline-flex;
-//                                 flex-direction:column;
-//                                 align-items:center;
-//                             ">
-                            
-//                             <img src="${cb_profile}"
-//                                 style="
-//                                     width:35px;
-//                                     height:35px;
-//                                     border-radius:50%;
-//                                     border:2px solid #d9e3f0;
-//                                     margin-bottom:3px;
-//                                 ">
-
-                            
-//                         </span>
-//                         `;
-
-//                 });
-
-//                     cb_buttons += `</td>`;
-
-//                     const first_cb = sorted_cbs[0][1].tasks[0];
-//                     const team_logo = first_cb[19] || "/assets/frappe/images/ui/avatar.png";
-
-//                     html += `<tr class="toggle-team">
-//                     <td colspan="1" class="left-align">
-//                     <div class="team-logo">
-//                     <img src="${team_logo}">
-//                     </div>
-//                     </td>
-//                     ${cb_buttons}
-                    
-//                     <td><b>${team_et.toFixed(2)}</b></td>
-//                     <td><b>${team_at.toFixed(2)}</b></td>
-//                     <td><b>${team_today_rt.toFixed(2)}</b></td>
-//                     <td colspan="3"></td>
-//                     </tr>`;
-
-//                     for (const [cb, cb_data] of sorted_cbs) {
-//     const tasks = cb_data.tasks;
-//     const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
-
-//     let cb_et = 0, cb_rt = 0, cb_at = 0, cb_today_at = 0, cb_today_rt=0
-//     tasks.forEach(row => {
-//         cb_et += parseFloat(row[5]) || 0;
-//         // cb_rt += parseFloat(row[6]) || 0;
-//         cb_at += parseFloat(row[7]) || 0;
-//         cb_today_rt+= parseFloat(row[14]) || 0;
-//         // cb_today_at += parseFloat(row[13]) || 0;
-//     });
-
-//     const first_row = tasks[0] || [];
-//     html += `<tr class="toggle-cb ${cb_id} ${team_id}" style="display:none;">
-//         <td><span class="toggle-icon">+</span></td>
-//         <td colspan="7" class="left-align" style="color: white;">
-//             ${first_row[24] || ''}
-//         </td>
-//         <td><b>${cb_et.toFixed(2)}</b></td>
-//         <td><b>${cb_at.toFixed(2)}</b></td>
-//         <td><b>${cb_today_rt.toFixed(2)}</b></td>
-//         <td colspan="3"></td>
-//     </tr>`;
-    
-    
-
-//     // Apply filter inside CB
-//     // let filtered_tasks = tasks.filter(row => {
-
-//     //     let row_priority = row[8] || "";
-//     //     let row_sp = row[21] == 1 ? "S" : "P";
-//     //     let row_ro = parseInt(row[22]) || 0;
-
-//     //     if (priority && row_priority !== priority) return false;
-//     //     if (sp && row_sp !== sp) return false;
-//     //     if (ro === "no" && row_ro > 0) return false;   // only show No if row_ro = 0
-//     //     if (ro === "yes" && row_ro === 0) return false;
-
-//     //     return true;
-
-//     // });
-//     let filtered_tasks = tasks;
-    
-//     let global_index = 0;
-//     let task_serial = 1;
-//         filtered_tasks.forEach((row) => {
-//             let bg = (global_index % 2 === 0) ? "#FFFFFF" : "#e7e6ec";
-//             let progress = (row[13] > 0 && row[14] > 0) ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
-//             progress = parseFloat(progress);
-
-//             let ts_color = ""; // empty by default for 0%
-//             if (progress > 100) {
-//                 ts_color = "red";
-//             } else if (progress > 75) {
-//                 ts_color = "orange";
-//             } else if (progress > 0 && progress <= 75) {
-//                 ts_color = "blue";
-//             }
-//             function getPriorityClass(priority) {
-//                 if (!priority) return "";
-
-//                 priority = priority.toLowerCase();
-
-//                 if (priority === "critical") {
-//                     return "priority-critical";
-//                 } else if (priority === "high") {
-//                     return "priority-high";
-//                 } else if (priority === "medium") {
-//                     return "priority-medium";
-//                 } else if (priority === "low") {
-//                     return "priority-low";
-//                 }
-
-//                 return "";
-//             }
-//             let text = "#000000";
-//                 html += `
-//                     <tr class="task-row ${cb_id} ${team_id}"
-//                         data-priority="${row[8]}"
-//                         data-sp="${row[21] == 1 ? 'S' : 'P'}"
-//                         data-ro="${row[22] > 0 ? 'RO' : ''}"
-//                         data-cf="${row[23] > 0 ? 'CF' : ''}"
-//                         ${ts_color ? `data-ts="${ts_color}"` : ""}
-//                         style="display:none; background:${bg}; color:${text};">                   
-//                     <td>${task_serial++}</td>
-//                     <td style="white-space:nowrap;">${row[15]}</td>
-//                     <td class="left-align"><a href="/app/project/${row[1]}" target="_blank">${row[1]}</a></td>
-//                     <td style="white-space:nowrap;">
-//                     <div style="
-//                         display:inline-flex;
-//                         align-items:center;
-//                         gap:6px;
-//                         white-space:nowrap;
-//                     ">
-
-//                         <!-- 👁 Icon -->
-//                         <span class="task-info-btn"
-//                             data-task="${row[0]}"
-//                             style="cursor:pointer; font-size:16px; color:black; flex-shrink:0;">
-//                             👁
-//                         </span>
-
-//                         <!-- Task ID -->
-//                         <a href="/app/task/${row[0]}" target="_blank" 
-//                         style="text-decoration:none; color:inherit; flex-shrink:0;">
-//                             ${row[0]}
-//                         </a>
-
-//                     </div>
-//                 </td>
-//                     <td class="left-align">${row[2]}</td>
-//                     <!-- S/P -->
-//                     <td>
-//                     ${row[21] == 1 
-//                         ? `<span> S </span>`
-//                         : `<span> P </span>`
-//                     }
-//                     </td>
-//                     <!-- RO -->
-//                     <td>
-//                     <span >
-//                     ${row[22] || 0}
-//                     </span>
-//                     </td>
-
-//                     <!-- CF -->
-//                     <td>${row[23] || 0}</td>
-//                     <td>${row[5]}</td> 
-//                     <td >${row[7]}</td>       
-//                     <td class="total">${row[14]}</td>   
-//                     <td class="completed" style="color:red; display:none;">${row[13]}</td>
-//                     <td class="left-align ${getPriorityClass(row[8])}">
-//                         ${row[8]}
-//                     </td>
-//                     <td colspan="2" class="status-cell" style="width:16%; text-align:center;">
-//                         <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
-
-//                             ${row[20] == 0 ? `
-
-//                                 <!-- ✓ Tick -->
-//                                 <span class="confirm-task-btn status-icon tick-icon"
-//                                     data-task="${row[0]}">
-//                                     ✓
-//                                 </span>
-
-//                             ` : (row[13] > 0 ? (() => {
-
-//                                 let progress = row[14] > 0 ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
-//                                 progress = parseFloat(progress);
-
-//                                 let color = "#77e6dc";
-//                                 let text_color = "black";
-
-//                                 if (progress > 100) {
-//                                     color = "red";
-//                                     text_color = "black";
-//                                 }
-//                                 else if (progress > 75) {
-//                                     color = "orange";
-//                                     text_color = "black";
-//                                 }
-//                                 else if (progress >= 50) {
-//                                     color = "#77e6dc";
-//                                     text_color = "black";
-//                                 }
-//                                 else {
-//                                     color = "#77e6dc";
-//                                     text_color = "black";
-//                                 }
-//                                 let status = (row[10] || "").trim();
-
-//                                 let status_display = "";
-
-//                                 if (status === "Working") status_display = "W";
-//                                 else if (status === "Pending Review") status_display = "PR";
-//                                 else if (status === "Client Review") status_display = "CR";
-//                                 else if (status === "Completed") status_display = " ✓";
-
-
-
-
-//                                 return `
-// <div class="progress-container" style="width:120px;">
-
-//     <!-- Hover text -->
-//     <div class="progress-hover-text">
-//         ${row[13]}
-//     </div>
-
-//     <!-- Progress bar -->
-//     <div class="progress-wrapper" style="height:6px;">
-//         <div class="progress-bar" 
-//             style="width:${Math.min(progress,100)}%; background:${color}; height:100%;">
-//         </div>
-//     </div>
-
-//     <!-- Bottom text -->
-//     <div class="progress-bottom-text"
-//         style="color:${text_color}; font-size:13px;">
-//         ${status_display} ${progress}%
-//     </div>
-
-// </div>
-// `;
-
-//                             })() : `
-
-//                                 <!-- â�Œ C -->
-//                                 <span class="task-unconfirm-btn status-icon c-icon"
-//                                     data-task="${row[0]}">
-//                                     C
-//                                 </span>
-
-//                             `)}
-
-//                         </div>
-//                     </td>
-
-                    
-
-
-//                 </tr>`;
-//                     global_index++;
-//                     });
-                    
-    
-//         }
-//     }    
-
-
-    
-
-//                 html += `</tbody></table>`;
-//                 $container.html(html);
-
-//                 $(document).off("click", "#open-all-teams-btn").on("click", "#open-all-teams-btn", function(){
-
-//                     let rows = $container.find(".toggle-cb, .task-row");
-
-//                     if(rows.is(":visible")){
-//                         rows.hide();
-//                         $(this).text("+ ALL");
-//                     }else{
-//                         rows.show();
-//                         $(this).text("- ALL");
-//                     }
-
-//                 });
-
-//                 // Apply Filter
-
-
-// $(document).off("click",".filter-btn").on("click",".filter-btn",function(){
-
-//     let group = $(this).data("group");
-
-//     // toggle logic
-//     if($(this).hasClass("active")){
-//         $(this).removeClass("active");
-//     }else{
-
-//         // only one active inside same group
-//         $(`.filter-btn[data-group="${group}"]`).removeClass("active");
-
-//         $(this).addClass("active");
-//     }
-
-//     apply_filters();
-
-// });
-
-
-// function apply_filters(){
-
-//     let priority = $('.filter-btn[data-group="priority"].active').data("filter");
-//     priority = priority ? priority.toString().toLowerCase() : null;
-//     let sp = $('.filter-btn[data-group="sp"].active').data("filter");
-//     let ro = $('.filter-btn[data-group="ro"].active').data("filter");
-//     let cf = $('.filter-btn[data-group="cf"].active').data("filter");
-//     let ts = $('.filter-btn[data-group="ts"].active').data("filter");
-//     ts = ts ? ts.toString().toLowerCase() : null;
-
-//     $container.find(".task-row").hide();
-//     $container.find(".toggle-cb").hide();
-
-//     $(".toggle-cb").each(function(){
-
-//         let cb_row = $(this);
-//         let cb_class = cb_row.attr("class").split(" ")[1];
-
-//         let tasks = $container.find("." + cb_class + ".task-row");
-
-//         let matched = tasks.filter(function(){
-
-//             let p = ($(this).data("priority") || "").toString().toLowerCase();
-//             let s = $(this).data("sp");
-//             let r = $(this).data("ro");
-//             let c = $(this).data("cf");
-//             let t = ($(this).data("ts") || "").toString().toLowerCase();
-
-            
-
-
-//             if(priority && p !== priority) return false;
-//             if(sp && s !== sp) return false;
-//             if(ro && r !== "RO") return false;
-//             if(cf && c !== "CF") return false;
-//             if(ts && (!t || t !== ts)) return false;
-
-//             return true;
-
-//         });
-
-//         if(matched.length){
-
-//             cb_row.show();
-
-//             let serial = 1;
-
-//             matched.each(function(){
-
-//                 $(this).show();
-//                 $(this).find("td:first").text(serial++);
-
-//             });
-
-//         }
-
-//     });
-
-// }
-
-// if($(this).hasClass("active")){
-//     $(".task-row").show();
-//     $(".filter-btn").removeClass("active");
-//     return;
-// }
-
-//                 // Toggle logic for CB â†’ Task rows
-//                 // Handle individual CB toggle               
-
-// $container.find('.cb-btn').on('click', function () {
-
-//     const targetClass = $(this).data('target');
-//     const $rows = $container.find('.' + targetClass);
-
-//     if ($rows.is(':visible')) {
-
-//         $rows.hide();
-
-//     } else {
-
-//         $rows.show();
-//     }
-
-// });
-
-
-
-// $(document).on("click", ".task-unconfirm-btn", function (e) {
-
-//     e.preventDefault();
-//     e.stopPropagation();
-//     e.stopImmediatePropagation();
-
-//     let btn = $(this);
-//     let task = btn.data("task");
-//     let row = btn.closest("tr");
-
-//     frappe.call({
-//         method: "teampro.teampro.page.new_it_dashboard.new_it.check_running_timesheet",
-//         args: { task: task },
-//         callback: function(r){
-
-//             if (r.message) {
-
-//                 frappe.msgprint({
-//                     title: "Not Allowed",
-//                     message: "This task is already running in a timesheet.",
-//                     indicator: "red"
-//                 });
-
-//                 return;
-//             }
-
-//             frappe.db.set_value("Task", task, "is_confirmed", 0).then(() => {
-
-//                 frappe.show_alert({
-//                     message: "Task Unconfirmed",
-//                     indicator: "orange"
-//                 });
-
-//                 let status_cell = row.find(".status-cell");
-//                 let progress_cell = row.find(".progress-cell");
-
-//                 status_cell.html(`
-//                     <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
-
-//                         <span class="confirm-task-btn status-icon tick-icon"
-//                             data-task="${task}">
-//                             âœ“
-//                         </span>
-
-                        
-
-//                     </div>
-//                 `);
-
-
-//             });
-
-//         }
-//     });
-
-// });
-
-// $(document).on('click', '.confirm-task-btn', function (e) {
-
-//     e.preventDefault();
-//     e.stopPropagation();
-//     e.stopImmediatePropagation();
-
-//     const btn = $(this);
-//     const task = btn.data('task');
-//     const row = btn.closest("tr");
-
-//     frappe.call({
-//         method: "frappe.client.set_value",
-//         args: {
-//             doctype: "Task",
-//             name: task,
-//             fieldname: "is_confirmed",
-//             value: 1
-//         },
-//         callback: function () {
-
-//             frappe.show_alert({
-//                 message: "Task Confirmed",
-//                 indicator: "green"
-//             });
-
-//             frappe.db.get_value("Task", task, "status").then(r => {
-
-//                 let status_text = r.message.status || "";
-
-//                 let completed = parseFloat(row.find(".completed").text()) || 0;
-//                 let total = parseFloat(row.find(".total").text()) || 0;
-//                 let status_cell = row.find(".status-cell");
-//                 let progress_cell = row.find(".progress-cell");
-//                 let progress = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
-
-//                     let color = "#4CAF50";
-//                     let text_color = "black";
-
-//                     if (progress > 100) {
-//                         color = "red";
-//                         text_color = "black";
-//                     }
-//                     else if (progress > 75) {
-//                         color = "orange";
-//                         text_color = "black";
-//                     }
-//                     else if (progress >= 50) {
-//                         color = "#77e6dc";
-//                         text_color = "black";
-//                     }
-//                     else {
-//                         color = "#77e6dc";
-//                         text_color = "black";
-//                     }
-
-//                     let status = (status_text || "").trim();
-
-//                     let status_display = "";
-
-//                     if (status === "Working") status_display = "";
-//                     else if (status === "Pending Review") status_display = "PR";
-//                     else if (status === "Client Review") status_display = "CR";
-//                     else if (status === "Completed") status_display = "âœ”";
-
-//                     let hover_color = "#d81b60";
-
-//                     if (color === "red" || color === "orange") {
-//                         hover_color = "black";
-//                     }
-
-//                 // âœ… 1st cell update
-//                 status_cell.html(`
-//                     <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
-
-//                         <span class="task-unconfirm-btn status-icon c-icon"
-//                             data-task="${task}"
-                            
-//                             ">
-//                             C
-//                         </span>
-
-                        
-
-//                     </div>
-//                 `);
-
-                
-//             });
-//         }
-//     });
-
-// });
-
-// $container.off("click", ".task-info-btn").on("click", ".task-info-btn", function () {
-    
-//     const task = $(this).data("task");
-
-//     frappe.call({
-//         method: "frappe.client.get",
-//         args: {
-//             doctype: "Task",
-//             name: task
-//         },
-//         callback: function(r) {
-
-//             const t = r.message;
-
-
-//             let html = `
-// <div>
-//     <table style="width:100%; border-collapse:collapse; border:1px solid black;">
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">Task :</b></td>
-//             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.name}</span></td>
-//             <td style="border:1px solid black;" ><b style="color:red;">Project :</b></td>
-//             <td style="border:1px solid black;" colspan="3"><span style="color:blue;">${t.project || ""}</span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">Subject :</b></td>
-//             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.subject || ""}</span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">Description :</b></td>
-//             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.description || ""}</span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" colspan="1"><b style="color:red;">ET :</b></td>
-//             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.expected_time || ""}</span></td>
-//             <td style="border:1px solid black;" colspan="1"><b style="color:red;">RT :</b></td>
-//             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.rt || ""}</span></td>
-//             <td style="border:1px solid black;" colspan="1"><b style="color:red;">AT :</b></td>
-//             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.actual_time || ""}</span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">CF :</b></td>
-//             <td style="border:1px solid black;" colspan="2"><span style="color:blue;">${t.custom_production_date_count}</span></td>
-//             <td style="border:1px solid black;" ><b style="color:red;">RO :</b></td>
-//             <td style="border:1px solid black;" colspan="2"><span style="color:blue;">${t.revisions || ""}</span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">Created On :</b></td>
-//             <td style="border:1px solid black;" ><span style="color:blue;">
-//                 ${t.creation ? frappe.datetime.str_to_user(t.creation) : ""}
-//             </span></td>
-
-//             <td style="border:1px solid black;"><b style="color:red;">Allocated On :</b></td>
-//             <td style="border:1px solid black;"><span style="color:blue;">
-//                 ${t.custom_allocated_on ? frappe.datetime.str_to_user(t.custom_allocated_on) : ""}
-//             </span></td>
-
-//             <td style="border:1px solid black;" ><b style="color:red;">Age :</b></td>
-//             <td style="border:1px solid black;" ><span style="color:blue;">
-//                 ${t.custom_age}
-//             </span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">Developer Note :</b></td>
-//             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.custom_developer_note || ""}</span></td>
-//         </tr>
-
-//         <tr>
-//             <td style="border:1px solid black;" ><b style="color:red;">Remarks :</b></td>
-//             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.custom_taskissue_action_taken || ""}</span></td>
-//         </tr>
-
-//     </table>
-// </div>
-// `;
-
-//             let d = new frappe.ui.Dialog({
-//                 title: "Task Details",
-//                 fields: [
-//                     {
-//                         fieldtype: "HTML",
-//                         fieldname: "task_details",
-//                         options: html
-//                     }
-//                 ]
-//             });
-
-//             d.show();
-
-//             $(d.$wrapper).find('.modal-dialog').css({
-//                 "max-width": "900px",  
-//                 "width": "90%"          
-//             });
-//         }
-//     });
-
-// });
-
-
-
-
-
-// // $container.find('span[data-type="all"]').on('click', function () {
-// //     const teamId = $(this).data('team');
-// //     const teamRows = $container.find(`.${teamId}`); // includes both CB + task rows
-// //     const isVisible = teamRows.is(':visible');
-
-// //     if (isVisible) {
-// //         teamRows.hide();
-// //         $(this).text('+ ALL');
-// //         // Also reset CB buttons text
-// //         $(`span[data-target^="cb-${teamId}"]`).each(function() {
-// //             $(this).text('+ ' + $(this).text().slice(2));
-// //         });
-// //     } else {
-// //         teamRows.show();
-// //         $(this).text('- ALL');
-// //         // Also update CB buttons text
-// //         $(`span[data-target^="cb-${teamId}"]`).each(function() {
-// //             $(this).text('- ' + $(this).text().slice(2));
-// //         });
-// //     }
-// // });
-
-
-// $("#today-task-table-container")
-// .off("click", "span[data-type='all']")
-// .on("click", "span[data-type='all']", function () {
-
-//     const teamId = $(this).data('team');
-//     toggleTeamRows(teamId, this);
-
-// });
-
-                
-//             } else {
-//                 $container.html("<p>No data found.</p>");
-//             }
-//         }
-//     });
-
-// }
-
-
-
-function get_today_task_data1(from_date=null, to_date=null) {
-    let priority = $("#filter-priority").val();
-    let sp = $("#filter-sp").val();
-    let ro = $("#filter-ro").val();
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.get_today_task_data1",
-        args: {
-            priority: priority,
-            sp: sp,
-            ro: ro,
-            from_date : from_date,
-            to_date : to_date
-        },
-        callback: function (r) {
-            let $container = $("#today-task-table-container");
-
-            if (r.message && r.message.data) {
-                
-                // const data = r.message;
-                
-                const data = r.message.data;
-                console.log(data[0])
-                const team_order = r.message.team_order;
-                const active_data = data;
-                console.log(data)
-                
-                let total_et = 0;
-                let total_rt = 0;
-                let total_at = 0;
-                let total_today_rt = 0;
-                let total_at_period = 0;
-
-                active_data.forEach(row => {
-                    total_et += parseFloat(row[5]) || 0;
-                    total_rt += parseFloat(row[6]) || 0;
-                    total_at += parseFloat(row[7]) || 0;
-                    total_today_rt += parseFloat(row[14]) || 0;
-                    total_at_period += parseFloat(row[13]) || 0;
-                });
-
-                let html = `
+
+    $(document).ready(function () {
+
+        setTimeout(function () {
+
+            $("#today-task-table-container")
+                .find(".toggle-cb, .task-row")
+                .css("display", "table-row"); // important for table rows
+
+            $("#open-all-teams-btn-1").text("- ALL");
+            $("#download-task-table-all").text("- ALL");
+
+        }, 500); // adjust 300–1000ms if needed
+
+
+        $(document)
+            .off("click", "#open-all-teams-btn-1")
+            .on("click", "#open-all-teams-btn-1", function () {
+
+                let btn = $(this);
+
+                let rows2 = $("#today-task-table-container")
+                    .find(".toggle-cb, .task-row");
+
+                if (rows2.is(":visible")) {
+                    rows2.hide();
+                    btn.text("+ ALL");
+                } else {
+                    rows2.show();
+                    btn.text("- ALL");
+                }
+
+            });
+
+    });
+
+    frappe.after_ajax(function () {
+        $("#today-task-table-container")
+            .find(".toggle-cb, .task-row")
+            .css("display", "table-row");
+
+        $("#open-all-teams-btn-1").text("- ALL");
+    });
+
+
+    // function get_today_task_data1(from_date=null, to_date=null) {
+    //     let priority = $("#filter-priority").val();
+    //     let sp = $("#filter-sp").val();
+    //     let ro = $("#filter-ro").val();
+    //     frappe.call({
+    //         method: "teampro.teampro.page.new_it_dashboard.new_it.get_today_task_data1",
+    //         args: {
+    //             priority: priority,
+    //             sp: sp,
+    //             ro: ro,
+    //             from_date : from_date,
+    //             to_date : to_date
+    //         },
+    //         callback: function (r) {
+    //             let $container = $("#today-task-table-container");
+
+    //             if (r.message && r.message.data) {
+
+    //                 // const data = r.message;
+
+    //                 const data = r.message.data;
+    //                 const team_order = r.message.team_order;
+    //                 const active_data = data.filter(row => row[3]);
+
+    //                 let total_et = 0;
+    //                 let total_rt = 0;
+    //                 let total_at = 0;
+    //                 let total_today_rt = 0;
+    //                 let total_at_period = 0;
+
+    //                 active_data.forEach(row => {
+    //                     total_et += parseFloat(row[5]) || 0;
+    //                     total_rt += parseFloat(row[6]) || 0;
+    //                     total_at += parseFloat(row[7]) || 0;
+    //                     total_today_rt += parseFloat(row[14]) || 0;
+    //                     total_at_period += parseFloat(row[13]) || 0;
+    //                 });
+
+    //                 let html = `
+    // <style>
+    // .scrollable-table-container {
+    //     max-height: 600px;
+    //     overflow-y: auto;
+    //     border: 1px solid #ccc;
+    //     margin-bottom: 10px;
+    // }
+    // .export-buttons {
+    //     margin-bottom: 10px;
+    //     text-align: right;
+    // }
+    // .export-buttons button {
+    //     margin-left: 5px;
+    // }
+    // #task-report-table {
+    //     width:100%;
+    //     border-collapse:collapse !important;
+    //     table-layout:fixed;
+    // }
+
+
+    // .total-row td {
+    //     border: 1px solid black !important;
+    // }
+
+    // #task-report-table th,
+    // #task-report-table td {
+    //     border: 1px solid black;
+    //     text-align: center;
+    //     padding: 8px;
+    //     font-size: 14px;
+    // }
+
+    // #task-report-table thead th {
+    //     background-color: #0F1568;
+    //     color: white;
+    //     font-size: 16px;
+    //     padding: 10px;
+    //     position: sticky;
+    //     top: 0;
+    //     z-index: 2;
+    // }
+
+    // thead th {
+    //     background-color: #0F1568 !important;
+    //     color: white !important;
+    //     text-align: center;
+    //     font-size: 16px;
+    //     padding: 10px;
+    //     position: sticky;
+    //     top: 0;
+    //     z-index: 2;
+    // }
+    // td {
+    //     padding: 8px;
+    //     text-align: center;
+    //     font-size: 14px;
+    // }
+    // .left-align {
+    //     text-align: left !important;
+    // }
+
+    // .toggle-team {
+    //     cursor: pointer;
+    //     font-weight: bold;
+    //     background-color: #eaf0f6;
+    // }
+    // .toggle-cb {
+    //     cursor: pointer;
+    //     font-weight: bold;
+    //     background-color: #85819e;
+    //     color: white;
+    // }
+
+    // .cb-circle{
+    //     display:inline-flex;
+    //     flex-direction:column;
+    //     align-items:center;
+    // }
+
+    // .cb-circle img{
+    //     width:32px;
+    //     height:32px;
+    //     border-radius:50%;
+    //     border:2px solid #d9e3f0;
+    //     object-fit:cover;
+    // }
+
+
+
+    // .cb-code{
+    //     font-size:11px;
+    //     margin-top:2px;
+    //     font-weight:600;
+    // }
+
+    // .team-logo img{
+    //     width:45px;
+    //     height:45px;
+    //     border-radius:8px;
+    //     border:2px solid #d9e3f0;
+    //     padding:3px;
+    //     background:white;
+    // }
+
+    // .task-row:nth-child(odd){
+    //     background-color: #ffffff;   /* white */
+    //     color: #000000;  
+    // }
+
+    // .task-row:nth-child(even){
+    //     background-color: #eaf0f6;   /* light mild blue */
+    //     color: #000000;
+    // }
+
+    // .all-team-btn{
+    //     background:#0F1568;
+    //     color:white;
+    //     border:none;
+    //     padding:3px 9px;
+    //     font-size:14px;
+    //     border-radius:6px;
+    //     cursor:pointer;
+    //     transition:all 0.2s ease;
+    // }
+
+    // .all-team-btn:hover{
+    //     transform:scale(1.15);
+    //     background:#1b238f;
+    // }
+
+    // .nav-all-btn{
+    //     background:#fff3e0;        /* mild inside color */
+    //     color:#e65100;             /* text color */
+    //     border:2px solid #ff6f00;  /* strong border */
+    //     padding:12px 32px; 
+    //     font-size:14px;
+    //     border-radius:14px;
+    //     cursor:pointer;
+    //     margin-right:12px;
+    //     margin-left:12px;
+    //     font-weight:600;
+    //     transition:all 0.25s ease;
+    // }
+
+    // .nav-all-btn:hover{
+    //     background:#ffe0b2;        /* hover mild */
+    //     border-color:#e65100;      /* border darker */
+    //     transform:scale(1.15);
+    // }
+
+    // .progress-wrapper{
+    //     position:relative;
+    //     width:100%;
+    //     background:#eee;
+    //     border-radius:10px;
+    //     height:22px;
+    //     overflow:hidden;
+    //     border:0.5px solid black;
+    // }
+
+    // .progress-bar{
+    //     height:100%;
+    // }
+
+    // .progress-text{
+    //     position:absolute;
+    //     top:0;
+    //     left:0;
+    //     width:100%;
+    //     height:100%;
+    //     display:flex;
+    //     align-items:center;
+    //     justify-content:center;
+    //     font-size:12px;
+    //     font-weight:bold;
+    //     pointer-events:none;
+    // }
+
+
+    // .hover-text{
+    //     display:none;
+    // }
+
+    // .progress-wrapper:hover .default-text{
+    //     display:none;
+    // }
+
+    // .progress-wrapper:hover .hover-text{
+    //     display:flex;
+    // }
+
+    // .filter-btn{
+    //     padding:2px 6px;
+    //     font-size:12px;
+    //     border-radius:4px;
+    //     border:0.5px solid #d0d7de;
+    // }
+
+    // /* hover */
+    // .filter-btn:hover{
+    //     background:#e0e7ff;
+    //     border-color:#0F1568;
+    // }
+
+    // /* active (selected) */
+    // .filter-btn.active{
+    //     background:#0F1568;
+    //     color:#fff;
+    //     border-color:#0F1568;
+    // }
+
+    // .filter-btn{
+    //     margin-right:4px;
+    // }
+
+    // .task-row a{
+    //     color: inherit;
+    //     text-decoration: none;
+    // }
+
+    // .progress-wrapper{
+    //     position:relative;
+    //     height:22px;
+    //     background:#eee;
+    //     border-radius:12px;
+    //     overflow:hidden;
+    // }
+    // .progress-bar{
+    //     height:100%;
+    // }
+    // .progress-text{
+    //     position:absolute;
+    //     width:100%;
+    //     text-align:center;
+    //     font-size:12px;
+    //     top:0;
+    // }
+    // .status-icon{
+    //     display:inline-flex;
+    //     align-items:center;
+    //     justify-content:center;
+    //     width:28px;
+    //     height:28px;
+    //     border-radius:50%;
+    //     font-size:14px;
+    //     font-weight:bold;
+    //     cursor:pointer;
+    //     transition:all 0.2s ease;
+
+    //     border:1.5px solid transparent;  
+    // }
+
+    // .tick-icon{
+    //     background:#e3f2fd;
+    //     color:#0d47a1;
+    //     border-color:#90caf9;   /* mild blue border */
+    // }
+
+    // .tick-icon:hover{
+    //     background:#bbdefb;
+    //     border-color:#64b5f6;   /* little stronger on hover */
+    //     transform:scale(1.3);
+    // }
+
+    // .c-icon{
+    //     background:#ffebee;
+    //     color:#b71c1c;
+    //     border-color:#ef9a9a;   /* mild red border */
+    // }
+
+    // .c-icon:hover{
+    //     background:#ffcdd2;
+    //     border-color:#e57373;   /* little stronger on hover */
+    //     transform:scale(1.3);
+    // }
+
+    // .progress-container{
+    //     display:flex;
+    //     flex-direction:column;
+    //     align-items:center;
+    //     position:relative;
+    // }
+
+    // /* âœ… Thin bar */
+    // .progress-wrapper{
+    //     width:100%;
+    //     height:6px;             
+    //     background:#eee;
+    //     border-radius:10px;
+    //     overflow:hidden;
+    //     position:relative;
+    // }
+
+    // /* âœ… Actual progress */
+    // .progress-bar{
+    //     height:100%;
+    //     border-radius:10px;
+    //     transition:width 0.3s ease;
+    // }
+
+    // /* âœ… Bottom text */
+    // .progress-bottom-text{
+    //     margin-top:6px;
+    //     font-size:12px;
+    //     text-align:center;
+    // }
+
+    // /* âœ… Hover text (top) */
+    // .progress-hover-text{
+    //     position:absolute;
+    //     top:-18px;              
+    //     font-size:11px;
+    //     opacity:0;
+    //     transition:0.2s;
+    //     white-space:nowrap;
+    // }
+
+    // /* âœ… Show on hover */
+    // .progress-container:hover .progress-hover-text{
+    //     opacity:1;
+    // }
+
+    // #today-task-table-container .team-all-btn {
+    //     display: none;
+    // }
+
+
+    // .priority-critical{
+    //     color: #ff0844;
+    //     font-weight: 700;
+    //     text-shadow: 0 0 6px rgba(255, 8, 68, 0.4);
+    // }
+
+    // /* Royal Violet */
+    // .priority-high{
+    //     color: #c026ff;
+    //     font-weight: 700;
+    //     text-shadow: 0 0 6px rgba(192, 38, 255, 0.5);
+    // }
+
+    // /* Neon Blue */
+    // .priority-medium{
+    //     color: #00a8ff;
+    //     font-weight: 700;
+    //     text-shadow: 0 0 4px rgba(0, 168, 255, 0.3);
+    // }
+
+    // /* Golden Yellow */
+    // .priority-low{
+    //     color: #ffb703;
+    //     font-weight: 700;
+    //     text-shadow: 0 0 4px rgba(255, 183, 3, 0.3);
+    // }
+
+
+    // </style>
+
+
+
+    // <table id="task-report-table">
+    // <thead>
+    // <tr>
+    //     <th style="width:4%">Sl No</th>
+    //     <th style="width:8%">Sprint</th>
+    //     <th style="width:18%">Project</th>   <!-- smaller -->
+    //     <th style="width:9%">Task</th>
+    //     <th style="width:20%">Subject</th>  <!-- smaller -->
+    //     <th style="width:4%">S/P</th>
+    //     <th style="width:4%">RO</th>
+    //     <th style="width:4%">CF</th>
+    //     <th style="width:5%">ET</th>
+    //     <th style="width:5%">AT</th>
+    //     <th style="width:5%">Today RT</th>
+    //     <th style="width:6%">Priority</th>
+    //     <th colspan="2" style="width:12%">Current Status</th> <!-- progress wider -->
+    // </tr>
+    // </thead>
+    // <tbody>
+    // `;
+
+    //                 const grouped = {};
+    //                 active_data.forEach(row => {
+    //                     const team = row[12] || "No Team";
+    //                     const cb = row[3] || "No CB";
+    //                     const is_tl = row[16] || 0;
+
+    //                     if (!grouped[team]) grouped[team] = {};
+    //                     if (!grouped[team][cb]) grouped[team][cb] = { tasks: [], is_tl };
+    //                     grouped[team][cb].tasks.push(row);
+    //                 });
+
+    //                 const sorted_teams = team_order.filter(team => grouped[team]);
+
+    //                 for (const team of sorted_teams) {
+    //                     const team_id = `team-${team.replace(/\s+/g, '_')}`;
+    //                     const cb_groups = grouped[team];
+
+
+    //                     const sorted_cbs = Object.entries(cb_groups).sort((a, b) => {
+    //                         const a_order = a[1].tasks[0][25] || 0;
+    //                         const b_order = b[1].tasks[0][25] || 0;
+
+    //                         return a_order - b_order; // ascending
+    //                     });
+
+    //                     // Team-level totals
+    //                     let team_et = 0, team_rt = 0, team_at = 0, team_at_period = 0, team_task_count = 0, team_today_rt=0;
+
+    //                     sorted_cbs.forEach(([cb, cb_data]) => {
+    //                         cb_data.tasks.forEach(row => {
+    //                             team_et += parseFloat(row[5]) || 0;
+    //                             // team_rt += parseFloat(row[6]) || 0;
+    //                             team_at += parseFloat(row[7]) || 0;
+    //                             // team_at_period += parseFloat(row[13]) || 0;
+    //                             team_today_rt += parseFloat(row[14]) || 0;
+    //                             team_task_count++;
+    //                         });
+    //                     });
+
+    //                     // Team header with totals
+    //                 let cb_buttons = `<td colspan="7" class="left-align">`;
+
+    //                     cb_buttons += `<span class="team-all-btn" data-team="${team_id}" data-type="all" style="cursor:pointer; font-weight:bold; text-align:center; margin-right:10px;">+ ALL</span>`;
+
+
+    //                     sorted_cbs.forEach(([cb, cb_data]) => {
+
+    //                     const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
+    //                     const cb_profile = cb_data.tasks[0][18] || "/assets/frappe/images/ui/avatar.png";
+
+    //                     cb_buttons += `
+    //                         <span class="cb-btn" data-target="${cb_id}"
+    //                             style="
+    //                                 cursor:pointer;
+    //                                 margin-right:20px;
+    //                                 display:inline-flex;
+    //                                 flex-direction:column;
+    //                                 align-items:center;
+    //                             ">
+
+    //                             <img src="${cb_profile}"
+    //                                 style="
+    //                                     width:35px;
+    //                                     height:35px;
+    //                                     border-radius:50%;
+    //                                     border:2px solid #d9e3f0;
+    //                                     margin-bottom:3px;
+    //                                 ">
+
+
+    //                         </span>
+    //                         `;
+
+    //                 });
+
+    //                     cb_buttons += `</td>`;
+
+    //                     const first_cb = sorted_cbs[0][1].tasks[0];
+    //                     const team_logo = first_cb[19] || "/assets/frappe/images/ui/avatar.png";
+
+    //                     html += `<tr class="toggle-team">
+    //                     <td colspan="1" class="left-align">
+    //                     <div class="team-logo">
+    //                     <img src="${team_logo}">
+    //                     </div>
+    //                     </td>
+    //                     ${cb_buttons}
+
+    //                     <td><b>${team_et.toFixed(2)}</b></td>
+    //                     <td><b>${team_at.toFixed(2)}</b></td>
+    //                     <td><b>${team_today_rt.toFixed(2)}</b></td>
+    //                     <td colspan="3"></td>
+    //                     </tr>`;
+
+    //                     for (const [cb, cb_data] of sorted_cbs) {
+    //     const tasks = cb_data.tasks;
+    //     const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
+
+    //     let cb_et = 0, cb_rt = 0, cb_at = 0, cb_today_at = 0, cb_today_rt=0
+    //     tasks.forEach(row => {
+    //         cb_et += parseFloat(row[5]) || 0;
+    //         // cb_rt += parseFloat(row[6]) || 0;
+    //         cb_at += parseFloat(row[7]) || 0;
+    //         cb_today_rt+= parseFloat(row[14]) || 0;
+    //         // cb_today_at += parseFloat(row[13]) || 0;
+    //     });
+
+    //     const first_row = tasks[0] || [];
+    //     html += `<tr class="toggle-cb ${cb_id} ${team_id}" style="display:none;">
+    //         <td><span class="toggle-icon">+</span></td>
+    //         <td colspan="7" class="left-align" style="color: white;">
+    //             ${first_row[24] || ''}
+    //         </td>
+    //         <td><b>${cb_et.toFixed(2)}</b></td>
+    //         <td><b>${cb_at.toFixed(2)}</b></td>
+    //         <td><b>${cb_today_rt.toFixed(2)}</b></td>
+    //         <td colspan="3"></td>
+    //     </tr>`;
+
+
+
+    //     // Apply filter inside CB
+    //     // let filtered_tasks = tasks.filter(row => {
+
+    //     //     let row_priority = row[8] || "";
+    //     //     let row_sp = row[21] == 1 ? "S" : "P";
+    //     //     let row_ro = parseInt(row[22]) || 0;
+
+    //     //     if (priority && row_priority !== priority) return false;
+    //     //     if (sp && row_sp !== sp) return false;
+    //     //     if (ro === "no" && row_ro > 0) return false;   // only show No if row_ro = 0
+    //     //     if (ro === "yes" && row_ro === 0) return false;
+
+    //     //     return true;
+
+    //     // });
+    //     let filtered_tasks = tasks;
+
+    //     let global_index = 0;
+    //     let task_serial = 1;
+    //         filtered_tasks.forEach((row) => {
+    //             let bg = (global_index % 2 === 0) ? "#FFFFFF" : "#e7e6ec";
+    //             let progress = (row[13] > 0 && row[14] > 0) ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
+    //             progress = parseFloat(progress);
+
+    //             let ts_color = ""; // empty by default for 0%
+    //             if (progress > 100) {
+    //                 ts_color = "red";
+    //             } else if (progress > 75) {
+    //                 ts_color = "orange";
+    //             } else if (progress > 0 && progress <= 75) {
+    //                 ts_color = "blue";
+    //             }
+    //             function getPriorityClass(priority) {
+    //                 if (!priority) return "";
+
+    //                 priority = priority.toLowerCase();
+
+    //                 if (priority === "critical") {
+    //                     return "priority-critical";
+    //                 } else if (priority === "high") {
+    //                     return "priority-high";
+    //                 } else if (priority === "medium") {
+    //                     return "priority-medium";
+    //                 } else if (priority === "low") {
+    //                     return "priority-low";
+    //                 }
+
+    //                 return "";
+    //             }
+    //             let text = "#000000";
+    //                 html += `
+    //                     <tr class="task-row ${cb_id} ${team_id}"
+    //                         data-priority="${row[8]}"
+    //                         data-sp="${row[21] == 1 ? 'S' : 'P'}"
+    //                         data-ro="${row[22] > 0 ? 'RO' : ''}"
+    //                         data-cf="${row[23] > 0 ? 'CF' : ''}"
+    //                         ${ts_color ? `data-ts="${ts_color}"` : ""}
+    //                         style="display:none; background:${bg}; color:${text};">                   
+    //                     <td>${task_serial++}</td>
+    //                     <td style="white-space:nowrap;">${row[15]}</td>
+    //                     <td class="left-align"><a href="/app/project/${row[1]}" target="_blank">${row[1]}</a></td>
+    //                     <td style="white-space:nowrap;">
+    //                     <div style="
+    //                         display:inline-flex;
+    //                         align-items:center;
+    //                         gap:6px;
+    //                         white-space:nowrap;
+    //                     ">
+
+    //                         <!-- 👁 Icon -->
+    //                         <span class="task-info-btn"
+    //                             data-task="${row[0]}"
+    //                             style="cursor:pointer; font-size:16px; color:black; flex-shrink:0;">
+    //                             👁
+    //                         </span>
+
+    //                         <!-- Task ID -->
+    //                         <a href="/app/task/${row[0]}" target="_blank" 
+    //                         style="text-decoration:none; color:inherit; flex-shrink:0;">
+    //                             ${row[0]}
+    //                         </a>
+
+    //                     </div>
+    //                 </td>
+    //                     <td class="left-align">${row[2]}</td>
+    //                     <!-- S/P -->
+    //                     <td>
+    //                     ${row[21] == 1 
+    //                         ? `<span> S </span>`
+    //                         : `<span> P </span>`
+    //                     }
+    //                     </td>
+    //                     <!-- RO -->
+    //                     <td>
+    //                     <span >
+    //                     ${row[22] || 0}
+    //                     </span>
+    //                     </td>
+
+    //                     <!-- CF -->
+    //                     <td>${row[23] || 0}</td>
+    //                     <td>${row[5]}</td> 
+    //                     <td >${row[7]}</td>       
+    //                     <td class="total">${row[14]}</td>   
+    //                     <td class="completed" style="color:red; display:none;">${row[13]}</td>
+    //                     <td class="left-align ${getPriorityClass(row[8])}">
+    //                         ${row[8]}
+    //                     </td>
+    //                     <td colspan="2" class="status-cell" style="width:16%; text-align:center;">
+    //                         <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
+
+    //                             ${row[20] == 0 ? `
+
+    //                                 <!-- ✓ Tick -->
+    //                                 <span class="confirm-task-btn status-icon tick-icon"
+    //                                     data-task="${row[0]}">
+    //                                     ✓
+    //                                 </span>
+
+    //                             ` : (row[13] > 0 ? (() => {
+
+    //                                 let progress = row[14] > 0 ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
+    //                                 progress = parseFloat(progress);
+
+    //                                 let color = "#77e6dc";
+    //                                 let text_color = "black";
+
+    //                                 if (progress > 100) {
+    //                                     color = "red";
+    //                                     text_color = "black";
+    //                                 }
+    //                                 else if (progress > 75) {
+    //                                     color = "orange";
+    //                                     text_color = "black";
+    //                                 }
+    //                                 else if (progress >= 50) {
+    //                                     color = "#77e6dc";
+    //                                     text_color = "black";
+    //                                 }
+    //                                 else {
+    //                                     color = "#77e6dc";
+    //                                     text_color = "black";
+    //                                 }
+    //                                 let status = (row[10] || "").trim();
+
+    //                                 let status_display = "";
+
+    //                                 if (status === "Working") status_display = "W";
+    //                                 else if (status === "Pending Review") status_display = "PR";
+    //                                 else if (status === "Client Review") status_display = "CR";
+    //                                 else if (status === "Completed") status_display = " ✓";
+
+
+
+
+    //                                 return `
+    // <div class="progress-container" style="width:120px;">
+
+    //     <!-- Hover text -->
+    //     <div class="progress-hover-text">
+    //         ${row[13]}
+    //     </div>
+
+    //     <!-- Progress bar -->
+    //     <div class="progress-wrapper" style="height:6px;">
+    //         <div class="progress-bar" 
+    //             style="width:${Math.min(progress,100)}%; background:${color}; height:100%;">
+    //         </div>
+    //     </div>
+
+    //     <!-- Bottom text -->
+    //     <div class="progress-bottom-text"
+    //         style="color:${text_color}; font-size:13px;">
+    //         ${status_display} ${progress}%
+    //     </div>
+
+    // </div>
+    // `;
+
+    //                             })() : `
+
+    //                                 <!-- â�Œ C -->
+    //                                 <span class="task-unconfirm-btn status-icon c-icon"
+    //                                     data-task="${row[0]}">
+    //                                     C
+    //                                 </span>
+
+    //                             `)}
+
+    //                         </div>
+    //                     </td>
+
+
+
+
+    //                 </tr>`;
+    //                     global_index++;
+    //                     });
+
+
+    //         }
+    //     }    
+
+
+
+
+    //                 html += `</tbody></table>`;
+    //                 $container.html(html);
+
+    //                 $(document).off("click", "#open-all-teams-btn").on("click", "#open-all-teams-btn", function(){
+
+    //                     let rows = $container.find(".toggle-cb, .task-row");
+
+    //                     if(rows.is(":visible")){
+    //                         rows.hide();
+    //                         $(this).text("+ ALL");
+    //                     }else{
+    //                         rows.show();
+    //                         $(this).text("- ALL");
+    //                     }
+
+    //                 });
+
+    //                 // Apply Filter
+
+
+    // $(document).off("click",".filter-btn").on("click",".filter-btn",function(){
+
+    //     let group = $(this).data("group");
+
+    //     // toggle logic
+    //     if($(this).hasClass("active")){
+    //         $(this).removeClass("active");
+    //     }else{
+
+    //         // only one active inside same group
+    //         $(`.filter-btn[data-group="${group}"]`).removeClass("active");
+
+    //         $(this).addClass("active");
+    //     }
+
+    //     apply_filters();
+
+    // });
+
+
+    // function apply_filters(){
+
+    //     let priority = $('.filter-btn[data-group="priority"].active').data("filter");
+    //     priority = priority ? priority.toString().toLowerCase() : null;
+    //     let sp = $('.filter-btn[data-group="sp"].active').data("filter");
+    //     let ro = $('.filter-btn[data-group="ro"].active').data("filter");
+    //     let cf = $('.filter-btn[data-group="cf"].active').data("filter");
+    //     let ts = $('.filter-btn[data-group="ts"].active').data("filter");
+    //     ts = ts ? ts.toString().toLowerCase() : null;
+
+    //     $container.find(".task-row").hide();
+    //     $container.find(".toggle-cb").hide();
+
+    //     $(".toggle-cb").each(function(){
+
+    //         let cb_row = $(this);
+    //         let cb_class = cb_row.attr("class").split(" ")[1];
+
+    //         let tasks = $container.find("." + cb_class + ".task-row");
+
+    //         let matched = tasks.filter(function(){
+
+    //             let p = ($(this).data("priority") || "").toString().toLowerCase();
+    //             let s = $(this).data("sp");
+    //             let r = $(this).data("ro");
+    //             let c = $(this).data("cf");
+    //             let t = ($(this).data("ts") || "").toString().toLowerCase();
+
+
+
+
+    //             if(priority && p !== priority) return false;
+    //             if(sp && s !== sp) return false;
+    //             if(ro && r !== "RO") return false;
+    //             if(cf && c !== "CF") return false;
+    //             if(ts && (!t || t !== ts)) return false;
+
+    //             return true;
+
+    //         });
+
+    //         if(matched.length){
+
+    //             cb_row.show();
+
+    //             let serial = 1;
+
+    //             matched.each(function(){
+
+    //                 $(this).show();
+    //                 $(this).find("td:first").text(serial++);
+
+    //             });
+
+    //         }
+
+    //     });
+
+    // }
+
+    // if($(this).hasClass("active")){
+    //     $(".task-row").show();
+    //     $(".filter-btn").removeClass("active");
+    //     return;
+    // }
+
+    //                 // Toggle logic for CB â†’ Task rows
+    //                 // Handle individual CB toggle               
+
+    // $container.find('.cb-btn').on('click', function () {
+
+    //     const targetClass = $(this).data('target');
+    //     const $rows = $container.find('.' + targetClass);
+
+    //     if ($rows.is(':visible')) {
+
+    //         $rows.hide();
+
+    //     } else {
+
+    //         $rows.show();
+    //     }
+
+    // });
+
+
+
+    // $(document).on("click", ".task-unconfirm-btn", function (e) {
+
+    //     e.preventDefault();
+    //     e.stopPropagation();
+    //     e.stopImmediatePropagation();
+
+    //     let btn = $(this);
+    //     let task = btn.data("task");
+    //     let row = btn.closest("tr");
+
+    //     frappe.call({
+    //         method: "teampro.teampro.page.new_it_dashboard.new_it.check_running_timesheet",
+    //         args: { task: task },
+    //         callback: function(r){
+
+    //             if (r.message) {
+
+    //                 frappe.msgprint({
+    //                     title: "Not Allowed",
+    //                     message: "This task is already running in a timesheet.",
+    //                     indicator: "red"
+    //                 });
+
+    //                 return;
+    //             }
+
+    //             frappe.db.set_value("Task", task, "is_confirmed", 0).then(() => {
+
+    //                 frappe.show_alert({
+    //                     message: "Task Unconfirmed",
+    //                     indicator: "orange"
+    //                 });
+
+    //                 let status_cell = row.find(".status-cell");
+    //                 let progress_cell = row.find(".progress-cell");
+
+    //                 status_cell.html(`
+    //                     <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
+
+    //                         <span class="confirm-task-btn status-icon tick-icon"
+    //                             data-task="${task}">
+    //                             âœ“
+    //                         </span>
+
+
+
+    //                     </div>
+    //                 `);
+
+
+    //             });
+
+    //         }
+    //     });
+
+    // });
+
+    // $(document).on('click', '.confirm-task-btn', function (e) {
+
+    //     e.preventDefault();
+    //     e.stopPropagation();
+    //     e.stopImmediatePropagation();
+
+    //     const btn = $(this);
+    //     const task = btn.data('task');
+    //     const row = btn.closest("tr");
+
+    //     frappe.call({
+    //         method: "frappe.client.set_value",
+    //         args: {
+    //             doctype: "Task",
+    //             name: task,
+    //             fieldname: "is_confirmed",
+    //             value: 1
+    //         },
+    //         callback: function () {
+
+    //             frappe.show_alert({
+    //                 message: "Task Confirmed",
+    //                 indicator: "green"
+    //             });
+
+    //             frappe.db.get_value("Task", task, "status").then(r => {
+
+    //                 let status_text = r.message.status || "";
+
+    //                 let completed = parseFloat(row.find(".completed").text()) || 0;
+    //                 let total = parseFloat(row.find(".total").text()) || 0;
+    //                 let status_cell = row.find(".status-cell");
+    //                 let progress_cell = row.find(".progress-cell");
+    //                 let progress = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+
+    //                     let color = "#4CAF50";
+    //                     let text_color = "black";
+
+    //                     if (progress > 100) {
+    //                         color = "red";
+    //                         text_color = "black";
+    //                     }
+    //                     else if (progress > 75) {
+    //                         color = "orange";
+    //                         text_color = "black";
+    //                     }
+    //                     else if (progress >= 50) {
+    //                         color = "#77e6dc";
+    //                         text_color = "black";
+    //                     }
+    //                     else {
+    //                         color = "#77e6dc";
+    //                         text_color = "black";
+    //                     }
+
+    //                     let status = (status_text || "").trim();
+
+    //                     let status_display = "";
+
+    //                     if (status === "Working") status_display = "";
+    //                     else if (status === "Pending Review") status_display = "PR";
+    //                     else if (status === "Client Review") status_display = "CR";
+    //                     else if (status === "Completed") status_display = "âœ”";
+
+    //                     let hover_color = "#d81b60";
+
+    //                     if (color === "red" || color === "orange") {
+    //                         hover_color = "black";
+    //                     }
+
+    //                 // âœ… 1st cell update
+    //                 status_cell.html(`
+    //                     <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
+
+    //                         <span class="task-unconfirm-btn status-icon c-icon"
+    //                             data-task="${task}"
+
+    //                             ">
+    //                             C
+    //                         </span>
+
+
+
+    //                     </div>
+    //                 `);
+
+
+    //             });
+    //         }
+    //     });
+
+    // });
+
+    // $container.off("click", ".task-info-btn").on("click", ".task-info-btn", function () {
+
+    //     const task = $(this).data("task");
+
+    //     frappe.call({
+    //         method: "frappe.client.get",
+    //         args: {
+    //             doctype: "Task",
+    //             name: task
+    //         },
+    //         callback: function(r) {
+
+    //             const t = r.message;
+
+
+    //             let html = `
+    // <div>
+    //     <table style="width:100%; border-collapse:collapse; border:1px solid black;">
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Task :</b></td>
+    //             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.name}</span></td>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Project :</b></td>
+    //             <td style="border:1px solid black;" colspan="3"><span style="color:blue;">${t.project || ""}</span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Subject :</b></td>
+    //             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.subject || ""}</span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Description :</b></td>
+    //             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.description || ""}</span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" colspan="1"><b style="color:red;">ET :</b></td>
+    //             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.expected_time || ""}</span></td>
+    //             <td style="border:1px solid black;" colspan="1"><b style="color:red;">RT :</b></td>
+    //             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.rt || ""}</span></td>
+    //             <td style="border:1px solid black;" colspan="1"><b style="color:red;">AT :</b></td>
+    //             <td style="border:1px solid black;" colspan="1"><span style="color:blue;">${t.actual_time || ""}</span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">CF :</b></td>
+    //             <td style="border:1px solid black;" colspan="2"><span style="color:blue;">${t.custom_production_date_count}</span></td>
+    //             <td style="border:1px solid black;" ><b style="color:red;">RO :</b></td>
+    //             <td style="border:1px solid black;" colspan="2"><span style="color:blue;">${t.revisions || ""}</span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Created On :</b></td>
+    //             <td style="border:1px solid black;" ><span style="color:blue;">
+    //                 ${t.creation ? frappe.datetime.str_to_user(t.creation) : ""}
+    //             </span></td>
+
+    //             <td style="border:1px solid black;"><b style="color:red;">Allocated On :</b></td>
+    //             <td style="border:1px solid black;"><span style="color:blue;">
+    //                 ${t.custom_allocated_on ? frappe.datetime.str_to_user(t.custom_allocated_on) : ""}
+    //             </span></td>
+
+    //             <td style="border:1px solid black;" ><b style="color:red;">Age :</b></td>
+    //             <td style="border:1px solid black;" ><span style="color:blue;">
+    //                 ${t.custom_age}
+    //             </span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Developer Note :</b></td>
+    //             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.custom_developer_note || ""}</span></td>
+    //         </tr>
+
+    //         <tr>
+    //             <td style="border:1px solid black;" ><b style="color:red;">Remarks :</b></td>
+    //             <td style="border:1px solid black;" colspan="5"><span style="color:blue;">${t.custom_taskissue_action_taken || ""}</span></td>
+    //         </tr>
+
+    //     </table>
+    // </div>
+    // `;
+
+    //             let d = new frappe.ui.Dialog({
+    //                 title: "Task Details",
+    //                 fields: [
+    //                     {
+    //                         fieldtype: "HTML",
+    //                         fieldname: "task_details",
+    //                         options: html
+    //                     }
+    //                 ]
+    //             });
+
+    //             d.show();
+
+    //             $(d.$wrapper).find('.modal-dialog').css({
+    //                 "max-width": "900px",  
+    //                 "width": "90%"          
+    //             });
+    //         }
+    //     });
+
+    // });
+
+
+
+
+
+    // // $container.find('span[data-type="all"]').on('click', function () {
+    // //     const teamId = $(this).data('team');
+    // //     const teamRows = $container.find(`.${teamId}`); // includes both CB + task rows
+    // //     const isVisible = teamRows.is(':visible');
+
+    // //     if (isVisible) {
+    // //         teamRows.hide();
+    // //         $(this).text('+ ALL');
+    // //         // Also reset CB buttons text
+    // //         $(`span[data-target^="cb-${teamId}"]`).each(function() {
+    // //             $(this).text('+ ' + $(this).text().slice(2));
+    // //         });
+    // //     } else {
+    // //         teamRows.show();
+    // //         $(this).text('- ALL');
+    // //         // Also update CB buttons text
+    // //         $(`span[data-target^="cb-${teamId}"]`).each(function() {
+    // //             $(this).text('- ' + $(this).text().slice(2));
+    // //         });
+    // //     }
+    // // });
+
+
+    // $("#today-task-table-container")
+    // .off("click", "span[data-type='all']")
+    // .on("click", "span[data-type='all']", function () {
+
+    //     const teamId = $(this).data('team');
+    //     toggleTeamRows(teamId, this);
+
+    // });
+
+
+    //             } else {
+    //                 $container.html("<p>No data found.</p>");
+    //             }
+    //         }
+    //     });
+
+    // }
+
+
+
+    function get_today_task_data1(from_date = null, to_date = null) {
+        let priority = $("#filter-priority").val();
+        let sp = $("#filter-sp").val();
+        let ro = $("#filter-ro").val();
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_today_task_data1",
+            args: {
+                priority: priority,
+                sp: sp,
+                ro: ro,
+                from_date: from_date,
+                to_date: to_date
+            },
+            callback: function (r) {
+                let $container = $("#today-task-table-container");
+
+                if (r.message && r.message.data) {
+
+                    // const data = r.message;
+
+                    const data = r.message.data;
+                    console.log(data[0])
+                    const team_order = r.message.team_order;
+                    const active_data = data;
+                    console.log(data)
+
+                    let total_et = 0;
+                    let total_rt = 0;
+                    let total_at = 0;
+                    let total_today_rt = 0;
+                    let total_at_period = 0;
+
+                    active_data.forEach(row => {
+                        total_et += parseFloat(row[5]) || 0;
+                        total_rt += parseFloat(row[6]) || 0;
+                        total_at += parseFloat(row[7]) || 0;
+                        total_today_rt += parseFloat(row[14]) || 0;
+                        total_at_period += parseFloat(row[13]) || 0;
+                    });
+
+                    let html = `
 <style>
 .scrollable-table-container {
     max-height: 600px;
@@ -3889,57 +4551,57 @@ td {
 <tbody>
 `;
 
-                const grouped = {};
-                active_data.forEach(row => {
-                    const team = row[12] || "No Team";
-                    const cb = row[3] || "No CB";
-                    const is_tl = row[16] || 0;
+                    const grouped = {};
+                    active_data.forEach(row => {
+                        const team = row[12] || "No Team";
+                        const cb = row[3] || "No CB";
+                        const is_tl = row[16] || 0;
 
-                    if (!grouped[team]) grouped[team] = {};
-                    if (!grouped[team][cb]) grouped[team][cb] = { tasks: [], is_tl };
-                    grouped[team][cb].tasks.push(row);
-                });
-
-                const sorted_teams = team_order.filter(team => grouped[team]);
-
-                for (const team of sorted_teams) {
-                    const team_id = `team-${team.replace(/\s+/g, '_')}`;
-                    const cb_groups = grouped[team];
-
-
-                    const sorted_cbs = Object.entries(cb_groups).sort((a, b) => {
-                        const a_order = a[1].tasks[0][25] || 0;
-                        const b_order = b[1].tasks[0][25] || 0;
-
-                        return a_order - b_order; // ascending
+                        if (!grouped[team]) grouped[team] = {};
+                        if (!grouped[team][cb]) grouped[team][cb] = { tasks: [], is_tl };
+                        grouped[team][cb].tasks.push(row);
                     });
 
-                    // Team-level totals
-                    let team_et = 0, team_rt = 0, team_at = 0, team_at_period = 0, team_task_count = 0, team_today_rt=0;
+                    const sorted_teams = team_order.filter(team => grouped[team]);
 
-                    sorted_cbs.forEach(([cb, cb_data]) => {
-                        cb_data.tasks.forEach(row => {
-                            team_et += parseFloat(row[5]) || 0;
-                            // team_rt += parseFloat(row[6]) || 0;
-                            team_at += parseFloat(row[7]) || 0;
-                            // team_at_period += parseFloat(row[13]) || 0;
-                            team_today_rt += parseFloat(row[14]) || 0;
-                            team_task_count++;
+                    for (const team of sorted_teams) {
+                        const team_id = `team-${team.replace(/\s+/g, '_')}`;
+                        const cb_groups = grouped[team];
+
+
+                        const sorted_cbs = Object.entries(cb_groups).sort((a, b) => {
+                            const a_order = a[1].tasks[0][25] || 0;
+                            const b_order = b[1].tasks[0][25] || 0;
+
+                            return a_order - b_order; // ascending
                         });
-                    });
 
-                    // Team header with totals
-                let cb_buttons = `<td colspan="7" class="left-align">`;
+                        // Team-level totals
+                        let team_et = 0, team_rt = 0, team_at = 0, team_at_period = 0, team_task_count = 0, team_today_rt = 0;
 
-                    cb_buttons += `<span class="team-all-btn" data-team="${team_id}" data-type="all" style="cursor:pointer; font-weight:bold; text-align:center; margin-right:10px;">+ ALL</span>`;
+                        sorted_cbs.forEach(([cb, cb_data]) => {
+                            cb_data.tasks.forEach(row => {
+                                team_et += parseFloat(row[5]) || 0;
+                                // team_rt += parseFloat(row[6]) || 0;
+                                team_at += parseFloat(row[7]) || 0;
+                                // team_at_period += parseFloat(row[13]) || 0;
+                                team_today_rt += parseFloat(row[14]) || 0;
+                                team_task_count++;
+                            });
+                        });
+
+                        // Team header with totals
+                        let cb_buttons = `<td colspan="7" class="left-align">`;
+
+                        cb_buttons += `<span class="team-all-btn" data-team="${team_id}" data-type="all" style="cursor:pointer; font-weight:bold; text-align:center; margin-right:10px;">+ ALL</span>`;
 
 
-                    sorted_cbs.forEach(([cb, cb_data]) => {
+                        sorted_cbs.forEach(([cb, cb_data]) => {
 
-                    const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
-                    const cb_profile = cb_data.tasks[0][18] || "/assets/frappe/images/ui/avatar.png";
+                            const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
+                            const cb_profile = cb_data.tasks[0][18] || "/assets/frappe/images/ui/avatar.png";
 
-                    cb_buttons += `
+                            cb_buttons += `
                         <span class="cb-btn" data-target="${cb_id}"
                             style="
                                 cursor:pointer;
@@ -3962,14 +4624,14 @@ td {
                         </span>
                         `;
 
-                });
+                        });
 
-                    cb_buttons += `</td>`;
+                        cb_buttons += `</td>`;
 
-                    const first_cb = sorted_cbs[0][1].tasks[0];
-                    const team_logo = first_cb[19] || "/assets/frappe/images/ui/avatar.png";
+                        const first_cb = sorted_cbs[0][1].tasks[0];
+                        const team_logo = first_cb[19] || "/assets/frappe/images/ui/avatar.png";
 
-                    html += `<tr class="toggle-team">
+                        html += `<tr class="toggle-team">
                     <td colspan="1" class="left-align">
                     <div class="team-logo">
                     <img src="${team_logo}">
@@ -3983,21 +4645,21 @@ td {
                     <td colspan="3"></td>
                     </tr>`;
 
-                    for (const [cb, cb_data] of sorted_cbs) {
-    const tasks = cb_data.tasks;
-    const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
+                        for (const [cb, cb_data] of sorted_cbs) {
+                            const tasks = cb_data.tasks;
+                            const cb_id = `cb-${team.replace(/\s+/g, '_')}-${cb.replace(/\s+/g, '_')}`;
 
-    let cb_et = 0, cb_rt = 0, cb_at = 0, cb_today_at = 0, cb_today_rt=0
-    tasks.forEach(row => {
-        cb_et += parseFloat(row[5]) || 0;
-        // cb_rt += parseFloat(row[6]) || 0;
-        cb_at += parseFloat(row[7]) || 0;
-        cb_today_rt+= parseFloat(row[14]) || 0;
-        // cb_today_at += parseFloat(row[13]) || 0;
-    });
+                            let cb_et = 0, cb_rt = 0, cb_at = 0, cb_today_at = 0, cb_today_rt = 0
+                            tasks.forEach(row => {
+                                cb_et += parseFloat(row[5]) || 0;
+                                // cb_rt += parseFloat(row[6]) || 0;
+                                cb_at += parseFloat(row[7]) || 0;
+                                cb_today_rt += parseFloat(row[14]) || 0;
+                                // cb_today_at += parseFloat(row[13]) || 0;
+                            });
 
-    const first_row = tasks[0] || [];
-    html += `<tr class="toggle-cb ${cb_id} ${team_id}" style="display:none;">
+                            const first_row = tasks[0] || [];
+                            html += `<tr class="toggle-cb ${cb_id} ${team_id}" style="display:none;">
         <td><span class="toggle-icon">+</span></td>
         <td colspan="7" class="left-align" style="color: white;">
             ${first_row[24] || ''}
@@ -4007,60 +4669,60 @@ td {
         <td><b>${cb_today_rt.toFixed(2)}</b></td>
         <td colspan="3"></td>
     </tr>`;
-    
-    
 
-    // Apply filter inside CB
-    // let filtered_tasks = tasks.filter(row => {
 
-    //     let row_priority = row[8] || "";
-    //     let row_sp = row[21] == 1 ? "S" : "P";
-    //     let row_ro = parseInt(row[22]) || 0;
 
-    //     if (priority && row_priority !== priority) return false;
-    //     if (sp && row_sp !== sp) return false;
-    //     if (ro === "no" && row_ro > 0) return false;   // only show No if row_ro = 0
-    //     if (ro === "yes" && row_ro === 0) return false;
+                            // Apply filter inside CB
+                            // let filtered_tasks = tasks.filter(row => {
 
-    //     return true;
+                            //     let row_priority = row[8] || "";
+                            //     let row_sp = row[21] == 1 ? "S" : "P";
+                            //     let row_ro = parseInt(row[22]) || 0;
 
-    // });
-    let filtered_tasks = tasks;
-    
-    let global_index = 0;
-    let task_serial = 1;
-        filtered_tasks.forEach((row) => {
-            let bg = (global_index % 2 === 0) ? "#FFFFFF" : "#e7e6ec";
-            let progress = (row[13] > 0 && row[14] > 0) ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
-            progress = parseFloat(progress);
+                            //     if (priority && row_priority !== priority) return false;
+                            //     if (sp && row_sp !== sp) return false;
+                            //     if (ro === "no" && row_ro > 0) return false;   // only show No if row_ro = 0
+                            //     if (ro === "yes" && row_ro === 0) return false;
 
-            let ts_color = ""; // empty by default for 0%
-            if (progress > 100) {
-                ts_color = "red";
-            } else if (progress > 75) {
-                ts_color = "orange";
-            } else if (progress > 0 && progress <= 75) {
-                ts_color = "blue";
-            }
-            function getPriorityClass(priority) {
-                if (!priority) return "";
+                            //     return true;
 
-                priority = priority.toLowerCase();
+                            // });
+                            let filtered_tasks = tasks;
 
-                if (priority === "critical") {
-                    return "priority-critical";
-                } else if (priority === "high") {
-                    return "priority-high";
-                } else if (priority === "medium") {
-                    return "priority-medium";
-                } else if (priority === "low") {
-                    return "priority-low";
-                }
+                            let global_index = 0;
+                            let task_serial = 1;
+                            filtered_tasks.forEach((row) => {
+                                let bg = (global_index % 2 === 0) ? "#FFFFFF" : "#e7e6ec";
+                                let progress = (row[13] > 0 && row[14] > 0) ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
+                                progress = parseFloat(progress);
 
-                return "";
-            }
-            let text = "#000000";
-                html += `
+                                let ts_color = ""; // empty by default for 0%
+                                if (progress > 100) {
+                                    ts_color = "red";
+                                } else if (progress > 75) {
+                                    ts_color = "orange";
+                                } else if (progress > 0 && progress <= 75) {
+                                    ts_color = "blue";
+                                }
+                                function getPriorityClass(priority) {
+                                    if (!priority) return "";
+
+                                    priority = priority.toLowerCase();
+
+                                    if (priority === "critical") {
+                                        return "priority-critical";
+                                    } else if (priority === "high") {
+                                        return "priority-high";
+                                    } else if (priority === "medium") {
+                                        return "priority-medium";
+                                    } else if (priority === "low") {
+                                        return "priority-low";
+                                    }
+
+                                    return "";
+                                }
+                                let text = "#000000";
+                                html += `
                     <tr class="task-row ${cb_id} ${team_id}"
                         data-priority="${row[8]}"
                         data-sp="${row[21] == 1 ? 'S' : 'P'}"
@@ -4097,10 +4759,10 @@ td {
                     <td class="left-align">${row[2]}</td>
                     <!-- S/P -->
                     <td>
-                    ${row[21] == 1 
-                        ? `<span> S </span>`
-                        : `<span> P </span>`
-                    }
+                    ${row[21] == 1
+                                        ? `<span> S </span>`
+                                        : `<span> P </span>`
+                                    }
                     </td>
                     <!-- RO -->
                     <td>
@@ -4114,7 +4776,6 @@ td {
                     <td>${row[5]}</td> 
                     <td >${row[7]}</td>       
                     <td class="total">${row[14]}</td>   
-                    <td class="completed" style="color:red; display:none;">${row[13]}</td>
                     <td class="left-align ${getPriorityClass(row[8])}">
                         ${row[8]}
                     </td>
@@ -4131,41 +4792,41 @@ td {
 
                             ` : (row[13] > 0 ? (() => {
 
-                                let progress = row[14] > 0 ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
-                                progress = parseFloat(progress);
+                                        let progress = row[14] > 0 ? ((row[13] / row[14]) * 100).toFixed(0) : 0;
+                                        progress = parseFloat(progress);
 
-                                let color = "#77e6dc";
-                                let text_color = "black";
+                                        let color = "#77e6dc";
+                                        let text_color = "black";
 
-                                if (progress > 100) {
-                                    color = "red";
-                                    text_color = "black";
-                                }
-                                else if (progress > 75) {
-                                    color = "orange";
-                                    text_color = "black";
-                                }
-                                else if (progress >= 50) {
-                                    color = "#77e6dc";
-                                    text_color = "black";
-                                }
-                                else {
-                                    color = "#77e6dc";
-                                    text_color = "black";
-                                }
-                                let status = (row[10] || "").trim();
+                                        if (progress > 100) {
+                                            color = "red";
+                                            text_color = "black";
+                                        }
+                                        else if (progress > 75) {
+                                            color = "orange";
+                                            text_color = "black";
+                                        }
+                                        else if (progress >= 50) {
+                                            color = "#77e6dc";
+                                            text_color = "black";
+                                        }
+                                        else {
+                                            color = "#77e6dc";
+                                            text_color = "black";
+                                        }
+                                        let status = (row[10] || "").trim();
 
-                                let status_display = "";
+                                        let status_display = "";
 
-                                if (status === "Working") status_display = "W";
-                                else if (status === "Pending Review") status_display = "PR";
-                                else if (status === "Client Review") status_display = "CR";
-                                else if (status === "Completed") status_display = " ✓";
-
-
+                                        if (status === "Working") status_display = "W";
+                                        else if (status === "Pending Review") status_display = "PR";
+                                        else if (status === "Client Review") status_display = "CR";
+                                        else if (status === "Completed") status_display = " ✓";
 
 
-                                return `
+
+
+                                        return `
 <div class="progress-container" style="width:120px;">
 
     <!-- Hover text -->
@@ -4176,7 +4837,7 @@ td {
     <!-- Progress bar -->
     <div class="progress-wrapper" style="height:6px;">
         <div class="progress-bar" 
-            style="width:${Math.min(progress,100)}%; background:${color}; height:100%;">
+            style="width:${Math.min(progress, 100)}%; background:${color}; height:100%;">
         </div>
     </div>
 
@@ -4189,9 +4850,9 @@ td {
 </div>
 `;
 
-                            })() : `
+                                    })() : `
 
-                                <!-- â�Œ C -->
+                                <!--C -->
                                 <span class="task-unconfirm-btn status-icon c-icon"
                                     data-task="${row[0]}">
                                     C
@@ -4206,185 +4867,185 @@ td {
 
 
                 </tr>`;
-                    global_index++;
-                    });
-                    
-    
-        }
-    }    
+                                global_index++;
+                            });
 
 
-    
-
-                html += `</tbody></table>`;
-                $container.html(html);
-
-                $(document).off("click", "#open-all-teams-btn").on("click", "#open-all-teams-btn", function(){
-
-                    let rows = $container.find(".toggle-cb, .task-row");
-
-                    if(rows.is(":visible")){
-                        rows.hide();
-                        $(this).text("+ ALL");
-                    }else{
-                        rows.show();
-                        $(this).text("- ALL");
+                        }
                     }
 
-                });
-
-                // Apply Filter
-
-
-$(document).off("click",".filter-btn").on("click",".filter-btn",function(){
-
-    let group = $(this).data("group");
-
-    // toggle logic
-    if($(this).hasClass("active")){
-        $(this).removeClass("active");
-    }else{
-
-        // only one active inside same group
-        $(`.filter-btn[data-group="${group}"]`).removeClass("active");
-
-        $(this).addClass("active");
-    }
-
-    apply_filters();
-
-});
-
-
-function apply_filters(){
-
-    let priority = $('.filter-btn[data-group="priority"].active').data("filter");
-    priority = priority ? priority.toString().toLowerCase() : null;
-    let sp = $('.filter-btn[data-group="sp"].active').data("filter");
-    let ro = $('.filter-btn[data-group="ro"].active').data("filter");
-    let cf = $('.filter-btn[data-group="cf"].active').data("filter");
-    let ts = $('.filter-btn[data-group="ts"].active').data("filter");
-    ts = ts ? ts.toString().toLowerCase() : null;
-
-    $container.find(".task-row").hide();
-    $container.find(".toggle-cb").hide();
-
-    $(".toggle-cb").each(function(){
-
-        let cb_row = $(this);
-        let cb_class = cb_row.attr("class").split(" ")[1];
-
-        let tasks = $container.find("." + cb_class + ".task-row");
-
-        let matched = tasks.filter(function(){
-
-            let p = ($(this).data("priority") || "").toString().toLowerCase();
-            let s = $(this).data("sp");
-            let r = $(this).data("ro");
-            let c = $(this).data("cf");
-            let t = ($(this).data("ts") || "").toString().toLowerCase();
-
-            
-
-
-            if(priority && p !== priority) return false;
-            if(sp && s !== sp) return false;
-            if(ro && r !== "RO") return false;
-            if(cf && c !== "CF") return false;
-            if(ts && (!t || t !== ts)) return false;
-
-            return true;
-
-        });
-
-        if(matched.length){
-
-            cb_row.show();
-
-            let serial = 1;
-
-            matched.each(function(){
-
-                $(this).show();
-                $(this).find("td:first").text(serial++);
-
-            });
-
-        }
-
-    });
-
-}
-
-if($(this).hasClass("active")){
-    $(".task-row").show();
-    $(".filter-btn").removeClass("active");
-    return;
-}
-
-                // Toggle logic for CB â†’ Task rows
-                // Handle individual CB toggle               
-
-$container.find('.cb-btn').on('click', function () {
-
-    const targetClass = $(this).data('target');
-    const $rows = $container.find('.' + targetClass);
-
-    if ($rows.is(':visible')) {
-
-        $rows.hide();
-
-    } else {
-
-        $rows.show();
-    }
-
-});
 
 
 
-$(document).on("click", ".task-unconfirm-btn", function (e) {
+                    html += `</tbody></table>`;
+                    $container.html(html);
 
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+                    $(document).off("click", "#open-all-teams-btn").on("click", "#open-all-teams-btn", function () {
 
-    let btn = $(this);
-    let task = btn.data("task");
-    let row = btn.closest("tr");
+                        let rows = $container.find(".toggle-cb, .task-row");
 
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.check_running_timesheet",
-        args: { task: task },
-        callback: function(r){
+                        if (rows.is(":visible")) {
+                            rows.hide();
+                            $(this).text("+ ALL");
+                        } else {
+                            rows.show();
+                            $(this).text("- ALL");
+                        }
 
-            if (r.message) {
+                    });
 
-                frappe.msgprint({
-                    title: "Not Allowed",
-                    message: "This task is already running in a timesheet.",
-                    indicator: "red"
-                });
+                    // Apply Filter
 
-                return;
-            }
 
-            frappe.db.set_value("Task", task, "is_confirmed", 0).then(() => {
+                    $(document).off("click", ".filter-btn").on("click", ".filter-btn", function () {
 
-                frappe.show_alert({
-                    message: "Task Unconfirmed",
-                    indicator: "orange"
-                });
+                        let group = $(this).data("group");
 
-                let status_cell = row.find(".status-cell");
-                let progress_cell = row.find(".progress-cell");
+                        // toggle logic
+                        if ($(this).hasClass("active")) {
+                            $(this).removeClass("active");
+                        } else {
 
-                status_cell.html(`
+                            // only one active inside same group
+                            $(`.filter-btn[data-group="${group}"]`).removeClass("active");
+
+                            $(this).addClass("active");
+                        }
+
+                        apply_filters();
+
+                    });
+
+
+                    function apply_filters() {
+
+                        let priority = $('.filter-btn[data-group="priority"].active').data("filter");
+                        priority = priority ? priority.toString().toLowerCase() : null;
+                        let sp = $('.filter-btn[data-group="sp"].active').data("filter");
+                        let ro = $('.filter-btn[data-group="ro"].active').data("filter");
+                        let cf = $('.filter-btn[data-group="cf"].active').data("filter");
+                        let ts = $('.filter-btn[data-group="ts"].active').data("filter");
+                        ts = ts ? ts.toString().toLowerCase() : null;
+
+                        $container.find(".task-row").hide();
+                        $container.find(".toggle-cb").hide();
+
+                        $(".toggle-cb").each(function () {
+
+                            let cb_row = $(this);
+                            let cb_class = cb_row.attr("class").split(" ")[1];
+
+                            let tasks = $container.find("." + cb_class + ".task-row");
+
+                            let matched = tasks.filter(function () {
+
+                                let p = ($(this).data("priority") || "").toString().toLowerCase();
+                                let s = $(this).data("sp");
+                                let r = $(this).data("ro");
+                                let c = $(this).data("cf");
+                                let t = ($(this).data("ts") || "").toString().toLowerCase();
+
+
+
+
+                                if (priority && p !== priority) return false;
+                                if (sp && s !== sp) return false;
+                                if (ro && r !== "RO") return false;
+                                if (cf && c !== "CF") return false;
+                                if (ts && (!t || t !== ts)) return false;
+
+                                return true;
+
+                            });
+
+                            if (matched.length) {
+
+                                cb_row.show();
+
+                                let serial = 1;
+
+                                matched.each(function () {
+
+                                    $(this).show();
+                                    $(this).find("td:first").text(serial++);
+
+                                });
+
+                            }
+
+                        });
+
+                    }
+
+                    if ($(this).hasClass("active")) {
+                        $(".task-row").show();
+                        $(".filter-btn").removeClass("active");
+                        return;
+                    }
+
+                    // Toggle logic for CB â†’ Task rows
+                    // Handle individual CB toggle               
+
+                    $container.find('.cb-btn').on('click', function () {
+
+                        const targetClass = $(this).data('target');
+                        const $rows = $container.find('.' + targetClass);
+
+                        if ($rows.is(':visible')) {
+
+                            $rows.hide();
+
+                        } else {
+
+                            $rows.show();
+                        }
+
+                    });
+
+
+
+                    $(document).on("click", ".task-unconfirm-btn", function (e) {
+
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
+
+                        let btn = $(this);
+                        let task = btn.data("task");
+                        let row = btn.closest("tr");
+
+                        frappe.call({
+                            method: "teampro.teampro.page.new_it_dashboard.new_it.check_running_timesheet",
+                            args: { task: task },
+                            callback: function (r) {
+
+                                if (r.message) {
+
+                                    frappe.msgprint({
+                                        title: "Not Allowed",
+                                        message: "This task is already running in a timesheet.",
+                                        indicator: "red"
+                                    });
+
+                                    return;
+                                }
+
+                                frappe.db.set_value("Task", task, "is_confirmed", 0).then(() => {
+
+                                    frappe.show_alert({
+                                        message: "Task Unconfirmed",
+                                        indicator: "orange"
+                                    });
+
+                                    let status_cell = row.find(".status-cell");
+                                    let progress_cell = row.find(".progress-cell");
+
+                                    status_cell.html(`
                     <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
 
                         <span class="confirm-task-btn status-icon tick-icon"
                             data-task="${task}">
-                            âœ“
+                            ✓
                         </span>
 
                         
@@ -4393,85 +5054,84 @@ $(document).on("click", ".task-unconfirm-btn", function (e) {
                 `);
 
 
-            });
+                                });
 
-        }
-    });
+                            }
+                        });
 
-});
+                    });
 
-$(document).on('click', '.confirm-task-btn', function (e) {
+                    $(document).on('click', '.confirm-task-btn', function (e) {
 
-    e.preventDefault();
-    e.stopPropagation();
-    e.stopImmediatePropagation();
+                        e.preventDefault();
+                        e.stopPropagation();
+                        e.stopImmediatePropagation();
 
-    const btn = $(this);
-    const task = btn.data('task');
-    const row = btn.closest("tr");
+                        const btn = $(this);
+                        const task = btn.data('task');
+                        const row = btn.closest("tr");
 
-    frappe.call({
-        method: "frappe.client.set_value",
-        args: {
-            doctype: "Task",
-            name: task,
-            fieldname: "is_confirmed",
-            value: 1
-        },
-        callback: function () {
+                        frappe.call({
+                            method: "frappe.client.set_value",
+                            args: {
+                                doctype: "Task",
+                                name: task,
+                                fieldname: "is_confirmed",
+                                value: 1
+                            },
+                            callback: function () {
 
-            frappe.show_alert({
-                message: "Task Confirmed",
-                indicator: "green"
-            });
+                                frappe.show_alert({
+                                    message: "Task Confirmed",
+                                    indicator: "green"
+                                });
 
-            frappe.db.get_value("Task", task, "status").then(r => {
+                                frappe.db.get_value("Task", task, "status").then(r => {
 
-                let status_text = r.message.status || "";
+                                    let status_text = r.message.status || "";
 
-                let completed = parseFloat(row.find(".completed").text()) || 0;
-                let total = parseFloat(row.find(".total").text()) || 0;
-                let status_cell = row.find(".status-cell");
-                let progress_cell = row.find(".progress-cell");
-                let progress = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
+                                    let completed = parseFloat(row.find(".completed").text()) || 0;
+                                    let total = parseFloat(row.find(".total").text()) || 0;
+                                    let status_cell = row.find(".status-cell");
+                                    let progress_cell = row.find(".progress-cell");
+                                    let progress = total > 0 ? ((completed / total) * 100).toFixed(0) : 0;
 
-                    let color = "#4CAF50";
-                    let text_color = "black";
+                                    let color = "#4CAF50";
+                                    let text_color = "black";
 
-                    if (progress > 100) {
-                        color = "red";
-                        text_color = "black";
-                    }
-                    else if (progress > 75) {
-                        color = "orange";
-                        text_color = "black";
-                    }
-                    else if (progress >= 50) {
-                        color = "#77e6dc";
-                        text_color = "black";
-                    }
-                    else {
-                        color = "#77e6dc";
-                        text_color = "black";
-                    }
+                                    if (progress > 100) {
+                                        color = "red";
+                                        text_color = "black";
+                                    }
+                                    else if (progress > 75) {
+                                        color = "orange";
+                                        text_color = "black";
+                                    }
+                                    else if (progress >= 50) {
+                                        color = "#77e6dc";
+                                        text_color = "black";
+                                    }
+                                    else {
+                                        color = "#77e6dc";
+                                        text_color = "black";
+                                    }
 
-                    let status = (status_text || "").trim();
+                                    let status = (status_text || "").trim();
 
-                    let status_display = "";
+                                    let status_display = "";
 
-                    if (status === "Working") status_display = "";
-                    else if (status === "Pending Review") status_display = "PR";
-                    else if (status === "Client Review") status_display = "CR";
-                    else if (status === "Completed") status_display = "âœ”";
+                                    if (status === "Working") status_display = "";
+                                    else if (status === "Pending Review") status_display = "PR";
+                                    else if (status === "Client Review") status_display = "CR";
+                                    else if (status === "Completed") status_display = "âœ”";
 
-                    let hover_color = "#d81b60";
+                                    let hover_color = "#d81b60";
 
-                    if (color === "red" || color === "orange") {
-                        hover_color = "black";
-                    }
+                                    if (color === "red" || color === "orange") {
+                                        hover_color = "black";
+                                    }
 
-                // âœ… 1st cell update
-                status_cell.html(`
+                                    status_cell.html(`
                     <div style="display:flex; align-items:center; gap:8px; justify-content:center;">
 
                         <span class="task-unconfirm-btn status-icon c-icon"
@@ -4486,29 +5146,29 @@ $(document).on('click', '.confirm-task-btn', function (e) {
                     </div>
                 `);
 
-                
-            });
-        }
-    });
 
-});
+                                });
+                            }
+                        });
 
-$container.off("click", ".task-info-btn").on("click", ".task-info-btn", function () {
-    
-    const task = $(this).data("task");
+                    });
 
-    frappe.call({
-        method: "frappe.client.get",
-        args: {
-            doctype: "Task",
-            name: task
-        },
-        callback: function(r) {
+                    $container.off("click", ".task-info-btn").on("click", ".task-info-btn", function () {
 
-            const t = r.message;
+                        const task = $(this).data("task");
+
+                        frappe.call({
+                            method: "frappe.client.get",
+                            args: {
+                                doctype: "Task",
+                                name: task
+                            },
+                            callback: function (r) {
+
+                                const t = r.message;
 
 
-            let html = `
+                                let html = `
 <div>
     <table style="width:100%; border-collapse:collapse; border:1px solid black;">
 
@@ -4576,129 +5236,384 @@ $container.off("click", ".task-info-btn").on("click", ".task-info-btn", function
 </div>
 `;
 
-            let d = new frappe.ui.Dialog({
-                title: "Task Details",
-                fields: [
-                    {
-                        fieldtype: "HTML",
-                        fieldname: "task_details",
-                        options: html
+                                let d = new frappe.ui.Dialog({
+                                    title: "Task Details",
+                                    fields: [
+                                        {
+                                            fieldtype: "HTML",
+                                            fieldname: "task_details",
+                                            options: html
+                                        }
+                                    ]
+                                });
+
+                                d.show();
+
+                                $(d.$wrapper).find('.modal-dialog').css({
+                                    "max-width": "900px",
+                                    "width": "90%"
+                                });
+                            }
+                        });
+
+                    });
+
+
+
+
+
+                    // $container.find('span[data-type="all"]').on('click', function () {
+                    //     const teamId = $(this).data('team');
+                    //     const teamRows = $container.find(`.${teamId}`); // includes both CB + task rows
+                    //     const isVisible = teamRows.is(':visible');
+
+                    //     if (isVisible) {
+                    //         teamRows.hide();
+                    //         $(this).text('+ ALL');
+                    //         // Also reset CB buttons text
+                    //         $(`span[data-target^="cb-${teamId}"]`).each(function() {
+                    //             $(this).text('+ ' + $(this).text().slice(2));
+                    //         });
+                    //     } else {
+                    //         teamRows.show();
+                    //         $(this).text('- ALL');
+                    //         // Also update CB buttons text
+                    //         $(`span[data-target^="cb-${teamId}"]`).each(function() {
+                    //             $(this).text('- ' + $(this).text().slice(2));
+                    //         });
+                    //     }
+                    // });
+
+
+                    $("#today-task-table-container")
+                        .off("click", "span[data-type='all']")
+                        .on("click", "span[data-type='all']", function () {
+
+                            const teamId = $(this).data('team');
+                            toggleTeamRows(teamId, this);
+
+                        });
+
+
+                } else {
+                    $container.html("<p>No data found.</p>");
+                }
+            }
+        });
+
+    }
+
+
+    function load_non_allocated_tasks_in_live_sprint() {
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_non_allocated_tasks_in_live_sprint",
+            callback: function (r) {
+
+                const data = r.message || [];
+
+                if (!data.length) {
+                    $("#non_allocated_task_in_spr").html(
+                        `<div class="text-center" style="padding:20px;">No Data Found</div>`
+                    );
+                    return;
+                }
+
+                const grouped = {};
+
+                let grandET = 0;
+                let grandRT = 0;
+                let grandAT = 0;
+
+                data.forEach(row => {
+
+                    const project = row.project || "No Project";
+
+                    if (!grouped[project]) {
+                        grouped[project] = [];
                     }
-                ]
-            });
 
-            d.show();
+                    grouped[project].push(row);
 
-            $(d.$wrapper).find('.modal-dialog').css({
-                "max-width": "900px",  
-                "width": "90%"          
-            });
-        }
-    });
+                    grandET += parseFloat(row.et || 0);
+                    grandRT += parseFloat(row.rt || 0);
+                    grandAT += parseFloat(row.at || 0);
+                });
 
-});
+                let html = `
+                <table class="table table-bordered" style="margin-bottom:0; table-layout:fixed; width:100%;">
+                    <thead>
+                        <tr style="background:#6c6a80;color:#fff;">
+
+                            <th id="toggle-all-projects"
+                                style="cursor:pointer;width:80px;min-width:80px;white-space:nowrap;">
+                                + ALL
+                            </th>
+
+                            <th style="width:70px;min-width:70px;white-space:nowrap;">Sprint</th>
+
+                            <th style="width:70px;min-width:70px;white-space:nowrap;">Task</th>
+
+                            <th style="width:350px;min-width:350px;white-space:nowrap;">Subject</th>
+
+                            <th style="width:50px;min-width:50px;white-space:nowrap;">ET</th>
+
+                            <th style="width:50px;min-width:50px;white-space:nowrap;">RT</th>
+
+                            <th style="width:50px;min-width:50px;white-space:nowrap;">AT</th>
+
+                            <th style="width:50px;min-width:50px;white-space:nowrap;">AGE</th>
+
+                            <th style="width:50px;min-width:50px;white-space:nowrap;">CF</th>
+
+                            <th style="width:70px;min-width:70px;white-space:nowrap;">Priority</th>
+
+                            <th style="width:70px;min-width:70px;white-space:nowrap;">Status</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                `;
+
+                Object.keys(grouped)
+                    .sort()
+                    .forEach(project => {
+
+                        const projectRows = grouped[project];
+
+                        let projectET = 0;
+                        let projectRT = 0;
+                        let projectAT = 0;
+
+                        projectRows.forEach(row => {
+                            projectET += parseFloat(row.et || 0);
+                            projectRT += parseFloat(row.rt || 0);
+                            projectAT += parseFloat(row.at || 0);
+                        });
+
+                        const safeProject = project.replace(/[^a-zA-Z0-9]/g, "_");
+
+                        // Project Header Row
+
+                        html += `
+                        <tr class="project-row"
+                            data-project="${safeProject}"
+                            style="
+                                background:#85819e;
+                                color:#fff;
+                                font-weight:bold;
+                                cursor:pointer;
+                            ">
+                            
+                            <td colspan="4" style="text-align:left;">
+                                <span class="toggle-icon">+</span>
+                                ${project}
+                            </td>
+
+                            <td>${projectET.toFixed(2)}</td>
+                            <td>${projectRT.toFixed(2)}</td>
+                            <td>${projectAT.toFixed(2)}</td>
+
+                            <td colspan="4"></td>
+
+                        </tr>
+                    `;
+
+                        projectRows.forEach((row, idx) => {
+
+                            const age = parseFloat(row.age || 0);
+
+                            html += `
+                            <tr class="task-row task-${safeProject}"
+                                style="
+                                    display:none;
+                                    background:${idx % 2 === 0 ? '#ffffff' : '#e7e6ec'};
+                                    color:${age > 3 ? 'red' : 'black'};
+                                    font-weight:${age > 3 ? 'bold' : 'normal'};
+                                ">
+
+                                <td ">${row.cb || ""}</td>
+
+                                <td style="text-align:left;">${row.sprint || ""}</td>
+
+                                <td style="text-align:left;">
+                                    <a href="/app/task/${row.task}"
+                                    target="_blank"
+                                    style="color:inherit;text-decoration:none;">
+                                        ${row.task}
+                                    </a>
+                                </td>
+
+                                <td style="text-align:left;">${row.subject || ""}</td>
+
+                                <td>${parseFloat(row.et || 0).toFixed(2)}</td>
+                                <td>${parseFloat(row.rt || 0).toFixed(2)}</td>
+                                <td>${parseFloat(row.at || 0).toFixed(2)}</td>
+
+                                <td>${row.age || 0}</td>
+                                <td>${row.cf || ""}</td>
+                                <td>${row.priority || ""}</td>
+                                <td>${row.status || ""}</td>
+
+                            </tr>
+                            `;
 
 
+                        });
+                    });
 
+                html += `
+                <tr style="
+                    background:#d9d9d9;
+                    font-weight:bold;
+                ">
 
+                    <td colspan="4" style="text-align:left;">
+                        GRAND TOTAL
+                    </td>
 
-// $container.find('span[data-type="all"]').on('click', function () {
-//     const teamId = $(this).data('team');
-//     const teamRows = $container.find(`.${teamId}`); // includes both CB + task rows
-//     const isVisible = teamRows.is(':visible');
+                    <td>${grandET.toFixed(2)}</td>
+                    <td>${grandRT.toFixed(2)}</td>
+                    <td>${grandAT.toFixed(2)}</td>
 
-//     if (isVisible) {
-//         teamRows.hide();
-//         $(this).text('+ ALL');
-//         // Also reset CB buttons text
-//         $(`span[data-target^="cb-${teamId}"]`).each(function() {
-//             $(this).text('+ ' + $(this).text().slice(2));
-//         });
-//     } else {
-//         teamRows.show();
-//         $(this).text('- ALL');
-//         // Also update CB buttons text
-//         $(`span[data-target^="cb-${teamId}"]`).each(function() {
-//             $(this).text('- ' + $(this).text().slice(2));
-//         });
-//     }
-// });
+                    <td colspan="4"></td>
 
+                </tr>
+                `;
 
-$("#today-task-table-container")
-.off("click", "span[data-type='all']")
-.on("click", "span[data-type='all']", function () {
+                html += `
+                    </tbody>
+                </table>
+            `;
 
-    const teamId = $(this).data('team');
-    toggleTeamRows(teamId, this);
+                $("#non_allocated_task_in_spr").html(html);
 
-});
-
-                
-            } else {
-                $container.html("<p>No data found.</p>");
+                bind_non_allocated_events();
             }
-        }
-    });
-
-}
-
-function toggleCBRowsFromOutside(cbId) {
-
-    let $container = $("#today-task-table-container");
-
-    const $rows = $container.find("." + cbId);
-
-    if ($rows.length === 0) {
-        // console.warn("No rows found for:", cbId);
-        return;
+        });
     }
 
-    if ($rows.is(":visible")) {
-        $rows.hide();
-    } else {
-        $rows.show();
-    }
 
-}
+    function bind_non_allocated_events() {
 
-let grouped = {}; 
+        let allExpanded = false;
 
-function getNonAllocatedTasksNew() {
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.get_non_allocated_tasks", 
-        args: {},
-        callback: function(r) {
-            let $container = $("#non_allocated_task_table_new");
+        $("#toggle-all-projects")
+            .off("click")
+            .on("click", function () {
 
-            if (!(r.message && r.message.data && r.message.data.length)) {
-                $container.html("<p>No tasks found.</p>");
-                return;
-            }
+                allExpanded = !allExpanded;
 
-            const tasks = r.message.data;
+                if (allExpanded) {
 
-            // Filter tasks
-            const today = frappe.datetime.get_today();
-            const filtered = tasks.filter(task =>
-                ["Open", "Working"].includes(task.status) &&
-                task.custom_production_date !== today &&
-                task.service === "IT-SW"
-            );
+                    $(".task-row").show();
 
-            // Sort by Project alphabetically
-            filtered.sort((a, b) => (a.project || "").localeCompare(b.project || ""));
+                    $(".project-row .toggle-icon").text("-");
 
-            // Group by project
-            grouped = {}; // assign to global variable
-            filtered.forEach(task => {
-                const project = task.project || "No Project";
-                if (!grouped[project]) grouped[project] = [];
-                grouped[project].push(task);
+                    $(this).text("- ALL");
+
+                } else {
+
+                    $(".task-row").hide();
+
+                    $(".project-row .toggle-icon").text("+");
+
+                    $(this).text("+ ALL");
+                }
             });
 
-            // Build HTML table
-            let html = `
+        $(".project-row")
+            .off("click")
+            .on("click", function () {
+
+                const project = $(this).data("project");
+
+                const rows = $(".task-" + project);
+
+                const icon = $(this).find(".toggle-icon");
+
+                if (rows.is(":visible")) {
+
+                    rows.hide();
+                    icon.text("+");
+
+                } else {
+
+                    rows.show();
+                    icon.text("-");
+                }
+            });
+    }
+
+
+    // Call on page load
+    load_non_allocated_tasks_in_live_sprint();
+
+
+    function toggleCBRowsFromOutside(cbId) {
+
+        let $container = $("#today-task-table-container");
+
+        const $rows = $container.find("." + cbId);
+
+        if ($rows.length === 0) {
+            // console.warn("No rows found for:", cbId);
+            return;
+        }
+
+        if ($rows.is(":visible")) {
+            $rows.hide();
+        } else {
+            $rows.show();
+        }
+
+    }
+
+
+    $("#kt_confirmed_filter").off("change").on("change", function () {
+        getNonAllocatedTasksNew();
+    });
+
+
+
+
+    let grouped = {};
+
+    function getNonAllocatedTasksNew() {
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_non_allocated_tasks",
+            args: {},
+            callback: function (r) {
+                let $container = $("#non_allocated_task_table_new");
+
+                if (!(r.message && r.message.data && r.message.data.length)) {
+                    $container.html("<p>No tasks found.</p>");
+                    return;
+                }
+
+                const tasks = r.message.data;
+
+                // Filter tasks
+                const today = frappe.datetime.get_today();
+                const filtered = tasks.filter(task =>
+                    ["Open", "Working"].includes(task.status) &&
+                    task.custom_production_date !== today &&
+                    task.service === "IT-SW"
+                );
+
+                // Sort by Project alphabetically
+                filtered.sort((a, b) => (a.project || "").localeCompare(b.project || ""));
+
+                // Group by project
+                grouped = {}; // assign to global variable
+                filtered.forEach(task => {
+                    const project = task.project || "No Project";
+                    if (!grouped[project]) grouped[project] = [];
+                    grouped[project].push(task);
+                });
+
+                // Build HTML table
+                let html = `
             <table class="table table-bordered" style="width:100%; text-align:center; border:1px solid #ccc; border-collapse: collapse;">
                 <thead style="background:#0F1568; color:white;">
                     <tr>
@@ -4707,6 +5622,7 @@ function getNonAllocatedTasksNew() {
                         <th>Task</th>
                         <th>Subject</th>
                         <th>ET</th>
+                        <th>RT</th>
                         <th>AT</th>
                         <th>AGE</th>
                         <th>CF</th>
@@ -4715,25 +5631,34 @@ function getNonAllocatedTasksNew() {
                     </tr>
                 </thead>
                 <tbody>`;
+                let grandET = 0;
+                let grandRT = 0;
+                let grandAT = 0;
+                Object.keys(grouped).sort().forEach(project => {
+                    const projectTasks = grouped[project];
+                    const projectRowId = "proj-" + project.replace(/\s+/g, "_");
 
-            Object.keys(grouped).sort().forEach(project => {
-                const projectTasks = grouped[project];
-                const projectRowId = "proj-" + project.replace(/\s+/g, "_");
+                    // Project header row styling
+                    const projectBg = "#85819e";
+                    const projectBorder = "1px solid #192b2c";
+                    const projectColor = "#FFFFFF";
 
-                // Project header row styling
-                const projectBg = "#85819e";  
-                const projectBorder = "1px solid #192b2c";
-                const projectColor = "#FFFFFF";
-                
-                const totalET = projectTasks.reduce((sum, t) => {
-                    return sum + (parseFloat(t.expected_time) || 0);
-                }, 0);
+                    const totalET = projectTasks.reduce((sum, t) => {
+                        return sum + (parseFloat(t.expected_time) || 0);
+                    }, 0);
+                    const totalRT = projectTasks.reduce((sum, t) => {
+                        return sum + (parseFloat(t.rt) || 0);
+                    }, 0);
 
-                const totalAT = projectTasks.reduce((sum, t) => {
-                    return sum + (parseFloat(t.actual_time) || 0);
-                }, 0);
+                    const totalAT = projectTasks.reduce((sum, t) => {
+                        return sum + (parseFloat(t.actual_time) || 0);
+                    }, 0);
 
-                html += `<tr class="project-row" data-target="${projectRowId}" 
+                    grandET += totalET;
+                    grandRT += totalRT;
+                    grandAT += totalAT;
+
+                    html += `<tr class="project-row" data-target="${projectRowId}" 
                             style="cursor:pointer; font-weight:bold; background:${projectBg}; color:${projectColor}; border-bottom:${projectBorder};">
 
                             <td colspan="4" style="text-align:left; padding-left:10px;">
@@ -4745,6 +5670,10 @@ function getNonAllocatedTasksNew() {
                             </td>
 
                             <td colspan="1" style="text-align:center;">
+                                ${totalRT.toFixed(2)}
+                            </td>
+
+                            <td colspan="1" style="text-align:center;">
                                 ${totalAT.toFixed(2)}
                             </td>
 
@@ -4753,84 +5682,121 @@ function getNonAllocatedTasksNew() {
 
                         </tr>`;
 
-                // Task rows
-               
+                    // Task rows
 
-                projectTasks.forEach((task, idx) => {
 
-                    const bg = (idx % 2 === 0) ? "#FFFFFF" : "#e7e6ec";
+                    projectTasks.forEach((task, idx) => {
 
-                    let textColor = "#000000";
+                        const bg = (idx % 2 === 0) ? "#FFFFFF" : "#e7e6ec";
 
-                    let ageValue = parseFloat(task.custom_age) || 0;
-                    let status = (task.status || "").toLowerCase();
+                        let textColor = "#000000";
 
-                    if (ageValue > 3 ) {
-                        textColor = "#f54545";
-                    }
+                        let ageValue = parseFloat(task.custom_age) || 0;
+                        let status = (task.status || "").toLowerCase();
 
-                    html += `<tr class="task-row" data-parent="${projectRowId}" 
+                        if (ageValue > 3) {
+                            textColor = "#f54545";
+                        }
+
+                        html += `<tr class="task-row" data-parent="${projectRowId}" 
+                                data-kt="${task.kt_confirmed ? 'Yes' : 'No'}"
                                 style="display:none; background:${bg}; color:${textColor};">
 
-                                <td></td> 
+                                <td>${task.cb || "No Cb"}</td> 
                                 <td>${task.custom_sprint || ""}</td>
                                 <td>
                                     <a href="/app/task/${task.name}" target="_blank">${task.name || ""}</a>
                                 </td>
                                 <td style="text-align:left;">${task.subject || ""}</td>
                                 <td>${task.expected_time || ""}</td>
+                                <td>${task.rt || ""}</td>
                                 <td>${task.actual_time ? parseFloat(task.actual_time).toFixed(2) : ""}</td>
                                 <td>${task.custom_age || ""}</td>
                                 <td>${task.custom_production_date_count || ""}</td>
                                 <td>${task.priority || ""}</td>
                                 <td>${task.status || ""}</td>
                             </tr>`;
+
+                        $("#kt_confirmed_filter").off("change").on("change", function () {
+
+                            const selected = $(this).val();
+
+                            $("#non_allocated_task_table_new .task-row").each(function () {
+
+                                const ktValue = $(this).attr("data-kt");
+
+                                if (!selected || selected === ktValue) {
+                                    $(this).show();
+                                } else {
+                                    $(this).hide();
+                                }
+
+                            });
+                        });
+
+                    });
+
                 });
 
-            });
+                html += `
+                    <tr style="
+                        font-weight:bold;
+                        background:#0F1568;
+                        color:white;
+                    ">
+                        <td colspan="4" style="text-align:right;">
+                            GRAND TOTAL
+                        </td>
 
-            html += `</tbody></table>`;
-            $container.html(html);
+                        <td>${grandET.toFixed(2)}</td>
+                        <td>${grandRT.toFixed(2)}</td>
+                        <td>${grandAT.toFixed(2)}</td>
 
-            // Toggle all projects
-            let allExpanded = false;
-            $("#toggle-all-projects").off("click").on("click", function () {
-                const $table = $("#non_allocated_task_table_new");  
-                if (!allExpanded) {
-                    $table.find(".task-row").show();           
-                    $table.find(".toggle-sign").text("-");     
-                    $(this).text("- ALL");
-                    allExpanded = true;
-                } else {
-                    $table.find(".task-row").hide();
-                    $table.find(".toggle-sign").text("+");
-                    $(this).text("+ ALL");
-                    allExpanded = false;
-                }
-            });
+                        <td colspan="4"></td>
+                    </tr>`;
 
-    
-            $("#non_allocated_task_table_new .project-row").off("click").on("click", function() {
-                const target = $(this).data("target");
-                const $rows = $("#non_allocated_task_table_new .task-row[data-parent='" + target + "']");
-                const $sign = $(this).find(".toggle-sign");
+                html += `</tbody></table>`;
+                $container.html(html);
 
-                if ($rows.is(":visible")) {
-                    $rows.hide();
-                    $sign.text("+");
-                } else {
-                    $rows.show();
-                    $sign.text("-");
-                }
-            });
-        }
-    });
-}
+                // Toggle all projects
+                let allExpanded = false;
+                $("#toggle-all-projects").off("click").on("click", function () {
+                    const $table = $("#non_allocated_task_table_new");
+                    if (!allExpanded) {
+                        $table.find(".task-row").show();
+                        $table.find(".toggle-sign").text("-");
+                        $(this).text("- ALL");
+                        allExpanded = true;
+                    } else {
+                        $table.find(".task-row").hide();
+                        $table.find(".toggle-sign").text("+");
+                        $(this).text("+ ALL");
+                        allExpanded = false;
+                    }
+                });
 
 
-function load_amc_project_sla_table() {
+                $("#non_allocated_task_table_new .project-row").off("click").on("click", function () {
+                    const target = $(this).data("target");
+                    const $rows = $("#non_allocated_task_table_new .task-row[data-parent='" + target + "']");
+                    const $sign = $(this).find(".toggle-sign");
 
-    $("#amc_table").html(`
+                    if ($rows.is(":visible")) {
+                        $rows.hide();
+                        $sign.text("+");
+                    } else {
+                        $rows.show();
+                        $sign.text("-");
+                    }
+                });
+            }
+        });
+    }
+
+
+    function load_amc_project_sla_table() {
+
+        $("#amc_table").html(`
         <div style="
             padding:20px;
             text-align:center;
@@ -4839,18 +5805,18 @@ function load_amc_project_sla_table() {
         </div>
     `);
 
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.get_amc_project_sla_table",
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_amc_project_sla_table",
 
-        callback: function(r) {
+            callback: function (r) {
 
-            if (r.message) {
+                if (r.message) {
 
-                $("#amc_table").html(r.message);
+                    $("#amc_table").html(r.message);
 
-            } else {
+                } else {
 
-                $("#amc_table").html(`
+                    $("#amc_table").html(`
                     <div style="
                         padding:20px;
                         text-align:center;
@@ -4860,73 +5826,73 @@ function load_amc_project_sla_table() {
                     </div>
                 `);
 
+                }
             }
-        }
-    });
-}
+        });
+    }
 
 
-$(document).on("click", "#download-amc", function () {
+    $(document).on("click", "#download-amc", function () {
 
-    window.open(
-        "/api/method/teampro.teampro.page.new_it_dashboard.new_it.download_amc_project_sla_excel"
-    );
-
-});
-
-$(document).on("click", "#download-dsr", function () {
-
-    let raw_date = $("#dsr_date_filter input").val();
-
-    let selected_date = raw_date
-        ? frappe.datetime.user_to_str(raw_date)
-        : frappe.datetime.add_days(
-            frappe.datetime.get_today(),
-            -1
+        window.open(
+            "/api/method/teampro.teampro.page.new_it_dashboard.new_it.download_amc_project_sla_excel"
         );
 
-    window.open(
-        `/api/method/teampro.teampro.page.new_it_dashboard.new_it.download_dsr_excel?date=${selected_date}`
-    );
+    });
 
-});
+    $(document).on("click", "#download-dsr", function () {
 
+        let raw_date = $("#dsr_date_filter input").val();
 
-frappe.ui.form.make_control({
-    parent: document.querySelector("#dsr_date_filter"),
-    df: {
-        fieldtype: "Date",
-        fieldname: "dsr_date_filter",
-        placeholder: "Select Date",
-        default: frappe.datetime.get_today(),
-        change: function () {
-            load_dsr_table();
-        }
-    },
-    render_input: true
-});
+        let selected_date = raw_date
+            ? frappe.datetime.user_to_str(raw_date)
+            : frappe.datetime.add_days(
+                frappe.datetime.get_today(),
+                -1
+            );
 
-function load_dsr_table() {
+        window.open(
+            `/api/method/teampro.teampro.page.new_it_dashboard.new_it.download_dsr_excel?date=${selected_date}`
+        );
 
-    // Get displayed date
-    let raw_date = $("#dsr_date_filter input").val();
+    });
 
 
-    // Convert DD-MM-YYYY -> YYYY-MM-DD
-    let selected_date = frappe.datetime.str_to_user(raw_date)
-        ? frappe.datetime.user_to_str(raw_date)
-        : raw_date;
-
-
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.dsr_table",
-        args: {
-            date: selected_date
+    frappe.ui.form.make_control({
+        parent: document.querySelector("#dsr_date_filter"),
+        df: {
+            fieldtype: "Date",
+            fieldname: "dsr_date_filter",
+            placeholder: "Select Date",
+            default: frappe.datetime.get_today(),
+            change: function () {
+                load_dsr_table();
+            }
         },
-        callback: function(r) {
+        render_input: true
+    });
 
-            $("#dsr_table").html(
-                r.message || `
+    function load_dsr_table() {
+
+        // Get displayed date
+        let raw_date = $("#dsr_date_filter input").val();
+
+
+        // Convert DD-MM-YYYY -> YYYY-MM-DD
+        let selected_date = frappe.datetime.str_to_user(raw_date)
+            ? frappe.datetime.user_to_str(raw_date)
+            : raw_date;
+
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.dsr_table",
+            args: {
+                date: selected_date
+            },
+            callback: function (r) {
+
+                $("#dsr_table").html(
+                    r.message || `
                     <div style="
                         padding:20px;
                         text-align:center;
@@ -4935,121 +5901,300 @@ function load_dsr_table() {
                         No Data Found
                     </div>
                 `
-            );
+                );
 
-        }
-    });
-}
-
-// Initial Load
-setTimeout(() => {
-    load_dsr_table();
-}, 500);
-
-
-function downloadCSV(filename, rows) {
-    const csvContent = rows.map(e => e.map(a => `"${a}"`).join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = filename;
-    link.click();
-}
-
-// Download button click handler
-$("#download-non-allocated").off("click").on("click", function() {
-    if (!grouped || Object.keys(grouped).length === 0) {
-        frappe.msgprint("No data available to download");
-        return;
+            }
+        });
     }
 
-    const rows = [];
-    rows.push(["Project", "Sprint", "Task", "Subject", "ET", "AT", "Priority", "Status"]);
-
-    Object.keys(grouped).sort().forEach(project => {
-        const projectTasks = grouped[project];
-        projectTasks.forEach(task => {
-            rows.push([
-                project,
-                task.custom_sprint || "",
-                task.name || "",
-                task.subject || "",
-                task.expected_time || "",
-                task.actual_time ? parseFloat(task.actual_time).toFixed(2) : "",
-                task.priority || "",
-                task.status || ""
-            ]);
-        });
-    });
-
-    downloadCSV("NonAllocatedTasks.csv", rows);
-});
-
-$(document).ready(function() {
-    getNonAllocatedTasksNew();
-});
+    // Initial Load
+    setTimeout(() => {
+        load_dsr_table();
+    }, 500);
 
 
+    function downloadCSV(filename, rows) {
+        const csvContent = rows.map(e => e.map(a => `"${a}"`).join(",")).join("\n");
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        link.click();
+    }
 
-function load_opportunity_table() {
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.get_opportunity_table",
-        callback: function(r) {
-            if (r.message) {
-                document.getElementById("opp_table").innerHTML = r.message;
-            }
+    // Download button click handler
+    // $("#download-non-allocated").off("click").on("click", function () {
+    //     if (!grouped || Object.keys(grouped).length === 0) {
+    //         frappe.msgprint("No data available to download");
+    //         return;
+    //     }
+
+    //     const rows = [];
+    //     rows.push(["Project","CB", "Sprint", "Task", "Subject", "ET", "RT","AT", "Priority", "Status"]);
+
+    //     Object.keys(grouped).sort().forEach(project => {
+    //         const projectTasks = grouped[project];
+    //         projectTasks.forEach(task => {
+    //             rows.push([
+    //                 project,
+    //                 task.cb || "",
+    //                 task.custom_sprint || "",
+    //                 task.name || "",
+    //                 task.subject || "",
+    //                 task.expected_time || "",
+    //                 task.rt || "" ,
+    //                 task.actual_time ? parseFloat(task.actual_time).toFixed(2) : "",
+    //                 task.priority || "",
+    //                 task.status || ""
+    //             ]);
+    //         });
+    //     });
+
+    //     downloadCSV("NonAllocatedTasks.csv", rows);
+    // });
+
+    $("#download-non-allocated_in_spr").off("click").on("click", function () {
+
+        if (!grouped || Object.keys(grouped).length === 0) {
+            frappe.msgprint("No data available to download");
+            return;
         }
+
+        let rows = [];
+
+        // HEADER
+        rows.push([
+            "Project",
+            "CB",
+            "Sprint",
+            "Task",
+            "Subject",
+            "ET",
+            "RT",
+            "AT",
+            "AGE",
+            "CF",
+            "Priority",
+            "Status"
+        ]);
+
+        let grandET = 0;
+        let grandRT = 0;
+        let grandAT = 0;
+
+        Object.keys(grouped).forEach(project => {
+
+            grouped[project].forEach(row => {
+
+                const et = parseFloat(row.et || 0);
+                const rt = parseFloat(row.rt || 0);
+                const at = parseFloat(row.at || 0);
+
+                grandET += et;
+                grandRT += rt;
+                grandAT += at;
+
+                rows.push([
+                    project,
+                    row.cb || "",
+                    row.custom_sprint || "",
+                    row.name || "",
+                    row.subject || "",
+                    et,
+                    rt,
+                    at,
+                    row.custom_age || "",
+                    row.custom_production_date_count || "",
+                    row.priority || "",
+                    row.status || ""
+                ]);
+            });
+        });
+
+        // GRAND TOTAL ROW
+        rows.push([
+            "GRAND TOTAL",
+            "",
+            "",
+            "",
+            grandET.toFixed(2),
+            grandRT.toFixed(2),
+            grandAT.toFixed(2),
+            "",
+            "",
+            "",
+            ""
+        ]);
+
+        // CREATE EXCEL
+        let ws = XLSX.utils.aoa_to_sheet(rows);
+        let wb = XLSX.utils.book_new();
+
+        XLSX.utils.book_append_sheet(wb, ws, "Non Allocated Tasks");
+
+        XLSX.writeFile(wb, "NonAllocatedTasks.xlsx");
     });
-}
+
+    $("#download-non-allocated").off("click").on("click", function () {
+
+        if (!grouped || Object.keys(grouped).length === 0) {
+            frappe.msgprint("No data available to download");
+            return;
+        }
+
+        const ktFilter = $("#kt_confirmed_filter").val();
+
+        const rows = [];
+        let totalET = 0;
+        let totalRT = 0;
+        let totalAT = 0;
+
+        rows.push([
+            "Project",
+            "CB",
+            "Sprint",
+            "Task",
+            "Subject",
+            "ET",
+            "RT",
+            "AT",
+            "AGE",
+            "CF",
+            "Priority",
+            "Status"
+        ]);
+
+        Object.keys(grouped).sort().forEach(project => {
+
+            const projectTasks = grouped[project];
+
+            projectTasks.forEach(task => {
+
+                // Apply same filter used in UI
+                if (ktFilter === "Yes" && !task.kt_confirmed) {
+                    return;
+                }
+
+                if (ktFilter === "No" && task.kt_confirmed) {
+                    return;
+                }
+                totalET += parseFloat(task.expected_time || 0);
+                totalRT += parseFloat(task.rt || 0);
+                totalAT += parseFloat(task.actual_time || 0);
 
 
-function load_retro_summary_html(sprint) {
-    frappe.call({
-    method: "teampro.teampro.page.new_it_dashboard.new_it.get_retro_summary_html_test",
-	args:{
-	    name:sprint 
-	},
-    callback: function (r) {
-        const data = r.message || [];
-        $('#retro-summary-html').html('');
-        data.forEach(section => {
-            $('#retro-summary-html').append(`
+                rows.push([
+                    project,
+                    task.cb || "",
+                    task.custom_sprint || "",
+                    task.name || "",
+                    task.subject || "",
+                    task.expected_time || "",
+                    task.rt || "",
+                    task.actual_time
+                        ? parseFloat(task.actual_time).toFixed(2)
+                        : "",
+                    task.custom_age || "",
+                    task.custom_production_date_count || "",
+                    task.priority || "",
+                    task.status || ""
+                ]);
+            });
+        });
+
+
+        rows.push([
+            "TOTAL",
+            "",
+            "",
+            "",
+            "",
+            totalET.toFixed(2),
+            totalRT.toFixed(2),
+            totalAT.toFixed(2),
+            "",
+            "",
+            "",
+            ""
+        ]);
+
+        downloadCSV("NonAllocatedTasks.csv", rows);
+    });
+
+    $(document).ready(function () {
+        getNonAllocatedTasksNew();
+    });
+
+
+
+    function load_opportunity_table() {
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_opportunity_table",
+            callback: function (r) {
+                if (r.message) {
+                    document.getElementById("opp_table").innerHTML = r.message;
+                }
+            }
+        });
+    }
+
+
+    function load_retro_summary_html(sprint) {
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_retro_summary_html_test",
+            args: {
+                name: sprint
+            },
+            callback: function (r) {
+                const data = r.message || [];
+                $('#retro-summary-html').html('');
+                data.forEach(section => {
+                    $('#retro-summary-html').append(`
                 <div class="team-section" style="padding: 0 30px;">
                     <h4>${section.team}</h4>
                     ${section.html}
                     <hr>
                 </div>
             `);
+                });
+                if (current_view === "hrs") {
+                    $('.hrs-col').show();
+                    $('.count-col').hide();
+                } else {
+                    $('.hrs-col').hide();
+                    $('.count-col').show();
+                }
+            }
         });
     }
-});
-}
 
-function load_retro_summary(sprint) {
-    frappe.call({
-                method: "teampro.teampro.page.new_it_dashboard.new_it.summary_total",
-                args:{
-                    name:sprint
-                },
-                callback: function(r) {
-                    if (r.message) {
-                        $('#retro-summary-html').html(r.message);
-                    } else {
-                        $('#retro-summary-html').html("No Data Found");
-                    }
+    function load_retro_summary(sprint) {
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.summary_total_hrs_cols",
+            args: {
+                name: sprint
+            },
+            callback: function (r) {
+                if (r.message) {
+                    $('#retro-summary-html').html(r.message);
+                    $('.count-col').hide();
+                    $('.hrs-col').show();
+                } else {
+                    $('#retro-summary-html').html("No Data Found");
                 }
-            });
-}
+            }
+        });
+    }
 
 
-frappe.call({
-    method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_pivot",
-    callback: function (r) {
-        const data = r.message || [];
-        // pivotData = data;   
-        // renderPivotTable(pivotData);
+    frappe.call({
+        method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_pivot",
+        callback: function (r) {
+            const data = r.message || [];
+            // pivotData = data;   
+            // renderPivotTable(pivotData);
 
-let pivot_html = `
+            let pivot_html = `
 <style>
     #pivot-summary {
         width: 100%;
@@ -5080,68 +6225,93 @@ let pivot_html = `
     .left-align {
         text-align: left;
     }
+        .psr-toggle.active{
+    background:#0F1568 !important;
+    color:#fff !important;
+}
 </style>
 
+
+
 <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-<br>
-<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #ddd; padding:5px 10px;">
-    <h4 style="margin: 0; padding: px 0; text-align: center; background: white;">PROJECT STATUS REPORT(PSR)</h4>
+    <div style="
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:white;
+    border-bottom:1px solid #ddd;
+    padding:5px 10px;
+">
+    
+    <h4 style="
+        margin:0;
+        
+    ">
+        PROJECT STATUS REPORT(PSR) 
+    </h4>
+     <style>
+.psr-toggle.active{
+    background:#0F1568 !important;
+    color:white !important;
+    border-radius:4px;
+}
+</style>
+<span class="psr-toggle active" data-view="overall"
+      style="padding:4px 10px;border:1px solid #ccc;cursor:pointer;">
+    Overall
+</span>
+
+<span class="psr-toggle" data-view="current"
+      style="padding:4px 10px;border:1px solid #ccc;cursor:pointer;">
+    Current
+</span>
     <button 
-        id="download-psr-btn"
-        style="
-            background:black;
-            color:white;
-            border:none;
-            padding:6px 12px;
-            border-radius:5px;
-            cursor:pointer;
-            font-size:12px;
-        ">
-        Download
-    </button>
-   </div> 
-    <table id="pivot-summary">
+    id="download-psr-btn"
+    style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+    <img 
+        src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+        style="width:22px;height:22px;"
+    >
+</button>
+
+</div>      <table id="pivot-summary">
         <thead>
             <tr class="sticky-top">
                 <th>S. No</th>
                 <th>Project Name</th>
                 <th>Project<br>Type</th>
                 <th>Open<br>(hr/ #)</th>
-                <th>TD Open<br>(hr/ #)</th>
                 <th>W<br>(hr/ #)</th>
-                <th>TD W<br>(hr/ #)</th>
                 <th>PR<br>(hr/ #)</th>
-                <th>TD PR<br>(hr/ #)</th>
                 <th>CR<br>(hr/ #)</th>
-                <th>TD CR<br>(hr/ #)</th>
             </tr>
         </thead>
         <tbody>
 `;
 
-        let total_open_hours = 0, total_open_tasks = 0;
-        let total_working_hours = 0, total_working_tasks = 0;
-        let total_pr_hours = 0, total_pr_tasks = 0;
-        let total_cr_hours = 0, total_cr_tasks = 0;
+            let total_open_hours = 0, total_open_tasks = 0;
+            let total_working_hours = 0, total_working_tasks = 0;
+            let total_pr_hours = 0, total_pr_tasks = 0;
+            let total_cr_hours = 0, total_cr_tasks = 0;
 
-        let td_total_open_hours = 0, td_total_open_tasks = 0;
-        let td_total_working_hours = 0, td_total_working_tasks = 0;
-        let td_total_pr_hours = 0, td_total_pr_tasks = 0;
-        let td_total_cr_hours = 0, td_total_cr_tasks = 0;
+            let td_total_open_hours = 0, td_total_open_tasks = 0;
+            let td_total_working_hours = 0, td_total_working_tasks = 0;
+            let td_total_pr_hours = 0, td_total_pr_tasks = 0;
+            let td_total_cr_hours = 0, td_total_cr_tasks = 0;
 
-        data.forEach(row => {
-            const [open_hr, open_task] = row.open.split("/").map(Number);
-            const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
+            data.forEach(row => {
+                const [open_hr, open_task] = row.open.split("/").map(Number);
+                const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
 
-            const [work_hr, work_task] = row.working.split("/").map(Number);
-            const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
+                const [work_hr, work_task] = row.working.split("/").map(Number);
+                const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
 
-            const [pr_hr, pr_task] = row.pr.split("/").map(Number);
-            const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
+                const [pr_hr, pr_task] = row.pr.split("/").map(Number);
+                const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
 
-            const [cr_hr, cr_task] = row.cr.split("/").map(Number);
-            const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
-            pivot_html += `
+                const [cr_hr, cr_task] = row.cr.split("/").map(Number);
+                const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
+                pivot_html += `
             <tr>
                 <td>${row.s_no}</td>
                 <td class="left-align">
@@ -5150,67 +6320,312 @@ let pivot_html = `
                     </a>
                     </td>       
                 <td class="left-align">${row.project_type}</td>
+<td>${open_hr.toFixed(2)}/${open_task}</td>
 
-                <td>${open_hr.toFixed(2)}/${open_task}</td>
-                <td style="color: red;">${open_td_hr.toFixed(2)}/${open_td_task}</td>
+<td>
+    <span class="overall-col">${work_hr.toFixed(2)}/${work_task}</span>
+    <span class="current-col" style="display:none;color:">
+        ${work_td_hr.toFixed(2)}/${work_td_task}
+    </span>
+</td>
 
-                <td>${work_hr.toFixed(2)}/${work_task}</td>
-                <td style="color: red;">${work_td_hr.toFixed(2)}/${work_td_task}</td>
+<td>
+    <span class="overall-col">${pr_hr.toFixed(2)}/${pr_task}</span>
+    <span class="current-col" style="display:none;color:">
+        ${pr_td_hr.toFixed(2)}/${pr_td_task}
+    </span>
+</td>
 
-                <td>${pr_hr.toFixed(2)}/${pr_task}</td>
-                <td style="color: red;">${pr_td_hr.toFixed(2)}/${pr_td_task}</td>
-
-                <td>${cr_hr.toFixed(2)}/${cr_task}</td>
-                <td style="color: red;">${cr_td_hr.toFixed(2)}/${cr_td_task}</td>
+<td>
+    <span class="overall-col">${cr_hr.toFixed(2)}/${cr_task}</span>
+    <span class="current-col" style="display:none;color:">
+        ${cr_td_hr.toFixed(2)}/${cr_td_task}
+    </span>
+</td>
+               
             </tr>`;
+
+
+
+                total_open_hours += open_hr;
+                total_open_tasks += open_task;
+                total_working_hours += work_hr;
+                total_working_tasks += work_task;
+                total_pr_hours += pr_hr;
+                total_pr_tasks += pr_task;
+                total_cr_hours += cr_hr;
+                total_cr_tasks += cr_task;
+
+                td_total_open_hours += open_td_hr;
+                td_total_open_tasks += open_td_task;
+                td_total_working_hours += work_td_hr;
+                td_total_working_tasks += work_td_task;
+                td_total_pr_hours += pr_td_hr;
+                td_total_pr_tasks += pr_td_task;
+                td_total_cr_hours += cr_td_hr;
+                td_total_cr_tasks += cr_td_task;
+            });
+
+            pivot_html += `
+<tr style="font-weight:bold; background-color:#0F1568; color:white;">
+
+    <td colspan="3" style="text-align:center;">
+        Total
+    </td>
+
+    <td>
+        ${total_open_hours.toFixed(2)}/${total_open_tasks}
+    </td>
+
+    <td>
+        <span class="overall-col">
+            ${total_working_hours.toFixed(2)}/${total_working_tasks}
+        </span>
+
+        <span class="current-col" style="display:none;color:white;">
+            ${td_total_working_hours.toFixed(2)}/${td_total_working_tasks}
+        </span>
+    </td>
+
+    <td>
+        <span class="overall-col">
+            ${total_pr_hours.toFixed(2)}/${total_pr_tasks}
+        </span>
+
+        <span class="current-col" style="display:none;color:white;">
+            ${td_total_pr_hours.toFixed(2)}/${td_total_pr_tasks}
+        </span>
+    </td>
+
+    <td>
+        <span class="overall-col">
+            ${total_cr_hours.toFixed(2)}/${total_cr_tasks}
+        </span>
+
+        <span class="current-col" style="display:none;color:white;">
+            ${td_total_cr_hours.toFixed(2)}/${td_total_cr_tasks}
+        </span>
+    </td>
+
+</tr>`;
+
+            pivot_html += `</tbody></table>`;
+
+            $("#pivot-project-summary-container").html(pivot_html);
+            // Default state
+            $(".current-col").hide();
+            $(".overall-col").show();
             
+
+            $(document).off("click", ".psr-toggle");
+
+            $(document).on("click", ".psr-toggle", function () {
+
+                $(".psr-toggle").removeClass("active");
+                $(this).addClass("active");
+
+                console.log("clicked", $(this).text());
+
+                let view = $(this).data("view");
+
+                if (view === "overall") {
+                    $(".overall-col").show();
+                    $(".current-col").hide();
+                } else {
+                    $(".overall-col").hide();
+                    $(".current-col").show();
+                }
+            });
+
+        }
+
+
+    });
+
+
+
+//     function renderPivotTable(data) {
+
+//         let pivot_html = `
+// <style>
+//     #pivot-summary {
+//         width: 100%;
+//         border-collapse: collapse;
+//         margin-top: 10px;
+//         font-family: Arial, sans-serif;
+//         font-size: 12px;
+//     }
+//     #pivot-summary th, #pivot-summary td {
+//         border: 1px solid #444;
+//         padding: 6px 10px;
+//         text-align: center;
+//         white-space: nowrap;
+//     }
+//     #pivot-summary thead th {
+//         background-color: #2a4d69;
+//         color: white;
+//     }
+//     #pivot-summary tbody tr:nth-child(odd) {
+//         background-color: #FFFFFF;   /* white */
+//         color: #000000;              /* black text */
+//     }
+
+//     #pivot-summary tbody tr:nth-child(even) {
+//         background-color: #e7e6ec;   /* light mild blue */
+//         color: #000000;              /* black text */
+//     }
+//     .left-align {
+//         text-align: left;
+//     }
+// </style>
+
+// <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
+//     <div style="
+//     display:flex;
+//     justify-content:space-between;
+//     align-items:center;
+//     background:white;
+//     border-bottom:1px solid #ddd;
+//     padding:5px 10px;
+// ">
+    
+//     <h4 style="
+//         margin:0;
+        
+//     ">
+//         PROJECT STATUS REPORT(PSR)
+//     </h4>
+//  <div style="display:flex; gap:8px;">
             
+//             <span class="filter-btn" data-group="priority" data-filter="Low">Overall</span>
+//             <span class="filter-btn" data-group="priority" data-filter="Medium">Current</span>
+//         </div>
+//     <button 
+//     id="download-psr-btn"
+//     style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+//     <img 
+//         src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+//         style="width:22px;height:22px;"
+//     >
+// </button>
 
-            total_open_hours += open_hr;
-            total_open_tasks += open_task;
-            total_working_hours += work_hr;
-            total_working_tasks += work_task;
-            total_pr_hours += pr_hr;
-            total_pr_tasks += pr_task;
-            total_cr_hours += cr_hr;
-            total_cr_tasks += cr_task;
+// </div>  
+//     <table id="pivot-summary">
+//         <thead>
+//             <tr class="sticky-top">
+//                 <th>S. No</th>
+//                 <th>Project Name</th>
+//                 <th>Project<br>Type</th>
+//                 <th>Open<br>(hr/ #)</th>
+//                 <th>TD Open<br>(hr/ #)</th>
+//                 <th>W<br>(hr/ #)</th>
+//                 <th>TD W<br>(hr/ #)</th>
+//                 <th>PR<br>(hr/ #)</th>
+//                 <th>TD PR<br>(hr/ #)</th>
+//                 <th>CR<br>(hr/ #)</th>
+//                 <th>TD CR<br>(hr/ #)</th>
+//             </tr>
+//         </thead>
+//         <tbody>
+// `;
+//         let total_open_hr = 0, total_open_task = 0;
+//         let total_open_td_hr = 0, total_open_td_task = 0;
 
-            td_total_open_hours += open_td_hr;
-            td_total_open_tasks += open_td_task;
-            td_total_working_hours += work_td_hr;
-            td_total_working_tasks += work_td_task;
-            td_total_pr_hours += pr_td_hr;
-            td_total_pr_tasks += pr_td_task;
-            td_total_cr_hours += cr_td_hr;
-            td_total_cr_tasks += cr_td_task;
-        });
+//         let total_work_hr = 0, total_work_task = 0;
+//         let total_work_td_hr = 0, total_work_td_task = 0;
 
-        pivot_html += `
-        <tr style="font-weight:bold; background-color: #0F1568; color: white;">
-            <td colspan="3" style="text-align: center;">Total</td>
-            <td>${total_open_hours.toFixed(2)}/<br>${total_open_tasks}</td>
-            <td>${td_total_open_hours.toFixed(2)}/<br>${td_total_open_tasks}</td>
-            <td>${total_working_hours.toFixed(2)}/<br>${total_working_tasks}</td>
-            <td>${td_total_working_hours.toFixed(2)}/<br>${td_total_working_tasks}</td>
-            <td>${total_pr_hours.toFixed(2)}/<br>${total_pr_tasks}</td>
-            <td>${td_total_pr_hours.toFixed(2)}/<br>${td_total_pr_tasks}</td>
-            <td>${total_cr_hours.toFixed(2)}/<br>${total_cr_tasks}</td>
-            <td>${td_total_cr_hours.toFixed(2)}/<br>${td_total_cr_tasks}</td>
-        </tr>`;
+//         let total_pr_hr = 0, total_pr_task = 0;
+//         let total_pr_td_hr = 0, total_pr_td_task = 0;
 
-        pivot_html += `</tbody></table>`;
+//         let total_cr_hr = 0, total_cr_task = 0;
+//         let total_cr_td_hr = 0, total_cr_td_task = 0;
+//         data.forEach(row => {
+//             const [open_hr, open_task] = row.open.split("/").map(Number);
+//             const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
 
-        $("#pivot-project-summary-container").html(pivot_html);
-    }
+//             const [work_hr, work_task] = row.working.split("/").map(Number);
+//             const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
 
-    
-});
+//             const [pr_hr, pr_task] = row.pr.split("/").map(Number);
+//             const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
+
+//             const [cr_hr, cr_task] = row.cr.split("/").map(Number);
+//             const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
+
+//             total_open_hr += open_hr;
+//             total_open_task += open_task;
+
+//             total_open_td_hr += open_td_hr;
+//             total_open_td_task += open_td_task;
+
+//             total_work_hr += work_hr;
+//             total_work_task += work_task;
+
+//             total_work_td_hr += work_td_hr;
+//             total_work_td_task += work_td_task;
+
+//             total_pr_hr += pr_hr;
+//             total_pr_task += pr_task;
+
+//             total_pr_td_hr += pr_td_hr;
+//             total_pr_td_task += pr_td_task;
+
+//             total_cr_hr += cr_hr;
+//             total_cr_task += cr_task;
+
+//             total_cr_td_hr += cr_td_hr;
+//             total_cr_td_task += cr_td_task;
+
+//             pivot_html += `
+//         <tr>
+//             <td>${row.s_no}</td>
+//             <td class="left-align">
+//                 <a href="/app/project/${row.project}" target="_blank">
+//                     ${row.project}
+//                 </a>
+//             </td>
+//             <td class="left-align">${row.project_type}</td>
+
+//             <td>${open_hr.toFixed(2)}/${open_task}</td>
+//             <td style="color:">${open_td_hr.toFixed(2)}/${open_td_task}</td>
+
+//             <td>${work_hr.toFixed(2)}/${work_task}</td>
+//             <td style="color:">${work_td_hr.toFixed(2)}/${work_td_task}</td>
+
+//             <td>${pr_hr.toFixed(2)}/${pr_task}</td>
+//             <td style="color:">${pr_td_hr.toFixed(2)}/${pr_td_task}</td>
+
+//             <td>${cr_hr.toFixed(2)}/${cr_task}</td>
+//             <td style="color:">${cr_td_hr.toFixed(2)}/${cr_td_task}</td>
+//         </tr>`;
+//         });
+
+//         pivot_html += `
+//             <tr style="font-weight:bold;background:#0F1568;color:white;">
+//                 <td colspan="3">Total</td>
+
+//                 <td>${total_open_hr.toFixed(2)}/${total_open_task}</td>
+//                 <td style="color:">${total_open_td_hr.toFixed(2)}/${total_open_td_task}</td>
+
+//                 <td>${total_work_hr.toFixed(2)}/${total_work_task}</td>
+//                 <td style="color:">${total_work_td_hr.toFixed(2)}/${total_work_td_task}</td>
+
+//                 <td>${total_pr_hr.toFixed(2)}/${total_pr_task}</td>
+//                 <td style="color:">${total_pr_td_hr.toFixed(2)}/${total_pr_td_task}</td>
+
+//                 <td>${total_cr_hr.toFixed(2)}/${total_cr_task}</td>
+//             </tr>
+
+//             </tbody>
+//             </table>`;
+
+//         pivot_html += `</tbody></table>`;
+//         $("#pivot-project-summary-container").html(pivot_html);
+//     }
 
 
+    function renderPivotTable(data) {
 
-
-function renderPivotTable(data) {
-    
     let pivot_html = `
 <style>
     #pivot-summary {
@@ -5242,40 +6657,36 @@ function renderPivotTable(data) {
     .left-align {
         text-align: left;
     }
+    .psr-toggle.active{
+        background:#0F1568 !important;
+        color:#fff !important;
+    }
 </style>
 
 <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-<br>
-    <div style="
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    border-bottom:1px solid #ddd;
-    padding:5px 10px;
-">
-    
-    <h4 style="
-        margin:0;
-        background:white;
-    ">
-        PROJECT STATUS REPORT(PSR)
-    </h4>
-
-    <button 
-        id="download-psr-btn"
-        style="
-            background:black;
-            color:white;
-            border:none;
-            padding:6px 12px;
-            border-radius:5px;
-            cursor:pointer;
-            font-size:12px;
-        ">
-        Download
-    </button>
-
-</div>  
+    <div style="display:flex; justify-content:space-between; align-items:center; background:white; border-bottom:1px solid #ddd; padding:5px 10px;">
+        <h4 style="margin:0;">
+            PROJECT STATUS REPORT(PSR)
+        </h4>
+        <style>
+            .psr-toggle.active{
+                background:#0F1568 !important;
+                color:white !important;
+                border-radius:4px;
+            }
+        </style>
+        <div style="display:flex; gap:8px;">
+            <span class="psr-toggle active" data-view="overall" style="cursor:pointer; padding:2px 8px;">
+                Overall
+            </span>
+            <span class="psr-toggle" data-view="current" style="cursor:pointer; padding:2px 8px;">
+                Current
+            </span>
+            <button id="download-psr-btn" style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+                <img src="https://cdn-icons-png.flaticon.com/128/724/724933.png" style="width:22px;height:22px;">
+            </button>
+        </div>
+    </div>  
     <table id="pivot-summary">
         <thead>
             <tr class="sticky-top">
@@ -5283,19 +6694,27 @@ function renderPivotTable(data) {
                 <th>Project Name</th>
                 <th>Project<br>Type</th>
                 <th>Open<br>(hr/ #)</th>
-                <th>TD Open<br>(hr/ #)</th>
                 <th>W<br>(hr/ #)</th>
-                <th>TD W<br>(hr/ #)</th>
                 <th>PR<br>(hr/ #)</th>
-                <th>TD PR<br>(hr/ #)</th>
                 <th>CR<br>(hr/ #)</th>
-                <th>TD CR<br>(hr/ #)</th>
             </tr>
         </thead>
         <tbody>
 `;
 
-    data.forEach(row => {
+    let total_open_hr = 0, total_open_task = 0;
+    let total_open_td_hr = 0, total_open_td_task = 0;
+
+    let total_work_hr = 0, total_work_task = 0;
+    let total_work_td_hr = 0, total_work_td_task = 0;
+
+    let total_pr_hr = 0, total_pr_task = 0;
+    let total_pr_td_hr = 0, total_pr_td_task = 0;
+
+    let total_cr_hr = 0, total_cr_task = 0;
+    let total_cr_td_hr = 0, total_cr_td_task = 0;
+
+    data.forEach((row, index) => {
         const [open_hr, open_task] = row.open.split("/").map(Number);
         const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
 
@@ -5308,9 +6727,33 @@ function renderPivotTable(data) {
         const [cr_hr, cr_task] = row.cr.split("/").map(Number);
         const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
 
+        total_open_hr += open_hr;
+        total_open_task += open_task;
+
+        total_open_td_hr += open_td_hr;
+        total_open_td_task += open_td_task;
+
+        total_work_hr += work_hr;
+        total_work_task += work_task;
+
+        total_work_td_hr += work_td_hr;
+        total_work_td_task += work_td_task;
+
+        total_pr_hr += pr_hr;
+        total_pr_task += pr_task;
+
+        total_pr_td_hr += pr_td_hr;
+        total_pr_td_task += pr_td_task;
+
+        total_cr_hr += cr_hr;
+        total_cr_task += cr_task;
+
+        total_cr_td_hr += cr_td_hr;
+        total_cr_td_task += cr_td_task;
+
         pivot_html += `
         <tr>
-            <td>${row.s_no}</td>
+            <td>${index + 1}</td>
             <td class="left-align">
                 <a href="/app/project/${row.project}" target="_blank">
                     ${row.project}
@@ -5319,70 +6762,132 @@ function renderPivotTable(data) {
             <td class="left-align">${row.project_type}</td>
 
             <td>${open_hr.toFixed(2)}/${open_task}</td>
-            <td style="color:red">${open_td_hr.toFixed(2)}/${open_td_task}</td>
 
-            <td>${work_hr.toFixed(2)}/${work_task}</td>
-            <td style="color:red">${work_td_hr.toFixed(2)}/${work_td_task}</td>
+            <td>
+                <span class="overall-col">${work_hr.toFixed(2)}/${work_task}</span>
+                <span class="current-col" style="display:none;">
+                    ${work_td_hr.toFixed(2)}/${work_td_task}
+                </span>
+            </td>
 
-            <td>${pr_hr.toFixed(2)}/${pr_task}</td>
-            <td style="color:red">${pr_td_hr.toFixed(2)}/${pr_td_task}</td>
+            <td>
+                <span class="overall-col">${pr_hr.toFixed(2)}/${pr_task}</span>
+                <span class="current-col" style="display:none;">
+                    ${pr_td_hr.toFixed(2)}/${pr_td_task}
+                </span>
+            </td>
 
-            <td>${cr_hr.toFixed(2)}/${cr_task}</td>
-            <td style="color:red">${cr_td_hr.toFixed(2)}/${cr_td_task}</td>
+            <td>
+                <span class="overall-col">${cr_hr.toFixed(2)}/${cr_task}</span>
+                <span class="current-col" style="display:none;">
+                    ${cr_td_hr.toFixed(2)}/${cr_td_task}
+                </span>
+            </td>
         </tr>`;
     });
 
-    pivot_html += `</tbody></table>`;
+    pivot_html += `
+        <tr style="font-weight:bold;background:#0F1568;color:white;">
+            <td colspan="3">Total</td>
+
+            <td>${total_open_hr.toFixed(2)}/${total_open_task}</td>
+
+            <td>
+                <span class="overall-col">
+                    ${total_work_hr.toFixed(2)}/${total_work_task}
+                </span>
+
+                <span class="current-col" style="display:none;color:white;">
+                    ${total_work_td_hr.toFixed(2)}/${total_work_td_task}
+                </span>
+            </td>
+
+            <td>
+                <span class="overall-col">
+                    ${total_pr_hr.toFixed(2)}/${total_pr_task}
+                </span>
+
+                <span class="current-col" style="display:none;color:white;">
+                    ${total_pr_td_hr.toFixed(2)}/${total_pr_td_task}
+                </span>
+            </td>
+
+            <td>
+                <span class="overall-col">
+                    ${total_cr_hr.toFixed(2)}/${total_cr_task}
+                </span>
+
+                <span class="current-col" style="display:none;color:white;">
+                    ${total_cr_td_hr.toFixed(2)}/${total_cr_td_task}
+                </span>
+            </td>
+        </tr>
+    </tbody>
+</table>
+</div>`;
+
     $("#pivot-project-summary-container").html(pivot_html);
-}
+    
+    // Default visibility toggles
+    $(".current-col").hide();
+    $(".overall-col").show();
 
-// $(document).on("click", "#download-psr-btn", function () {
+    $(document).off("click", ".psr-toggle");
+    $(document).on("click", ".psr-toggle", function () {
+        $(".psr-toggle").removeClass("active");
+        $(this).addClass("active");
 
-//     window.open(
-//         frappe.urllib.get_full_url(
-//             "/api/method/teampro.teampro.page.new_it_dashboard.new_it.download"
-//         )
-//     );
-
-// });
-
-$(document).on("click", "#download-psr-btn", function () {
-
-    let project_list = [];
-
-    $("#pivot-summary tbody tr").each(function () {
-
-        let project = $(this).find("td:eq(1) a").text().trim();
-
-        if (project) {
-            project_list.push(project);
+        let view = $(this).data("view");
+        if (view === "overall") {
+            $(".overall-col").show();
+            $(".current-col").hide();
+        } else {
+            $(".overall-col").hide();
+            $(".current-col").show();
         }
     });
-
-    window.open(
-        frappe.urllib.get_full_url(
-            "/api/method/teampro.teampro.page.new_it_dashboard.new_it.download"
-            + "?projects=" + encodeURIComponent(JSON.stringify(project_list))
-        )
-    );
-
-});
+}
 
 
 
 
+    $(document).on("click", "#download-psr-btn", function () {
 
-frappe.call({
-    method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_pivot",
-    callback: function (r) {
+        let project_list = [];
 
-        const data = r.message || [];
+        $("#pivot-summary tbody tr").each(function () {
 
-        pivotData = data;
+            let project = $(this).find("td:eq(1) a").text().trim();
 
-        renderPivotTable(pivotData);  // ONLY THIS
-    }
-});
+            if (project) {
+                project_list.push(project);
+            }
+        });
+
+        window.open(
+            frappe.urllib.get_full_url(
+                "/api/method/teampro.teampro.page.new_it_dashboard.new_it.download"
+                + "?projects=" + encodeURIComponent(JSON.stringify(project_list))
+            )
+        );
+
+    });
+
+
+
+
+
+    frappe.call({
+        method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_pivot",
+        callback: function (r) {
+
+            const data = r.message || [];
+
+            pivotData = data;
+
+            renderPivotTable(pivotData);  // ONLY THIS
+        }
+    });
 
 
 }

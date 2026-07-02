@@ -114,3 +114,5 @@ def validate_maintain_stok_si(doc,method):
 					stock=frappe.db.get_value("Item",i.item_code,"is_stock_item")
 					if stock and not i.delivery_note:
 						frappe.throw(_("Row {0}:Stock Item '{1}' requires a Delivery Note.Kindly create Invoice from Delivery Note.").format(i.idx, i.item_code))
+
+

@@ -24,7 +24,7 @@ frappe.ui.form.on("Stock Counting", {
                             frappe.throw("This item is disabled. Kindly scan another Item")
                         }else{
                             frappe.call({
-                            method: "teampro.custom.get_previous_count",
+                            method: "teampro.teampro.doctype.stock_counting.stock_counting.get_previous_count",
                             args: {
                                 name: item.item_code,
                                 date: frm.doc.date
@@ -105,77 +105,7 @@ frappe.ui.form.on("Stock Counting", {
                         });
                         }
                     })
-                        // frappe.call({
-                        //     method: "teampro.custom.get_previous_count",
-                        //     args: {
-                        //         name: item.item_code,
-                        //         date: frm.doc.date
-                        //     },
-                        //     callback: function(res) {
-                        //         const previous_count = res.message || 0;
-
-                        //         let dialog = new frappe.ui.Dialog({
-                        //             title: `Stock Entry for ${item.item_name}`,
-                        //             fields: [
-                        //                 {
-                        //                     label: 'Item',
-                        //                     fieldname: 'item_code',
-                        //                     fieldtype: 'Data',
-                        //                     default: item.item_code,
-                        //                     read_only: 1
-                        //                 },
-                        //                 {
-                        //                     label: 'Item Name',
-                        //                     fieldname: 'item_name',
-                        //                     fieldtype: 'Data',
-                        //                     default: item.item_name,
-                        //                     read_only: 1
-                        //                 },
-                        //                 {
-                        //                     label: 'Stock UOM',
-                        //                     fieldname: 'stock_uom',
-                        //                     fieldtype: 'Data',
-                        //                     default: item.stock_uom,
-                        //                     read_only: 1
-                        //                 },
-                        //                 {
-                        //                     label: 'Previous Day Count',
-                        //                     fieldname: 'previous_count',
-                        //                     fieldtype: 'Int',
-                        //                     default: previous_count,
-                        //                     read_only: 1
-                        //                 },
-                        //                 {
-                        //                     label: 'Current Count',
-                        //                     fieldname: 'current_count',
-                        //                     fieldtype: 'Int',
-                        //                     reqd: 1
-                        //                 }
-                        //             ],
-                        //             primary_action_label: 'Submit',
-                        //             primary_action(values) {
-                        //                 frm.add_child('details', {
-                        //                     'item': values.item_code,
-                        //                     'item_name': item.item_name,
-                        //                     'previous_count': previous_count,
-                        //                     'count': values.current_count,
-                        //                     'date_and_time': frappe.datetime.now_datetime()
-                        //                 });
-                        //                 frm.refresh_field('details');
-                        //                 dialog.hide();
-                        //                 frm.set_value("scan_barcode", ""); // Clear barcode after use
-                        //                 frm.save();
-                        //             }
-                        //         });
-
-                        //         // Always clear scan_barcode when dialog is closed
-                        //         dialog.onhide = function () {
-                        //             frm.set_value("scan_barcode", "");
-                        //         };
-
-                        //         dialog.show();
-                        //     }
-                        // });
+                       
                     } else {
                         frappe.msgprint("No item found with this barcode.");
                         frm.set_value("scan_barcode", ""); // Clear on failed scan

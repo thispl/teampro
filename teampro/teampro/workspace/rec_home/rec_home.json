@@ -1,0 +1,164 @@
+{
+ "app": "teampro",
+ "charts": [],
+ "content": "[{\"id\":\"ELYsMRY_c0\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">REC Home</span>\",\"col\":12}},{\"id\":\"jJsPswmGj5\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"Approval block\",\"col\":12}},{\"id\":\"cctLAIWJfI\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Task\",\"col\":3}},{\"id\":\"3vuY9ZQ0D3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Candidate\",\"col\":3}},{\"id\":\"1S7T-q5Dg1\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"MeetLog\",\"col\":3}},{\"id\":\"8GaW24TDSO\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"RI7K81Ys-X\",\"type\":\"header\",\"data\":{\"text\":\"<span style=\\\"font-size: 18px; letter-spacing: 0.18px;\\\"><b>View &amp; Apply</b></span>\",\"col\":12}},{\"id\":\"UawvRce-tw\",\"type\":\"card\",\"data\":{\"card_name\":\"View\",\"col\":4}},{\"id\":\"hSUXdcXSb_\",\"type\":\"card\",\"data\":{\"card_name\":\"Apply\",\"col\":4}}]",
+ "creation": "2025-06-17 13:48:50.581845",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Approval block",
+   "label": "Approval block"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "airplay",
+ "idx": 1,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "REC Home",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "View",
+   "link_count": 4,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Attendance Summary",
+   "link_count": 0,
+   "link_to": "Attendance Summary",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Energy Point And Non Conformity",
+   "link_count": 0,
+   "link_to": "Energy Point And Non Conformity",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Target Manager",
+   "link_count": 0,
+   "link_to": "Target Manager",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Target Monitor",
+   "link_count": 0,
+   "link_to": "target-monitor",
+   "link_type": "Page",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Apply",
+   "link_count": 5,
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Attendance Request",
+   "link_count": 0,
+   "link_to": "Attendance Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Leave Application",
+   "link_count": 0,
+   "link_to": "Leave Application",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Food Count",
+   "link_count": 0,
+   "link_to": "Food Count",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Compensatory Leave Request",
+   "link_count": 0,
+   "link_to": "Compensatory Leave Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-05-24 10:34:36.116715",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "REC Home",
+ "number_cards": [],
+ "owner": "bhuvaneswari.a@groupteampro.com",
+ "parent_page": "Home",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Recruiter"
+  }
+ ],
+ "sequence_id": 3.0,
+ "shortcuts": [
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "MeetLog",
+   "link_to": "MeetLog",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Task",
+   "link_to": "Task",
+   "stats_filter": "[]",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "label": "Candidate",
+   "link_to": "Candidate",
+   "stats_filter": "[]",
+   "type": "DocType"
+  }
+ ],
+ "title": "REC Home",
+ "type": "Workspace"
+}

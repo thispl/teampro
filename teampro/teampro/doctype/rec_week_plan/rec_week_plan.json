@@ -255,6 +255,7 @@
    "allow_on_submit": 1,
    "fieldname": "executive",
    "fieldtype": "Link",
+   "ignore_user_permissions": 1,
    "label": "Executive",
    "options": "User"
   },
@@ -608,11 +609,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-05 15:35:57.444018",
- "modified_by": "Administrator",
+ "modified": "2026-06-12 15:51:44.433079",
+ "modified_by": "bhuvaneswari.a@groupteampro.com",
  "module": "Teampro",
  "name": "REC Week Plan",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -628,6 +629,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

@@ -205,7 +205,7 @@ frappe.ui.form.on('Sales Follow Up', {
 			},"Appointment"); 
 			if (frm.doc.party_from=='Lead'){
 				frappe.call({
-					method:"teampro.custom.update_app_visit_status",
+					method:"teampro.teampro.doctype.sales_follow_up.sales_follow_up.update_app_visit_status",
 					args:{
 						'lead':frm.doc.party_name,
 						'visit':''
@@ -269,7 +269,7 @@ frappe.ui.form.on('Sales Follow Up', {
                                 d.hide();
 								if (frm.doc.party_from=='Lead'){
 									frappe.call({
-										method:"teampro.custom.update_app_visit_status",
+										method:"teampro.teampro.doctype.sales_follow_up.sales_follow_up.update_app_visit_status",
 										args:{
 											'lead':frm.doc.party_name,
 											'visit':'Visited'
@@ -500,11 +500,7 @@ frappe.ui.form.on('Sales Follow Up', {
 				frm.save()
 			},("Action")); 
 
-		// }if(frm.doc.status == "Customer" && frm.doc.party_from=="Customer"){
-		// 	frm.add_custom_button(("DNC"), function () {
-		// 		frm.set_value("status","Do Not Contact")
-		// 		frm.save()
-		// 	},("Action")); 
+		
 		}
 		
 		if(frm.doc.status == "Converted"){
@@ -681,32 +677,7 @@ frappe.ui.form.on('Sales Follow Up', {
 			frm.set_value('follow_up_to',frm.doc.party_type)
 		}
 	},
-	// onload(frm){
-	// 	if (frm.doc.contacts) {
-    //         let rows = "";
-    //         frm.doc.contacts.forEach(contact => {
-    //             rows += `
-    //             <tr>
-    //                 <td><b>${contact.person_name || ''}</b></td>
-    //                 <td><b>${contact.mobile || ''}</b></td>
-    //                 <td><b>${contact.email_id || ''}</b></td>
-    //             </tr>`;
-    //         });
-
-    //         $(frm.fields_dict.custom_html.wrapper).html(`
-    //             <table border="1" width="100%">
-    //                 <tbody>
-    //                     <tr>
-    //                         <td style='background-color:blue;color:white;text-align:center'><b>Person Name</b></td>
-    //                         <td style='background-color:blue;color:white;text-align:center'><b>Mobile</b></td>
-    //                         <td style='background-color:blue;color:white;text-align:center'><b>Email</b></td>
-    //                     </tr>
-    //                     ${rows}
-    //                 </tbody>
-    //             </table>
-    //         `);
-    //     }
-	// },
+	
 	after_insert(frm){
 		frm.set_value('app_status','Yet to visit(YTV)')
 		// frm.set_value('appointment_fixed_on', '');
@@ -715,7 +686,7 @@ frappe.ui.form.on('Sales Follow Up', {
 	party_name(frm){
 		if(frm.doc.party_from=="Customer" && frm.doc.party_name){
 			frappe.call({
-				method:"teampro.custom.organization_update_sp",
+				method:"teampro.teampro.doctype.sales_follow_up.sales_follow_up.organization_update_sp",
 				args:{
 					"customer":frm.doc.party_name
 				},
@@ -728,7 +699,7 @@ frappe.ui.form.on('Sales Follow Up', {
 		}
 		if(frm.doc.party_from=="Lead" && frm.doc.party_name){
 			frappe.call({
-				method:"teampro.custom.organization_update_sp_lead",
+				method:"teampro.teampro.doctype.sales_follow_up.sales_follow_up.organization_update_sp_lead",
 				args:{
 					"lead":frm.doc.party_name
 				},

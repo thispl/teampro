@@ -3,8 +3,8 @@
  "creation": "2025-09-06 14:10:56.081086",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 18,
- "modified": "2026-05-02 16:54:05.922874",
+ "idx": 20,
+ "modified": "2026-06-01 14:47:03.003577",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "dnd-dashboard",
@@ -16,6 +16,9 @@
   },
   {
    "role": "DND"
+  },
+  {
+   "role": "Projects Manager"
   }
  ],
  "script": null,

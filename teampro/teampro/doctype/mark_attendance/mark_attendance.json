@@ -1,0 +1,115 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "ATT-.######",
+ "creation": "2026-06-02 11:50:31.119749",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "attendance_date",
+  "html",
+  "employee",
+  "check_in",
+  "check_out",
+  "score",
+  "amended_from",
+  "latitude",
+  "longitude",
+  "address"
+ ],
+ "fields": [
+  {
+   "fieldname": "attendance_date",
+   "fieldtype": "Date",
+   "label": "Attendance Date"
+  },
+  {
+   "fieldname": "html",
+   "fieldtype": "HTML"
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "hidden": 1,
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fieldname": "check_in",
+   "fieldtype": "Attach",
+   "hidden": 1,
+   "label": "Check IN"
+  },
+  {
+   "fieldname": "check_out",
+   "fieldtype": "Attach",
+   "hidden": 1,
+   "label": "Check Out"
+  },
+  {
+   "fieldname": "score",
+   "fieldtype": "Percent",
+   "hidden": 1,
+   "label": "Score"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Mark Attendance",
+   "print_hide": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "latitude",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Latitude"
+  },
+  {
+   "fieldname": "longitude",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Longtitude"
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Address"
+  }
+ ],
+ "grid_page_length": 50,
+ "hide_toolbar": 1,
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2026-06-02 11:50:31.119749",
+ "modified_by": "riyaz.a@groupteampro.com",
+ "module": "Teampro",
+ "name": "Mark Attendance",
+ "naming_rule": "Expression",
+ "owner": "riyaz.a@groupteampro.com",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

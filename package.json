@@ -1,0 +1,27 @@
+{
+  "name": "teampro",
+  "version": "1.0.0",
+  "description": "TeamPRO Custom App",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build:css": "tailwindcss -i ./teampro/public/css/tailwind.src.css -o ./teampro/public/css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i ./teampro/public/css/tailwind.src.css -o ./teampro/public/css/tailwind.css --watch"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thispl/teampro.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/thispl/teampro/issues"
+  },
+  "homepage": "https://github.com/thispl/teampro#readme",
+  "dependencies": {
+    "@tailwindcss/cli": "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}

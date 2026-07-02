@@ -1,6 +1,6 @@
 import frappe
 from frappe.utils import getdate, nowdate
-
+from frappe.utils import date_diff, today, getdate
 @frappe.whitelist()
 def get_active_customers_count():
     customers = frappe.db.sql("""
@@ -67,15 +67,6 @@ def get_total_customer_detalils():
 @frappe.whitelist()
 def get_order_booking(from_date=None, to_date=None):
     conditions = ["service = 'TFP'", "docstatus = 1", "status NOT IN ('On Hold', 'Cancelled', 'Closed','Completed')"]
-    # if not from_date and not to_date:
-    #     today = frappe.utils.today()
-    #     fiscal_year = frappe.db.get_value("Fiscal Year", 
-    #         filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
-    #         fieldname=["year_start_date", "year_end_date"],
-    #         as_dict=True
-    #     )
-    #     from_date = fiscal_year["year_start_date"]
-    #     to_date = fiscal_year["year_end_date"]
     if from_date:
         conditions.append("transaction_date >= %(from_date)s")
     if to_date:
@@ -89,6 +80,82 @@ def get_order_booking(from_date=None, to_date=None):
 
     result = frappe.db.sql(query, {'from_date': from_date, 'to_date': to_date})[0][0] or 0
     return result
+
+# @frappe.whitelist()
+# def get_order_booking_overall(from_date=None, to_date=None,overall_service=None):
+#     conditions = ["docstatus = 1", "status NOT IN ('On Hold', 'Cancelled', 'Closed','Completed')"]
+#     if from_date:
+#         conditions.append("transaction_date >= %(from_date)s")
+#     if to_date:
+#         conditions.append("transaction_date <= %(to_date)s")
+#     if overall_service:
+#         conditions.append("service = %(overall_service)s")
+#     query = f"""
+#         SELECT SUM(base_net_total)
+#         FROM `tabSales Order`
+#         WHERE {' AND '.join(conditions)}
+#     """
+
+#     result = frappe.db.sql(query, {'from_date': from_date, 'to_date': to_date, 'overall_service': overall_service})[0][0] or 0
+#     return result
+
+
+@frappe.whitelist()
+def get_order_booking_overall(from_date=None, to_date=None, overall_service=None):
+    conditions = ["docstatus = 1", "status NOT IN ('On Hold', 'Cancelled', 'Closed', 'Completed')"]
+
+    # ✅ Same as turnover — fiscal year default
+    if not from_date and not to_date:
+        today = frappe.utils.today()
+        fiscal_year = frappe.db.get_value("Fiscal Year",
+            filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+            fieldname=["year_start_date", "year_end_date"],
+            as_dict=True
+        )
+        from_date = fiscal_year["year_start_date"]
+        to_date = fiscal_year["year_end_date"]
+
+    if from_date:
+        conditions.append("transaction_date >= %(from_date)s")
+    if to_date:
+        conditions.append("transaction_date <= %(to_date)s")
+    if overall_service:
+        conditions.append("service = %(overall_service)s")
+
+    query = f"""
+        SELECT service, SUM(base_net_total) as total
+        FROM `tabSales Order`
+        WHERE {' AND '.join(conditions)}
+        GROUP BY service
+    """
+
+    rows = frappe.db.sql(query, {
+        'from_date': from_date,
+        'to_date': to_date,
+        'overall_service': overall_service
+    }, as_dict=True)
+
+    group_map = {
+        "BCS": "HRS", "REC-I": "HRS", "Payroll": "HRS", "SEP": "HRS", "REC-D": "HRS",
+        "IT-SW": "ITS", "IT-IS": "ITS",
+        "R&S": "CMN", "TGT": "CMN", "EMS": "CMN", "CMN": "CMN", "NL": "CMN",
+        "TFP": "TFP",
+        "HRIT": "HRIT"
+    }
+
+    group_totals = {"HRS": 0, "ITS": 0, "CMN": 0, "TFP": 0, "HRIT": 0}
+
+    for row in rows:
+        group = group_map.get(row.service)
+        if group:
+            group_totals[group] += row.total or 0
+
+    overall_total = sum(group_totals.values())
+
+    return {
+        "total": overall_total,
+        "groups": group_totals
+    }
 
 @frappe.whitelist()
 def get_turnover(from_date=None, to_date=None):
@@ -115,6 +182,92 @@ def get_turnover(from_date=None, to_date=None):
 
     result = frappe.db.sql(query, {'from_date': from_date, 'to_date': to_date})[0][0] or 0
     return result
+
+# @frappe.whitelist()
+# def get_turnover_overall(from_date=None, to_date=None,overall_service=None):
+#     conditions = ["docstatus = 1", "status NOT IN ('Return', 'Credit Note Issued', 'Cancelled')"]
+#     if not from_date and not to_date:
+#         today = frappe.utils.today()
+#         fiscal_year = frappe.db.get_value("Fiscal Year", 
+#             filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+#             fieldname=["year_start_date", "year_end_date"],
+#             as_dict=True
+#         )
+#         from_date = fiscal_year["year_start_date"]
+#         to_date = fiscal_year["year_end_date"]
+#     if from_date:
+#         conditions.append("posting_date >= %(from_date)s")
+#     if to_date:
+#         conditions.append("posting_date <= %(to_date)s")
+#     if overall_service:
+#         conditions.append("services = %(overall_service)s")
+#     query = f"""
+#         SELECT SUM(base_net_total)
+#         FROM `tabSales Invoice`
+#         WHERE {' AND '.join(conditions)}
+#     """
+
+#     result = frappe.db.sql(query, {'from_date': from_date, 'to_date': to_date, 'overall_service': overall_service})[0][0] or 0
+#     return result
+
+
+@frappe.whitelist()
+def get_turnover_overall(from_date=None, to_date=None, overall_service=None):
+    conditions = ["docstatus = 1", "status NOT IN ('Return', 'Credit Note Issued', 'Cancelled')"]
+    
+    if not from_date and not to_date:
+        today = frappe.utils.today()
+        fiscal_year = frappe.db.get_value("Fiscal Year",
+            filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+            fieldname=["year_start_date", "year_end_date"],
+            as_dict=True
+        )
+        from_date = fiscal_year["year_start_date"]
+        to_date = fiscal_year["year_end_date"]
+
+    if from_date:
+        conditions.append("posting_date >= %(from_date)s")
+    if to_date:
+        conditions.append("posting_date <= %(to_date)s")
+    if overall_service:
+        conditions.append("services = %(overall_service)s")
+
+    query = f"""
+        SELECT services, SUM(base_net_total) as total
+        FROM `tabSales Invoice`
+        WHERE {' AND '.join(conditions)}
+        GROUP BY services
+    """
+
+    rows = frappe.db.sql(query, {
+        'from_date': from_date,
+        'to_date': to_date,
+        'overall_service': overall_service
+    }, as_dict=True)
+
+    # Service grouping map
+    group_map = {
+        "BCS": "HRS", "REC-I": "HRS", "Payroll": "HRS", "SEP": "HRS", "REC-D": "HRS",
+        "IT-SW": "ITS", "IT-IS": "ITS",
+        "R&S": "CMN", "TGT": "CMN", "EMS": "CMN", "CMN": "CMN", "NL": "CMN",
+        "TFP": "TFP",
+        "HRIT": "HRIT"
+    }
+
+    group_totals = {"HRS": 0, "ITS": 0, "CMN": 0, "TFP": 0, "HRIT": 0}
+
+    for row in rows:
+        group = group_map.get(row.services)
+        if group:
+            group_totals[group] += row.total or 0
+
+    overall_total = sum(group_totals.values())
+
+    return {
+        "total": overall_total,
+        "groups": group_totals
+    }
+
 
 # @frappe.whitelist()
 # def get_total_so_qty(from_date=None,to_date=None):
@@ -230,6 +383,40 @@ def get_collection_value(from_date=None, to_date=None):
     return frappe.db.sql(query, {'from_date': from_date, 'to_date': to_date})[0][0] or 0
 
 @frappe.whitelist()
+def get_collection_value_overall(from_date=None, to_date=None,overall_service=None):
+    # Default to current fiscal year if dates are not provided
+    if not from_date and not to_date:
+        today = frappe.utils.today()
+        fiscal_year = frappe.db.get_value(
+            "Fiscal Year",
+            filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+            fieldname=["year_start_date", "year_end_date"],
+            as_dict=True
+        )
+        from_date = fiscal_year["year_start_date"]
+        to_date = fiscal_year["year_end_date"]
+
+    conditions = [
+        "pe.payment_type = 'Receive'",
+        "pe.docstatus = 1",
+    ]
+
+    if from_date:
+        conditions.append("pe.posting_date >= %(from_date)s")
+    if to_date:
+        conditions.append("pe.posting_date <= %(to_date)s")
+    if overall_service:
+        conditions.append("per.service = %(overall_service)s")
+    query = f"""
+        SELECT SUM(pe.paid_amount)
+        FROM `tabPayment Entry` pe
+        INNER JOIN `tabPayment Entry Reference` per ON per.parent = pe.name
+        WHERE {' AND '.join(conditions)}
+    """
+
+    return frappe.db.sql(query, {'from_date': from_date, 'to_date': to_date, 'overall_service': overall_service})[0][0] or 0
+
+@frappe.whitelist()
 def rececivable_count(from_date=None, to_date=None):
     if not from_date and not to_date:
         today = frappe.utils.today()
@@ -278,6 +465,35 @@ def tfp_payable():
     return total_invoice
 
 @frappe.whitelist()
+def payable_overall(overall_service=None):
+    # if not from_date and not to_date:
+    today = frappe.utils.today()
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    from_date = fiscal_year["year_start_date"]
+    to_date = fiscal_year["year_end_date"]
+    if overall_service:
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(outstanding_amount)
+            FROM `tabPurchase Invoice`
+            WHERE docstatus = 1
+            AND services = %(overall_service)s
+              AND outstanding_amount>0
+        """, {'overall_service': overall_service})[0][0] or 0
+    else:
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(outstanding_amount)
+            FROM `tabPurchase Invoice`
+            WHERE docstatus = 1
+            AND outstanding_amount>0
+        """)[0][0] or 0
+    return total_invoice
+
+@frappe.whitelist()
 def tfp_receivable():
     today = frappe.utils.today()
     fiscal_year = frappe.db.get_value(
@@ -291,8 +507,6 @@ def tfp_receivable():
 
     filters = {
         'company': 'TEAMPRO Food Products',
-        # 'from_date': from_date,
-        # 'to_date': to_date
     }
 
     # Total Submitted Purchase Invoice Amount
@@ -304,6 +518,39 @@ def tfp_receivable():
          AND status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
           AND company = %(company)s
     """, filters)[0][0] or 0
+
+    
+
+    return total_invoice
+
+@frappe.whitelist()
+def receivable_overall(overall_service=None):
+    today = frappe.utils.today()
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    from_date = fiscal_year["year_start_date"]
+    to_date = fiscal_year["year_end_date"]
+    if overall_service:
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(outstanding_amount)
+            FROM `tabSales Invoice`
+            WHERE docstatus = 1
+             AND status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
+              AND services = %(overall_service)s
+        """, {'overall_service': overall_service})[0][0] or 0
+
+    else:
+        # Total Submitted Purchase Invoice Amount
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(outstanding_amount)
+            FROM `tabSales Invoice`
+            WHERE docstatus = 1
+            AND status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
+        """)[0][0] or 0
 
     
 
@@ -323,8 +570,6 @@ def tfp_to_bill_value():
 
     filters = {
         'company': 'TEAMPRO Food Products',
-        # 'from_date': from_date,
-        # 'to_date': to_date
     }
 
     # Total Submitted Purchase Invoice Amount
@@ -336,6 +581,35 @@ def tfp_to_bill_value():
           AND status='To Bill'
           AND company = %(company)s
     """, filters)[0][0] or 0    
+
+    return total_invoice
+
+@frappe.whitelist()
+def to_bill_value_overall(overall_service=None):
+    today = frappe.utils.today()
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    from_date = fiscal_year["year_start_date"]
+    to_date = fiscal_year["year_end_date"]
+    if overall_service:
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(base_grand_total)
+            FROM `tabSales Order`
+            WHERE docstatus = 1
+              AND status='To Bill'
+              AND service = %(overall_service)s
+        """, {'overall_service': overall_service})[0][0] or 0
+    else:
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(base_grand_total)
+            FROM `tabSales Order`
+            WHERE docstatus = 1
+              AND status='To Bill'
+        """)[0][0] or 0    
 
     return total_invoice
 
@@ -353,8 +627,6 @@ def tfp_to_deliver_bill_value():
 
     filters = {
         'company': 'TEAMPRO Food Products',
-        # 'from_date': from_date,
-        # 'to_date': to_date
     }
 
     # Total Submitted Purchase Invoice Amount
@@ -366,6 +638,35 @@ def tfp_to_deliver_bill_value():
           AND status='To Deliver and Bill'
           AND company = %(company)s
     """, filters)[0][0] or 0    
+
+    return total_invoice
+
+@frappe.whitelist()
+def to_deliver_bill_value_overall(overall_service=None):
+    today = frappe.utils.today()
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={"year_start_date": ["<=", today], "year_end_date": [">=", today]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    from_date = fiscal_year["year_start_date"]
+    to_date = fiscal_year["year_end_date"]
+    if overall_service:
+        total_invoice = frappe.db.sql("""
+            SELECT SUM(base_grand_total)
+            FROM `tabSales Order`
+            WHERE docstatus = 1
+              AND status='To Deliver and Bill'
+              AND service = %(overall_service)s
+        """, {'overall_service': overall_service})[0][0] or 0
+    else:
+        total_invoice = frappe.db.sql("""
+        SELECT SUM(base_grand_total)
+        FROM `tabSales Order`
+        WHERE docstatus = 1
+          AND status='To Deliver and Bill'
+    """)[0][0] or 0    
 
     return total_invoice
 
@@ -494,8 +795,7 @@ def tfp_receivable_table():
 
     filters = {
         'company': 'TEAMPRO Food Products',
-        # 'from_date': from_date,
-        # 'to_date': to_date
+       
     }
 
     data = frappe.db.sql("""
@@ -562,6 +862,406 @@ def tfp_receivable_table():
 
     return html
 
+# @frappe.whitelist()
+# def receivable_table_overall(overall_service=None):
+#     from frappe.utils import today, getdate, nowdate, fmt_money
+#     from datetime import datetime
+
+#     fiscal_year = frappe.db.get_value(
+#         "Fiscal Year",
+#         filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
+#         fieldname=["year_start_date", "year_end_date"],
+#         as_dict=True
+#     )
+#     if  overall_service:
+#         data = frappe.db.sql("""
+#             SELECT name, customer, outstanding_amount, posting_date
+#             FROM `tabSales Invoice`
+#             WHERE docstatus = 1
+#             AND services = %(overall)s
+#             AND status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
+#             ORDER BY posting_date
+#         """, {'overall': overall_service}, as_dict=True)
+#     else:
+#         data = frappe.db.sql("""
+#             SELECT name, customer, outstanding_amount, posting_date
+#             FROM `tabSales Invoice`
+#             WHERE docstatus = 1
+#             AND status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
+#             ORDER BY posting_date
+#         """, as_dict=True)
+
+#     total_outstanding = 0
+#     today_date = getdate(nowdate())
+
+#     html = """
+#     <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+#         <div style='min-width: 500px;'>
+#             <table class='table table-bordered' style='width: 100%; border-collapse: collapse;'>
+#                 <thead>
+#                     <tr>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">S.No</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Customer</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Value</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Age</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Sales Invoice</th>
+#                     </tr>
+#                 </thead>
+#                 <tbody>
+#     """
+
+#     for idx, row in enumerate(data, 1):
+#         age = (today_date - getdate(row.posting_date)).days
+#         row_style = "color: red;" if age > 30 else ""
+#         name_style = "color: red;" if age > 30 else ""
+#         total_outstanding += row.outstanding_amount or 0
+
+#         html += f"""
+#             <tr style="{row_style}">
+#                 <td style="text-align: center;">{idx}</td>
+#                 <td style="white-space: nowrap;">{row.customer}</td>
+#                 <td style='text-align:right;'>{fmt_money(row.outstanding_amount)}</td>
+#                 <td style='text-align:right;'>{age}</td>
+#                 <td style="white-space: nowrap;"><a href="/app/sales-invoice/{ row.name }" target="_blank" style="{name_style}">{ row.name }</a></td>
+#             </tr>
+#         """
+
+#     # Grand Total row
+#     html += f"""
+#         <tr style="background: #f0f0f0; font-weight: bold;">
+#             <td colspan="2" style="text-align: center;">Total</td>
+#             <td style="text-align: right;">{fmt_money(total_outstanding)}</td>
+#             <td></td>
+#             <td></td>
+#         </tr>
+#     """
+
+#     html += """
+#                 </tbody>
+#             </table>
+#         </div>
+#     </div>
+#     """
+
+#     return html
+
+
+
+# @frappe.whitelist()
+# def receivable_table_overall(overall_service=None):
+    from frappe.utils import today, getdate, nowdate, fmt_money, formatdate
+
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={
+            "year_start_date": ["<=", today()],
+            "year_end_date": [">=", today()]
+        },
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+
+    filters = {}
+
+    if overall_service:
+        data = frappe.db.sql("""
+            SELECT
+                si.name,
+                si.customer,
+                si.posting_date,
+                si.services,
+                si.outstanding_amount,
+                si.grand_total,
+                am.short_code AS am_short_code,
+                pm.short_code AS pm_short_code
+            FROM `tabSales Invoice` si
+            LEFT JOIN `tabProject` p
+                ON p.name = si.project
+            LEFT JOIN `tabEmployee` am
+                ON am.user_id = si.account_manager
+            LEFT JOIN `tabEmployee` pm
+                ON pm.user_id = p.project_manager
+            WHERE si.docstatus = 1
+                AND si.services = %(overall)s
+                AND si.status NOT IN (
+                    'Cancelled',
+                    'Paid',
+                    'Credit Note Issued',
+                    'Return'
+                )
+            ORDER BY si.posting_date
+        """, {"overall": overall_service}, as_dict=True)
+
+    else:
+        data = frappe.db.sql("""
+            SELECT
+                si.name,
+                si.customer,
+                si.posting_date,
+                si.services,
+                si.outstanding_amount,
+                si.grand_total,
+                am.short_code AS am_short_code,
+                pm.short_code AS pm_short_code
+            FROM `tabSales Invoice` si
+            LEFT JOIN `tabProject` p
+                ON p.name = si.project
+            LEFT JOIN `tabEmployee` am
+                ON am.user_id = si.account_manager
+            LEFT JOIN `tabEmployee` pm
+                ON pm.user_id = p.project_manager
+            WHERE si.docstatus = 1
+                AND si.status NOT IN (
+                    'Cancelled',
+                    'Paid',
+                    'Credit Note Issued',
+                    'Return'
+                )
+            ORDER BY si.posting_date
+        """, as_dict=True)
+
+    total_outstanding = 0
+    total_grand_total = 0
+    today_date = getdate(nowdate())
+
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+        <div style='min-width: 1200px;'>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse;'>
+                <thead>
+                    <tr>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">S.No</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">ID</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Posting Date</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Service</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Customer Name</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Age</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">AM</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">PM</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Total</th>
+                        <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    for idx, row in enumerate(data, 1):
+
+        age = (today_date - getdate(row.posting_date)).days
+
+        row_style = "color: red;" if age > 30 else ""
+        name_style = "color: red;" if age > 30 else ""
+
+        total_outstanding += row.outstanding_amount or 0
+        total_grand_total += row.grand_total or 0
+
+        html += f"""
+            <tr style="{row_style}">
+                <td style="text-align:center;">{idx}</td>
+
+                <td>
+                    <a href="/app/sales-invoice/{row.name}"
+                       target="_blank"
+                       style="{name_style}">
+                        {row.name}
+                    </a>
+                </td>
+
+                <td style="white-space: nowrap;">
+                    {formatdate(row.posting_date)}
+                </td>
+
+                <td>
+                    {row.services or ''}
+                </td>
+
+                <td style="white-space: nowrap;">
+                    {row.customer or ''}
+                </td>
+
+                <td style="text-align:right;">
+                    {age}
+                </td>
+
+                <td style="text-align:center;">
+                    {row.am_short_code or ''}
+                </td>
+
+                <td style="text-align:center;">
+                    {row.pm_short_code or ''}
+                </td>
+
+                <td style="text-align:right;">
+                    {fmt_money(row.grand_total)}
+                </td>
+
+                <td style="text-align:right;">
+                    {fmt_money(row.outstanding_amount)}
+                </td>
+            </tr>
+        """
+
+    html += f"""
+        <tr style="background: #f0f0f0; font-weight: bold;">
+            <td colspan="8" style="text-align:center;">
+                Total
+            </td>
+
+            <td style="text-align:right;">
+                {fmt_money(total_grand_total)}
+            </td>
+
+            <td style="text-align:right;">
+                {fmt_money(total_outstanding)}
+            </td>
+        </tr>
+    """
+
+    html += """
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
+
+    return html
+
+@frappe.whitelist()
+def receivable_table_overall(service=None, am=None, pm=None):
+    from frappe.utils import today, getdate, nowdate, fmt_money, formatdate
+
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={
+            "year_start_date": ["<=", today()],
+            "year_end_date": [">=", today()]
+        },
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+
+    conditions = """
+        WHERE si.docstatus = 1
+        AND si.status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
+    """
+
+    params = {}
+
+    if service:
+        conditions += " AND si.services = %(service)s AND si.services IS NOT NULL AND si.services != ''"
+        params["service"] = service
+
+    if am:
+        conditions += " AND si.account_manager = %(am)s AND si.account_manager IS NOT NULL AND si.account_manager != ''"
+        params["am"] = am
+
+    if pm:
+        conditions += " AND p.project_manager = %(pm)s AND p.project_manager IS NOT NULL AND p.project_manager != ''"
+        params["pm"] = pm
+
+    data = frappe.db.sql(f"""
+        SELECT
+            si.name,
+            si.customer,
+            si.posting_date,
+            si.services,
+            si.outstanding_amount,
+            si.base_grand_total,
+            am.short_code AS am_short_code,
+            pm.short_code AS pm_short_code
+        FROM `tabSales Invoice` si
+        LEFT JOIN `tabProject` p
+            ON p.name = si.project
+        LEFT JOIN `tabEmployee` am
+            ON am.user_id = si.account_manager
+        LEFT JOIN `tabEmployee` pm
+            ON pm.user_id = p.project_manager
+        {conditions}
+        ORDER BY si.posting_date
+    """, params, as_dict=True)
+
+    total_outstanding = 0
+    total_grand_total = 0
+    today_date = getdate(nowdate())
+
+    # Main Header Block - Matches your exact deep blue layout configuration
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+        <div style='min-width: 1100px;'>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse; margin-bottom: 0;'>
+                <thead>
+                    <tr>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; padding: 10px;">S.No</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">ID</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Date</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Service</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Customer Name</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Age</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">AM</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">PM</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Total</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.posting_date)).days
+
+        # 1. Determine Alternating Double-Color Background Styles
+        bg_color = "#ffffff" if idx % 2 != 0 else "#e7e6ec"
+        
+        # 2. Text color conditional logic for items older than 30 days
+        text_color = "color: red;" if age > 30 else "color: #111827;"
+        
+        # 3. Create the unified inline row design layout string
+        row_style = f"background: {bg_color}; {text_color}; vertical-align: middle;"
+        name_style = "color: red;" if age > 30 else ""
+
+        total_outstanding += row.outstanding_amount or 0
+        total_grand_total += row.base_grand_total or 0
+
+        html += f"""
+            <tr style="{row_style}">
+                <td style="text-align:center;">{idx}</td>
+                <td style="text-align:left; white-space: nowrap;">
+                    <a href="/app/sales-invoice/{row.name}"
+                       target="_blank"
+                       style="{name_style}">
+                        {row.name}
+                    </a>
+                </td>
+                <td style="white-space: nowrap; text-align:center;">
+                    {formatdate(row.posting_date)}
+                </td>
+                <td style="text-align:center;">{row.services or ''}</td>
+                <td style="white-space: nowrap; text-align:left;">{row.customer or ''}</td>
+                <td style="text-align:center;">{age}</td>
+                <td style="text-align:center;">{row.am_short_code or ''}</td>
+                <td style="text-align:center;">{row.pm_short_code or ''}</td>
+                <td style="text-align:right; font-weight: bold;">{fmt_money(row.base_grand_total)}</td>
+                <td style="text-align:right; font-weight: bold;">{fmt_money(row.outstanding_amount)}</td>
+            </tr>
+        """
+
+    # Total Summary Line - Made sticky at the bottom with explicit boundary limits
+    html += f"""
+        <tr style="background: #f0f0f0; font-weight: bold;bottom: 0; z-index: 5; border-top: 2px solid #ccc;">
+            <td colspan="8" style="text-align:center; vertical-align:middle; padding:10px;">Total</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_grand_total)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_outstanding)}</td>
+        </tr>
+    """
+
+    html += """
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
+
+    return html
 
 @frappe.whitelist()
 def tfp_tobill_table():
@@ -647,6 +1347,1316 @@ def tfp_tobill_table():
 
     return html
 
+
+# @frappe.whitelist()
+# def tobill_table_overall(overall_service=None):
+#     from frappe.utils import today, getdate, nowdate
+#     from datetime import datetime
+#     from frappe.utils import today, getdate, nowdate, fmt_money
+#     from datetime import datetime
+#     fiscal_year = frappe.db.get_value(
+#         "Fiscal Year",
+#         filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
+#         fieldname=["year_start_date", "year_end_date"],
+#         as_dict=True
+#     )
+#     from_date = fiscal_year["year_start_date"]
+#     to_date = fiscal_year["year_end_date"]
+    
+#     filters = {}
+#     condition = ""
+
+#     if overall_service:
+#         condition = " AND service = %(overall_service)s "
+#         filters["overall_service"] = overall_service
+#     service_list = set()
+#     am_list = set()
+#     pm_list = set()
+#     data = frappe.db.sql(f"""
+#         SELECT
+#             name,
+#             customer,
+#             service, account_manager, project,   
+#             status ,per_billed , amount_billed, advance_paid,amount_billed_company_currency,      
+#             base_grand_total,grand_total,net_total,
+#             transaction_date
+#         FROM `tabSales Order`
+#         WHERE docstatus = 1
+#             AND status = 'To Bill'
+#             AND base_grand_total > 0
+#             {condition}
+#         ORDER BY transaction_date
+#     """, filters, as_dict=True)
+#     html = """
+#     <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+#         <div style='min-width: 500px;'>
+#             <table class='table table-bordered' style='width: 100%; border-collapse: collapse;'>
+#                 <thead>
+#                     <tr>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">S#</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">ID</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Date</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Src</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center; white-space: nowrap;">Customer</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Age</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">AM</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">PM</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Value</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Advance</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">% Billed</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Billed</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Outstanding</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center; white-space: nowrap;">To Bill</th>
+#                     </tr>
+#                 </thead>
+#                 <tbody>
+#     """
+
+#     total_outstanding = 0
+#     today_date = getdate(nowdate())
+#     for idx, row in enumerate(data, 1):
+#         age = (today_date - getdate(row.transaction_date)).days
+#         row_style = "color: red;" if age > 30 else ""  # Apply to whole row
+#         name_style = "color: red;" if age > 30 else ""
+#         total_outstanding += row.base_grand_total or 0
+#         pending_billed = (row.net_total-row.amount_billed_company_currency)
+#         pending_collection = (pending_billed-row.advance_paid)
+#         to_billed = (row.grand_total-(row.grand_total*row.per_billed)+row.advance_paid)
+#         formatted_date = frappe.utils.formatdate(row.transaction_date, 'dd-mm-yyyy')
+#         am_short_code = ""
+#         if row.account_manager:
+#             am_short_code = frappe.db.get_value(
+#                 "Employee",
+#                 {"user_id": row.account_manager},
+#                 "short_code"
+#             ) or ""
+
+#         # PM Short Code
+#         project_manager = ""
+#         pm_short_code = ""
+#         if row.project:
+#             project_manager = frappe.db.get_value(
+#                 "Project",
+#                 row.project,
+#                 "project_manager"
+#             )
+
+#             if project_manager:
+#                 pm_short_code = frappe.db.get_value(
+#                     "Employee",
+#                     {"user_id": project_manager},
+#                     "short_code"
+#                 ) or ""
+#         if row.service:
+#             service_list.add(row.service)
+
+#         if am_short_code:
+#             am_list.add(am_short_code)
+
+#         if pm_short_code:
+#             pm_list.add(pm_short_code)
+#         html += f"""
+#                 <tr class="data-row"
+#                     data-service="{row.service or ''}"
+#                     data-am="{am_short_code or ''}"
+#                     data-pm="{pm_short_code or ''}"
+#                     style="{row_style}">
+#                 <td class="serial-no" style="text-align:center;">{idx}</td>
+#                 <td style="white-space: nowrap;"><a href="/app/sales-order/{ row.name }" target="_blank" style="{name_style}">{ row.name }</a></td>
+#                 <td style="white-space: nowrap;">{formatted_date}</td>
+#                 <td style="white-space: nowrap;">{row.service}</td>
+#                 <td style="white-space: nowrap;">{row.customer}</td>
+#                 <td style="white-space: nowrap;">{age}</td>
+#                 <td style="white-space: nowrap;">{am_short_code}</td>
+#                 <td style="white-space: nowrap;">{pm_short_code}</td>
+#                 <td style='text-align:right;'>{frappe.utils.fmt_money(row.grand_total)}</td>
+#                 <td style='text-align:right;'>{row.advance_paid}</td>   
+#                 <td style='text-align:right;'>{row.per_billed}</td> 
+#                 <td style='text-align:right;'>{row.amount_billed_company_currency}</td>
+#                 <td style='text-align:right;'>{pending_collection}</td>
+#                 <td style='text-align:right;'>{to_billed}</td>
+#             </tr>
+#         """
+#     html += f"""
+#         <tr style="background: #f0f0f0; font-weight: bold;">
+#             <td colspan="2" style="text-align: center;" >Total</td>
+#             <td style="text-align: right;">{fmt_money(total_outstanding)}</td>
+#             <td></td>
+#             <td></td>
+#         </tr>
+#     """
+
+#     html += """
+#                 </tbody>
+#             </table>
+#         </div>
+#     </div>
+#     """
+
+#     return {
+#         "html": html,
+#         "services": sorted(list(service_list)),
+#         "account_managers": sorted(list(am_list)),
+#         "project_managers": sorted(list(pm_list))
+#     }
+
+
+
+
+@frappe.whitelist()
+def tobill_table_overall(overall_service=None, account_manager=None, project_manager=None):
+    from frappe.utils import today, getdate, nowdate, fmt_money
+    from datetime import datetime
+    
+    fiscal_year = frappe.db.get_value(
+        "Fiscal Year",
+        filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    from_date = fiscal_year["year_start_date"]
+    to_date = fiscal_year["year_end_date"]
+    
+    filters = {}
+    condition = ""
+
+    if overall_service:
+        condition += " AND service = %(overall_service)s "
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND account_manager = %(account_manager)s "
+        filters["account_manager"] = account_manager
+
+    service_list = set()
+    am_list = set()
+    pm_list = set()
+    
+    data = frappe.db.sql(f"""
+        SELECT
+            name,
+            customer,
+            service, account_manager, project,   
+            status ,per_billed , amount_billed, advance_paid,amount_billed_company_currency,      
+            base_grand_total,grand_total,net_total,
+            transaction_date
+        FROM `tabSales Order`
+        WHERE docstatus = 1
+            AND status NOT IN ('On Hold', 'To Deliver', 'Closed', 'Cancelled', 'Completed')
+            {condition}
+        ORDER BY transaction_date
+    """, filters, as_dict=True)
+    
+    # Main Header Block - Matches your exact deep blue layout theme configuration
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+        <div style='min-width: 500px;'>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse; margin-bottom: 0;'>
+                <thead>
+                    <tr>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; padding: 10px;">S#</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">ID</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Date</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Service</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; white-space: nowrap;">Customer</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Age</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">AM</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">PM</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Value</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Advance</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">% Billed</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Billed</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;">Outstanding</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; white-space: nowrap;">To Bill</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    total_value = 0
+    total_advance = 0
+    total_per_bill = 0
+    total_bill = 0
+    total_outstanding = 0
+    total_to_bill = 0
+
+    today_date = getdate(nowdate())
+    
+    filtered_data = []
+    for row in data:
+        pm_user = ""
+        if row.project:
+            pm_user = frappe.db.get_value(
+                "Project",
+                row.project,
+                "project_manager"
+            )
+
+        if project_manager and pm_user != project_manager:
+            continue
+
+        row.pm_user = pm_user
+        filtered_data.append(row)
+
+    data = filtered_data
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.transaction_date)).days
+        
+        # 1. Determine Alternating Double-Color Shading Style
+        bg_color = "#ffffff" if idx % 2 != 0 else "#e7e6ec"
+        
+        # 2. Text color conditional logic for rows older than 30 days
+        text_color = "color: red;" if age > 30 else "color: #111827;"
+        
+        # 3. Compile layout options into row styling parameter
+        row_style = f"background: {bg_color}; {text_color}; vertical-align: middle;"
+        name_style = "color: red;" if age > 30 else ""
+
+        pending_billed = (row.base_grand_total * (row.per_billed / 100))
+        pending_collection = row.base_grand_total - row.advance_paid - pending_billed
+        to_billed = (row.base_grand_total - (row.base_grand_total * (row.per_billed / 100)))
+
+        total_value += row.grand_total or 0
+        total_advance += row.advance_paid or 0 
+        total_per_bill += row.per_billed or 0 
+        total_bill += pending_billed or 0 
+        total_outstanding += pending_collection or 0 
+        total_to_bill += to_billed or 0 
+
+        formatted_date = frappe.utils.formatdate(row.transaction_date, 'dd-mm-yyyy')
+        am_short_code = ""
+        if row.account_manager:
+            am_short_code = frappe.db.get_value(
+                "Employee",
+                {"user_id": row.account_manager},
+                "short_code"
+            ) or ""
+
+        # PM Short Code
+        project_manager_user = ""
+        pm_short_code = ""
+
+        if row.project:
+            project_manager_user = frappe.db.get_value(
+                "Project",
+                row.project,
+                "project_manager"
+            )
+
+            if project_manager_user:
+                pm_short_code = frappe.db.get_value(
+                    "Employee",
+                    {"user_id": project_manager_user},
+                    "short_code"
+                ) or ""
+                
+        if row.service:
+            service_list.add(row.service)
+
+        if am_short_code:
+            am_list.add(am_short_code)
+
+        if pm_short_code:
+            pm_list.add(pm_short_code)
+            
+        html += f"""
+            <tr class="data-row"
+                data-service="{row.service or ''}"
+                data-am="{am_short_code or ''}"
+                data-pm="{pm_short_code or ''}"
+                style="{row_style}">
+                <td class="serial-no" style="text-align:center;">{idx}</td>
+                <td style="white-space: nowrap; text-align:left;"><a href="/app/sales-order/{ row.name }" target="_blank" style="{name_style}">{ row.name }</a></td>
+                <td style="white-space: nowrap; text-align:center;">{formatted_date}</td>
+                <td style="white-space: nowrap; text-align:center;">{row.service or ''}</td>
+                <td style="white-space: nowrap; text-align:left;">{row.customer or ''}</td>
+                <td style="white-space: nowrap; text-align:center;">{age}</td>
+                <td style="white-space: nowrap; text-align:center;">{am_short_code}</td>
+                <td style="white-space: nowrap; text-align:center;">{pm_short_code}</td>
+                <td style='text-align:right; font-weight: bold;'>{fmt_money(row.grand_total)}</td>
+                <td style='text-align:right;'>{fmt_money(row.advance_paid) if row.advance_paid else 0}</td>   
+                <td style='text-align:center;'>{row.per_billed or 0}%</td> 
+                <td style='text-align:right;'>{fmt_money(pending_billed)}</td>
+                <td style='text-align:right;'>{fmt_money(pending_collection)}</td>
+                <td style='text-align:right; font-weight: bold;'>{fmt_money(to_billed)}</td>
+            </tr>
+        """
+        
+    # Total Summary line - Rendered sticky at the bottom of viewport container window
+    html += f"""
+        <tr style="background: #f0f0f0; font-weight: bold;bottom: 0; z-index: 5; border-top: 2px solid #ccc;">
+            <td colspan="8" style="text-align: center; vertical-align: middle; padding: 10px;">Total</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_value)}</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_advance)}</td>
+            <td style="text-align: center; vertical-align: middle;">-</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_bill)}</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_outstanding)}</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_to_bill)}</td>
+        </tr>
+    """
+
+    html += """
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
+
+    return {
+        "html": html,
+        "services": sorted(list(service_list)),
+        "account_managers": sorted(list(am_list)),
+        "project_managers": sorted(list(pm_list))
+    }
+
+
+@frappe.whitelist()
+def ob_table_overall(from_date=None, to_date=None, overall_service=None, account_manager=None, project_manager=None):
+    from frappe.utils import today, getdate, nowdate, fmt_money
+
+    if not from_date or not to_date:
+        fiscal_year = frappe.db.get_value(
+            "Fiscal Year",
+            filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
+            fieldname=["year_start_date", "year_end_date"],
+            as_dict=True
+        )
+        from_date = fiscal_year["year_start_date"]
+        to_date   = fiscal_year["year_end_date"]
+
+    filters = {"from_date": from_date, "to_date": to_date}
+    condition = "AND docstatus = 1 AND status NOT IN ('On Hold', 'Cancelled', 'Closed', 'Completed') AND transaction_date BETWEEN %(from_date)s AND %(to_date)s"
+
+    if overall_service:
+        condition += " AND service = %(overall_service)s"
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND account_manager = %(account_manager)s"
+        filters["account_manager"] = account_manager
+
+    service_list = set()
+    am_list = set()
+    pm_list = set()
+
+    data = frappe.db.sql(f"""
+        SELECT
+            name, customer, service, account_manager, project,
+            status, per_billed, amount_billed, advance_paid,
+            amount_billed_company_currency,
+            base_grand_total, grand_total, net_total, base_net_total,
+            transaction_date
+        FROM `tabSales Order`
+        WHERE base_grand_total > 0
+          {condition}
+        ORDER BY transaction_date
+    """, filters, as_dict=True)
+
+    today_date = getdate(nowdate())
+
+    # PM filter
+    filtered_data = []
+    for row in data:
+        pm_user = ""
+        if row.project:
+            pm_user = frappe.db.get_value("Project", row.project, "project_manager") or ""
+        row.pm_user = pm_user
+        if project_manager and pm_user != project_manager:
+            continue
+        filtered_data.append(row)
+    data = filtered_data
+
+    # Main Header Block - Standardized header tracking background color
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+        <div style='min-width: 500px;'>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse; margin-bottom: 0;'>
+                <thead>
+                    <tr>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;padding:10px;">S#</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">ID</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Date</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Service</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;white-space:nowrap;">Customer</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Age</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Status</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">AM</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">PM</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Net Total</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Grand Total</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Advance</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">% Billed</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Billed</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;white-space:nowrap;">To Bill</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    total_value = total_advance = total_per_bill = total_bill = total_outstanding = total_to_bill = total_grand_total = 0
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.transaction_date)).days
+
+        # 1. Determine Alternating Double-Color Background Styles
+        bg_color = "#ffffff" if idx % 2 != 0 else "#e7e6ec"
+        
+        # 2. Keep text colored red if data row age breaks the 30-day parameter
+        text_color = "color: red;" if age > 30 else "color: #111827;"
+        
+        # 3. Create the unified inline row design layout string
+        row_style = f"background: {bg_color}; {text_color}; vertical-align: middle;"
+        name_style = "color: red;" if age > 30 else ""
+
+        pending_billed = ((row.base_net_total or 0) * ((row.per_billed or 0) / 100))
+        to_billed      = (row.base_net_total or 0) - ((row.base_net_total or 0) * ((row.per_billed or 0) / 100))
+
+        total_value       += row.base_net_total or 0
+        total_grand_total += row.base_grand_total or 0
+        total_advance     += row.advance_paid or 0
+        total_per_bill    += row.per_billed or 0
+        total_bill        += row.amount_billed_company_currency or 0
+        total_outstanding += pending_billed or 0
+        total_to_bill     += to_billed or 0
+        
+        formatted_date = frappe.utils.formatdate(row.transaction_date, 'dd-mm-yyyy')
+        
+        am_short_code = ""
+        if row.account_manager:
+            am_short_code = frappe.db.get_value("Employee", {"user_id": row.account_manager}, "short_code") or ""
+        pm_short_code = ""
+        if row.pm_user:
+            pm_short_code = frappe.db.get_value("Employee", {"user_id": row.pm_user}, "short_code") or ""
+
+        if row.service:   service_list.add(row.service)
+        if am_short_code: am_list.add(am_short_code)
+        if pm_short_code: pm_list.add(pm_short_code)
+
+        html += f"""
+            <tr class="data-row"
+                data-service="{row.service or ''}"
+                data-am="{am_short_code}"
+                data-pm="{pm_short_code}"
+                style="{row_style}">
+                <td class="serial-no" style="text-align:center;">{idx}</td>
+                <td style="white-space:nowrap; text-align:left;"><a href="/app/sales-order/{row.name}" target="_blank" style="{name_style}">{row.name}</a></td>
+                <td style="white-space:nowrap; text-align:center;">{formatted_date}</td>
+                <td style="white-space:nowrap; text-align:center;">{row.service or ''}</td>
+                <td style="white-space:nowrap; text-align:left;">{row.customer or ''}</td>
+                <td style="white-space:nowrap; text-align:center;">{age}</td>
+                <td style="white-space:nowrap; text-align:center;">{row.status or ''}</td>
+                <td style="white-space:nowrap; text-align:center;">{am_short_code}</td>
+                <td style="white-space:nowrap; text-align:center;">{pm_short_code}</td>
+                <td style="text-align:right; font-weight:bold;">{fmt_money(row.base_net_total)}</td>
+                <td style="text-align:right; font-weight:bold;">{fmt_money(row.base_grand_total)}</td>
+                <td style="text-align:right;">{fmt_money(row.advance_paid) if row.advance_paid else 0}</td>
+                <td style="text-align:center;">{row.per_billed or 0}%</td>
+                <td style="text-align:right;">{fmt_money(pending_billed)}</td>
+                <td style="text-align:right; font-weight:bold;">{fmt_money(to_billed)}</td>
+            </tr>
+        """
+
+    # Added sticky parameters to the total summary row alignment
+    html += f"""
+        <tr style="background:#f0f0f0; font-weight:bold;bottom:0; z-index:5; border-top:2px solid #ccc;">
+            <td colspan="9" style="text-align:center; vertical-align:middle; padding:10px;">Total</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_value)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_grand_total)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_advance)}</td>
+            <td style="text-align:center; vertical-align:middle;">-</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_outstanding)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_to_bill)}</td>
+        </tr>
+        </tbody></table></div></div>
+    """
+
+    return {
+        "html": html,
+        "services": sorted(list(service_list)),
+        "account_managers": sorted(list(am_list)),
+        "project_managers": sorted(list(pm_list))
+    }
+
+
+@frappe.whitelist()
+def to_book_table_overall(from_date=None, to_date=None, overall_service=None, account_manager=None, project_manager=None):
+    from frappe.utils import getdate, nowdate, fmt_money
+
+    filters = {}
+    condition = "WHERE status NOT IN ('On Hold', 'To Receive', 'Closed', 'Cancelled', 'Completed') AND docstatus = 1"
+
+    if from_date and to_date:
+        condition += " AND transaction_date BETWEEN %(from_date)s AND %(to_date)s"
+        filters["from_date"] = from_date
+        filters["to_date"] = to_date
+
+    if overall_service:
+        condition += " AND custom_service = %(overall_service)s"
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND account_manager = %(account_manager)s"
+        filters["account_manager"] = account_manager
+
+    data = frappe.db.sql(f"""
+        SELECT
+            name, transaction_date, custom_service, supplier,
+            status, base_grand_total, advance_paid, per_billed,
+            project
+        FROM `tabPurchase Order`
+        {condition}
+        ORDER BY transaction_date
+    """, filters, as_dict=True)
+
+    today_date = getdate(nowdate())
+
+    # PM filter
+    filtered_data = []
+    for row in data:
+        pm_user = ""
+        if row.project:
+            pm_user = frappe.db.get_value("Project", row.project, "project_manager") or ""
+        row.pm_user = pm_user
+        if project_manager and pm_user != project_manager:
+            continue
+        filtered_data.append(row)
+    data = filtered_data
+
+    # Main Header Block - Matches your exact deep blue layout theme configuration
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+        <div style='min-width: 500px;'>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse; margin-bottom: 0;'>
+                <thead>
+                    <tr>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;padding:10px;">S#</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">ID</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Date</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Service</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;white-space:nowrap;">Supplier</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Age</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Status</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Grand Total</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Advance</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">% Billed</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Billed</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;">Outstanding</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;vertical-align:middle;white-space:nowrap;">To Bill</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    total_grand = total_advance = total_per_bill = total_billed = total_outstanding = total_to_bill = 0
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.transaction_date)).days
+        
+        # 1. Determine Alternating Double-Color Background Styles
+        bg_color = "#ffffff" if idx % 2 != 0 else "#e7e6ec"
+        
+        # 2. Text color conditional logic for items older than 30 days
+        text_color = "color: red;" if age > 30 else "color: #111827;"
+        
+        # 3. Compile options into standard unified row styling attribute
+        row_style = f"background: {bg_color}; {text_color}; vertical-align: middle;"
+        name_style = "color: red;" if age > 30 else ""
+        
+        grand_total = row.base_grand_total or 0
+        advance = row.advance_paid or 0
+        per_billed = row.per_billed or 0
+
+        billed = grand_total * (per_billed / 100)
+        outstanding = grand_total - advance - billed
+        to_bill = (row.base_grand_total - (row.base_grand_total * (row.per_billed / 100)))
+
+        total_grand       += grand_total
+        total_advance     += advance
+        total_per_bill    += per_billed
+        total_billed       += billed
+        total_outstanding += outstanding
+        total_to_bill      += to_bill
+
+        formatted_date = frappe.utils.formatdate(row.transaction_date, 'dd-mm-yyyy')
+
+        pm_short_code = ""
+        if row.pm_user:
+            pm_short_code = frappe.db.get_value("Employee", {"user_id": row.pm_user}, "short_code") or ""
+
+        html += f"""
+            <tr style="{row_style}">
+                <td style="text-align:center;">{idx}</td>
+                <td style="white-space:nowrap; text-align:left;"><a href="/app/purchase-order/{row.name}" target="_blank" style="{name_style}">{row.name}</a></td>
+                <td style="white-space:nowrap; text-align:center;">{formatted_date}</td>
+                <td style="white-space:nowrap; text-align:center;">{row.custom_service or ''}</td>
+                <td style="white-space:nowrap; text-align:left;">{row.supplier or ''}</td>
+                <td style="white-space:nowrap; text-align:center;">{age}</td>
+                <td style="white-space:nowrap; text-align:center;">{row.status or ''}</td>
+                <td style="text-align:right; font-weight: bold;">{fmt_money(grand_total)}</td>
+                <td style="text-align:right;">{fmt_money(advance) if advance else 0}</td>
+                <td style="text-align:center;">{per_billed}%</td>
+                <td style="text-align:right;">{fmt_money(billed)}</td>
+                <td style="text-align:right;">{fmt_money(outstanding)}</td>
+                <td style="text-align:right; font-weight: bold;">{fmt_money(to_bill)}</td>
+            </tr>
+        """
+
+    # Total Summary line - Rendered sticky at the bottom of viewport container window
+    html += f"""
+        <tr style="background:#f0f0f0; font-weight:bold;bottom: 0; z-index: 5; border-top: 2px solid #ccc;">
+            <td colspan="7" style="text-align:center; vertical-align:middle; padding:10px;">Total</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_grand)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_advance)}</td>
+            <td style="text-align:center; vertical-align:middle;">-</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_billed)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_outstanding)}</td>
+            <td style="text-align:right; vertical-align:middle;">{fmt_money(total_to_bill)}</td>
+        </tr>
+        </tbody></table></div></div>
+    """
+
+    return {"html": html}
+
+import frappe
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+
+@frappe.whitelist()
+def download_to_book_excel(overall_service=None, account_manager=None, project_manager=None):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    from frappe.utils import getdate, nowdate
+
+    filters = {}
+    condition = "WHERE status NOT IN ('On Hold', 'To Receive', 'Closed', 'Cancelled', 'Completed') AND docstatus = 1"
+
+    if overall_service:
+        condition += " AND custom_service = %(overall_service)s"
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND account_manager = %(account_manager)s"
+        filters["account_manager"] = account_manager
+
+    data = frappe.db.sql(f"""
+        SELECT
+            name, transaction_date, custom_service, supplier,
+            status, base_grand_total, advance_paid, per_billed,
+            project
+        FROM `tabPurchase Order`
+        {condition}
+        ORDER BY transaction_date
+    """, filters, as_dict=True)
+
+    today_date = getdate(nowdate())
+
+    # PM filter
+    filtered_data = []
+    for row in data:
+        pm_user = ""
+        if row.project:
+            pm_user = frappe.db.get_value("Project", row.project, "project_manager") or ""
+        row.pm_user = pm_user
+        if project_manager and pm_user != project_manager:
+            continue
+        filtered_data.append(row)
+    data = filtered_data
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "To Book"
+
+    # Style Palettes (Matching deep blue header and zebra row definitions)
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    ash_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    footer_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+    
+    white_font = Font(color="FFFFFF", bold=True)
+    black_bold_font = Font(color="000000", bold=True)
+    red_font = Font(color="FF0000")
+    
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal="center", vertical="center")
+    right_align = Alignment(horizontal="right", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+
+    # # Main Report Title Block
+    # ws.merge_cells('A1:O1')
+    # ws['A1'] = "TO BOOK REPORT"
+    # ws['A1'].font = Font(bold=True, size=14, color="000000")
+    # ws['A1'].alignment = center_align
+
+    headers = [
+        "S#", "ID", "Date", "Service", "Supplier", "Age", "Status",
+          "Grand Total", "Advance", "% Billed", "Billed",
+        "Outstanding", "To Bill"
+    ]
+
+    row_no = 3
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=row_no, column=col_num)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = white_font
+        cell.border = thin_border
+        cell.alignment = center_align
+
+    total_grand = total_advance = total_per_bill = total_billed = total_outstanding = total_to_bill = 0
+    excel_row = 4
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.transaction_date)).days
+
+        grand_total = row.base_grand_total or 0
+        advance = row.advance_paid or 0
+        per_billed = row.per_billed or 0
+
+        billed = grand_total * (per_billed / 100)
+        outstanding = grand_total - advance - billed
+        to_bill = grand_total - (grand_total * (per_billed / 100))
+
+        pm_short_code = ""
+        if row.pm_user:
+            pm_short_code = frappe.db.get_value("Employee", {"user_id": row.pm_user}, "short_code") or ""
+
+        values = [
+            idx,
+            row.name,
+            frappe.utils.formatdate(row.transaction_date, "dd-mm-yyyy"),
+            row.custom_service,
+            row.supplier,
+            age,
+            row.status,
+            grand_total,
+            advance,
+            per_billed,
+            billed,
+            outstanding,
+            to_bill
+        ]
+
+        # Determine alternating background row fill assignment rule
+        current_row_fill = white_fill if (excel_row % 2 == 0) else ash_fill
+
+        for col_num, value in enumerate(values, 1):
+            cell = ws.cell(row=excel_row, column=col_num)
+            cell.value = value
+            cell.fill = current_row_fill
+            cell.border = thin_border
+            
+            # Apply red text condition rule if age breaks threshold parameter
+            if age > 30:
+                cell.font = red_font
+
+            # Structural Alignment Rules & Number Formats
+            if col_num in [2, 4, 5]:  # ID, Service, and Supplier text links
+                cell.alignment = left_align
+            elif col_num >= 8:  # Currency metric rows
+                cell.alignment = right_align
+                if col_num != 10:  # Everything except % Billed column values
+                    cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = center_align
+
+            # Format percentages visually in the cells
+            if col_num == 10 and isinstance(value, (int, float)):
+                cell.value = f"{value}%"
+
+        total_grand       += grand_total
+        total_advance     += advance
+        total_per_bill    += per_billed
+        total_billed      += billed
+        total_outstanding += outstanding
+        total_to_bill     += to_bill
+
+        excel_row += 1
+
+    # Total Summary Footer Row Block (Balanced with exactly 15 column elements matching headers)
+    totals = [
+        "TOTAL", "", "", "", "", "", "", "", "",
+        total_grand, total_advance, total_per_bill,
+        total_billed, total_outstanding, total_to_bill
+    ]
+
+    for col_num, value in enumerate(totals, 1):
+        cell = ws.cell(row=excel_row, column=col_num)
+        cell.value = value
+        cell.font = black_bold_font
+        cell.border = thin_border
+        cell.fill = footer_fill
+        
+        if col_num >= 10:
+            cell.alignment = right_align
+            if col_num != 12:
+                cell.number_format = '#,##0.00'
+        else:
+            cell.alignment = center_align
+            
+        if col_num == 12:
+            cell.value = "-"  # Average percentage mapping bypass marker token
+
+    # Column Width Definitions Matrix
+    widths = {
+        'A': 8, 'B': 20, 'C': 15, 'D': 22, 'E': 45, 'F': 12, 'G': 18,
+        'H': 12, 'I': 12, 'J': 18, 'K': 18, 'L': 15, 'M': 18, 'N': 18, 'O': 18
+    }
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    xlsx_data = BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response['filename'] = "To_Book.xlsx"
+    frappe.response['filecontent'] = xlsx_data.read()
+    frappe.response['type'] = 'binary'
+
+import frappe
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from frappe.utils import today, getdate, nowdate
+from io import BytesIO
+
+@frappe.whitelist()
+def download_tobill_excel(
+    overall_service=None,
+    account_manager=None,
+    project_manager=None
+):
+    filters = {}
+    condition = ""
+
+    if overall_service:
+        condition += " AND so.service = %(overall_service)s "
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND so.account_manager = %(account_manager)s "
+        filters["account_manager"] = account_manager
+
+    # PM filter moved into SQL via JOIN
+    pm_join = ""
+    if project_manager:
+        pm_join = "INNER JOIN `tabProject` proj ON proj.name = so.project AND proj.project_manager = %(project_manager)s"
+        filters["project_manager"] = project_manager
+    else:
+        pm_join = "LEFT JOIN `tabProject` proj ON proj.name = so.project"
+
+    data = frappe.db.sql(f"""
+        SELECT
+            so.name,
+            so.customer,
+            so.service,
+            so.account_manager,
+            so.project,
+            so.per_billed,
+            so.advance_paid,
+            so.amount_billed_company_currency,
+            so.grand_total,
+            so.net_total,
+            so.transaction_date,
+            so.base_grand_total,  
+            proj.project_manager
+        FROM `tabSales Order` so
+        {pm_join}
+        WHERE so.docstatus = 1
+            AND so.status NOT IN ('On Hold', 'To Deliver', 'Closed', 'Cancelled', 'Completed')
+            {condition}
+        ORDER BY so.transaction_date
+    """, filters, as_dict=True)
+
+    # Batch fetch all AM short codes
+    am_users = list({row.account_manager for row in data if row.account_manager})
+    pm_users = list({row.project_manager for row in data if row.project_manager})
+    all_users = list(set(am_users + pm_users))
+
+    short_code_map = {}
+    if all_users:
+        results = frappe.db.sql("""
+            SELECT user_id, short_code
+            FROM `tabEmployee`
+            WHERE user_id IN %(users)s
+        """, {"users": all_users}, as_dict=True)
+        short_code_map = {r.user_id: r.short_code for r in results}
+
+    # Excel Setup
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "To Bill"
+
+    # Style Palettes (Matching deep blue header and zebra row definitions)
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    ash_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    footer_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+    
+    white_font = Font(color="FFFFFF", bold=True)
+    black_bold_font = Font(color="000000", bold=True)
+    red_font = Font(color="FF0000")
+    
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal="center", vertical="center")
+    right_align = Alignment(horizontal="right", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+
+    # # Main Report Title Block
+    # ws.merge_cells('A1:O1')
+    # ws['A1'] = "TO BILL REPORT"
+    # ws['A1'].font = Font(bold=True, size=14, color="000000")
+    # ws['A1'].alignment = center_align
+
+    headers = [
+        "S#", "ID", "Date", "Service", "Customer", "Age", "AM", "PM",
+        "Grand Total", "Advance", "% Billed", "Billed", "Outstanding", "To Bill"
+    ]
+
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col_num)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = white_font
+        cell.border = thin_border
+        cell.alignment = center_align
+
+    today_date = getdate(nowdate())
+    totals = [0] * 6
+    excel_row = 4
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.transaction_date)).days
+        pending_billed = (row.base_grand_total * (row.per_billed / 100))
+        pending_collection = row.base_grand_total - row.advance_paid - pending_billed
+        to_billed = (row.base_grand_total - (row.base_grand_total * (row.per_billed / 100)))
+
+        am_short_code = short_code_map.get(row.account_manager, "")
+        pm_short_code = short_code_map.get(row.project_manager, "")
+
+        values = [
+            idx, row.name,
+            frappe.utils.formatdate(row.transaction_date, "dd-mm-yyyy"),
+            row.service, row.customer, age,
+            am_short_code, pm_short_code,
+            row.grand_total, row.advance_paid, row.per_billed,
+            row.amount_billed_company_currency, pending_collection, to_billed
+        ]
+
+        # Determine alternating background row fill assignment rule
+        current_row_fill = white_fill if (excel_row % 2 == 0) else ash_fill
+
+        for col_num, value in enumerate(values, 1):
+            cell = ws.cell(row=excel_row, column=col_num)
+            cell.value = value
+            cell.fill = current_row_fill
+            cell.border = thin_border
+            
+            # Apply red text condition rule if age breaks threshold parameter
+            if age > 30:
+                cell.font = red_font
+
+            # Structural Alignment Rules & Number Formats
+            if col_num in [2, 5]:  # ID and Customer text links
+                cell.alignment = left_align
+            elif col_num >= 9:  # Currency metric rows
+                cell.alignment = right_align
+                if col_num != 11:  # Everything except % Billed column values
+                    cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = center_align
+
+            # Format percentages visually in the cells
+            if col_num == 11 and isinstance(value, (int, float)):
+                cell.value = f"{value}%"
+
+        totals[0] += row.grand_total or 0
+        totals[1] += row.advance_paid or 0
+        totals[2] += row.per_billed or 0
+        totals[3] += row.amount_billed_company_currency or 0
+        totals[4] += pending_collection or 0
+        totals[5] += to_billed or 0
+        excel_row += 1
+
+    # Total row setup (Balanced matrix to fit exactly over your data table setup)
+    total_values = ["TOTAL", "", "", "", "", "", "", ""] + totals
+    for col_num, value in enumerate(total_values, 1):
+        cell = ws.cell(row=excel_row, column=col_num)
+        cell.value = value
+        cell.font = black_bold_font
+        cell.border = thin_border
+        cell.fill = footer_fill
+        
+        if col_num >= 9:
+            cell.alignment = right_align
+            if col_num != 11:
+                cell.number_format = '#,##0.00'
+        else:
+            cell.alignment = center_align
+            
+        if col_num == 11:
+            cell.value = "-"  # Average formatting baseline token block bypass
+
+    widths = {
+        'A': 8, 'B': 20, 'C': 15, 'D': 22, 'E': 45, 'F': 12, 'G': 12, 'H': 12,
+        'I': 18, 'J': 18, 'K': 15, 'L': 18, 'M': 18, 'N': 18
+    }
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    xlsx_data = BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response['filename'] = "To_Bill_Report.xlsx"
+    frappe.response['filecontent'] = xlsx_data.read()
+    frappe.response['type'] = 'binary'
+
+
+import frappe
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+from frappe.utils import today, getdate, nowdate
+import os
+
+import frappe
+from frappe.utils import today, getdate, nowdate
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+
+@frappe.whitelist()
+def download_ob_excel(
+    from_date=None,
+    to_date=None,
+    overall_service=None,
+    account_manager=None,
+    project_manager=None
+):
+    filters = {}
+    condition = ""
+
+    if not from_date or not to_date:
+        fiscal_year = frappe.db.get_value(
+            "Fiscal Year",
+            filters={
+                "year_start_date": ["<=", today()],
+                "year_end_date": [">=", today()]
+            },
+            fieldname=["year_start_date", "year_end_date"],
+            as_dict=True
+        )
+
+        from_date = fiscal_year["year_start_date"]
+        to_date = fiscal_year["year_end_date"]
+
+    filters["from_date"] = from_date
+    filters["to_date"] = to_date
+
+    condition += """
+        AND so.transaction_date BETWEEN %(from_date)s AND %(to_date)s
+    """
+
+    if overall_service:
+        condition += " AND so.service = %(overall_service)s "
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND so.account_manager = %(account_manager)s "
+        filters["account_manager"] = account_manager
+
+    # PM filter inside SQL via JOIN
+    pm_join = ""
+    if project_manager:
+        pm_join = "INNER JOIN `tabProject` proj ON proj.name = so.project AND proj.project_manager = %(project_manager)s"
+        filters["project_manager"] = project_manager
+    else:
+        pm_join = "LEFT JOIN `tabProject` proj ON proj.name = so.project"
+
+    data = frappe.db.sql(f"""
+        SELECT
+            so.name,
+            so.customer,
+            so.service,
+            so.account_manager,
+            so.status,
+            so.project,
+            so.per_billed,
+            so.advance_paid,
+            so.amount_billed_company_currency,
+            so.grand_total,
+            so.net_total,
+            so.transaction_date,
+            so.base_net_total,
+            so.base_grand_total,
+            proj.project_manager
+        FROM `tabSales Order` so
+        {pm_join}
+        WHERE so.docstatus = 1
+            AND so.status NOT IN ('On Hold', 'Cancelled', 'Closed', 'Completed')
+            AND so.base_grand_total > 0
+            {condition}
+        ORDER BY so.transaction_date
+    """, filters, as_dict=True)
+
+    # Batch fetch all AM/PM short codes
+    am_users = list({row.account_manager for row in data if row.account_manager})
+    pm_users = list({row.project_manager for row in data if row.project_manager})
+    all_users = list(set(am_users + pm_users))
+
+    short_code_map = {}
+    if all_users:
+        results = frappe.db.sql("""
+            SELECT user_id, short_code
+            FROM `tabEmployee`
+            WHERE user_id IN %(users)s
+        """, {"users": all_users}, as_dict=True)
+        short_code_map = {r.user_id: r.short_code for r in results}
+
+    # Excel Setup
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Order Booking"
+
+    # Style Palettes (Matching deep blue header and zebra rows)
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    ash_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    footer_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+    
+    white_font = Font(color="FFFFFF", bold=True)
+    black_bold_font = Font(color="000000", bold=True)
+    red_font = Font(color="FF0000")
+    
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
+    )
+    center_align = Alignment(horizontal="center", vertical="center")
+    right_align = Alignment(horizontal="right", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+
+    # # Main Report Title Block
+    # ws.merge_cells('A1:O1')
+    # ws['A1'] = "ORDER BOOKING REPORT"
+    # ws['A1'].font = Font(bold=True, size=14, color="000000")
+    # ws['A1'].alignment = center_align
+
+    headers = ["S#","ID","Date","Service","Customer","Age","Status","AM","PM",
+               "Net Total", "Grand Total", "Advance","% Billed","Billed","Outstanding","To Bill"]
+
+    # Table Column Headers Generation
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=3, column=col_num)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = white_font
+        cell.border = thin_border
+        cell.alignment = center_align
+
+    today_date = getdate(nowdate())
+    totals = [0] * 7
+    excel_row = 4
+
+    # Data Iteration Matrix
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.transaction_date)).days
+        pending_billed = (row.net_total or 0) - (row.amount_billed_company_currency or 0)
+        pending_collection = pending_billed - (row.advance_paid or 0)
+        to_billed = (
+            (row.grand_total or 0)
+            - ((row.grand_total or 0) * ((row.per_billed or 0) / 100))
+            + (row.advance_paid or 0)
+        )
+
+        am_short_code = short_code_map.get(row.account_manager, "")
+        pm_short_code = short_code_map.get(row.project_manager, "")
+
+        values = [
+            idx, row.name,
+            frappe.utils.formatdate(row.transaction_date, "dd-mm-yyyy"),
+            row.service, row.customer, age, row.status,
+            am_short_code, pm_short_code,
+            row.base_net_total, row.base_grand_total, row.advance_paid, row.per_billed,
+            row.amount_billed_company_currency, pending_collection, to_billed
+        ]
+
+        # Alternating background row fill assignment rule
+        current_row_fill = white_fill if (excel_row % 2 == 0) else ash_fill
+
+        for col_num, value in enumerate(values, 1):
+            cell = ws.cell(row=excel_row, column=col_num)
+            cell.value = value
+            cell.fill = current_row_fill
+            cell.border = thin_border
+            
+            # Apply red text condition rule if age breaks threshold parameter
+            if age > 30:
+                cell.font = red_font
+
+            # Structural Alignment Rules & Number Formats
+            if col_num in [2, 5]:  # ID and Customer name links
+                cell.alignment = left_align
+            elif col_num >= 10:  # Currency metrics rows
+                cell.alignment = right_align
+                if col_num != 13:  # Everything except % Billed column values
+                    cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = center_align
+                
+            # Formatting exception addition for percentage notation visually
+            if col_num == 13 and isinstance(value, (int, float)):
+                cell.value = f"{value}%"
+
+        totals[0] += row.base_net_total or 0
+        totals[1] += row.base_grand_total or 0
+        totals[2] += row.advance_paid or 0
+        totals[3] += row.per_billed or 0
+        totals[4] += row.amount_billed_company_currency or 0
+        totals[5] += pending_collection or 0
+        totals[6] += to_billed or 0
+        excel_row += 1
+
+    # Total Footer Construction
+    total_values = ["TOTAL","","","","","","","",""] + totals
+    for col_num, value in enumerate(total_values, 1):
+        cell = ws.cell(row=excel_row, column=col_num)
+        cell.value = value
+        cell.font = black_bold_font
+        cell.border = thin_border
+        cell.fill = footer_fill
+        
+        if col_num >= 10:
+            cell.alignment = right_align
+            if col_num != 13:
+                cell.number_format = '#,##0.00'
+        else:
+            cell.alignment = center_align
+            
+        if col_num == 13:
+            cell.value = "-"  # Average formatting baseline context token bypass
+
+    # Unified Dimensions Configuration
+    widths = {'A':8,'B':20,'C':15,'D':22,'E':45,'F':12,'G':15,'H':12,
+              'I':12,'J':18,'K':18,'L':15,'M':18,'N':18,"O":18, "P":18}
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    xlsx_data = BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response['filename'] = "order_book.xlsx"
+    frappe.response['filecontent'] = xlsx_data.read()
+    frappe.response['type'] = 'binary'
+
+
 @frappe.whitelist()
 def tfp_payable_table():
     from frappe.utils import today, getdate, nowdate
@@ -727,6 +2737,218 @@ def tfp_payable_table():
     return html
 
 # @frappe.whitelist()
+# def payable_table_overall(overall_service=None):
+#     from frappe.utils import today, getdate, nowdate
+#     from datetime import datetime
+#     from frappe.utils import today, getdate, nowdate, fmt_money
+    
+#     # data = frappe.db.sql("""
+#     #     SELECT name, supplier, outstanding_amount, posting_date
+#     #     FROM `tabPurchase Invoice`
+#     #     WHERE docstatus = 1
+#     #     AND outstanding_amount>0
+#     #     ORDER BY posting_date
+#     # """, as_dict=True)
+#     filters = {}
+#     condition = ""
+
+#     if overall_service:
+#         condition += " AND services = %(overall_service)s "
+#         filters["overall_service"] = overall_service
+
+#     data = frappe.db.sql(f"""
+#         SELECT
+#             name,
+#             supplier,
+#             outstanding_amount,
+#             posting_date,
+#             services,
+#             supplier,
+#             base_grand_total          
+#         FROM `tabPurchase Invoice`
+#         WHERE docstatus = 1
+#             AND outstanding_amount > 0
+#             {condition}
+#         ORDER BY posting_date
+#     """, filters, as_dict=True)
+
+
+#     html = """
+#     <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+#         <div style='min-width: 500px;'>
+#             <table class='table table-bordered' style='width: 100%; border-collapse: collapse;'>
+#                 <thead>
+#                     <tr>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">S.No</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center; white-space: nowrap;">Purchase Invoice</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center; white-space: nowrap;">Date</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center; white-space: nowrap;">Service</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center; white-space: nowrap;">Supplier</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Age</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">AM</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">PM</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Total</th>
+#                         <th style="position: sticky; top: 0; background: #002060; color: white; text-align: center;">Value</th>
+                        
+#                     </tr>
+#                 </thead>
+#                 <tbody>
+#     """
+#     today_date = getdate(nowdate())
+#     total_outstanding = 0
+#     total_grand_total = 0
+#     for idx, row in enumerate(data, 1):
+#         age = (today_date - getdate(row.posting_date)).days
+#         row_style = "color: red;" if age > 30 else ""  # Apply to whole row
+#         name_style = "color: red;" if age > 30 else ""
+#         total_grand_total += row.base_grand_total or 0
+#         total_outstanding += row.outstanding_amount or 0
+#         html += f"""
+#             <tr style="{row_style}">
+#             <td style="text-align: center;">{idx}</td>
+#                 <td style="white-space: nowrap;"><a href="/app/purchase-invoice/{ row.name }" target="_blank" style="{name_style}">{ row.name }</a></td>
+#                 <td style="white-space: nowrap;">{row.posting_date}</td>
+#                 <td style="white-space: nowrap;">{row.services}</td>
+#                 <td style="white-space: nowrap;">{row.supplier}</td>
+#                 <td style='text-align:right;'>{age}</td>
+#                 <td style='text-align:right;'>{"-"}</td>
+#                 <td style='text-align:right;'>{"-"}</td>
+#                 <td style='text-align:right;'>{row.base_grand_total}</td>
+#                 <td style='text-align:right;'>{frappe.utils.fmt_money(row.outstanding_amount)}</td>
+#             </tr>
+#         """
+#     html += f"""
+#         <tr style="background: #f0f0f0; font-weight: bold;">
+#             <td colspan="8" style="text-align: center;">Total</td>
+#             <td style="text-align: right;">{fmt_money(total_grand_total)}</td>
+#             <td style="text-align: right;">{fmt_money(total_outstanding)}</td>
+#         </tr>
+#     """
+
+#     html += """
+#                 </tbody>
+#             </table>
+#         </div>
+#     </div>
+#     """
+
+#     return html
+@frappe.whitelist()
+def payable_table_overall(overall_service=None, account_manager=None, project_manager=None):
+    from frappe.utils import getdate, nowdate, fmt_money
+
+    filters = {}
+    condition = ""
+
+    if overall_service:
+        condition += " AND services = %(overall_service)s "
+        filters["overall_service"] = overall_service
+
+    if account_manager:
+        condition += " AND account_manager = %(account_manager)s "
+        filters["account_manager"] = account_manager
+
+    data = frappe.db.sql(f"""
+        SELECT
+            name, supplier, outstanding_amount, posting_date,
+            services, base_grand_total, project
+        FROM `tabPurchase Invoice`
+        WHERE docstatus = 1
+            AND outstanding_amount > 0
+            {condition}
+        ORDER BY posting_date
+    """, filters, as_dict=True)
+
+    today_date = getdate(nowdate())
+
+    # PM filter
+    filtered_data = []
+    for row in data:
+        pm_user = ""
+        if row.project:
+            pm_user = frappe.db.get_value("Project", row.project, "project_manager") or ""
+        row.pm_user = pm_user
+        if project_manager and pm_user != project_manager:
+            continue
+        filtered_data.append(row)
+    data = filtered_data
+
+    # Main Header Block - Standardized with your custom deep blue (#0F1568) theme layout
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; overflow-x: auto;'>
+        <div>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse; margin-bottom: 0;table-layout:fixed;'>
+                <thead>
+                    <tr>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; padding: 10px; width: 5%;">S.No</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; white-space: nowrap;width: 25%;">Purchase Invoice</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; white-space: nowrap;width: 15%;">Date</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; white-space: nowrap;width: 8%;">Service</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle; white-space: nowrap;width: 40%;">Supplier</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;width: 5%;">Age</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;width: 25%;">Total</th>
+                        <th style="position: sticky; top: 0; background: #0F1568; color: white; text-align: center; vertical-align: middle;width: 25%;">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+    """
+
+    total_outstanding = 0
+    total_grand_total = 0
+
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.posting_date)).days
+        
+        # 1. Determine Alternating Double-Color Shading Style
+        bg_color = "#ffffff" if idx % 2 != 0 else "#e7e6ec"
+        
+        # 2. Text color conditional logic for items older than 30 days
+        text_color = "color: red;" if age > 30 else "color: #111827;"
+        
+        # 3. Create the unified inline row design layout string
+        row_style = f"background: {bg_color}; {text_color}; vertical-align: middle;"
+        name_style = "color: red;" if age > 30 else ""
+
+        total_grand_total += row.base_grand_total or 0
+        total_outstanding += row.outstanding_amount or 0
+
+        pm_short_code = ""
+        if row.pm_user:
+            pm_short_code = frappe.db.get_value("Employee", {"user_id": row.pm_user}, "short_code") or ""
+
+        html += f"""
+            <tr style="{row_style}">
+                <td style="text-align: center;">{idx}</td>
+                <td style="white-space: nowrap; text-align: left;">
+                    <a href="/app/purchase-invoice/{row.name}" target="_blank" style="{name_style}">{row.name}</a>
+                </td>
+                <td style="white-space: nowrap; text-align: center;">{frappe.utils.formatdate(row.posting_date, "dd-mm-yyyy")}</td>
+                <td style="text-align: center;">{row.services or ''}</td>
+                <td style="white-space: nowrap; text-align: left;">{row.supplier or ''}</td>
+                <td style='text-align: center;'>{age}</td>
+                <td style='text-align: right; font-weight: bold;'>{fmt_money(row.base_grand_total)}</td>
+                <td style='text-align: right; font-weight: bold;'>{fmt_money(row.outstanding_amount)}</td>
+            </tr>
+        """
+
+    # Total Summary Line - Rendered sticky at the bottom of viewport container window
+    html += f"""
+        <tr style="background: #f0f0f0; font-weight: bold; bottom: 0; z-index: 5; border-top: 2px solid #ccc;">
+            <td colspan="8" style="text-align: center; vertical-align: middle; padding: 10px;">Total</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_grand_total)}</td>
+            <td style="text-align: right; vertical-align: middle;">{fmt_money(total_outstanding)}</td>
+        </tr>
+        </tbody>
+        </table>
+    </div>
+    </div>
+    """
+
+    return html
+
+
+
+# @frappe.whitelist()
 # def opportunity_details():
 #     data = frappe.db.sql("""
 #         SELECT 
@@ -805,78 +3027,108 @@ def opportunity_details():
 
 
 
-# import frappe
-# from frappe.utils import formatdate, nowdate, getdate
+import frappe
+from frappe.utils import formatdate, nowdate, getdate
 
-# @frappe.whitelist()
-# def get_tfp_stock_html():
-#     from datetime import timedelta
+@frappe.whitelist()
+def get_tfp_stock_html():
+    from datetime import timedelta
 
-#     warehouse = "Stores - TFP"
-#     item_group="Food Products"
-#     stock_data = frappe.db.sql("""
-#         SELECT 
-#             bin.item_code,
-#             item.item_name,
-#             bin.actual_qty,
-#             item.stock_uom,
-#             (
-#                 SELECT MAX(pr.creation)
-#                 FROM `tabPurchase Receipt Item` pri
-#                 JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
-#                 WHERE pri.item_code = bin.item_code
-#                 AND pri.warehouse = %s
-#             ) AS last_pr_date
-#         FROM `tabBin` bin
-#         JOIN `tabItem` item ON bin.item_code = item.name AND item.item_group=%s
-#         WHERE bin.warehouse = %s
-#         AND bin.actual_qty > 0
-#     """, (warehouse,item_group, warehouse), as_dict=True)
+    # warehouse = "Stores - TFP"
+    # item_group="Food Products"
+    # stock_data = frappe.db.sql("""
+    #     SELECT 
+    #         bin.item_code,
+    #         item.item_name,
+    #         bin.actual_qty,
+    #         item.stock_uom,
+    #         (
+    #             SELECT MAX(pr.creation)
+    #             FROM `tabPurchase Receipt Item` pri
+    #             JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
+    #             WHERE pri.item_code = bin.item_code
+    #             AND pri.warehouse = %s
+    #         ) AS last_pr_date
+    #     FROM `tabBin` bin
+    #     JOIN `tabItem` item ON bin.item_code = item.name AND item.item_group=%s
+    #     WHERE bin.warehouse = %s
+    #     AND bin.actual_qty > 0
+    # """, (warehouse,item_group, warehouse), as_dict=True)
 
-#     today = getdate(nowdate())
+    warehouse = "Stores - TFP"
+    parent_item_group = "Food Products"
+
+    stock_data = frappe.db.sql("""
+        SELECT 
+            bin.item_code,
+            item.item_name,
+            item.item_group,
+            bin.actual_qty,
+            item.stock_uom,
+            (
+                SELECT MAX(pr.creation)
+                FROM `tabPurchase Receipt Item` pri
+                JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
+                WHERE pri.item_code = bin.item_code
+                AND pri.warehouse = %s
+            ) AS last_pr_date
+        FROM `tabBin` bin
+        JOIN `tabItem` item ON bin.item_code = item.name
+        JOIN `tabItem Group` ig ON item.item_group = ig.name
+        WHERE bin.warehouse = %s
+        AND (
+            item.item_group = %s
+            OR ig.parent_item_group = %s
+        )
+        AND bin.actual_qty > 0
+    """, (warehouse, warehouse, parent_item_group, parent_item_group), as_dict=True)
+
+   
+
+    today = getdate(nowdate())
     
-#     # Add age and is_old to each row
-#     for row in stock_data:
-#         pr_date = getdate(row.last_pr_date) if row.last_pr_date else None
-#         row.age = (today - pr_date).days if pr_date else None
-#         row.is_old = row.age is not None and row.age > 30
+    # Add age and is_old to each row
+    for row in stock_data:
+        pr_date = getdate(row.last_pr_date) if row.last_pr_date else None
+        row.age = (today - pr_date).days if pr_date else None
+        row.is_old = row.age is not None and row.age > 30
 
-#     # Sort: red (old) rows first
-#     stock_data.sort(key=lambda x: not x.is_old)
+    # Sort: red (old) rows first
+    stock_data.sort(key=lambda x: not x.is_old)
 
-#     # HTML table with sticky headers
-#     html = """
-#     <div style='max-height: 340px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px;'>
-#     <table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
-#         <thead>
-#             <tr style="text-align:center;">
-#                 <th style="position: sticky; top: 0; background: #002060;color:white">Item Code</th>
-#                 <th style="position: sticky; top: 0; background: #002060;color:white">Item Name</th>
-#                 <th style="position: sticky; top: 0; background: #002060;color:white">Quantity</th>
-#                 <th style="position: sticky; top: 0; background: #002060;color:white">Stock UOM</th>
-#                 <th style="position: sticky; top: 0; background: #002060;color:white">Last PR Date</th>
-#             </tr>
-#         </thead>
-#         <tbody>
-#     """
+    # HTML table with sticky headers
+    html = """
+    <div style='max-height: 340px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px;'>
+    <table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="text-align:center;">
+                <th style="position: sticky; top: 0; background: #002060;color:white">Item Code</th>
+                <th style="position: sticky; top: 0; background: #002060;color:white">Item Name</th>
+                <th style="position: sticky; top: 0; background: #002060;color:white">Quantity</th>
+                <th style="position: sticky; top: 0; background: #002060;color:white">Stock UOM</th>
+                <th style="position: sticky; top: 0; background: #002060;color:white">Last PR Date</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
 
-#     for row in stock_data:
-#         pr_date = getdate(row.last_pr_date) if row.last_pr_date else None
-#         red_row_style = 'style="color: red;"' if row.is_old else ""
+    for row in stock_data:
+        pr_date = getdate(row.last_pr_date) if row.last_pr_date else None
+        red_row_style = 'style="color: red;"' if row.is_old else ""
 
-#         html += f"""
-#             <tr {red_row_style}>
-#                 <td>{row.item_code}</td>
-#                 <td>{row.item_name}</td>
-#                 <td style="text-align:right">{row.actual_qty}</td>
-#                 <td style="text-align:center">{row.stock_uom}</td>
-#                 <td>{formatdate(pr_date) if pr_date else '-'}</td>
-#             </tr>
-#         """
+        html += f"""
+            <tr {red_row_style}>
+                <td>{row.item_code}</td>
+                <td>{row.item_name}</td>
+                <td style="text-align:right">{row.actual_qty}</td>
+                <td style="text-align:center">{row.stock_uom}</td>
+                <td>{formatdate(pr_date) if pr_date else '-'}</td>
+            </tr>
+        """
 
-#     html += "</tbody></table></div>"
+    html += "</tbody></table></div>"
 
-#     return html
+    return html
 
 import frappe
 from frappe.utils import formatdate
@@ -886,16 +3138,11 @@ def get_tfp_stock_html_data():
 
     vm_data = frappe.db.sql("""
         SELECT
-            name AS vm_id,
-            machine_id,
-            status,
-            total_new_stock_qty,
-            next_filling,
-            DATE(posting_date) AS posting_date
-        FROM `tabVM Stock Register`
-        WHERE docstatus != 2
-        AND machine_id IS NOT NULL
-        ORDER BY posting_date DESC
+            w.name AS warehouse,
+            IFNULL(w.disabled,0) AS disabled
+        FROM `tabWarehouse` w
+        WHERE w.parent_warehouse = 'LSVM - Vending Machines - TFP'
+        ORDER BY w.name
     """, as_dict=True)
 
     html = """
@@ -916,7 +3163,6 @@ def get_tfp_stock_html_data():
         background:#e5e7eb;
     }
 
-    /* MAIN HEADER STICKY */
     .main-table th{
         background:#002060;
         color:white;
@@ -948,7 +3194,6 @@ def get_tfp_stock_html_data():
         background:#f3f4f6;
     }
 
-    /* CHILD HEADER STICKY */
     .child-table th{
         background:#d9e1f2;
         color:#1e293b;
@@ -974,16 +3219,6 @@ def get_tfp_stock_html_data():
         background:#f1f5f9;
     }
 
-    .vm-link{
-        cursor:pointer;
-        color:#111827;
-        font-weight:bold;
-    }
-
-    .vm-link:hover{
-        text-decoration:underline;
-    }
-
     .qty{
         text-align:right;
     }
@@ -1001,8 +3236,7 @@ def get_tfp_stock_html_data():
         <thead>
             <tr>
                 <th style="width:5%">Sr</th>
-                <th style="width:18%">VM ID</th>
-                <th style="width:22%">Vending Machine</th>
+                <th style="width:30%">Vending Machine</th>
                 <th style="width:12%">Status</th>
                 <th style="width:12%">Total Quantity</th>
                 <th style="width:15%">Last Filling</th>
@@ -1017,19 +3251,46 @@ def get_tfp_stock_html_data():
 
     for d in vm_data:
 
+        warehouse = d.warehouse
+
+        status = "Inactive" if d.disabled == 1 else "Active"
+
         parent_class = "parent-even" if sr % 2 == 0 else "parent-odd"
+
+        total_qty = frappe.db.sql("""
+            SELECT
+                IFNULL(SUM(actual_qty),0)
+            FROM `tabBin`
+            WHERE warehouse = %s
+        """, (warehouse,))[0][0] or 0
+
+        latest_vm = frappe.db.sql("""
+            SELECT
+                posting_date,
+                next_filling,
+                machine_id
+            FROM `tabVM Stock Register`
+            WHERE machine_id = %s
+            AND docstatus != 2
+            ORDER BY posting_date DESC
+            LIMIT 1
+        """, (warehouse,), as_dict=True)
+
+        latest_vm = latest_vm[0] if latest_vm else {}
 
         child_data = frappe.db.sql("""
             SELECT
-                item_code,
-                item_name,
-                new_stock_qty,
-                new_stockuom,
-                stock_uom
-            FROM `tabVM Stock Details`
-            WHERE parent = %s
-            AND new_stock_qty > 0
-        """, (d.vm_id,), as_dict=True)
+                b.item_code,
+                i.item_name,
+                i.stock_uom,
+                b.actual_qty
+            FROM `tabBin` b
+            LEFT JOIN `tabItem` i
+                ON i.name = b.item_code
+            WHERE b.warehouse = %s
+            AND b.actual_qty > 0
+            ORDER BY b.item_code
+        """, (warehouse,), as_dict=True)
 
         child_rows = ""
         child_sr = 1
@@ -1042,89 +3303,85 @@ def get_tfp_stock_html_data():
                 <tr class="{child_class}">
                     <td>{row.item_code or ''}</td>
                     <td>{row.item_name or ''}</td>
-                    <td class="qty">{row.new_stock_qty or 0}</td>
+                    <td class="qty">{row.actual_qty or 0}</td>
                     <td class="center">{row.stock_uom or ''}</td>
-                    <td class="center">{row.new_stockuom or ''}</td>
                 </tr>
             """
+
             child_sr += 1
 
         if not child_rows:
+
             child_rows = """
                 <tr class="child-even">
-                    <td colspan="5" style="text-align:center;">
+                    <td colspan="4" style="text-align:center;">
                         No Stock Available
                     </td>
                 </tr>
             """
 
         html += f"""
+
             <tr class="{parent_class}">
+
                 <td class="center">{sr}</td>
 
                 <td>
 
-                        <span id="icon_{d.vm_id}"
-                            onclick="toggle_vm_details('{d.vm_id}')"
-                            style="
-                                    cursor:pointer;
-                                    font-weight:bold;
-                                    margin-right:8px;
-                                    font-size:16px;
-                                    color:#111827;
-                            ">
-                            +
-                        </span>
-
-                        <a href="/app/vm-stock-register/{d.vm_id}"
-                        target="_blank"
+                    <span id="icon_{warehouse}"
+                        onclick="toggle_vm_details('{warehouse}')"
                         style="
-                                color:#2563eb;
-                                font-weight:bold;
-                                text-decoration:none;
+                            cursor:pointer;
+                            font-weight:bold;
+                            margin-right:8px;
+                            font-size:16px;
+                            color:#111827;
                         ">
+                        +
+                    </span>
 
-                            {d.vm_id}
+                    {warehouse}
 
-                        </a>
-
-                    </td>
-
-                <td>{d.machine_id or ''}</td>
-
-                <td class="center">{d.status or ''}</td>
-
-                <td class="qty">{d.total_new_stock_qty or 0}</td>
-
-                <td class="center">
-                    {formatdate(d.posting_date) if d.posting_date else ''}
                 </td>
 
-                <td class="center">{formatdate(d.next_filling) if d.next_filling else ''}</td>
+                <td class="center">{status}</td>
+
+                <td class="qty">{round(total_qty, 2)}</td>
+
+                <td class="center">
+                    {formatdate(latest_vm.get("posting_date")) if latest_vm.get("posting_date") else ""}
+                </td>
+
+                <td class="center">
+                    {formatdate(latest_vm.get("next_filling")) if latest_vm.get("next_filling") else ""}
+                </td>
+
             </tr>
 
-            <tr id="detail_{d.vm_id}"
+            <tr id="detail_{warehouse}"
                 style="display:none; background:#f8fafc;">
 
-                <td colspan="7" style="padding:0px;">
+                <td colspan="6" style="padding:0px;">
 
                     <table class="child-table">
+
                         <thead>
                             <tr>
                                 <th>Item Code</th>
                                 <th>Item Name</th>
                                 <th>Quantity</th>
                                 <th>Stock UOM</th>
-                                <th>UOM</th>
                             </tr>
                         </thead>
 
                         <tbody>
                             {child_rows}
                         </tbody>
+
                     </table>
 
                 </td>
+
             </tr>
         """
 
@@ -3316,7 +5573,7 @@ def get_tfp_plan_html_schedule_opertaions_new():
         }, [
             "item_name","item_code", "qty", "uom", "stock_qty", "stock_uom", "custom_cover_type", "mrp",
             "custom_mfg_on", "custom_covers", "custom_packing_type", "custom_per_2p","custom_name_print","custom_tertiary_packingbox","custom_bag","custom_box",
-            "custom_wrd_uom","custom_wrd_rate","custom_packing_on", "against_sales_order","custom_per_3p",""
+            "custom_wrd_uom","custom_wrd_rate","custom_packing_on", "against_sales_order","custom_per_3p"
         ])
 
         if not items:
@@ -5562,228 +7819,301 @@ def make_xlsx_tfp9(sheet_name="TO BILL", wb=None, column_widths=None):
     output.seek(0)
     return output.read()
 
+# @frappe.whitelist()
+# def download_payable_table1():
+#     filename = "PAYABLE" 
+#     xlsx_file = make_xlsx_tfp10(filename)
+#     frappe.response['filename'] = filename + '.xlsx'
+#     frappe.response['filecontent'] = xlsx_file
+#     frappe.response['type'] = 'binary'
+
+# import openpyxl
+# from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
+# from openpyxl.utils import get_column_letter
+# import frappe
+# import io
+# from datetime import datetime
+# from frappe.utils import getdate, fmt_money,nowdate, formatdate,today
+
+# def make_xlsx_tfp10(sheet_name="PAYABLE", wb=None, column_widths=None):
+
+#     if wb is None:
+#         wb = openpyxl.Workbook()
+
+#     ws = wb.active
+#     ws.title = sheet_name.replace(":", "-")
+#     ws.title = "PAYABLE"
+
+#     header_font = Font(bold=True, color="FFFFFF")
+#     center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+#     left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+#     right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+#     border = Border(
+#         left=Side(style="thin"),
+#         right=Side(style="thin"),
+#         top=Side(style="thin"),
+#         bottom=Side(style="thin")
+#     )
+#     fill_header = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+#     fill_total = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+
+#     headers = [
+#         "S.No","Supplier Name", "Value","AGE","Purchase Invoice"
+#     ]
+
+
+#     for col_num,header in enumerate(headers, 1):
+#         cell = ws.cell(row=1, column=col_num,value=header)
+#         cell.font = header_font
+#         cell.alignment = center_align
+#         cell.fill = fill_header
+#         cell.border = border
+
+#     column_widths = {
+#     1: 8,     
+#     2: 40,    
+#     3: 15,    
+#     4: 10,    
+#     5: 25     
+#     }
+#     for col_idx, width in column_widths.items():
+#         ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+#     row_idx = 2    
+#     s_no = 1
+#     fiscal_year = frappe.db.get_value(
+#         "Fiscal Year",
+#         filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
+#         fieldname=["year_start_date", "year_end_date"],
+#         as_dict=True
+#     )
+#     from_date = fiscal_year["year_start_date"]
+#     to_date = fiscal_year["year_end_date"]
+
+#     filters = {
+#         'company': 'TEAMPRO Food Products',
+#         'from_date': from_date,
+#         'to_date': to_date
+#     }
+
+#     data = frappe.db.sql("""
+#         SELECT name, supplier, outstanding_amount, posting_date
+#         FROM `tabPurchase Invoice`
+#         WHERE docstatus = 1
+#           AND company = %(company)s
+#           AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+#           AND outstanding_amount > 0
+#         ORDER BY posting_date
+#     """, filters, as_dict=True)
+
+#     today_date = getdate(nowdate())
+#     total_outstanding = 0
+
+#     for row in data:
+#         age = (today_date - getdate(row.posting_date)).days
+#         red_font = Font(color="FF0000") if age > 30 else Font()
+#         total_outstanding += row.outstanding_amount or 0
+#         ws.cell(row=row_idx, column=1, value=s_no or "").font = red_font
+#         ws.cell(row=row_idx, column=2, value=row.supplier or "").font = red_font
+#         ws.cell(row=row_idx, column=3, value=row.outstanding_amount or "").font = red_font
+#         ws.cell(row=row_idx, column=4, value=age or "").font = red_font
+#         ws.cell(row=row_idx, column=5, value=row.name or "").font = red_font
+
+#         for col in range(1, 6):
+#             ws.cell(row=row_idx, column=col).border = border
+
+#         row_idx += 1
+#         s_no += 1
+
+#     ws.cell(row=row_idx, column=1, value="Total").alignment = center_align
+#     ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=2)
+#     ws.cell(row=row_idx, column=3, value=total_outstanding).alignment = right_align
+
+#     for col in range(1, 6):
+#         cell = ws.cell(row=row_idx, column=col)
+#         cell.border = border
+#         cell.font = Font(bold=True)
+#         cell.fill = fill_total
+
+#     output = io.BytesIO()
+#     wb.save(output)
+#     output.seek(0)
+#     return output.read()
+
 @frappe.whitelist()
-def download_payable_table1():
-    filename = "PAYABLE" 
-    xlsx_file = make_xlsx_tfp10(filename)
-    frappe.response['filename'] = filename + '.xlsx'
-    frappe.response['filecontent'] = xlsx_file
-    frappe.response['type'] = 'binary'
+def download_payable_table1(overall_service=None, account_manager=None, project_manager=None):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    from frappe.utils import getdate, nowdate
+    from io import BytesIO
 
-import openpyxl
-from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
-from openpyxl.utils import get_column_letter
-import frappe
-import io
-from datetime import datetime
-from frappe.utils import getdate, fmt_money,nowdate, formatdate,today
+    filters = {}
+    condition = ""
 
-def make_xlsx_tfp10(sheet_name="PAYABLE", wb=None, column_widths=None):
+    if overall_service:
+        condition += " AND services = %(overall_service)s "
+        filters["overall_service"] = overall_service
 
-    if wb is None:
-        wb = openpyxl.Workbook()
+    if account_manager:
+        condition += " AND account_manager = %(account_manager)s "
+        filters["account_manager"] = account_manager
 
-    ws = wb.active
-    ws.title = sheet_name.replace(":", "-")
-    ws.title = "PAYABLE"
-
-    header_font = Font(bold=True, color="FFFFFF")
-    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
-    left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
-    right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
-    border = Border(
-        left=Side(style="thin"),
-        right=Side(style="thin"),
-        top=Side(style="thin"),
-        bottom=Side(style="thin")
-    )
-    fill_header = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
-    fill_total = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
-
-    headers = [
-        "S.No","Supplier Name", "Value","AGE","Purchase Invoice"
-    ]
-
-
-    for col_num,header in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col_num,value=header)
-        cell.font = header_font
-        cell.alignment = center_align
-        cell.fill = fill_header
-        cell.border = border
-
-    column_widths = {
-    1: 8,     
-    2: 40,    
-    3: 15,    
-    4: 10,    
-    5: 25     
-    }
-    for col_idx, width in column_widths.items():
-        ws.column_dimensions[get_column_letter(col_idx)].width = width
-
-    row_idx = 2    
-    s_no = 1
-    fiscal_year = frappe.db.get_value(
-        "Fiscal Year",
-        filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
-        fieldname=["year_start_date", "year_end_date"],
-        as_dict=True
-    )
-    from_date = fiscal_year["year_start_date"]
-    to_date = fiscal_year["year_end_date"]
-
-    filters = {
-        'company': 'TEAMPRO Food Products',
-        'from_date': from_date,
-        'to_date': to_date
-    }
-
-    data = frappe.db.sql("""
-        SELECT name, supplier, outstanding_amount, posting_date
+    data = frappe.db.sql(f"""
+        SELECT
+            name, supplier, outstanding_amount, posting_date,
+            services, base_grand_total, project
         FROM `tabPurchase Invoice`
         WHERE docstatus = 1
-          AND company = %(company)s
-          AND posting_date BETWEEN %(from_date)s AND %(to_date)s
-          AND outstanding_amount > 0
+            AND outstanding_amount > 0
+            {condition}
         ORDER BY posting_date
     """, filters, as_dict=True)
 
     today_date = getdate(nowdate())
-    total_outstanding = 0
 
+    # PM filter
+    filtered_data = []
     for row in data:
-        age = (today_date - getdate(row.posting_date)).days
-        red_font = Font(color="FF0000") if age > 30 else Font()
-        total_outstanding += row.outstanding_amount or 0
-        ws.cell(row=row_idx, column=1, value=s_no or "").font = red_font
-        ws.cell(row=row_idx, column=2, value=row.supplier or "").font = red_font
-        ws.cell(row=row_idx, column=3, value=row.outstanding_amount or "").font = red_font
-        ws.cell(row=row_idx, column=4, value=age or "").font = red_font
-        ws.cell(row=row_idx, column=5, value=row.name or "").font = red_font
+        pm_user = ""
+        if row.project:
+            pm_user = frappe.db.get_value("Project", row.project, "project_manager") or ""
+        row.pm_user = pm_user
+        if project_manager and pm_user != project_manager:
+            continue
+        filtered_data.append(row)
+    data = filtered_data
 
-        for col in range(1, 6):
-            ws.cell(row=row_idx, column=col).border = border
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Payable"
 
-        row_idx += 1
-        s_no += 1
-
-    ws.cell(row=row_idx, column=1, value="Total").alignment = center_align
-    ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=2)
-    ws.cell(row=row_idx, column=3, value=total_outstanding).alignment = right_align
-
-    for col in range(1, 6):
-        cell = ws.cell(row=row_idx, column=col)
-        cell.border = border
-        cell.font = Font(bold=True)
-        cell.fill = fill_total
-
-    output = io.BytesIO()
-    wb.save(output)
-    output.seek(0)
-    return output.read()
-
-
-import frappe
-from frappe.utils import formatdate, nowdate, getdate
-
-@frappe.whitelist()
-def get_tfp_stock_html():
-    from datetime import timedelta
-
-    warehouse = "Stores - TFP"
-    parent_item_group = "Food Products"
+    # Style Palettes (Matching deep blue header and zebra row definitions)
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    ash_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    footer_fill = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
     
-    # Fetch child item groups of "Food Products"
-    child_item_groups = frappe.db.get_all(
-        "Item Group",
-        filters={"parent_item_group": parent_item_group},
-        pluck="name"
+    white_font = Font(color="FFFFFF", bold=True)
+    black_bold_font = Font(color="000000", bold=True)
+    red_font = Font(color="FF0000")
+    
+    thin_border = Border(
+        left=Side(style='thin'), right=Side(style='thin'),
+        top=Side(style='thin'), bottom=Side(style='thin')
     )
+    center_align = Alignment(horizontal="center", vertical="center")
+    right_align = Alignment(horizontal="right", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
 
-    if not child_item_groups:
-        return "<p>No item groups found under 'Food Products'</p>"
+    # # Main Report Title Header Block
+    # ws.merge_cells('A1:J1')
+    # ws['A1'] = "PAYABLE REPORT"
+    # ws['A1'].font = Font(bold=True, size=14, color="000000")
+    # ws['A1'].alignment = center_align
 
-    # Prepare SQL-compatible list
-    placeholders = ", ".join(["%s"] * len(child_item_groups))
+    headers = ["S#", "Purchase Invoice", "Date", "Service", "Supplier", "Age", "Total", "Value"]
 
-    stock_data = frappe.db.sql(f"""
-        SELECT 
-            bin.item_code,
-            item.item_name,
-            bin.actual_qty,
-            item.stock_uom,
-            (
-                SELECT MAX(pr.creation)
-                FROM `tabPurchase Receipt Item` pri
-                JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
-                WHERE pri.item_code = bin.item_code
-                AND pri.warehouse = %s
-            ) AS last_pr_date
-        FROM `tabBin` bin
-        JOIN `tabItem` item ON bin.item_code = item.name
-        WHERE bin.warehouse = %s
-        AND bin.actual_qty > 0
-        AND item.item_group IN ({placeholders})
-    """, [warehouse, warehouse] + child_item_groups, as_dict=True)
+    row_no = 3
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=row_no, column=col_num)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = white_font
+        cell.border = thin_border
+        cell.alignment = center_align
 
-    today = getdate(nowdate())
-    
-    for row in stock_data:
-        pr_date = getdate(row.last_pr_date) if row.last_pr_date else None
-        row.age = (today - pr_date).days if pr_date else None
-        row.is_old = row.age is not None and row.age > 30
+    total_grand_total = 0
+    total_outstanding = 0
+    excel_row = 4
 
-    stock_data.sort(key=lambda x: not x.is_old)
+    # Row Shading Iteration
+    for idx, row in enumerate(data, 1):
+        age = (today_date - getdate(row.posting_date)).days
 
-    html = """
-    <div style='max-height: 340px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px;'>
-    <table class="table table-bordered" style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="text-align:center;">
-                <th style="position: sticky; top: 0; background: #002060;color:white">Item Code</th>
-                <th style="position: sticky; top: 0; background: #002060;color:white">Item Name</th>
-                <th style="position: sticky; top: 0; background: #002060;color:white">Quantity</th>
-                <th style="position: sticky; top: 0; background: #002060;color:white">Stock UOM</th>
-                <th style="position: sticky; top: 0; background: #002060;color:white">Last PR Date</th>
-            </tr>
-        </thead>
-        <tbody>
-    """
+        pm_short_code = ""
+        if row.pm_user:
+            pm_short_code = frappe.db.get_value("Employee", {"user_id": row.pm_user}, "short_code") or ""
 
-    for row in stock_data:
-        pr_date = getdate(row.last_pr_date) if row.last_pr_date else None
-        red_row_style = 'style="color: red;"' if row.is_old else ""
+        values = [
+            idx,
+            row.name,
+            frappe.utils.formatdate(row.posting_date, "dd-mm-yyyy"),
+            row.services,
+            row.supplier,
+            age,
+            row.base_grand_total,
+            row.outstanding_amount
+        ]
 
-        html += f"""
-            <tr {red_row_style}>
-                <td>{row.item_code}</td>
-                <td>{row.item_name}</td>
-                <td style="text-align:right">{row.actual_qty}</td>
-                <td style="text-align:center">{row.stock_uom}</td>
-                <td>{formatdate(pr_date) if pr_date else '-'}</td>
-            </tr>
-        """
+        # Determine alternating background row fill assignment rule
+        current_row_fill = white_fill if (excel_row % 2 == 0) else ash_fill
 
-    html += "</tbody></table></div>"
+        for col_num, value in enumerate(values, 1):
+            cell = ws.cell(row=excel_row, column=col_num)
+            cell.value = value
+            cell.fill = current_row_fill
+            cell.border = thin_border
+            
+            # Apply red text condition rule if age breaks threshold parameter
+            if age > 30:
+                cell.font = red_font
 
-    return html
+            # Structural Alignment Rules & Number Formats
+            if col_num in [2, 5]:  # ID and Supplier Name strings
+                cell.alignment = left_align
+            elif col_num >= 7:  # Total and Value currencies
+                cell.alignment = right_align
+                cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = center_align
 
-import frappe
-import io
+        total_grand_total += row.base_grand_total or 0
+        total_outstanding += row.outstanding_amount or 0
+        excel_row += 1
+
+    # Total Summary Footer Setup
+    totals = ["TOTAL", "", "", "", "", "", total_grand_total, total_outstanding]
+
+    for col_num, value in enumerate(totals, 1):
+        cell = ws.cell(row=excel_row, column=col_num)
+        cell.value = value
+        cell.font = black_bold_font
+        cell.border = thin_border
+        cell.fill = footer_fill
+        
+        if col_num >= 5:
+            cell.alignment = right_align
+            cell.number_format = '#,##0.00'
+        else:
+            cell.alignment = center_align
+
+    widths = {'A': 8, 'B': 20, 'C': 15, 'D': 15, 'E': 25, 'F': 10, 'G': 18, 'H': 18}
+    for col, width in widths.items():
+        ws.column_dimensions[col].width = width
+
+    xlsx_data = BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response['filename'] = "Payable.xlsx"
+    frappe.response['filecontent'] = xlsx_data.read()
+    frappe.response['type'] = 'binary'
+
+
+from openpyxl.utils import get_column_letter
 import openpyxl
+import io
+import frappe
 
 from frappe.utils import formatdate
 
 from openpyxl.styles import (
-    PatternFill,
+    Font,
+    Alignment,
     Border,
     Side,
-    Alignment,
-    Font
+    PatternFill
 )
-
-from openpyxl.utils import get_column_letter
 
 
 @frappe.whitelist()
@@ -5876,11 +8206,9 @@ def make_lsvm_data(sheet_name="LSVM Stock Data", wb=None):
         fill_type="solid"
     )
 
-
     headers = [
         "Sr",
-        "VM ID",
-        "Vending Machine",
+        "Warehouse",
         "Status",
         "Total Quantity",
         "Last Filling",
@@ -5900,15 +8228,13 @@ def make_lsvm_data(sheet_name="LSVM Stock Data", wb=None):
         cell.fill = fill_header
         cell.border = border
 
-
     column_widths = {
         1: 8,
-        2: 25,
-        3: 30,
-        4: 15,
+        2: 35,
+        3: 15,
+        4: 18,
         5: 18,
-        6: 18,
-        7: 18
+        6: 18
     }
 
     for col_idx, width in column_widths.items():
@@ -5917,61 +8243,92 @@ def make_lsvm_data(sheet_name="LSVM Stock Data", wb=None):
             get_column_letter(col_idx)
         ].width = width
 
-
     vm_data = frappe.db.sql("""
         SELECT
-            name AS vm_id,
-            machine_id,
-            status,
-            total_new_stock_qty,
-            DATE(posting_date) AS posting_date
-        FROM `tabVM Stock Register`
-        WHERE docstatus != 2
-        AND machine_id IS NOT NULL
-        ORDER BY posting_date DESC
+            w.name AS warehouse,
+            IFNULL(w.disabled,0) AS disabled
+        FROM `tabWarehouse` w
+        WHERE w.parent_warehouse = 'LSVM - Vending Machines - TFP'
+        ORDER BY w.name
     """, as_dict=True)
 
     row_idx = 2
     sr = 1
 
     for d in vm_data:
+
+        warehouse = d.warehouse
+
+        status = (
+            "Inactive"
+            if d.disabled == 1
+            else "Active"
+        )
+
+        total_qty = frappe.db.sql("""
+            SELECT
+                IFNULL(SUM(actual_qty),0)
+            FROM `tabBin`
+            WHERE warehouse = %s
+        """, (warehouse,))[0][0] or 0
+
+        latest_vm = frappe.db.sql("""
+            SELECT
+                posting_date,
+                next_filling
+            FROM `tabVM Stock Register`
+            WHERE machine_id = %s
+            AND docstatus != 2
+            ORDER BY posting_date DESC
+            LIMIT 1
+        """, (warehouse,), as_dict=True)
+
+        latest_vm = latest_vm[0] if latest_vm else {}
+
         parent_fill = (
             parent_even_fill
             if sr % 2 == 0
             else parent_odd_fill
         )
+
         parent_values = [
             sr,
-            d.vm_id,
-            d.machine_id,
-            d.status,
-            d.total_new_stock_qty,
-            formatdate(d.posting_date)
-                if d.posting_date else "",
-            ""
+            warehouse,
+            status,
+            total_qty,
+            formatdate(
+                latest_vm.get("posting_date")
+            ) if latest_vm.get("posting_date") else "",
+            formatdate(
+                latest_vm.get("next_filling")
+            ) if latest_vm.get("next_filling") else ""
         ]
+
         for col_num, value in enumerate(parent_values, 1):
+
             cell = ws.cell(
                 row=row_idx,
                 column=col_num,
                 value=value
             )
+
             cell.border = border
             cell.fill = parent_fill
             cell.alignment = center_align
-            if col_num in [2, 3]:
-                cell.alignment = left_align
-            if col_num == 5:
-                cell.alignment = right_align
+
             if col_num == 2:
+                cell.alignment = left_align
                 cell.font = bold_font
+
+            if col_num == 4:
+                cell.alignment = right_align
+
         row_idx += 1
+
         child_header_map = {
             2: "Item Code",
             3: "Item Name",
-            4: "Quantity",
-            5: "Stock UOM",
-            6: "New Stock UOM"
+            4: "Quantity"
         }
 
         for col_num, header in child_header_map.items():
@@ -5989,77 +8346,153 @@ def make_lsvm_data(sheet_name="LSVM Stock Data", wb=None):
 
         ws.merge_cells(
             start_row=row_idx,
-            start_column=6,
+            start_column=5,
             end_row=row_idx,
-            end_column=7
+            end_column=6
         )
 
-        merge_cell = ws.cell(
+        cell = ws.cell(
             row=row_idx,
-            column=6
+            column=5,
+            value="Stock UOM"
         )
 
-        merge_cell.value = "New Stock UOM"
-        merge_cell.font = bold_font
-        merge_cell.fill = child_header_fill
-        merge_cell.border = border
-        merge_cell.alignment = center_align
+        cell.font = bold_font
+        cell.fill = child_header_fill
+        cell.border = border
+        cell.alignment = center_align
 
-        ws.cell(row=row_idx, column=7).border = border
-        ws.cell(row=row_idx, column=7).fill = child_header_fill
+        ws.cell(row=row_idx, column=6).border = border
+        ws.cell(row=row_idx, column=6).fill = child_header_fill
 
         row_idx += 1
+
         child_data = frappe.db.sql("""
             SELECT
-                item_code,
-                item_name,
-                new_stock_qty,
-                stock_uom,
-                new_stockuom
-            FROM `tabVM Stock Details`
-            WHERE parent = %s
-            AND new_stock_qty > 0
-        """, (d.vm_id,), as_dict=True)
+                b.item_code,
+                i.item_name,
+                i.stock_uom,
+                b.actual_qty
+            FROM `tabBin` b
+            LEFT JOIN `tabItem` i
+                ON i.name = b.item_code
+            WHERE b.warehouse = %s
+            AND b.actual_qty > 0
+            ORDER BY b.item_code
+        """, (warehouse,), as_dict=True)
 
         child_sr = 1
 
+        if not child_data:
+
+            for col in range(2, 7):
+
+                cell = ws.cell(
+                    row=row_idx,
+                    column=col
+                )
+
+                cell.border = border
+                cell.fill = child_even_fill
+
+            ws.merge_cells(
+                start_row=row_idx,
+                start_column=2,
+                end_row=row_idx,
+                end_column=6
+            )
+
+            cell = ws.cell(
+                row=row_idx,
+                column=2,
+                value="No Stock Available"
+            )
+
+            cell.alignment = center_align
+            cell.border = border
+            cell.fill = child_even_fill
+
+            row_idx += 1
+
         for row in child_data:
 
-            child_fill = (child_even_fill
+            child_fill = (
+                child_even_fill
                 if child_sr % 2 == 0
                 else child_odd_fill
             )
-            cell = ws.cell(row=row_idx,column=2,value=row.item_code)
+
+            cell = ws.cell(
+                row=row_idx,
+                column=2,
+                value=row.item_code
+            )
+
             cell.border = border
             cell.fill = child_fill
             cell.alignment = left_align
-            cell = ws.cell(row=row_idx,column=3,value=row.item_name)
+
+            cell = ws.cell(
+                row=row_idx,
+                column=3,
+                value=row.item_name
+            )
+
             cell.border = border
             cell.fill = child_fill
             cell.alignment = left_align
-            cell = ws.cell(row=row_idx,column=4,value=row.new_stock_qty)
+
+            cell = ws.cell(
+                row=row_idx,
+                column=4,
+                value=row.actual_qty
+            )
+
             cell.border = border
             cell.fill = child_fill
             cell.alignment = right_align
-            cell = ws.cell(row=row_idx,column=5,value=row.stock_uom)
+
+            ws.merge_cells(
+                start_row=row_idx,
+                start_column=5,
+                end_row=row_idx,
+                end_column=6
+            )
+
+            cell = ws.cell(
+                row=row_idx,
+                column=5,
+                value=row.stock_uom
+            )
+
             cell.border = border
             cell.fill = child_fill
             cell.alignment = center_align
-            ws.merge_cells(start_row=row_idx,start_column=6,end_row=row_idx,end_column=7)
-            cell = ws.cell(row=row_idx,column=6,value=row.new_stockuom)
-            cell.border = border
-            cell.fill = child_fill
-            cell.alignment = center_align
-            ws.cell(row=row_idx,column=7).border = border
-            ws.cell(row=row_idx,column=7).fill = child_fill
+
+            ws.cell(
+                row=row_idx,
+                column=6
+            ).border = border
+
+            ws.cell(
+                row=row_idx,
+                column=6
+            ).fill = child_fill
+
             row_idx += 1
             child_sr += 1
+
         row_idx += 1
         sr += 1
+
     ws.freeze_panes = "A2"
+
     output = io.BytesIO()
+
     wb.save(output)
+
     output.seek(0)
+
     return output.read()
 
 import frappe
@@ -6970,3 +9403,687 @@ def get_delivery_status_summary():
     data["dispatched"] = dispatched
 
     return data
+
+@frappe.whitelist()
+def get_overall_dashboard_data_combined(overall_service=None):
+
+    return {
+        "order_booking": get_order_booking_overall(overall_service),
+        "turnover": get_turnover_overall(overall_service),
+        "collection": get_collection_value_overall(overall_service),
+        "receivable": receivable_overall(overall_service),
+        "to_bill": to_bill_value_overall(overall_service),
+        "to_deliver_bill": to_deliver_bill_value_overall(overall_service),
+        "payable": payable_overall(overall_service),
+        "turnover_table": download_to_table_overall(overall_service),
+        "receivable_table": receivable_table_overall(overall_service),
+        "tobill_table": tobill_table_overall(overall_service),
+        "payable_table": payable_table_overall(overall_service)
+    }
+
+@frappe.whitelist()
+def get_physical_vs_erp_stock_data():
+    from frappe.utils import flt
+
+    latest_stock_counting = frappe.get_all(
+        "Stock Counting",
+        filters={"docstatus": 1},
+        fields=["name", "date"],
+        order_by="date desc",
+        limit=1
+    )
+
+    if not latest_stock_counting:
+        return []
+
+    latest_date = latest_stock_counting[0].date
+
+    items = frappe.get_all("Item", filters={"tfp": 1, "disabled": 0}, fields=["name", "item_name","item_group"])
+    data = []
+
+    for item in items:
+        item_code = item.name
+
+        result = frappe.db.sql("""
+            SELECT SUM(sd.count) AS physical_qty
+            FROM `tabStock Counting Details` sd
+            JOIN `tabStock Counting` sc ON sd.parent = sc.name
+            WHERE sd.item = %(item_code)s
+            AND sc.date = %(date)s
+            AND sc.docstatus = 1
+        """, {"item_code": item_code, "date": latest_date}, as_dict=True)
+
+        physical_qty = flt(result[0].physical_qty) if result and result[0].physical_qty else 0
+
+        stock_qty = frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": "Stores - TFP"}, "actual_qty") or 0
+
+        diff = flt(stock_qty) - flt(physical_qty)
+        diff = round(diff, 2)
+        if physical_qty > 0 or stock_qty > 0:
+            # status = "Match" if diff == 0 else "Variance"
+            status = "Match" if abs(diff) <= 0.02 else "Variance"
+            data.append({
+                "item": item_code,
+                "item_name": item.item_name,
+                "item_group": item.item_group,
+                "stock_qty": stock_qty,
+                "physical_qty": physical_qty,
+                "difference": diff,
+                "status": status
+            })
+    data.sort(key=lambda x: (
+        x["item_group"] or "",
+        1 if x["status"] == "Variance" else 0
+    ))
+    return {
+        "date": latest_date,
+        "data": data
+    }
+
+# @frappe.whitelist()
+# def download_receivable_table_overall(service=None):
+#     filename = "RECEIVABLE" 
+#     xlsx_file = make_xlsx_tfp_overall(filename, service)
+#     frappe.response['filename'] = filename + '.xlsx'
+#     frappe.response['filecontent'] = xlsx_file
+#     frappe.response['type'] = 'binary'
+
+import openpyxl
+from openpyxl.styles import PatternFill, Border, Side, Alignment, Font
+from openpyxl.utils import get_column_letter
+import frappe
+import io
+from datetime import datetime
+from frappe.utils import getdate, fmt_money,nowdate, formatdate,today
+
+# def make_xlsx_tfp_overall(sheet_name="RECEIVABLE", service=None, wb=None, column_widths=None):
+
+#     if wb is None:
+#         wb = openpyxl.Workbook()
+
+#     ws = wb.active
+#     ws.title = sheet_name.replace(":", "-")
+#     ws.title = "RECEIVABLE"  
+
+#     header_font = Font(bold=True, color="FFFFFF")
+#     center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+#     left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+#     right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+#     border = Border(
+#         left=Side(style="thin"),
+#         right=Side(style="thin"),
+#         top=Side(style="thin"),
+#         bottom=Side(style="thin")
+#     )
+#     fill_header = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+#     fill_total = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+#     headers = [
+#         "S.No","Customer ", "Value","Age","Sales Invoice"
+#     ]
+
+
+#     for col_num,header in enumerate(headers, 1):
+#         cell = ws.cell(row=1, column=col_num,value=header)
+#         cell.font = header_font
+#         cell.alignment = center_align
+#         cell.fill = fill_header
+#         cell.border = border
+
+#     column_widths = {
+#     1: 8,     # S.No
+#     2: 40,    # Customer
+#     3: 15,    # Value
+#     4: 10,    # Age
+#     5: 25     # Sales Invoice
+#     }
+
+#     for col_idx, width in column_widths.items():
+#         ws.column_dimensions[get_column_letter(col_idx)].width = width    
+
+#     row_idx = 2    
+#     s_no = 1
+#     fiscal_year = frappe.db.get_value(
+#         "Fiscal Year",
+#         filters={"year_start_date": ["<=", today()], "year_end_date": [">=", today()]},
+#         fieldname=["year_start_date", "year_end_date"],
+#         as_dict=True
+#     )
+
+#     from_date = fiscal_year["year_start_date"]
+#     to_date = fiscal_year["year_end_date"]
+
+#     # filters = {
+#     #     'from_date': from_date,
+#     #     'to_date': to_date
+#     # }
+#     # filters = {}
+#     # if service:
+#     #     filters["services"] = service
+#     # data = frappe.db.sql("""
+#     #     SELECT name, customer, outstanding_amount, posting_date
+#     #     FROM `tabSales Invoice`
+#     #     WHERE docstatus = 1
+#     #       AND outstanding_amount > 0
+#     #     ORDER BY posting_date
+#     # """, filters, as_dict=True)
+#     filters = {}
+
+#     conditions = """
+#         WHERE docstatus = 1
+#         AND outstanding_amount > 0
+#     """
+
+#     if service:
+#         conditions += " AND services = %(service)s "
+#         filters["service"] = service
+
+#     data = frappe.db.sql(f"""
+#         SELECT
+#             name,
+#             customer,
+#             outstanding_amount,
+#             posting_date
+#         FROM `tabSales Invoice`
+#         {conditions}
+#         ORDER BY posting_date
+#     """, filters, as_dict=True)
+#     total_outstanding = 0
+#     today_date = getdate(nowdate())
+
+#     for row in data:
+#         age = (today_date - getdate(row.posting_date)).days
+#         red_font = Font(color="FF0000") if age > 30 else Font()
+#         total_outstanding += row.outstanding_amount or 0
+#         ws.cell(row=row_idx, column=1, value=s_no or "").font = red_font
+#         ws.cell(row=row_idx, column=2, value=row.customer or "").font = red_font
+#         ws.cell(row=row_idx, column=3, value=row.outstanding_amount or "").font = red_font
+#         ws.cell(row=row_idx, column=4, value=age or "").font = red_font
+#         ws.cell(row=row_idx, column=5, value=row.name or "").font = red_font
+
+#         for col in range(1, 6):
+#             ws.cell(row=row_idx, column=col).border = border
+
+#         row_idx += 1
+#         s_no += 1
+
+
+#     ws.cell(row=row_idx, column=1, value="Total").alignment = center_align
+#     ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=2)
+#     ws.cell(row=row_idx, column=3, value=total_outstanding).alignment = right_align
+
+#     for col in range(1, 6):
+#         cell = ws.cell(row=row_idx, column=col)
+#         cell.border = border
+#         cell.font = Font(bold=True)
+#         cell.fill = fill_total
+
+#     output = io.BytesIO()
+#     wb.save(output)
+#     output.seek(0)
+#     return output.read()
+import io
+import openpyxl
+import frappe
+from frappe.utils import getdate, nowdate, formatdate
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+from openpyxl.utils import get_column_letter
+
+@frappe.whitelist()
+def download_receivable_table_overall():
+    service = frappe.form_dict.get("service") or None
+    am = frappe.form_dict.get("am") or None
+    pm = frappe.form_dict.get("pm") or None
+    
+    filename = "RECEIVABLE"
+    xlsx_file = make_xlsx_tfp_overall(filename, service=service, am=am, pm=pm)
+    frappe.response['filename'] = filename + '.xlsx'
+    frappe.response['filecontent'] = xlsx_file
+    frappe.response['type'] = 'binary'
+
+def make_xlsx_tfp_overall(sheet_name="RECEIVABLE", service=None, am=None, pm=None, wb=None, column_widths=None):
+    if wb is None:
+        wb = openpyxl.Workbook()
+
+    ws = wb.active
+    ws.title = "RECEIVABLE"
+
+    # Style Palettes (Matching deep blue header and zebra row definitions)
+    header_font = Font(bold=True, color="FFFFFF")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    ash_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    fill_header = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    fill_total = PatternFill(start_color="F0F0F0", end_color="F0F0F0", fill_type="solid")
+    
+    black_bold_font = Font(color="000000", bold=True)
+    red_font = Font(color="FF0000")
+    
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="center", wrap_text=True)
+    right_align = Alignment(horizontal="right", vertical="center", wrap_text=True)
+    
+    border = Border(
+        left=Side(style="thin"),
+        right=Side(style="thin"),
+        top=Side(style="thin"),
+        bottom=Side(style="thin")
+    )
+
+    headers = ["S.No", "ID", "Date", "Service", "Customer Name", "Age", "AM", "PM", "Total", "Value"]
+
+    # Table Column Headers Setup
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num, value=header)
+        cell.font = header_font
+        cell.alignment = center_align
+        cell.fill = fill_header
+        cell.border = border
+
+    column_widths = {
+        1: 8, 2: 25, 3: 15, 4: 20, 5: 45,
+        6: 12, 7: 15, 8: 15, 9: 18, 10: 18
+    }
+
+    for col_idx, width in column_widths.items():
+        ws.column_dimensions[get_column_letter(col_idx)].width = width
+
+    conditions = """
+        WHERE si.docstatus = 1
+        AND si.status NOT IN ('Cancelled', 'Paid', 'Credit Note Issued', 'Return')
+    """
+
+    params = {}
+
+    if service:
+        conditions += " AND si.services = %(service)s AND si.services IS NOT NULL AND si.services != ''"
+        params["service"] = service
+
+    if am:
+        conditions += " AND si.account_manager = %(am)s AND si.account_manager IS NOT NULL AND si.account_manager != ''"
+        params["am"] = am
+
+    if pm:
+        conditions += " AND p.project_manager = %(pm)s AND p.project_manager IS NOT NULL AND p.project_manager != ''"
+        params["pm"] = pm
+
+    data = frappe.db.sql(f"""
+        SELECT
+            si.name,
+            si.customer,
+            si.posting_date,
+            si.services,
+            si.outstanding_amount,
+            si.grand_total,
+            am.short_code AS am_short_code,
+            pm.short_code AS pm_short_code
+        FROM `tabSales Invoice` si
+        LEFT JOIN `tabProject` p
+            ON p.name = si.project
+        LEFT JOIN `tabEmployee` am
+            ON am.user_id = si.account_manager
+        LEFT JOIN `tabEmployee` pm
+            ON pm.user_id = p.project_manager
+        {conditions}
+        ORDER BY si.posting_date
+    """, params, as_dict=True)
+
+    total_outstanding = 0
+    total_grand_total = 0
+    today_date = getdate(nowdate())
+    row_idx = 2
+    s_no = 1
+
+    # Data Loop Block with Double Shading Layout rules
+    for row in data:
+        age = (today_date - getdate(row.posting_date)).days
+        
+        # 1. Row Age Red Font Trigger Logic (> 30 days)
+        current_font = red_font if age > 30 else Font(color="111827")
+
+        total_outstanding += row.outstanding_amount or 0
+        total_grand_total += row.grand_total or 0
+
+        # 2. Assign alternating cell fill rules using loop trackers
+        current_row_fill = white_fill if (row_idx % 2 == 0) else ash_fill
+
+        row_values = [
+            s_no, row.name or "", formatdate(row.posting_date), row.services or "",
+            row.customer or "", age, row.am_short_code or "", row.pm_short_code or "",
+            float(row.grand_total or 0), float(row.outstanding_amount or 0)
+        ]
+
+        for col_num, val in enumerate(row_values, 1):
+            cell = ws.cell(row=row_idx, column=col_num, value=val)
+            cell.font = current_font
+            cell.fill = current_row_fill
+            cell.border = border
+            
+            # 3. Control cell alignments & explicit accounting number systems
+            if col_num in [2, 5]:  # Invoice link ID & Customer string names
+                cell.alignment = left_align
+            elif col_num in [9, 10]:  # Grand Total and Outstanding balance currencies
+                cell.alignment = right_align
+                cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = center_align
+
+        row_idx += 1
+        s_no += 1
+
+    # Footer Total Construction Block
+    ws.merge_cells(start_row=row_idx, start_column=1, end_row=row_idx, end_column=8)
+    
+    # Initialize background filling colors across all footer matrix indices
+    for col in range(1, 11):
+        footer_cell = ws.cell(row=row_idx, column=col)
+        footer_cell.fill = fill_total
+        footer_cell.border = border
+        footer_cell.font = black_bold_font
+
+    total_label_cell = ws.cell(row=row_idx, column=1, value="Total")
+    total_label_cell.alignment = center_align
+    
+    grand_total_cell = ws.cell(row=row_idx, column=9, value=total_grand_total)
+    grand_total_cell.alignment = right_align
+    grand_total_cell.number_format = '#,##0.00'
+    
+    outstanding_cell = ws.cell(row=row_idx, column=10, value=total_outstanding)
+    outstanding_cell.alignment = right_align
+    outstanding_cell.number_format = '#,##0.00'
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    return output.read()
+
+import frappe
+from frappe.utils import getdate, nowdate, date_diff, today, fmt_money
+
+@frappe.whitelist()
+def download_to_table_overall(overall_service=None, account_manager=None, project_manager=None):
+    frappe.errprint('TEST')
+    frappe.errprint(overall_service)
+    conditions = ["si.docstatus = 1", "si.status NOT IN ('Return', 'Credit Note Issued', 'Cancelled')"]
+    query_params = {}
+
+    # 2. Date Filtering
+    today_val = today()
+    fiscal_year = frappe.db.get_value("Fiscal Year",
+        filters={"year_start_date": ["<=", today_val], "year_end_date": [">=", today_val]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    
+    if fiscal_year:
+        conditions.append("si.posting_date >= %(from_date)s AND si.posting_date <= %(to_date)s")
+        query_params.update({'from_date': fiscal_year.year_start_date, 'to_date': fiscal_year.year_end_date})
+
+    # 3. Dynamic Filters
+    if overall_service:
+        conditions.append("si.services = %(overall_service)s")
+        query_params['overall_service'] = overall_service
+        
+    if account_manager:
+        conditions.append("si.account_manager = %(account_manager)s")
+        query_params['account_manager'] = account_manager
+        
+    if project_manager:
+        conditions.append("p.project_manager = %(project_manager)s")
+        query_params['project_manager'] = project_manager
+
+    # 4. SQL Query with LEFT JOIN to the Project table
+    query = f"""
+        SELECT 
+            si.services, si.posting_date, si.customer_name, si.base_net_total, si.base_grand_total,
+            si.name, si.account_manager, si.creation, si.project, p.project_manager
+        FROM `tabSales Invoice` si
+        LEFT JOIN `tabProject` p ON si.project = p.name
+        WHERE {' AND '.join(conditions)}
+        ORDER BY si.posting_date ASC
+    """
+    
+    rows = frappe.db.sql(query, query_params, as_dict=True)
+    
+    # 5. Build HTML (Added center-alignment to headers to match styling perfectly)
+    html = """
+    <div style='max-height: 340px; overflow-y: auto;'>
+        <table class="table table-bordered"
+            style="width:100%; table-layout:fixed; border-collapse:collapse; margin-bottom:0;">
+            <thead>
+                <tr>
+                    <th style="width:5%;  position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Sr No</th>
+                    <th style="width:15%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Document Link</th>
+                    <th style="width:10%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Date</th>
+                    <th style="width:10%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Service</th>
+                    <th style="width:30%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Customer</th>
+                    <th style="width:10%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">AM</th>
+                    <th style="width:10%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">PM</th>
+                    <th style="width:10%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Net Total</th>
+                    <th style="width:10%; position:sticky; top:0; background:#0F1568; color:white;text-align: center; vertical-align: middle;">Grand Total</th>
+                </tr>
+            </thead>
+            """
+    tot = 0
+    grand_tot =0
+    for i, r in enumerate(rows, start=1):
+        age = date_diff(today(), getdate(r.posting_date))
+
+        pm_short_code = ''
+        if r.project_manager:
+            pm_short_code = frappe.db.get_value(
+                "Employee",
+                {"user_id": r.project_manager},
+                "short_code"
+            ) or ""
+            
+        am_short_code = ''
+        if r.account_manager:
+            am_short_code = frappe.db.get_value(
+                "Employee",
+                {"user_id": r.account_manager},
+                "short_code"
+            ) or ""
+            
+        # 1. Determine Alternating Double-Color Background Styles
+        bg_color = "#ffffff" if i % 2 != 0 else "#e7e6ec"
+        
+        text_color = "color: red;" if age > 30 else "color: #111827;"
+        
+        row_style = f"background: {bg_color}; text-align: center; vertical-align: middle;"
+        # name_style = "color: red;" if age > 30 else ""
+        
+        html += f"""
+                <tr style="{row_style}">
+                    <td style="text-align: center;">{i}</td>
+                    <td style="white-space: nowrap; text-align: left;"><a href="/app/sales-invoice/{ r.name }" target="_blank"> { r.name }</a></td>
+                    <td style="text-align: center;">{ r.posting_date.strftime("%d-%m-%Y") if r.posting_date else "" }</td>
+                    <td style="text-align: center;">{r.services or ''}</td>
+                    <td style="text-align: left;">{r.customer_name}</td>
+                    <td style="text-align: center;">{am_short_code}</td>
+                    <td style="text-align: center;">{pm_short_code}</td>
+                    <td style="text-align: right; font-weight: bold;">{fmt_money(r.base_net_total)}</td>
+                    <td style="text-align: right; font-weight: bold;">{fmt_money(r.base_grand_total)}</td>
+                </tr>
+        """
+        tot += float(r.base_net_total) or 0
+        grand_tot += float(r.base_grand_total) or 0
+        
+    # Fixed syntax template string formatting on the sticky summary line
+    html += f"""
+        <tr style="background: #f0f0f0; font-weight: bold;bottom: 0; z-index: 5;">
+            <td colspan="7" style="text-align: center; vertical-align: middle; padding: 10px;">Total</td>
+            <td style="text-align: right; vertical-align: middle; padding: 10px;">{fmt_money(tot)}</td>
+            <td style="text-align: right; vertical-align: middle; padding: 10px;">{fmt_money(grand_tot)}</td>
+        </tr>
+    """
+    html += "</tbody></table></div>"
+    return {'html': html}
+
+
+
+
+import frappe
+from frappe.utils import getdate, today, flt
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import PatternFill, Font, Border, Side, Alignment
+
+@frappe.whitelist()
+def download_to_table_overall_excel(overall_service=None, account_manager=None, project_manager=None):
+    # 1. SQL Setup
+    conditions = ["si.docstatus = 1", "si.status NOT IN ('Return', 'Credit Note Issued', 'Cancelled')"]
+    query_params = {}
+
+    # Date Filtering
+    today_date_str = today()
+    fiscal_year = frappe.db.get_value("Fiscal Year",
+        filters={"year_start_date": ["<=", today_date_str], "year_end_date": [">=", today_date_str]},
+        fieldname=["year_start_date", "year_end_date"],
+        as_dict=True
+    )
+    
+    if fiscal_year:
+        conditions.append("si.posting_date BETWEEN %(from_date)s AND %(to_date)s")
+        query_params.update({'from_date': fiscal_year.year_start_date, 'to_date': fiscal_year.year_end_date})
+
+    if overall_service:
+        conditions.append("si.services = %(overall_service)s")
+        query_params['overall_service'] = overall_service
+    if account_manager:
+        conditions.append("si.account_manager = %(account_manager)s")
+        query_params['account_manager'] = account_manager
+    if project_manager:
+        conditions.append("p.project_manager = %(project_manager)s")
+        query_params['project_manager'] = project_manager
+
+    # Fetch Data
+    query = f"""
+        SELECT si.name, si.posting_date, si.services, si.customer_name, 
+               si.base_net_total, si.account_manager, p.project_manager, si.base_grand_total
+        FROM `tabSales Invoice` si
+        LEFT JOIN `tabProject` p ON si.project = p.name
+        WHERE {' AND '.join(conditions)}
+        ORDER BY si.posting_date ASC
+    """
+    rows = frappe.db.sql(query, query_params, as_dict=True)
+
+    # 2. Batch fetch Employee Short Codes
+    users = list({r.account_manager for r in rows if r.account_manager} | 
+                 {r.project_manager for r in rows if r.project_manager})
+    
+    short_code_map = {}
+    if users:
+        results = frappe.db.sql("SELECT user_id, short_code FROM `tabEmployee` WHERE user_id IN %(users)s", 
+                                {"users": users}, as_dict=True)
+        short_code_map = {r.user_id: r.short_code for r in results}
+
+    # 3. Excel Generation
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Turnover Report"
+
+    # Define Styles (Deep blue matching header and custom row fills)
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    white_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    ash_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    footer_fill = PatternFill(start_color="F0f0F0", end_color="F0f0F0", fill_type="solid")
+    
+    white_font = Font(color="FFFFFF", bold=True)
+    black_bold_font = Font(color="000000", bold=True)
+    red_font = Font(color="FF0000")
+    
+    thin_border = Border(left=Side(style='thin'), right=Side(style='thin'), top=Side(style='thin'), bottom=Side(style='thin'))
+    center_align = Alignment(horizontal="center", vertical="center")
+    right_align = Alignment(horizontal="right", vertical="center")
+    left_align = Alignment(horizontal="left", vertical="center")
+
+    # Headers Setup
+    headers = ["Sr NO", "Invoice", "Date", "Service", "Customer",  "AM", "PM", "Net Total", "Grand Total"]
+    for col_num, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_num)
+        cell.value = header
+        cell.fill = header_fill
+        cell.font = white_font
+        cell.border = thin_border
+        cell.alignment = center_align
+
+    # Fill Data Rows with Double Shading
+    total_val = 0
+    total_grand =0
+    today_date = getdate(today_date_str)
+    
+    # Track reference mapping loop counter
+    i = 1 
+    for idx, r in enumerate(rows, 2):
+        i = idx
+        age = (today_date - getdate(r.posting_date)).days
+        
+        row_data = [
+            i - 1, r.name, r.posting_date, r.services or '', r.customer_name,
+            short_code_map.get(r.account_manager, ""),
+            short_code_map.get(r.project_manager, ""),
+            flt(r.base_net_total), flt(r.base_grand_total)
+        ]
+        
+        # Determine zebra fill rule using the array index pointer status
+        current_row_fill = white_fill if (i % 2 == 0) else ash_fill
+        
+        for col_num, val in enumerate(row_data, 1):
+            cell = ws.cell(row=i, column=col_num)
+            cell.value = val
+            cell.fill = current_row_fill
+            cell.border = thin_border
+            
+            # Text red highlights if invoice age exceeds 30-day target parameters
+            # if age > 30:
+            #     cell.font = red_font
+                
+            # Alignment distribution rules matching ledger layouts
+            if col_num in [2, 5]:
+                cell.alignment = left_align
+            elif col_num in [8, 9]:
+                cell.alignment = right_align
+                cell.number_format = '#,##0.00'
+            else:
+                cell.alignment = center_align
+                
+        total_val += flt(r.base_net_total)
+        total_grand += flt(r.base_grand_total)
+
+    # Footer Total Alignment
+    footer_row = i + 1
+    ws.merge_cells(start_row=footer_row, start_column=1, end_row=footer_row, end_column=7)
+    
+    for col in range(1, 10):
+        footer_cell = ws.cell(row=footer_row, column=col)
+        footer_cell.fill = footer_fill
+        footer_cell.border = thin_border
+        
+    total_label_cell = ws.cell(row=footer_row, column=1)
+    total_label_cell.value = "TOTAL"
+    total_label_cell.font = black_bold_font
+    total_label_cell.alignment = center_align
+    
+    total_value_cell = ws.cell(row=footer_row, column=8)
+    total_value_cell.value = total_val
+    total_value_cell.font = black_bold_font
+    total_value_cell.alignment = right_align
+    total_value_cell.number_format = '#,##0.00'
+
+    total_value_cell = ws.cell(row=footer_row, column=9)
+    total_value_cell.value = total_grand
+    total_value_cell.font = black_bold_font
+    total_value_cell.alignment = right_align
+    total_value_cell.number_format = '#,##0.00'
+
+    # Set explicit layout dimension metric blocks
+    widths = [8, 22, 15, 22, 45, 12, 12, 18, 18]
+    for idx, width in enumerate(widths, 1):
+        ws.column_dimensions[chr(64 + idx)].width = width
+
+    xlsx_data = BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response['filename'] = "Turnover.xlsx"
+    frappe.response['filecontent'] = xlsx_data.read()
+    frappe.response['type'] = 'binary'

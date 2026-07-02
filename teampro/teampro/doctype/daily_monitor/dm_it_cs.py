@@ -11,8 +11,8 @@ def get_allocated_tasks_for_it_cs(date, name, service, type):
 
     if type == "CS":
         task_id = frappe.db.get_all("Task",{"custom_production_date_cs": date, "service": service, "type": type},["*"],order_by="spoc asc, project asc, priority asc")
-        task_det = frappe.db.get_all("Task",{"custom_production_date_cs": date, "service": service, "type": type},["*"],order_by="spoc asc",group_by="spoc asc")
-        issue_id = frappe.db.get_all("Issue",{"custom_production_date": date, "status": "Open"},["*"],order_by="custom_spoc asc",group_by="custom_spoc asc")
+        task_det = frappe.db.get_all("Task",{"custom_production_date_cs": date, "service": service, "type": type},["*"],order_by="spoc asc",group_by="spoc")
+        issue_id = frappe.db.get_all("Issue",{"custom_production_date": date, "status": "Open"},["*"],order_by="custom_spoc asc",group_by="custom_spoc")
         for i in task_id:
             cb = frappe.db.get_value("Employee", {"user_id": i.spoc}, "short_code")
             parent_doc.append("task_details", {"id": i.name, "a_task_type": i.type, "cb": cb})
@@ -96,7 +96,7 @@ def dpr_mail_it_cs(name,date,service,type):
             recievers.append(i.user_id)
     recievers.append('dineshbabu.k@groupteampro.com')
     task_data=frappe.get_doc("Daily Monitor",name)
-    cs_task = frappe.db.get_all("Task", {"custom_production_date_cs":date,"type":type,"service":service}, ['*'], order_by='spoc asc',group_by='spoc asc')
+    cs_task = frappe.db.get_all("Task", {"custom_production_date_cs":date,"type":type,"service":service}, ['*'], order_by='spoc asc',group_by='spoc')
     if task_data.dsr_check==1:
 
         count = 1
@@ -340,7 +340,7 @@ def dpr_mail_it_cs(name,date,service,type):
                 <td style='width:8%'><b>RT Vs APH %</b></td>
             </tr>
             '''
-            task_det=frappe.db.get_all("Task",{"custom_production_date_cs":date,"type":type,"service":service},['*'],order_by='spoc asc',group_by='spoc asc')
+            task_det=frappe.db.get_all("Task",{"custom_production_date_cs":date,"type":type,"service":service},['*'],order_by='spoc asc',group_by='spoc')
             value=0
             pending_total=0
             working_total=0

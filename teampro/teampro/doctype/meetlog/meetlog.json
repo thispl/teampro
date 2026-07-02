@@ -39,8 +39,8 @@
   "reached_longitude",
   "column_break_auxf",
   "submitted_location",
-  "completed_time",
   "submitted_area",
+  "completed_time",
   "submitted_time",
   "submitted_latitude",
   "submitted_longitude",
@@ -140,7 +140,7 @@
    "label": "Visiting Card"
   },
   {
-   "depends_on": "eval:frappe.session.user=='dineshbabu.k@groupteampro.com' || frappe.session.user=='pavithra.s@groupteampro.com'||frappe.session.user==\"Administrator\"",
+   "depends_on": "eval:frappe.session.user=='dineshbabu.k@groupteampro.com' || frappe.session.user=='pavithra.s@groupteampro.com'||frappe.session.user==\"Administrator\" ||frappe.session.user==\"sangeetha.s@groupteampro.com\"",
    "fieldname": "section_break_2tfi",
    "fieldtype": "Section Break"
   },
@@ -288,6 +288,7 @@
   {
    "fieldname": "submitted_time",
    "fieldtype": "Datetime",
+   "hidden": 1,
    "label": "Completed Time",
    "read_only": 1
   },
@@ -327,11 +328,11 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-05-18 10:00:18.556620",
- "modified_by": "Administrator",
+ "modified": "2026-06-02 17:27:50.535199",
+ "modified_by": "pavithra.s@groupteampro.com",
  "module": "Teampro",
  "name": "MeetLog",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -347,6 +348,7 @@
    "write": 1
   }
  ],
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
  "states": []

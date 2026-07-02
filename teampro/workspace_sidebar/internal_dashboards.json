@@ -1,0 +1,15 @@
+{
+ "app": "teampro",
+ "creation": "2026-05-26 17:34:00.693698",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [],
+ "modified": "2026-05-26 17:34:00.693698",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Internal Dashboards",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Internal Dashboards"
+}

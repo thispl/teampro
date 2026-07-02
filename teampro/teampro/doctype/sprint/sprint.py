@@ -6,6 +6,7 @@ from frappe.model.document import Document
 from frappe.utils import getdate, date_diff, add_days,cint,get_link_to_form
 import datetime
 from datetime import date
+from frappe.utils import flt
 from frappe.utils import getdate, today
 today = date.today()
 from frappe.utils.data import date_diff, now_datetime, nowdate, today, add_days
@@ -15,23 +16,35 @@ class Sprint(Document):
     #         if s.cr_status=='Pending Review':
     #             frappe.throw('Not allowed to submit.Some rows are still in <b>Pending Review</b> status')
     def validate(self):
+        
+        
+        # if not row.created_on and row.task:
+        #     task_doc = frappe.get_doc("Task", row.task)
+        #     row.created_on = task_doc.creation
         if not self.is_new():
+            if float(self.sprint_hours) > 0 and float(self.allocated_hours) >0:
+                occupancy=float(self.allocated_hours) / float(self.sprint_hours) *100
+                self.occupancy=occupancy
+            else:
+                self.occupancy=0
             for i in self.sprint_task:
-                if i.et and i.et>0:
+                if i.et and flt(i.et)>0:
                     at=round(i.at,2) if i.at else 0
                     per=(at/i.et)*100
                     i.atet=round(per,2)
                     
-                if i.rt and i.rt>0:
+                if i.rt and flt(i.rt)>0:
                     at=round(i.at_period,2) if i.at_period else 0
-                    per=(at/i.rt)*100
-                    i.rtet_=round(per,2)
+                    per = (at / flt(i.rt)) * 100
+                    i.rtet_ = round(per, 2)
             
                 if frappe.db.exists('Task',{'name':i.task}):
                     # if i.subject=='':
                     sub=frappe.db.get_value('Task',{'name':i.task},['subject'])
                     i.subject=sub
-
+                    if i.kt_confirmed==0:
+                        kt_conf=frappe.db.get_value('Task',{'name':i.task},['kt_confirmed'])
+                        i.kt_confirmed=kt_conf
                     status=frappe.db.get_value('Task',{'name':i.task},['status'])
                     alloc=frappe.db.get_value('Task',{'name':i.task},['custom_allocated_to'])
                     rev=frappe.db.get_value('Task',{'name':i.task},['revisions'])
@@ -73,12 +86,25 @@ class Sprint(Document):
             self.sprint_task = []
             for row in unique_rows:
                 self.append('sprint_task', row)
-    
+        for i in self.sprint_task:
+            
+            if i.cb and i.allocated_to:
+                short_code=frappe.db.get_value('Employee',{'user_id':i.allocated_to},'short_code')
+                if i.cb!=short_code and (i.at_period==None or i.at_period==0):
+                    self.remove(i)
+        for row in self.sprint_task:
+            if not row.kt_confirmed:
+                frappe.throw(
+                    f"KT Confirmed is not enabled for Task: {row.task}"
+                )     
+
     def on_update(self):
         if self.workflow_state == "In Progress" and self.get_doc_before_save().workflow_state != "In Progress":
             update_tasks_sprint(self.name)
+            empty_sprint(self.name)
         
-            
+    
+    
 
     def after_insert(self):
         count= frappe.db.count("Sprint", {'team': self.team, 'workflow_state': 'In Progress','name':['!=',self.name]})
@@ -336,8 +362,10 @@ def update_sprint_hours(doc,method):
         for i in doc.sprint_avl_time:
             avl_hrs+=float(i.available_hours or 0)
             allocated_hrs+=float(i.allocated_hours or 0)
-    frappe.db.set_value("Sprint",doc.name,"sprint_hours",avl_hrs)
-    frappe.db.set_value("Sprint",doc.name,"allocated_hours",allocated_hrs)
+    frappe.db.set_value("Sprint",doc.name,{
+        "sprint_hours": avl_hrs,
+        "allocated_hours": allocated_hrs,
+    })
     
 @frappe.whitelist()
 def update_allocated_hrs(doc, method):
@@ -350,7 +378,7 @@ def update_allocated_hrs(doc, method):
             cb_at_period_map[task.cb] += task.at_period or 0
             if task.status != 'Cancelled':
                 cb_rt_map.setdefault(task.cb, 0)
-                cb_rt_map[task.cb] += task.rt or 0
+                cb_rt_map[task.cb] += flt(task.rt) or 0
 
     total_allocated_hours = 0
 
@@ -361,19 +389,52 @@ def update_allocated_hrs(doc, method):
         total_allocated_hours += allocated
         row.at_period = cb_at_period_map.get(short_code, 0)
         row.occupancy = (
-            (float(allocated) /float( row.available_hours)) * 100
+            (float(allocated) / float(row.available_hours)) * 100
             if float(row.available_hours) > 0 else 0
         )
+
+    # Batch: get all employees for this dev team in a single query,
+    # then match short_codes in Python (preserves original LIKE behavior)
+    short_codes = [i.short_code for i in doc.sprint_avl_time if i.short_code]
+    emp_name_by_short_code = {}
+    if short_codes:
+        employees = frappe.db.get_all(
+            "Employee",
+            filters={
+                "custom_dev_team": doc.team,
+                "status": "Active",
+                "department": "IT. Development - THIS",
+            },
+            fields=["name", "short_code"],
+        )
+        for sc in short_codes:
+            for emp in employees:
+                if emp.short_code and sc in emp.short_code:
+                    emp_name_by_short_code[sc] = emp.name
+                    break
+
+    # Batch: get attendance sums for all matched employees in a single query
+    emp_names = list(emp_name_by_short_code.values())
+    bt_by_emp = {}
+    if emp_names and doc.from_date and doc.to_date:
+        attendance_rows = frappe.db.sql(
+            """SELECT employee, SUM(bt_difference) AS total_hours
+               FROM `tabAttendance`
+               WHERE employee IN %s
+                 AND attendance_date BETWEEN %s AND %s
+                 AND docstatus != 2
+               GROUP BY employee""",
+            (tuple(emp_names), doc.from_date, doc.to_date),
+            as_dict=True,
+        )
+        for ar in attendance_rows:
+            bt_by_emp[ar.employee] = ar.total_hours or 0
+
     for i in doc.sprint_avl_time:
         if i.short_code:
-            emp_name=frappe.db.get_value("Employee",{"short_code":("like", i.short_code),"custom_dev_team":doc.team,"status":"Active",'department':'IT. Development - THIS'},["name"])
-            sum_bt = frappe.db.sql("""
-                SELECT SUM(bt_difference) AS total_hours 
-                FROM `tabAttendance` 
-                WHERE employee=%s AND attendance_date BETWEEN %s AND %s AND docstatus != 2
-            """, (emp_name,doc.from_date,doc.to_date), as_dict=True)
-            total_hours = sum_bt[0].total_hours or 0 if sum_bt else 0
-            i.bh=total_hours
+            emp_name = emp_name_by_short_code.get(i.short_code)
+            if emp_name:
+                i.bh = bt_by_emp.get(emp_name, 0)
 
     doc.allocated_hours = total_allocated_hours
 
@@ -407,13 +468,20 @@ def update_task_kt_confirmed(task, kt):
 
 @frappe.whitelist()
 def update_sprint_status(doc,method):
-    if doc:
-        if doc.sprint_task and doc.status=="In Progress":
-            for row in doc.sprint_task:
-                if row.task:
-                    task_status = frappe.db.get_value("Task", row.task, "status")
-                    if task_status:
-                        row.cr_status = task_status
+    if doc and doc.sprint_task and doc.status == "In Progress":
+        task_names = [row.task for row in doc.sprint_task if row.task]
+        if not task_names:
+            return
+        # Batch: get all task statuses in a single query
+        task_statuses = frappe.db.get_all(
+            "Task",
+            filters={"name": ["in", task_names]},
+            fields=["name", "status"],
+        )
+        status_map = {t.name: t.status for t in task_statuses}
+        for row in doc.sprint_task:
+            if row.task and status_map.get(row.task):
+                row.cr_status = status_map[row.task]
         
 @frappe.whitelist()
 def validate_allocate_hrs(doc,method):
@@ -638,7 +706,7 @@ def get_tasks_for_sprint(team):
     #     team_tl=frappe.db.get_value('Employee', {'status':'Active','custom_is_tl': 1,'custom_dev_team':team_name}, ['user_id'])
     #     if team_tl:
     #         team_list.append(team_tl)
-    wrk_tasks=frappe.db.get_all('Task',{'custom_dev_team':team,'status':('in',('Open','Working'))},['actual_time','subject','name','kt_confirmed','status','priority','type','cb','custom_production_date','expected_time','project'])
+    wrk_tasks=frappe.db.get_all('Task',{'custom_dev_team':team,'status':('in',('Open','Working'))},['actual_time','subject','name','kt_confirmed','status','priority','type','cb','custom_production_date','expected_time','project','creation'])
     for tl_t in wrk_tasks:
         result.append({
             'project':tl_t.project,
@@ -653,7 +721,8 @@ def get_tasks_for_sprint(team):
             'status':tl_t.status,
             'priority':tl_t.priority,
             'production_date':tl_t.custom_production_date,
-            'previous_sprint':0
+            'previous_sprint':0,
+            'created_on':tl_t.creation
         })
     # cdr_tasks=frappe.db.get_all('Task',{'custom_allocated_to':('in',(team_list)),'status':'Code Review'},['actual_time','subject','name','kt_confirmed','status','priority','type','cb','custom_production_date','expected_time','project'])
     # for tl_t in cdr_tasks:
@@ -1087,8 +1156,8 @@ def get_retro_summary_html_test(name):
             <th style="background:#e8edea;font-size:7px;">Total RT</th>
             <th style="background:#e8edea;font-size:7px;">Biometric Hrs</th>
             <th style="background:#e8edea;font-size:7px;">Used Hrs (Used Hrs/Biometric Hrs)%</th>
-            <th style="background:#e8edea;font-size:7px;">Completed Hrs (Timesheet against completed tasks/Used Hrs)%</th>
-            <th style="background:#e8edea;font-size:7px;">Working Hrs (Timesheet against working tasks/Used Hrs)%</th>
+            <th style="background:#e8edea;font-size:7px;">Completed RT / Completed Hrs (Timesheet against completed tasks/Used Hrs)%</th>
+            <th style="background:#e8edea;font-size:7px;">Working RT / Working Hrs (Timesheet against working tasks/Used Hrs)%</th>
             <th style="background:#e8edea;font-size:7px;">Total Not Taken Hours</th>
             <th style="background:#e8edea;font-size:7px;">RT of tasks have NC</th>
             <th style="background:#e8edea;font-size:7px;">RT of tasks have Reopen</th>
@@ -1190,9 +1259,13 @@ def get_retro_summary_html_test(name):
         spot_comp_s = f"{round(tot_comp_srt, 2)}/{round(spot_comp_hrs, 2)}"
         spot_ncomp_s = f"{round(tot_work_srt, 2)}/{round(spot_wor_hrs, 2)}"
 
+        completed_rt = round(tot_comp_rt + tot_comp_srt, 2)
+        working_rt = round(tot_work_rt + tot_work_srt, 2)
+
         used_percent_str = f"{ts_hours} ({round(used_percent, 2)}%)"
-        comp_percent_str = f"{round(completed_hrs, 2)} ({round(comp_percent, 2)}%)"
-        ncomp_percent_str = f"{round(ncompleted_hrs, 2)} ({round(ncomp_percent, 2)}%)"
+        comp_percent_str = f"{completed_rt} / {round(completed_hrs, 2)} ({round(comp_percent, 2)}%)"
+        ncomp_percent_str = f"{working_rt} / {round(ncompleted_hrs, 2)} ({round(ncomp_percent, 2)}%)"
+        
         # if comp_percent < 70:
         font_color= "#f02e0c" if comp_percent < 70 else "#110404"
         att_color="#2059d4" if used_percent < 80 else "#110404"
@@ -1209,11 +1282,11 @@ def get_retro_summary_html_test(name):
             <td>{spot_comp_s}</td>
             <td>{spot_ncomp_s}</td>
             <td>{nt_srt}</td>
-            <td>{round((total_rt + total_s_rt),1)}</td>
+            <td>{round((total_rt + total_s_rt),2)}</td>
             <td>{bt_hours}</td>
             <td  style="color: {att_color};">{used_percent_str}</td>
-            <td style="color: {font_color};">{comp_percent_str}</td>
-            <td>{ncomp_percent_str}</td>
+            <td style="color: {font_color};font-size:12px;">{comp_percent_str}</td>
+            <td style="font-size:12px;">{ncomp_percent_str}</td>
             <td>{round(nt_rt + nt_srt, 2)}</td>
             <td>{nc_rt}</td>
             <td>{round(reopen_count, 2)}</td>
@@ -1397,9 +1470,9 @@ def get_retro_summary_html_test(name):
 
     return table
 
-
+from frappe.utils import flt
 @frappe.whitelist()
-def update_spr_table(name='SPM00140'):
+def update_spr_table(name):
 # def update_spr_table():
 #     name="SPM00076"
     spr = frappe.get_doc('Sprint', name)
@@ -1415,6 +1488,9 @@ def update_spr_table(name='SPM00140'):
             if frappe.db.exists('Task', {'name': i.task}):
                 cr_status = frappe.db.get_value('Task', {'name': i.task}, ['status'])
                 task_at = frappe.db.get_value("Task",{'name': i.task},['actual_time'])
+                task_rt = frappe.db.get_value('Task', i.task, 'rt') or 0
+                if flt(i.rt) != flt(task_rt):
+                    i.rt = task_rt
                 tot_at = frappe.db.sql("""
                     SELECT SUM(cs.hours) as total
                     FROM `tabTimesheet` c
@@ -2051,6 +2127,44 @@ def update_tasks_sprint(sprint):
 
     return "Updated"
 
+
+@frappe.whitelist()
+def empty_sprint(sprint):
+
+    sprint_doc = frappe.get_doc("Sprint", sprint)
+
+    # Allocated tasks from sprint child table
+    allocated_tasks = [row.task for row in sprint_doc.sprint_task if row.task]
+
+    # All valid team tasks except Cancelled/Hold
+    task_list = frappe.get_all(
+        "Task",
+        filters={
+            "custom_dev_team": sprint_doc.team,
+            "status": ["not in", ["Cancelled", "Hold"]]
+        },
+        fields=["name", "status", "custom_sprint"]
+    )
+
+    for task in task_list:
+
+        if (
+            task.name not in allocated_tasks
+            and task.status in ["Open", "Working"]
+        ):
+            frappe.db.set_value(
+                "Task",
+                task.name,
+                "custom_sprint",
+                ""
+            )
+
+    frappe.db.commit()
+
+    return "Updated"
+
+
+
 from frappe.utils import getdate
 @frappe.whitelist()
 def update_task_sprint(task_id, production_date):
@@ -2071,3 +2185,4 @@ def update_task_sprint(task_id, production_date):
         frappe.db.set_value("Task", task_id, "custom_sprint", sprint[0].sprint_id)
 
     return "Sprint Updated"
+

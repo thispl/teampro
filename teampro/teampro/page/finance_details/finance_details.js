@@ -65,7 +65,6 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 	padding: 15px;
 	border-radius: 12px;
 	color: white;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	text-align: center;
 	font-size: 18px;
 	font-weight: bold;
@@ -79,6 +78,7 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 	.todeliverbill-card{
 	background-color: #4169e1;
 	}
+	
 	.turnover-card {
 		background-color: #2e8b57; /* Sea Green */
 	}
@@ -92,32 +92,95 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 		background-color: #4b0082; /* Indigo - strong but professional */
 
 	}
-	.active-customer-card{
-	background-color: #2e8b57; /* Sea Green */
-	}
-	.so-qty-card {
-		background-color: #4682b4; /* Steel Blue */
-	}
-
-	.opportunity-card {
-		background-color: #20b2aa; /* Dark Orange */
+	.dashboard-wrapper{
+		display:flex;
+		flex-direction:column;
+		gap:20px;
 	}
 
-	.total-qty-card {
-		background-color: #b8860b; /* Slate Blue */
-	}
-		.tobill-card {
-		background-color: #006d77; /* Example teal blue, you can change it */
-	}
-	.total-customer-card{
-		background-color: #8a1e56;
-	}
-	.tot-stock-qty-card{
-		background-color: #4b0082;
-	}
-	.opportunity-count-card{
-		background-color: #292cc9;
-	}
+		.dashboard-cards-finaince{
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    padding:15px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    background:#f5f5f5;
+	display:grid;
+    grid-template-columns:repeat(5,1fr);
+    gap:20px;
+}
+	.dashboard-cards-finaince > div{
+    width:100%;
+}
+
+.dashboard-card{
+    position:relative;
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;   /* IMPORTANT */
+}
+
+.card-top-line{
+    height:4px;
+    width:100%;
+}
+
+.card-body{
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    height:calc(100% - 4px);
+}
+
+.card-icon{
+    font-size:24px;
+    margin-bottom:8px;
+}
+
+.card-title{
+    font-size:15px;
+    font-weight:700;
+	color:black;
+}
+
+.card-value{
+    font-size:26px;
+    font-weight:bold;
+    color:green;
+    margin-top:10px;
+}
+
+/* Combined Card */
+
+
+.summary-card{
+    width:100%;
+}
+
+.summary-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+}
+
+.summary-item{
+    position:relative;
+    padding:15px;
+    background:#fff;
+    border-radius:10px;
+    text-align:center;
+    border:1px solid #eee;
+}
+
+.summary-line{
+    position:absolute;
+    top:0;
+    left:0;
+    width:100%;
+    height:4px;
+}
 		
 		<style>
 	
@@ -127,7 +190,7 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 	`;
 	document.head.appendChild(style);
 	
-	
+		
 {/* <div class="dashboard-wrapper" style="
 			background-image: linear-gradient(rgba(255,255,255,0.6), rgba(255,255,255,0.6)), url('/files/48eecc75a6Daileemart We Serve 1.png');
 		background-size: cover;
@@ -148,23 +211,41 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 				</div>
 				<div id="current-datetime" style="font-size: 16px; color: #666; margin-top: 5px;"></div>
 			</div>
-	<br><br>
-				<div class="dashboard-cards-finaince" style="background-color: #f5f5f5;display: flex; gap: 20px; margin-bottom: 30px;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-right: 15px;margin-left: 15px;">
-					<div class="active-customer-card" style="margin-left:10px;"></div>
-					<div class="so-qty-card" ></div>
-					<div class="tot-stock-qty-card" ></div>
-					<div class="opportunity-card"></div>
-					<div class="opportunity-count-card"></div>
-					<div class="total-qty-card"></div>
-					<div class="total-customer-card" style="margin-right:50px;"></div>
-				</div>
-<br>
-				<div class="dashboard-cards-finaince" style="background-color: #f5f5f5;display: flex; gap: 60px; margin-bottom: 30px;border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;margin-right: 15px;margin-left: 15px;">
-					<div class="packing-card" style="margin-left:400px;"></div>
-					<div class="scheduled-card" ></div>
-					<div class="packed-card" ></div>
-					<div class="dispatched-card"></div>
-				</div>
+	<br><br>	
+	<div class="dashboard-wrapper" >
+		<div class="dashboard-cards-finaince" style="margin-left:20px; margin-right:20px;" >
+
+			<div class="active-customer-card" style="
+				margin-left:10px;
+				flex:0 0 auto;
+			"></div>
+
+			<div class="so-qty-card" style="
+				flex:0 0 auto;
+			"></div>
+
+			<div class="tot-stock-qty-card" style="
+				flex:0 0 auto;
+			"></div>
+
+			<div class="opportunity-card" style="
+				flex:0 0 auto;
+			"></div>
+
+			<div class="opportunity-count-card" style="
+				flex:0 0 auto;
+			"></div>
+
+			<div class="delivery-summary-card" style="
+				flex:0 0 auto;
+			"></div>
+
+			<div class="total-customer-card" style="
+				margin-right:50px;
+				flex:0 0 auto;
+			"></div>
+		</div>
+		
 	<div style="display: flex; gap: 20px; margin-top: 30px; width: 100%; flex-wrap: wrap;">
 
 	<!-- Customer Last SO Details -->
@@ -374,196 +455,215 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 
 		let d = r.message;
 
-		// PACKING
-		$(wrapper).find('.packing-card').html(`
-			<div style="
-				background: linear-gradient(135deg, #42a5f5, #1976d2);
-				color: white;
-				padding: 18px;
-				border-radius: 14px;
-				width: 180px;
-				height: 150px;
-				box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-				position: relative;
-				overflow: hidden;
-			">
+		// let card = `
 
-				<div style="
-					position:absolute;
-					top:-10px;
-					right:-10px;
-					font-size:60px;
-					opacity:0.12;
-				">
-					📦
-				</div>
+		// 	<div class="dashboard-card" style="
+		// 		width:250px;
+		// 		padding:5px;
+		// 		border-radius:10px;
+		// 		background:white;
+		// 		box-shadow:0 2px 6px rgba(0,0,0,0.08);
+		// 	">
+		// 	<div class="card-top-line" style="background:#292cc9"></div>
+		// 		<div style="
+		// 			display:grid;
+		// 			grid-template-columns:1fr 1fr;
+		// 			border:1px solid #e5e7eb;
+		// 			border-radius:6px;
+		// 			overflow:hidden;
+		// 		">
 
-				<h4 style="margin:0; font-size:16px;">
-					Packing
-				</h4>
+		// 			<!-- PACKING -->
+		// 			<div style="
+		// 				padding:7px;
+		// 				text-align:center;
+		// 				border-right:1px solid #e5e7eb;
+		// 				border-bottom:1px solid #e5e7eb;
+		// 			">
 
-				<div style="
-					font-size:32px;
-					font-weight:bold;
-					margin-top:18px;
-				">
-					${d.packing.count}
-				</div>
+		// 				<div style="
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 					color:#2196f3;
+		// 					margin-top:3px;
+		// 				">
+		// 					📦Packing
+		// 				</div>
 
-				<div style="
-					margin-top:8px;
-					font-size:14px;
-				">
-					Qty : <b>${d.packing.qty}</b>
-				</div>
+		// 				<span style="background:#e3f2fd;color:#1565c0;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					${d.packing.count}
+		// 				</span>
+		// 				<span style="margin-left:4px;background:#fce4ec;color:#ad1457;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					Qty: ${d.packing.qty}
+		// 				</span>
 
-			</div>
-		`);
 
-		// SCHEDULED
-		$(wrapper).find('.scheduled-card').html(`
-			<div style="
-				background:#fff3e0;
-				border-left:6px solid #ff9800;
-				padding:18px;
-				border-radius:14px;
-				width:180px;
-				height:150px;
-				box-shadow:0 3px 8px rgba(0,0,0,0.08);
-			">
+		// 			</div>
 
-				<div style="
-					font-size:16px;
-					font-weight:600;
-					color:#ff9800;
-				">
-					Scheduled
-				</div>
+		// 			<!-- SCHEDULED -->
+		// 			<div style="
+		// 				padding:7px;
+		// 				text-align:center;
+		// 				border-bottom:1px solid #e5e7eb;
+		// 			">
 
-				<div style="
-					font-size:34px;
-					font-weight:bold;
-					color:#333;
-					margin-top:18px;
-				">
-					${d.scheduled.count}
-				</div>
+		// 				<div style="
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 					color:#ff9800;
+		// 					margin-top:3px;
+		// 				">
+		// 					📅Scheduled
+		// 				</div>
 
-				<div style="
-					margin-top:8px;
-					font-size:14px;
-					color:#555;
-				">
-					Qty : <b>${d.scheduled.qty}</b>
-				</div>
+		// 				<span style="background:#fff3e0;color:#ef6c00;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					${d.scheduled.count}
+		// 				</span>
+		// 				<span style="margin-left:4px;background:#ede7f6;color:#5e35b1;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					Qty: ${d.scheduled.qty}
+		// 				</span>
 
-			</div>
-		`);
+		// 			</div>
 
-		// PACKED
-		$(wrapper).find('.packed-card').html(`
-			<div style="
-				background:#faf5ff;
-				border:2px dashed #9c27b0;
-				padding:18px;
-				border-radius:16px;
-				width:180px;
-				height:150px;
-				text-align:center;
-				position:relative;
-			">
+		// 			<!-- PACKED -->
+		// 			<div style="
+		// 				padding:7px;
+		// 				text-align:center;
+		// 				border-right:1px solid #e5e7eb;
+		// 			">
 
-				<div style="
-					width:42px;
-					height:42px;
-					background:#9c27b0;
-					color:white;
-					border-radius:50%;
-					display:flex;
-					align-items:center;
-					justify-content:center;
-					font-size:20px;
-					margin:auto;
-					margin-top:-38px;
-					box-shadow:0 3px 8px rgba(0,0,0,0.2);
-				">
-					✓
-				</div>
+		// 				<div style="
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 					color:#9c27b0;
+		// 					margin-top:3px;
+		// 				">
+		// 					✅Packed
+		// 				</div>
 
-				<h4 style="
-					margin-top:12px;
-					color:#9c27b0;
-				">
-					Packed
-				</h4>
+		// 				<span style="background:#e8f5e9;color:#2e7d32;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					${d.packed.count}
+		// 				</span>
+		// 				<span style="margin-left:4px;background:#f3e5f5;color:#6a1b9a;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					Qty: ${d.packed.qty}
+		// 				</span>
 
-				<div style="
-					font-size:32px;
-					font-weight:bold;
-					color:#222;
-					margin-top:8px;
-				">
-					${d.packed.count}
-				</div>
+		// 			</div>
 
-				<div style="
-					margin-top:8px;
-					font-size:14px;
-					color:#666;
-				">
-					Qty : <b>${d.packed.qty}</b>
-				</div>
+		// 			<div style="
+		// 				padding:7px;
+		// 				text-align:center;
+		// 			">
+		// 				<div style="
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 					color:#4caf50;
+		// 					margin-top:3px;
+		// 				">
+		// 					🚚Dispatched
+		// 				</div>
 
-			</div>
-		`);
+		// 				<span style="background:#e0f7fa;color:#00838f;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					${d.dispatched.count}
+		// 				</span>
+		// 				<span style="margin-left:4px;background:#f1f8e9;color:#558b2f;padding:2px 6px;border-radius:6px;font-size:11px;">
+		// 					Qty: ${d.dispatched.qty}
+		// 				</span>
 
-		// DISPATCHED
-		$(wrapper).find('.dispatched-card').html(`
-			<div style="
-				background:linear-gradient(135deg,#43a047,#1b5e20);
-				padding:18px;
-				border-radius:14px;
-				width:180px;
-				height:150px;
-				color:white;
-				box-shadow:0 4px 10px rgba(0,0,0,0.15);
-			">
+		// 			</div>
 
-				<div style="
-					display:flex;
-					justify-content:space-between;
-					align-items:center;
-				">
+		// 		</div>
 
-					<h4 style="margin:0;">
-						Dispatched
-					</h4>
+		// 	</div>
+		// `;
+		let card = `
+<div class="dashboard-card">
 
-					<div style="
-						font-size:20px;
-					">
-						🚚
-					</div>
+    <div class="card-top-line" style="background:#ff66a3"></div>
 
-				</div>
+    <div class="card-body" style="padding:10px;">
 
-				<div style="
-					font-size:34px;
-					font-weight:bold;
-					margin-top:18px;
-				">
-					${d.dispatched.count}
-				</div>
+        <div style="
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            border:1px solid #e5e7eb;
+            border-radius:8px;
+            overflow:hidden;
+        ">
 
-				<div style="
-					margin-top:8px;
-					font-size:14px;
-				">
-					Qty : <b>${d.dispatched.qty}</b>
-				</div>
+            <!-- Packing -->
+            <div style="padding:12px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">📦</div>
+                <div class="card-title" style="color:#2196f3;">Packing</div>
 
-			</div>
-		`);
+                <div style="margin-top:8px;">
+                    <span style="background:#e3f2fd;color:#1565c0;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.packing.count}
+                    </span>
+                </div>
+
+                <div style="margin-top:6px;font-size:12px;color:#666;">
+                    Qty : <b>${d.packing.qty}</b>
+                </div>
+            </div>
+
+            <!-- Scheduled -->
+            <div style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">📅</div>
+                <div class="card-title" style="color:#ff9800;">Scheduled</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#fff3e0;color:#ef6c00;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.scheduled.count}
+                    </span>
+                </div>
+
+                <div style="margin-top:6px;font-size:12px;color:#666;">
+                    Qty : <b>${d.scheduled.qty}</b>
+                </div>
+            </div>
+
+            <!-- Packed -->
+            <div style="padding:12px;border-right:1px solid #e5e7eb;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">✅</div>
+                <div class="card-title" style="color:#9c27b0;">Packed</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#e8f5e9;color:#2e7d32;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.packed.count}
+                    </span>
+                </div>
+
+                <div style="margin-top:6px;font-size:12px;color:#666;">
+                    Qty : <b>${d.packed.qty}</b>
+                </div>
+            </div>
+
+            <!-- Dispatched -->
+            <div style="padding:12px;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">🚚</div>
+                <div class="card-title" style="color:#4caf50;">Dispatched</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#e0f7fa;color:#00838f;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.dispatched.count}
+                    </span>
+                </div>
+
+                <div style="margin-top:6px;font-size:12px;color:#666;">
+                    Qty : <b>${d.dispatched.qty}</b>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+`;
+
+		$(wrapper).find('.delivery-summary-card').html(card);
+
 	}
 });
 	frappe.call({
@@ -575,194 +675,341 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 		const stock_value = r.message.total_stock_value || 0;
 
 		$(wrapper).find('.tot-stock-qty-card').html(`
+		<div class="dashboard-card">
+			<div class="card-top-line" style="background:#4b0082;"></div>
 
-			<div class="card blink-border"
-				style="
-					width: 230px;
-					height: 160px;
-					padding: 20px;
-					border-radius: 12px;
-					background:white;
-					display: flex;
-					flex-direction: column;
-					justify-content: center;
-					align-items: center;
-					box-sizing: border-box;
-				">
+			<div class="card-body">
+				<div class="card-icon">📦</div>
 
-				<h3 style="
-					margin: 0;
-					text-align: center;
-					white-space: nowrap;
-					font-size: 17px;
-					color: black;
-				">
-					Total Stock Qty & Value
-				</h3>
+				<div class="card-title">
+					Total Stock Qty
+				</div>
 
-				<div style="
-					font-size: 24px;
-					font-weight: bold;
-					margin-top: 12px;
-					color: green;
-					text-align: center;
-				">
+				<div class="card-value">
 					${stock_qty.toFixed(2)}
 				</div>
 
 				<div style="
-					margin-top: 10px;
-					font-size: 16px;
-					text-align: center;
-					color: black;
-					white-space: nowrap;
+					font-size:14px;
+					margin-top:6px;
+					color:#555;
+					font-weight:600;
 				">
-					Value : ${format_currency(stock_value)}
+					${format_currency(stock_value)}
 				</div>
-
 			</div>
-
-		`);
-	}
-});
-
-	// Load Dashboard Cards
-	frappe.call({
-	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_active_customers_count",
-
-	callback: function(r) {
-
-		const count = r.message || 0;
-
-		$(wrapper).find('.active-customer-card').html(`
-			<div class="card blink-border"
-				style="
-					width: 210px;
-					height: 160px;
-					padding: 20px;
-					border-radius: 12px;
-					background:white;
-					display: flex;
-					flex-direction: column;
-					justify-content: center;
-					align-items: center;
-					box-sizing: border-box;
-				">
-
-				<h3 style="
-					margin: 0;
-					text-align: center;
-					white-space: nowrap;
-					color: black;
-					font-size: 20px;
-				">
-					Active Customers
-				</h3>
-
-				<div style="
-					font-size: 24px;
-					font-weight: bold;
-					margin-top: 15px;
-					color: green;
-					text-align: center;
-				">
-					${count}
-				</div>
-
-			</div>
-		`);
-	}
-});
-	frappe.call({
-		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_customer_detalils",
-		callback(r) {
-
-			let data = r.message;
-
-			let card = `
-				<div class="card blink-border" style="
-					width: 250px;
-					padding: 20px;
-					border-radius: 8px;
-					background: white;
-					border: 2px solid #4b0082;
-					box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-				">
-
-					<div style="
-						font-size:30px;
-						font-weight:bold;
-						color:#2490ef;
-						text-align:center;
-						line-height:1;
-					">
-						${data.overall_customer_count}
-					</div>
-
-					<div style="
-						font-size:15px;
-						font-weight:bold;
-						text-align:center;
-						margin-top:5px;
-						margin-bottom:12px;
-						color:#333;
-					">
-						Overall Customers
-					</div>
-
-					<div style="
-						display:flex;
-						justify-content:space-between;
-						gap:6px;
-						font-size:12px;
-					">
-
-						<div style="
-							flex:1;
-							padding:5px;
-							border-left:4px solid #0a9396;
-							background:#f7f7f7;
-							border-radius:4px;
-							text-align:center;
-							color:#444;
-						">
-							<div><b>Corporate</b></div>
-							<div>${data.total_corporate_customers}</div>
-						</div>
-
-						<div style="
-							flex:1;
-							padding:5px;
-							border-left:4px solid #20b2aa;
-							background:#f7f7f7;
-							border-radius:4px;
-							text-align:center;
-							color:#444;
-						">
-							<div><b>Retail</b></div>
-							<div>${data.total_retail_shops}</div>
-						</div>
-
-						<div style="
-							flex:1;
-							padding:5px;
-							border-left:4px solid #b8860b;
-							background:#f7f7f7;
-							border-radius:4px;
-							text-align:center;
-							color:#444;
-						">
-							<div><b>Vending</b></div>
-							<div>${data.total_vending_machines}</div>
-						</div>
-
-					</div>
-
-				</div>
-			`;
-			$(wrapper).find('.total-customer-card').html(card);
+		</div>
+	`);
 		}
 	});
+
+		// Load Dashboard Cards
+		frappe.call({
+		method: "teampro.teampro.page.finance_details.tfp_dashboard.get_active_customers_count",
+
+		callback: function(r) {
+
+			const count = r.message || 0;
+
+			$(wrapper).find('.active-customer-card').html(`
+				<div class="dashboard-card">
+					<div class="card-top-line" style="background:#2e8b57"></div>
+
+					<div class="card-body">
+						<div class="card-icon">👥</div>
+						<div class="card-title">Active Customers</div>
+						<div class="card-value">${count}</div>
+					</div>
+				</div>
+			`);
+		}
+});
+	// frappe.call({
+	// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_customer_detalils",
+	// 	callback(r) {
+
+	// 		let data = r.message;
+
+	// 		let card = `
+	// 			<div class="card blink-border" style="
+	// 				width: 250px;
+	// 				padding: 20px;
+	// 				height: 190px;
+	// 				border-radius: 8px;
+	// 				background: white;
+	// 				border: 2px solid #4b0082;
+	// 				box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+	// 			">
+
+	// 				<div style="
+	// 					font-size:30px;
+	// 					font-weight:bold;
+	// 					color:#2490ef;
+	// 					text-align:center;
+	// 					line-height:1;
+	// 				">
+	// 					${data.overall_customer_count}
+	// 				</div>
+
+	// 				<div style="
+	// 					font-size:15px;
+	// 					font-weight:bold;
+	// 					text-align:center;
+	// 					margin-top:5px;
+	// 					margin-bottom:12px;
+	// 					color:#333;
+	// 				">
+	// 					Overall Customers
+	// 				</div>
+
+	// 				<div style="
+	// 					display:flex;
+	// 					justify-content:space-between;
+	// 					gap:6px;
+	// 					font-size:12px;
+	// 				">
+
+	// 					<div style="
+	// 						flex:1;
+	// 						padding:5px;
+	// 						border-left:4px solid #0a9396;
+	// 						background:#f7f7f7;
+	// 						border-radius:4px;
+	// 						text-align:center;
+	// 						color:#444;
+	// 					">
+	// 						<div><b>Corporate</b></div>
+	// 						<div>${data.total_corporate_customers}</div>
+	// 					</div>
+
+	// 					<div style="
+	// 						flex:1;
+	// 						padding:5px;
+	// 						border-left:4px solid #20b2aa;
+	// 						background:#f7f7f7;
+	// 						border-radius:4px;
+	// 						text-align:center;
+	// 						color:#444;
+	// 					">
+	// 						<div><b>Retail</b></div>
+	// 						<div>${data.total_retail_shops}</div>
+	// 					</div>
+
+	// 					<div style="
+	// 						flex:1;
+	// 						padding:5px;
+	// 						border-left:4px solid #b8860b;
+	// 						background:#f7f7f7;
+	// 						border-radius:4px;
+	// 						text-align:center;
+	// 						color:#444;
+	// 					">
+	// 						<div><b>Vending</b></div>
+	// 						<div>${data.total_vending_machines}</div>
+	// 					</div>
+
+	// 				</div>
+
+	// 			</div>
+	// 		`;
+	// 		$(wrapper).find('.total-customer-card').html(card);
+	// 	}
+	// });
+	frappe.call({
+	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_total_customer_detalils",
+	callback(r) {
+
+		let d = r.message;
+
+		// let card = `
+		// 	<div  style="
+		// 		width:200px;
+		// 		padding:6px;
+		// 		border-radius:10px;
+		// 		background:white;
+		// 		box-shadow:0 2px 6px rgba(0,0,0,0.08);
+		// 	">
+
+		// 		<div style="
+		// 			display:grid;
+		// 			grid-template-columns:1fr 1fr;
+		// 			border:1px solid #e5e7eb;
+		// 			border-radius:6px;
+		// 			overflow:hidden;
+		// 		">
+
+		// 			<!-- CS -->
+		// 			<div style="
+		// 				padding:8px;
+		// 				text-align:center;
+		// 				border-right:1px solid #e5e7eb;
+		// 				border-bottom:1px solid #e5e7eb;
+		// 			">
+		// 				<div style="font-size:11px;font-weight:700;color:#0a9396;">
+		// 					👥 CS
+		// 				</div>
+
+		// 				<span style="
+		// 					display:inline-block;
+		// 					margin-top:6px;
+		// 					padding:3px 8px;
+		// 					border-radius:6px;
+		// 					background:#fde2e4;
+		// 					color:#d6336c;
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 				">
+		// 					${d.total_corporate_customers}
+		// 				</span>
+		// 			</div>
+
+		// 			<!-- RS -->
+		// 			<div style="
+		// 				padding:8px;
+		// 				text-align:center;
+		// 				border-bottom:1px solid #e5e7eb;
+		// 			">
+		// 				<div style="font-size:11px;font-weight:700;color:#20b2aa;">
+		// 					🏪 RS
+		// 				</div>
+
+		// 				<span style="
+		// 					display:inline-block;
+		// 					margin-top:6px;
+		// 					padding:3px 8px;
+		// 					border-radius:6px;
+		// 					background:#e8f0fe;
+		// 					color:#1a73e8;
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 				">
+		// 					${d.total_retail_shops}
+		// 				</span>
+		// 			</div>
+
+		// 			<!-- LSVM -->
+		// 			<div style="
+		// 				padding:8px;
+		// 				text-align:center;
+		// 				border-right:1px solid #e5e7eb;
+		// 			">
+		// 				<div style="font-size:11px;font-weight:700;color:#b8860b;">
+		// 					🤖 LSVM
+		// 				</div>
+
+		// 				<span style="
+		// 					display:inline-block;
+		// 					margin-top:6px;
+		// 					padding:3px 8px;
+		// 					border-radius:6px;
+		// 					background:#e7f7ee;
+		// 					color:#1b7f3a;
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 				">
+		// 					${d.total_vending_machines}
+		// 				</span>
+		// 			</div>
+
+		// 			<!-- OVERALL -->
+		// 			<div style="
+		// 				padding:8px;
+		// 				text-align:center;
+		// 			">
+		// 				<div style="font-size:11px;font-weight:700;color:#2490ef;">
+		// 					📊 Overall
+		// 				</div>
+
+		// 				<span style="
+		// 					display:inline-block;
+		// 					margin-top:6px;
+		// 					padding:3px 8px;
+		// 					border-radius:6px;
+		// 					background:#f1f1f1;
+		// 					color:#333;
+		// 					font-size:11px;
+		// 					font-weight:700;
+		// 				">
+		// 					${d.overall_customer_count}
+		// 				</span>
+		// 			</div>
+
+		// 		</div>
+		// 	</div>
+		// `;
+		let card = `
+<div class="dashboard-card">
+
+    <div class="card-top-line" style="background:#ffd11a"></div>
+
+    <div class="card-body" style="padding:10px;">
+
+        <div style="
+            display:grid;
+            grid-template-columns:repeat(2,1fr);
+            border:1px solid #e5e7eb;
+            border-radius:8px;
+            overflow:hidden;
+        ">
+
+            <!-- CS -->
+            <div style="padding:12px;border-right:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">👥</div>
+                <div class="card-title" style="color:#0a9396;">CS</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#fde2e4;color:#d6336c;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.total_corporate_customers}
+                    </span>
+                </div>
+            </div>
+
+            <!-- RS -->
+            <div style="padding:12px;border-bottom:1px solid #e5e7eb;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">🏪</div>
+                <div class="card-title" style="color:#20b2aa;">RS</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#e8f0fe;color:#1a73e8;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.total_retail_shops}
+                    </span>
+                </div>
+            </div>
+
+            <!-- LSVM -->
+            <div style="padding:12px;border-right:1px solid #e5e7eb;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">🤖</div>
+                <div class="card-title" style="color:#b8860b;">LSVM</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#e7f7ee;color:#1b7f3a;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.total_vending_machines}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Overall -->
+            <div style="padding:12px;text-align:center;">
+                <div class="card-icon" style="margin-bottom:4px;">📊</div>
+                <div class="card-title" style="color:#2490ef;">Overall</div>
+
+                <div style="margin-top:8px;">
+                    <span style="background:#f1f1f1;color:#333;padding:4px 10px;border-radius:8px;font-weight:600;">
+                        ${d.overall_customer_count}
+                    </span>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+`;
+
+		$(wrapper).find('.total-customer-card').html(card);
+	}
+});
 	frappe.call({
 	method: "teampro.teampro.page.finance_details.tfp_dashboard.get_opportunity_count",
 
@@ -771,44 +1018,16 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 		const count = r.message || 0;
 
 		$(wrapper).find('.opportunity-count-card').html(`
+    <div class="dashboard-card">
+        <div class="card-top-line" style="background:#292cc9"></div>
 
-			<div class="card blink-border"
-				style="
-					width: 180px;
-					height: 160px;
-					padding: 20px;
-					border-radius: 12px;
-					background:white;
-					display: flex;
-					flex-direction: column;
-					justify-content: center;
-					align-items: center;
-					box-sizing: border-box;
-				">
-
-				<h3 style="
-					margin: 0;
-					text-align: center;
-					font-size: 18px;
-					white-space: nowrap;
-					color: black;
-				">
-					Opp.Count
-				</h3>
-
-				<div style="
-					font-size: 24px;
-					font-weight: bold;
-					margin-top: 15px;
-					color: green;
-					text-align: center;
-				">
-					${count}
-				</div>
-
-			</div>
-
-		`);
+        <div class="card-body">
+            <div class="card-icon">🎯</div>
+            <div class="card-title">OPP Count</div>
+            <div class="card-value">${count}</div>
+        </div>
+    </div>
+`);
 	}
 });
 	frappe.call({
@@ -1076,34 +1295,16 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 			const average_qty = r.message.average_qty || 0;
 
 			$(wrapper).find('.so-qty-card').html(`
-				<div class="card blink-border"
-					style="width: 200px; padding: 25px; border-radius: 10px;">
+    <div class="dashboard-card">
+        <div class="card-top-line" style="background:#4682b4"></div>
 
-					<h3 style="margin: 0; text-align:center;font-size:17px;">
-						Total SO Qty
-					</h3>
-
-					<div style="
-						font-size: 24px;
-						font-weight: bold;
-						margin-top: 10px;
-						color: green;
-						text-align: center;
-					">
-						${total_qty}
-					</div>
-
-					<div style="
-						margin-top: 15px;
-						font-size: 16px;
-						text-align: center;
-						color: #fb2c2c;
-					">
-						Avg: <b>${average_qty}</b>
-					</div>
-
-				</div>
-			`);
+        <div class="card-body">
+            <div class="card-icon">📦</div>
+            <div class="card-title">Total SO Qty</div>
+            <div class="card-value">${total_qty}</div>
+        </div>
+    </div>
+`);
 		}
 	});
 	frappe.call({
@@ -1551,95 +1752,73 @@ frappe.pages['finance-details'].on_page_load = function(wrapper) {
 		});
 
 		$(wrapper).find('.opportunity-card').html(`
+		<div class="dashboard-card">
+			<div class="card-top-line" style="background:#20b2aa;"></div>
 
-			<div class="card blink-border"
-				style="
-					width: 230px;
-					height: 160px;
-					padding: 20px;
-					border-radius: 12px;
-					background:white;
-					display: flex;
-					flex-direction: column;
-					justify-content: center;
-					align-items: center;
-					box-sizing: border-box;
-				">
+			<div class="card-body">
+				<div class="card-icon">🎯</div>
 
-				<h3 style="
-					margin: 0;
-					text-align: center;
-					font-size: 18px;
-					white-space: nowrap;
-					color: black;
-				">
+				<div class="card-title">
 					Total Expected Value
-				</h3>
+				</div>
 
-				<div style="
-					font-size: 24px;
-					font-weight: bold;
-					margin-top: 15px;
-					color: green;
-					text-align: center;
-				">
+				<div class="card-value">
 					${formatted}
 				</div>
-
 			</div>
-
-		`);
-	}
+		</div>
+	`);
+		}
 });
 
-	frappe.call({
-	method: "teampro.teampro.page.finance_details.tfp_dashboard.total_opp_qty",
+// 	frappe.call({
+// 	method: "teampro.teampro.page.finance_details.tfp_dashboard.total_opp_qty",
 
-	callback: function(r) {
+// 	callback: function(r) {
 
-		const value = r.message || 0;
+// 		const value = r.message || 0;
 
-		$(wrapper).find('.total-qty-card').html(`
+// 		$(wrapper).find('.total-qty-card').html(`
 
-			<div class="card blink-border"
-				style="
-					width: 180px;
-					height: 160px;
-					padding: 20px;
-					border-radius: 12px;
-					background:white;
-					display: flex;
-					flex-direction: column;
-					justify-content: center;
-					align-items: center;
-					box-sizing: border-box;
-				">
+// 			<div class="card blink-border"
+// 				style="
+// 					width: 180px;
+// 					height: 160px;
+// 					padding: 20px;
+// 					border-radius: 12px;
+// 					background:white;
+// 					display: flex;
+// 					flex-direction: column;
+// 					justify-content: center;
+// 					align-items: center;
+// 					box-sizing: border-box;
+// 				">
 
-				<h3 style="
-					margin: 0;
-					text-align: center;
-					font-size: 18px;
-					white-space: nowrap;
-					color: black;
-				">
-					Total Qty
-				</h3>
+// 				<h3 style="
+// 					margin: 0;
+// 					text-align: center;
+// 					font-size: 18px;
+// 					white-space: nowrap;
+// 					color: black;
+// 				">
+// 					Total Qty
+// 				</h3>
 
-				<div style="
-					font-size: 24px;
-					font-weight: bold;
-					margin-top: 15px;
-					color: green;
-					text-align: center;
-				">
-					${value}
-				</div>
+// 				<div style="
+// 					font-size: 24px;
+// 					font-weight: bold;
+// 					margin-top: 15px;
+// 					color: green;
+// 					text-align: center;
+// 				">
+// 					${value}
+// 				</div>
 
-			</div>
+// 			</div>
 
-		`);
-	}
-});
+// 		`);
+// 	}
+// });
 	
 	$('#customer-active-so-table-content').html(`<div style="padding: 10px;text-align:center">Loading customer SO details...</div>`);
 
@@ -1822,7 +2001,7 @@ frappe.call({
 });
 
 frappe.call({
-    method: "teampro.custom.get_physical_vs_erp_stock_data",
+    method: "teampro.teampro.page.finance_details.tfp_dashboard.get_physical_vs_erp_stock_data",
      callback: function(r) {
         const response = r.message;
 

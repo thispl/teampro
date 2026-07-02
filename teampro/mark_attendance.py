@@ -12,8 +12,8 @@ from frappe.utils import time_diff
 
 @frappe.whitelist()
 def mark_att_manual():
-    from_date='2026-05-07'
-    to_date='2026-05-13'
+    from_date='2026-05-22'
+    to_date='2026-05-26'
     # employee ='TC00039'
     dates = get_dates(from_date,to_date)
     for date in dates:
@@ -79,10 +79,11 @@ def mark_attendance_from_checkin(checkin,employee,time):
                 status = "Absent"
             elif val > 4 and val < 8 :
                 status = "Half Day"
-                if val > 6 :
+                company = frappe.db.get_value("Employee", employee, "company")
+                if val > 5.5:
                     day_of_week = att_date.weekday()
                     week_number = (att_date.day - 1) // 7 + 1
-                    if day_of_week == 5 and (week_number == 2 or week_number == 4):
+                    if day_of_week == 5 and (week_number == 2 or week_number == 4)  and company != "TEAMPRO Food Products":
                         status = 'Present'
                 else:
                     status = "Half Day"
@@ -101,11 +102,11 @@ def mark_attendance_from_checkin(checkin,employee,time):
                 if val < 4 :
                     status = "Absent"
                 elif val > 4 and val < 8 :
-                    status = "Half Day"
-                    if val > 6 :
+                    company = frappe.db.get_value("Employee", employee, "company")
+                    if val > 5.5:
                         day_of_week = att_date.weekday()
                         week_number = (att_date.day - 1) // 7 + 1
-                        if day_of_week == 5 and (week_number == 2 or week_number == 4):
+                        if day_of_week == 5 and (week_number == 2 or week_number == 4) and company != "TEAMPRO Food Products":
                             status = 'Present'
                     else:
                         status = "Half Day"

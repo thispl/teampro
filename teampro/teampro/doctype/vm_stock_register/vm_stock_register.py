@@ -11,6 +11,8 @@ class VMStockRegister(Document):
             throw(_("Please attach the Refill Attachment before submitting the document."))
         if not self.next_filling:
             throw(_("Please set the Next Filling Date before submitting the document."))
+        if self.status != "Completed":
+            throw(_("Status must be Completed before submitting the document."))
     def validate(self):
         if self.total_capacity and self.default_capacity:
             self.standard_capacity_count = (float(self.total_capacity) or 0) * ((float(self.default_capacity) or 0) / 100)

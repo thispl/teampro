@@ -597,6 +597,34 @@ def get_tasks(additional_filters=None, candidate=None, start=0, page_length=12):
 	"""
 	return frappe.db.sql(query, values, as_dict=True)
 
+@frappe.whitelist(allow_guest=1)
+def get_filter_values():
+    return {
+        "positions": frappe.db.sql("""
+            SELECT DISTINCT subject
+            FROM `tabTask`
+            WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
+            AND service IN ('REC-I', 'REC-D')
+            ORDER BY subject
+        """, pluck="subject"),
+
+        "locations": frappe.db.sql("""
+            SELECT DISTINCT territory
+            FROM `tabTask`
+            WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
+            AND service IN ('REC-I', 'REC-D')
+            ORDER BY territory
+        """, pluck="territory"),
+
+        "currencies": frappe.db.sql("""
+            SELECT DISTINCT currency
+            FROM `tabTask`
+            WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
+            AND service IN ('REC-I', 'REC-D')
+            ORDER BY currency
+        """, pluck="currency")
+    }
+    
 @frappe.whitelist()
 def create_candidate(
 	given_name=None,
@@ -660,4 +688,4 @@ def create_candidate(
 		}
   
 def test_check():
-	return get_tasks(start=12, page_length=12)
+	return get_filter_values()
