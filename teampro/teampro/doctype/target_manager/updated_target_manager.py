@@ -85,7 +85,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
 				else:
@@ -97,7 +97,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				tc.revised_ct = tc.ct + pending_ct
@@ -117,7 +117,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
@@ -129,7 +129,7 @@ def calculate_target_for_manager_test(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				i.cr_ft = i.ft + pending_ft
@@ -366,7 +366,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					# Execute the query with parameters for month and year
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -380,7 +380,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -400,7 +400,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -413,7 +413,7 @@ def calculate_target_for_manager_test(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft
@@ -578,7 +578,7 @@ def calculate_target_for_manager_inso_test():
 		"name"
 	)
 
-	tps = frappe.get_all('Target Manager',filters={'custom_fiscal_year': current_fy, "name": "TA-0060"},fields=['*'])
+	tps = frappe.get_all('Target Manager',filters={'custom_fiscal_year': current_fy},fields=['*'])
 	def get_month_range(start_date, end_date):
 		current = start_date.replace(day=1)
 		end = end_date.replace(day=1)
@@ -601,6 +601,7 @@ def calculate_target_for_manager_inso_test():
 	for tp in filtered_tps:
 		doc = frappe.get_doc('Target Manager', tp.name)
 		doc.target_child = []
+		doc.achieved_data = []
 		doc.monthly_ft_allocation=[]
 		user_id = frappe.db.get_value('Employee', {'name': doc.employee}, 'user_id')
 		user_list = [user_id]
@@ -658,83 +659,34 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(tc.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-						SELECT
+				else:
+					year = extract_year(tp.custom_year_start_date)
+				query = f"""
+							SELECT
 							so.name,
 							so.transaction_date,
 							so.service,
 							so.customer,
 							so.base_total
-						FROM `tabSales Order` so
-						WHERE so.account_manager IN ({user_list_sql})
-						AND MONTH(so.transaction_date)=%s
-						AND YEAR(so.transaction_date)=%s
-						AND so.docstatus=1
-						AND so.status NOT IN ('Cancelled','Closed','On Hold')
-						"""
-					records = frappe.db.sql(query, (month, year), as_dict=True)
-
-					achieved_value = 0
-
-					for row in records:
-						achieved_value += row.base_total or 0
-
-						doc.append("achieved_data", {
-							"date": row.transaction_date,
-							"document_type": "Sales Order",
-							"id": row.name,
-							"service": row.service,
-							"item":row.customer,
-							"amount": row.base_total
-						})
-
-
-					# # query = f"""
-					# #             SELECT
-					# #             so.name,
-					# #             so.transaction_date,
-					# #             so.service,
-					# #             so.base_total
-					# #             FROM `tabSales Order` AS so
-					# #             WHERE so.account_manager IN ({user_list_sql}) 
-					# #             AND MONTH(so.transaction_date) = %s 
-					# #             AND YEAR(so.transaction_date) = %s 
-					# #             AND so.docstatus=1
-					# #             AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-					# #             """
-					# achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
-				else:
-					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-								SELECT
-								so.name,
-								so.transaction_date,
-								so.service,
-								so.customer,
-								so.base_total
-								FROM `tabSales Order` AS so
-								WHERE so.account_manager IN ({user_list_sql}) 
-								AND MONTH(so.transaction_date) = %s 
-								AND YEAR(so.transaction_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-								"""
-					records = frappe.db.sql(query, (month, year), as_dict=True)
-
-					achieved_value = 0
-
-					for row in records:
-						achieved_value += row.base_total or 0
-
-						doc.append("achieved_data", {
-							"date": row.transaction_date,
-							"document_type": "Sales Order",
-							"id": row.name,
-							"service": row.service,
-							"item":row.customer,
-							"amount": row.base_total
-						})
-					# achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
+							FROM `tabSales Order` AS so
+							WHERE so.account_manager IN ({user_list_sql}) 
+							AND MONTH(so.transaction_date) = %s 
+							AND YEAR(so.transaction_date) = %s 
+							AND so.docstatus=1
+							AND so.status NOT IN ('Cancelled')
+							"""
+				records = frappe.db.sql(query, (month, year), as_dict=True)
+				achieved_value = 0
+				for asor in records:
+					achieved_value += asor.base_total
+					doc.append("achieved_data", {
+						"date": asor.transaction_date,
+						"document_type": "Sales Order",
+						"id": asor.name,
+						"service": asor.service,
+						"amount_cc": asor.base_total,
+						"customer": asor.customer
+					})
 				tc.revised_ct = tc.ct + pending_ct
 				tc.achieved = achieved_value
 				tc.ct_yta = tc.revised_ct - achieved_value
@@ -748,28 +700,19 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(i.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-								SELECT SUM(so.base_total) AS total 
-								FROM `tabSales Order` AS so
-								WHERE so.account_manager IN ({user_list_sql}) 
-								AND MONTH(so.transaction_date) = %s 
-								AND YEAR(so.transaction_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-								"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
 					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-								SELECT SUM(so.base_total) AS total 
-								FROM `tabSales Order` AS so
-								WHERE account_manager IN ({user_list_sql}) 
-								AND MONTH(so.transaction_date) = %s 
-								AND YEAR(so.transaction_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-								"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
+				query = f"""
+							SELECT sum(so.base_total) as total
+							FROM `tabSales Order` AS so
+							WHERE account_manager IN ({user_list_sql}) 
+							AND MONTH(so.transaction_date) = %s 
+							AND YEAR(so.transaction_date) = %s 
+							AND so.docstatus=1
+							AND so.status NOT IN ('Cancelled')
+							"""
+				achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+
 				i.cr_ft = i.ft + pending_ft
 				i.f_achieved = achieved_value
 				i.ftyta = i.cr_ft - achieved_value
@@ -826,29 +769,31 @@ def calculate_target_for_manager_inso_test():
 				month = map_months.get(tc.month)
 				month_no = mapping_months.get(tc.month)
 				if month in ['01', '02', '03']:
-					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-								SELECT SUM(so.base_total) AS total 
-								FROM `tabSales Invoice` AS so
-								WHERE so.account_manager IN ({user_list_sql}) 
-								AND MONTH(so.posting_date) = %s 
-								AND YEAR(so.posting_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled')
-								"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
+					year = extract_year(tp.custom_year_end_date)  
 				else:
 					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-								SELECT SUM(so.base_total) AS total 
-								FROM `tabSales Invoice` AS so
-								WHERE so.account_manager IN ({user_list_sql}) 
-								AND MONTH(so.posting_date) = %s 
-								AND YEAR(so.posting_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled')
-								"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
+				query = f"""
+							SELECT so.base_total, so.posting_date, so.services, so.name, so.customer
+							FROM `tabSales Invoice` AS so
+							WHERE so.account_manager IN ({user_list_sql}) 
+							AND MONTH(so.posting_date) = %s 
+							AND YEAR(so.posting_date) = %s 
+							AND so.docstatus=1
+							AND so.status NOT IN ('Cancelled')
+							"""
+				achieved_si_records = frappe.db.sql(query, (month, year), as_dict=True)  
+				achieved_value = 0
+				for asir in achieved_si_records:
+					achieved_value += asir.base_total
+					doc.append("achieved_data", {
+						"date": asir.posting_date,
+						"document_type": "Sales Invoice",
+						"id": asir.name,
+						"service": asir.services,
+						"amount_cc": asir.base_total,
+						"customer": asir.customer,
+					})
+
 				tc.revised_ct = tc.ct + pending_ct
 				tc.achieved = achieved_value
 				tc.ct_yta = tc.revised_ct - achieved_value
@@ -862,28 +807,19 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(i.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-								SELECT SUM(so.base_total) AS total 
-								FROM `tabSales Invoice` AS so
-								WHERE so.account_manager IN ({user_list_sql}) 
-								AND MONTH(so.posting_date) = %s 
-								AND YEAR(so.posting_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled')
-								"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
 					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-								SELECT SUM(so.base_total) AS total 
-								FROM `tabSales Invoice` AS so
-								WHERE account_manager IN ({user_list_sql}) 
-								AND MONTH(so.posting_date) = %s 
-								AND YEAR(so.posting_date) = %s 
-								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled')
-								"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
+				query = f"""
+							SELECT SUM(so.base_total) as total
+							FROM `tabSales Invoice` AS so
+							WHERE account_manager IN ({user_list_sql}) 
+							AND MONTH(so.posting_date) = %s 
+							AND YEAR(so.posting_date) = %s 
+							AND so.docstatus=1
+							AND so.status NOT IN ('Cancelled')
+							"""
+				achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+
 				i.cr_ft = i.ft + pending_ft
 				i.f_achieved = achieved_value
 				i.ftyta = i.cr_ft - achieved_value
@@ -942,29 +878,31 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(tc.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-					SELECT SUM(si.base_total) AS total
-					FROM `tabSales Invoice` AS si
-					WHERE MONTH(si.posting_date) = %s
-					AND YEAR(si.posting_date) = %s
-					AND si.services IN ({service_list_sql})
-					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
 					
-					query = f"""
-					SELECT SUM(si.base_total) AS total
+				query = f"""
+					SELECT si.base_total, si.name, si.services, si.posting_date, si.customer
 					FROM `tabSales Invoice` AS si
 					WHERE MONTH(si.posting_date) = %s
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
 					AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+				"""
+				achieved_si_records = frappe.db.sql(query, (month, year), as_dict=True)
+				achieved_value = 0
+				for asir in achieved_si_records:
+					achieved_value += asir.base_total
+					doc.append("achieved_data", {
+						"date": asir.posting_date,
+						"document_type": "Sales Invoice",
+						"id": asir.name,
+						"service": asir.services,
+						"amount_cc": asir.base_total,
+						"customer": asir.customer
+					})
+
 				tc.revised_ct = tc.ct + pending_ct
 				tc.achieved = achieved_value
 				tc.ct_yta = tc.revised_ct - achieved_value
@@ -978,29 +916,19 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(i.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-					SELECT SUM(si.base_total) AS total
-					FROM `tabSales Invoice` AS si
-					WHERE MONTH(si.posting_date) = %s
-					AND YEAR(si.posting_date) = %s
-					AND si.services IN ({service_list_sql})
-					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled')
-					"""
-
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-					SELECT SUM(si.base_total) AS total
+				query = f"""
+					SELECT SUM(si.base_total) as total
 					FROM `tabSales Invoice` AS si
 					WHERE MONTH(si.posting_date) = %s
 					AND YEAR(si.posting_date) = %s
 					AND si.services IN ({service_list_sql})
 					AND si.docstatus=1
 					AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+				"""
+				achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+
 				i.cr_ft = i.ft + pending_ft
 				i.f_achieved = achieved_value
 				i.ftyta = i.cr_ft - achieved_value
@@ -1055,30 +983,31 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(tc.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-					SELECT SUM(si.base_total) AS total
-					FROM `tabSales Order` AS si
-					WHERE MONTH(si.transaction_date) = %s
-					AND YEAR(si.transaction_date) = %s
-					AND si.service IN ({service_list_sql})
-					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-					"""
-					# Execute the query with parameters for month and year
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
 					
-					query = f"""
-					SELECT SUM(si.base_total) AS total
-					FROM `tabSales Order` AS si
-					WHERE MONTH(si.transaction_date) = %s
-					AND YEAR(si.transaction_date) = %s
-					AND si.service IN ({service_list_sql})
-					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+				query = f"""
+				SELECT si.base_total, si.transaction_date, si.name, si.service, si.customer
+				FROM `tabSales Order` AS si
+				WHERE MONTH(si.transaction_date) = %s
+				AND YEAR(si.transaction_date) = %s
+				AND si.service IN ({service_list_sql})
+				AND si.docstatus=1
+				AND si.status NOT IN ('Cancelled')
+				"""
+				achieved_so_records = frappe.db.sql(query, (month, year), as_dict=True)
+				achieved_value = 0
+				for asor in achieved_so_records:
+					achieved_value += asor.base_total
+					doc.append("achieved_data", {
+						"date": asor.transaction_date,
+						"document_type": "Sales Order",
+						"id": asor.name,
+						"service": asor.service,
+						"amount_cc": asor.base_total,
+						"customer": asor.customer
+					})
+
 				tc.revised_ct = tc.ct + pending_ct
 				tc.achieved = achieved_value
 				tc.ct_yta = tc.revised_ct - achieved_value
@@ -1092,29 +1021,19 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(i.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-					SELECT SUM(si.base_total) AS total
-					FROM `tabSales Order` AS si
-					WHERE MONTH(si.transaction_date) = %s
-					AND YEAR(si.transaction_date) = %s
-					AND si.service IN ({service_list_sql})
-					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-					"""
-
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-					SELECT SUM(si.base_total) AS total
-					FROM `tabSales Order` AS si
-					WHERE MONTH(si.transaction_date) = %s
-					AND YEAR(si.transaction_date) = %s
-					AND si.service IN ({service_list_sql})
-					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+				query = f"""
+				SELECT SUM(si.base_total) as total
+				FROM `tabSales Order` AS si
+				WHERE MONTH(si.transaction_date) = %s
+				AND YEAR(si.transaction_date) = %s
+				AND si.service IN ({service_list_sql})
+				AND si.docstatus=1
+				AND si.status NOT IN ('Cancelled')
+				"""
+				achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+
 				i.cr_ft = i.ft + pending_ft
 				i.f_achieved = achieved_value
 				i.ftyta = i.cr_ft - achieved_value
@@ -1185,60 +1104,34 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(tc.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-						SELECT SUM(sii.base_amount) AS total
-						FROM `tabSales Invoice` AS si
-						INNER JOIN `tabSales Invoice Item` AS sii
-						ON si.name = sii.parent
-						WHERE sii.candidate_owner IN ({user_list_sql})
-						AND MONTH(si.posting_date) = %s
-						AND YEAR(si.posting_date) = %s
-						AND si.services='REC-I'
-						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
+				query = f"""
+					SELECT sii.base_amount, si.name, si.posting_date, si.services, sii.item_code, si.customer
+					FROM `tabSales Invoice` AS si
+					INNER JOIN `tabSales Invoice Item` AS sii
+					ON si.name = sii.parent
+					WHERE sii.candidate_owner IN ({user_list_sql})
+					AND MONTH(si.posting_date) = %s
+					AND YEAR(si.posting_date) = %s
+					AND si.services='REC-I'
+					AND si.docstatus=1
+					AND si.status NOT IN ('Cancelled')
+				"""
+				achieved_si_records = frappe.db.sql(query, (month, year), as_dict=True)
+				achieved_value = 0
+				for asir in achieved_si_records:
+					achieved_value += asir.base_amount
+					doc.append("achieved_data", {
+						"date": asir.posting_date,
+						"document_type": "Sales Invoice",
+						"id": asir.name,
+						"service": asir.services,
+						"item_code": asir.item_code,
+						"amount_cc": asir.base_amount,
+						"customer": asir.customer,
+					})
 					
-					# query = f"""
-					# 	SELECT SUM(sii.base_amount) AS total
-					# 	FROM `tabSales Invoice` AS si
-					# 	INNER JOIN `tabSales Invoice Item` AS sii
-					# 	ON si.name = sii.parent
-					# 	WHERE sii.candidate_owner IN ({user_list_sql})
-					# 	AND MONTH(si.posting_date) = %s
-					# 	AND YEAR(si.posting_date) = %s
-					# 	AND si.services='REC-I'
-					# 	AND si.docstatus=1
-					# 	AND si.status NOT IN ('Cancelled')
-					# """
-					# achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
-					query = f"""
-						SELECT sii.base_amount, si.name, si.posting_date, si.services, sii.item_code
-						FROM `tabSales Invoice` AS si
-						INNER JOIN `tabSales Invoice Item` AS sii
-						ON si.name = sii.parent
-						WHERE sii.candidate_owner IN ({user_list_sql})
-						AND MONTH(si.posting_date) = %s
-						AND YEAR(si.posting_date) = %s
-						AND si.services='REC-I'
-						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_si_records = frappe.db.sql(query, (month, year), as_dict=True)
-					achieved_value = 0
-					for asir in achieved_si_records:
-						# print([asir, month, year])
-						achieved_value += asir.base_amount
-						doc.append("achieved_data", {
-							"date": asir.posting_date,
-							"document_type": "Sales Invoice",
-							"id": asir.name,
-							"service": asir.services,
-							"item": asir.item_code,
-							"amount_cc": asir.base_amount
-						})
 				tc.revised_ct = tc.ct + pending_ct
 				tc.achieved = achieved_value
 				tc.ct_yta = tc.revised_ct - achieved_value
@@ -1253,34 +1146,21 @@ def calculate_target_for_manager_inso_test():
 				month_no = mapping_months.get(i.month)
 				if month in ['01', '02', '03']:
 					year = extract_year(tp.custom_year_end_date)
-					query = f"""
-						SELECT SUM(sii.base_amount) AS total
-						FROM `tabSales Invoice` AS si
-						INNER JOIN `tabSales Invoice Item` AS sii
-						ON si.name = sii.parent
-						WHERE sii.candidate_owner IN ({user_list_sql})
-						AND MONTH(si.posting_date) = %s
-						AND YEAR(si.posting_date) = %s
-						AND si.services='REC-I'
-						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				else:
 					year = extract_year(tp.custom_year_start_date)
-					query = f"""
-						SELECT SUM(sii.base_amount) AS total
-						FROM `tabSales Invoice` AS si
-						INNER JOIN `tabSales Invoice Item` AS sii
-						ON si.name = sii.parent
-						WHERE sii.candidate_owner IN ({user_list_sql})
-						AND MONTH(si.posting_date) = %s
-						AND YEAR(si.posting_date) = %s
-						AND si.services='REC-I'
-						AND si.docstatus=1
-						AND si.status NOT IN ('Cancelled')
-					"""
-					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
+				query = f"""
+					SELECT SUM(sii.base_amount) AS total
+					FROM `tabSales Invoice` AS si
+					INNER JOIN `tabSales Invoice Item` AS sii
+					ON si.name = sii.parent
+					WHERE sii.candidate_owner IN ({user_list_sql})
+					AND MONTH(si.posting_date) = %s
+					AND YEAR(si.posting_date) = %s
+					AND si.services='REC-I'
+					AND si.docstatus=1
+					AND si.status NOT IN ('Cancelled')
+				"""
+				achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				
 				i.cr_ft = i.ft + pending_ft
 				i.f_achieved = achieved_value
@@ -1398,7 +1278,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0    
 				else:
@@ -1410,7 +1290,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				tc.revised_ct = tc.ct + pending_ct
@@ -1433,7 +1313,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				else:
@@ -1445,7 +1325,7 @@ def calculate_target_for_manager_point(name,emp,year):
 								AND MONTH(so.transaction_date) = %s 
 								AND YEAR(so.transaction_date) = %s 
 								AND so.docstatus=1
-								AND so.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+								AND so.status NOT IN ('Cancelled')
 								"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0  
 				i.cr_ft = i.ft + pending_ft
@@ -1737,7 +1617,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					# Execute the query with parameters for month and year
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -1751,7 +1631,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				tc.revised_ct = tc.ct + pending_ct
@@ -1774,7 +1654,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
@@ -1787,7 +1667,7 @@ def calculate_target_for_manager_point(name,emp,year):
 					AND YEAR(si.transaction_date) = %s
 					AND si.service IN ({service_list_sql})
 					AND si.docstatus=1
-					AND si.status NOT IN ('Cancelled', 'Closed', 'On Hold')
+					AND si.status NOT IN ('Cancelled')
 					"""
 					achieved_value = frappe.db.sql(query, (month, year), as_dict=True)[0].total or 0
 				i.cr_ft = i.ft + pending_ft

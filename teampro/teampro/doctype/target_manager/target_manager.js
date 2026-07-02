@@ -205,7 +205,17 @@ frappe.ui.form.on('Target Manager', {
 		calculate_annual_ft(frm);
 	},
 	refresh: function (frm) {
-		console.log(frm.doc.custom_sr);
+		const grid = frm.get_field('achieved_data').grid;
+		if (frm.doc.based_on_candidate_owner) {
+			grid.update_docfield_property('customer', 'hidden', 1);
+			grid.update_docfield_property('item_code', 'hidden', 0);
+		}
+		else {
+			grid.update_docfield_property('item_code', 'hidden', 1);
+			grid.update_docfield_property('customer', 'hidden', 0);
+		}
+		grid.reset_grid();
+		
 		if (frm.doc.employee) {
 			set_incentive(frm);
 		}
