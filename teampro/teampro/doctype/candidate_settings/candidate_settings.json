@@ -1,0 +1,80 @@
+{
+ "actions": [],
+ "creation": "2026-08-27 20:45:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "section_break_jobpro_config",
+  "jobpro_server_url",
+  "column_break_1",
+  "jobpro_api_key",
+  "jobpro_api_secret",
+  "section_break_stats",
+  "last_migration_date",
+  "last_migration_summary"
+ ],
+ "fields": [
+  {
+   "fieldname": "section_break_jobpro_config",
+   "fieldtype": "Section Break",
+   "label": "JobPro Server Configuration"
+  },
+  {
+   "default": "https://jobpro.in",
+   "fieldname": "jobpro_server_url",
+   "fieldtype": "Data",
+   "label": "JobPro Server URL",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "jobpro_api_key",
+   "fieldtype": "Data",
+   "label": "JobPro API Key"
+  },
+  {
+   "fieldname": "jobpro_api_secret",
+   "fieldtype": "Password",
+   "label": "JobPro API Secret"
+  },
+  {
+   "fieldname": "section_break_stats",
+   "fieldtype": "Section Break",
+   "label": "Migration Statistics"
+  },
+  {
+   "fieldname": "last_migration_date",
+   "fieldtype": "Datetime",
+   "label": "Last Migration Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_migration_summary",
+   "fieldtype": "Small Text",
+   "label": "Last Migration Summary",
+   "read_only": 1
+  }
+ ],
+ "issingle": 1,
+ "module": "Teampro",
+ "name": "Candidate Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_order": "DESC",
+ "title": "Candidate Settings",
+ "track_changes": 1
+}

@@ -19,9 +19,8 @@ app_license = "MIT"
 # app_include_js = "/assets/teampro/js/teampro.js"
 # app_include_css = "/assets/teampro/css/custom.css"
 app_include_js = [
-		"https://maps.googleapis.com/maps/api/js?sensor=false&libraries=places&key=AIzaSyAdaNNXhTh13TRLiZjSa9YYp66gNNj9aZ8",
-		
-			]
+	"https://maps.googleapis.com/maps/api/js?sensor=false&libraries=places&key=AIzaSyAdaNNXhTh13TRLiZjSa9YYp66gNNj9aZ8",
+]
 
 boot_session = "teampro.boot.get_boot_data"			
 # include js, css files in header of web template
@@ -37,7 +36,9 @@ boot_session = "teampro.boot.get_boot_data"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
-# doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
+doctype_list_js = {
+	"Candidate": "public/js/candidate_list.js"
+}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
 
@@ -97,9 +98,6 @@ doc_events = {
         "before_save":"teampro.utility.update_subject_from_description",
         "before_insert":"teampro.utility.set_creation_date",
 	},
-    "File":{
-		"before_save": "teampro.utility.rename_file"
-	},
     "Leave Application":{
 	# 	"after_insert": "jobpro.custom.restrict_leave"
 		"on_submit":"checkpro.custom.update_session_leave",
@@ -143,7 +141,7 @@ doc_events = {
 	"Project":{
 		"after_insert": ["teampro.teampro_hooks_method.create_project_completion_task","teampro.teampro_hooks_method.update_color_grade"],
         "validate":["teampro.teampro_hooks_method.update_sfp_remarks","teampro.teampro_py.project.update_sa_details_in_task","teampro.teampro_py.project.update_proj_position"],
-        "on_update":['teampro.teampro_hooks_method.update_color_grade_specification',"teampro.teampro_hooks_method.update_project_image"]
+        "on_update":['teampro.teampro_hooks_method.update_color_grade_specification',"teampro.teampro_hooks_method.update_project_image","teampro.teampro_hooks_method.cascade_status_to_tasks_and_candidates"]
 	},
 	"Journal Entry": {
 		"validate": "teampro.teampro_hooks_method.update_cost_center"
@@ -158,8 +156,7 @@ doc_events = {
 		"on_submit":["teampro.teampro_hooks_method.update_batch_status",
                "teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.teampro_hooks_method.update_so_priority_on_submit"],
         "on_cancel": "teampro.teampro_hooks_method.update_pi_workflow",
-        "validate": ["teampro.sales_invoice_method.calc_cut_off_prize"],
-       
+        "validate": ["teampro.sales_invoice_method.calc_cut_off_prize","teampro.teampro_hooks_method.propagate_parent_remarks_to_items"],
 	},
    
     "Sales Follow Up":{
@@ -182,7 +179,7 @@ doc_events = {
 		"on_submit": ["teampro.teampro.doctype.target_manager.updated_target_manager.enqueue_so_submission","teampro.sales_invoice_method.update_case_status_billed", "teampro.utility.update_submitted_si",],
         "on_trash":"teampro.utility.si_on_trash",
         "on_cancel": "teampro.utility.update_canceled_si",
-        "validate": ["teampro.sales_invoice_method.calc_cut_off_prize","teampro.sales_invoice_method.calculate_advances_invoice","teampro.sales_invoice_method.validate_maintain_stok_si", "teampro.teampro_py.sales_invoice.update_payment_schedule_due_date"],
+        "validate": ["teampro.sales_invoice_method.calc_cut_off_prize","teampro.sales_invoice_method.validate_maintain_stok_si", "teampro.teampro_py.sales_invoice.update_payment_schedule_due_date","teampro.teampro_hooks_method.propagate_parent_remarks_to_items"],
         
 	},
 	"Attendance Request":{
@@ -193,10 +190,7 @@ doc_events = {
 	},
     
 	"Purchase Invoice": {
-        "on_update":"teampro.teampro_hooks_method.update_workflow_state",
         "validate":"teampro.teampro_hooks_method.calc_cost_prize",
-        "on_submit":"teampro.utility.update_submitted_pi",
-        "on_cancel":"teampro.utility.update_canceled_pi"
     },
     "Purchase Order":{
         "validate":"teampro.teampro_hooks_method.calc_cost_prize",
@@ -206,11 +200,12 @@ doc_events = {
     
 	"Delivery Note":{
 	"after_insert": "teampro.delivery_note_method.get_so_item_details",
-    "validate":["teampro.delivery_note_method.set_totals_in_delivery_note","teampro.delivery_note_method.validate_packing_items_on_dn"],
+    "validate":["teampro.delivery_note_method.set_totals_in_delivery_note", "teampro.teampro_hooks_method.propagate_parent_remarks_to_items"],
+    "before_submit":["teampro.delivery_note_method.validate_packing_items_on_dn"],
     "on_submit":["teampro.delivery_note_method.update_so_priority","teampro.delivery_note_method.create_material_issue"],
 	},
     "Salary Slip":{
-        'validate':'teampro.teampro_hooks_method.update_employer_pf'
+        'validate':['teampro.teampro_hooks_method.update_employer_pf','teampro.teampro_hooks_method.override_payment_days_from_attendance']
 	},
     "VM Stock Register":{
         "on_cancel":["teampro.teampro_hooks_method.update_stock_against_vm"]
@@ -244,20 +239,27 @@ doc_events = {
         "validate":["teampro.teampro_hooks_method.set_customer_id"]
 	},
     "Lead":{
+        # "before_save": ["teampro.lead_ai_validator.validate_lead_with_ai"],
         "after_insert": ["teampro.teampro_hooks_method.update_check_existing_lead"]
 	},
-   
-	
-	
+    # Lunch Attendance: react to inbound WhatsApp Quick-Reply button taps.
+    "WhatsApp Message": {
+        "after_insert": "teampro.lunch_attendance.handle_incoming_whatsapp_message"
+	},
+    # TPE audit trail
+    "KPI Master": {"on_update": "teampro.tpe.audit.log_update", "on_trash": "teampro.tpe.audit.log_trash"},
+    "KRA Master": {"on_update": "teampro.tpe.audit.log_update", "on_trash": "teampro.tpe.audit.log_trash"},
+    "KPI Variable": {"on_update": "teampro.tpe.audit.log_update", "on_trash": "teampro.tpe.audit.log_trash"},
+    "TPE Settings": {"on_update": "teampro.tpe.audit.log_update"},
 }
 
 # Scheduled Tasks
 # ---------------
 scheduler_events = {
 	"daily": [
+		"teampro.tpe.calculator.scheduled_monthly_calculation",
 		"teampro.email_alerts.next_contact_alert",
 		"teampro.email_alerts.meeting_status_check",
-		"teampro.mark_attendance.mark_att",
 		"teampro.email_alerts.checkin_alert",
         "teampro.teampro.doctype.document_manager.document_manager.update_statuses",
         "checkpro.checkpro.doctype.case.case.update_case_age",
@@ -267,339 +269,213 @@ scheduler_events = {
         "checkpro.checkpro.doctype.case.case.tat_variation",
         "checkpro.checkpro.doctype.case.case.tat_calculation",
         "checkpro.checkpro.doctype.case.case.tat_monitor",
+		"teampro.teampro.doctype.accounts_checklist.accounts_checklist.generate_daily",
 	],
 	"monthly": [
 		"teampro.utility.create_update_leave_allocation",
         "teampro.custom.epnc_send_mail",
         "teampro.custom.ep_mail",
-        "teampro.teampro_hooks_method.submit_previous_month_attendance"
+        "teampro.teampro_hooks_method.submit_previous_month_attendance",
+		"teampro.teampro.doctype.accounts_checklist.accounts_checklist.generate_monthly",
 	],
 	"cron": {
-        "45 23 * * *":[
-            "teampro.teampro_py.project.update_proj_position_value"
+		"45 23 * * *": [
+			"teampro.teampro_py.project.update_proj_position_value",
 		],
-        "5 21 * * *":[
-            "teampro.email_alerts.send_closure_report_with_table_dpr"
+		"5 21 * * *": [
+			"teampro.email_alerts.send_closure_report_with_table_dpr",
 		],
-        "00 00 * * 0":[
-            'teampro.email_alerts.send_mail_for_expenseapproval_weekly_md',
-            'teampro.email_alerts.send_mail_for_expenseapproval_weekly_ceo',
-            'teampro.email_alerts.send_mail_for_expenseapproval_weekly_hod'
+		"00 00 * * 0": [
+			"teampro.email_alerts.send_mail_for_expenseapproval_weekly_md",
+			"teampro.email_alerts.send_mail_for_expenseapproval_weekly_ceo",
+			"teampro.email_alerts.send_mail_for_expenseapproval_weekly_hod",
 		],
-        "15 15 * * *":[
-            'teampro.email_alerts.send_project_spoc_report_weekly'
+		"15 15 * * *": [
+			"teampro.email_alerts.send_project_spoc_report_weekly",
 		],
-        
-        "00 00 1 * *":[
-            'teampro.email_alerts.send_mail_for_update_checkpro_holiday',
-			'teampro.teampro.doctype.energy_point_and_non_conformity.energy_point_and_non_conformity.create_new_epnc_review'
+		"00 00 1 * *": [
+			"teampro.email_alerts.send_mail_for_update_checkpro_holiday",
+			"teampro.teampro.doctype.energy_point_and_non_conformity.energy_point_and_non_conformity.create_new_epnc_review",
 		],
-        "00 09 * * *":[
-            'teampro.email_alerts.update_sla_status_and_notify',
-            "teampro.email_alerts.case_status_report_excel"
+		"00 09 * * *": [
+			"teampro.email_alerts.update_sla_status_and_notify",
+			"teampro.email_alerts.case_status_report_excel",
+			"teampro.teampro.doctype.stock_counting.stock_counting.stock_counting_report_excel",
+			"checkpro.custom.dpr_excel_format",
+			"jobpro.jobpro.doctype.closure.closure.visa_expiry_alert",
+			"jobpro.jobpro.doctype.closure.closure.fm_expiry_alert",
+			"teampro.email_alerts.cases_with_insuff",
+			"teampro.email_alerts.cases_beyond_tat_age_10",
+			"teampro.teampro.doctype.psr_report_dashboard.psr_report_dashboard.send_daily_psr_report_in_htmt_view",
+			"teampro.email_alerts.sendmail_luo_nad_alert",
+			"teampro.custom.sales_dpr",
 		],
-        "00 00 * * *":[
-            "teampro.teampro_py.task.task_age_calculation"
+		"00 00 * * *": [
+			"teampro.teampro_py.task.task_age_calculation",
+			"teampro.teampro.energy_point_and_non_conformity.energy_point_and_non_conformity.auto_submit_ep1",
+			"checkpro.checkpro.doctype.batch.batch.update_case_status_existing_batch",
+			"checkpro.checkpro.doctype.case.case.update_holiday_tat_case",
+			"checkpro.checkpro.doctype.case.case.update_tat_case",
+			"teampro.email_alerts.check_daily_attendance",
+			"teampro.custom.update_issue_status",
 		],
-        "30 23 * * *":[
-            'teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_updates',
-            'teampro.teampro_py.project.update_proj_positions_count',
-           
+		"30 23 * * *": [
+			"teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_updates",
+			"teampro.teampro_py.project.update_proj_positions_count",
+			"teampro.teampro.doctype.rec_week_plan.rec_week_plan.run_week_monitor_dsr",
 		],
-		"30 23 * * *":[
-            "teampro.teampro.doctype.rec_week_plan.rec_week_plan.run_week_monitor_dsr"
+		"50 23 * * *": [
+			"teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_dsr",
+			"teampro.teampro_py.customer.update_sla_value",
 		],
-        "50 23 * * *":[
-            'teampro.teampro.doctype.daily_monitor.dm_it_dev.run_daily_monitor_dsr',
-            "teampro.teampro_py.customer.update_sla_value"
+		"00 20 * * *": [
+			"teampro.teampro.doctype.daily_monitor.dm_it_dev.dsr_task_mail_for_cmn_service",
 		],
-        "00 09 * * *":[
-            'teampro.teampro.doctype.stock_counting.stock_counting.stock_counting_report_excel'
+		"30 11 * * *": [
+			"teampro.email_alerts.send_daily_candidate_status_alert",
 		],
-        "0 9 * * *":[
-            'teampro.teampro.doctype.psr_report_dashboard.psr_report_dashboard.send_daily_psr_report_in_htmt_view'
+		"00 13 * * *": [
+			"teampro.email_alerts.send_daily_candidate_status_alert1",
 		],
-        
-        "00 20 * * *":[
-            'teampro.teampro.doctype.daily_monitor.dm_it_dev.dsr_task_mail_for_cmn_service'
+		"00 15 * * *": [
+			"teampro.email_alerts.send_daily_candidate_status_alert2",
 		],
-        
-        "0 0 * * *":[
-            'teampro.teampro.energy_point_and_non_conformity.energy_point_and_non_conformity.auto_submit_ep1',
-            "checkpro.checkpro.doctype.batch.batch.update_case_status_existing_batch",
-            "checkpro.checkpro.doctype.case.case.update_holiday_tat_case",
-            "checkpro.checkpro.doctype.case.case.update_tat_case"
+		"30 16 * * *": [
+			"teampro.email_alerts.send_daily_candidate_status_alert3",
 		],
-        "30 11 * * *":[
-            'teampro.email_alerts.send_daily_candidate_status_alert'
-		],
-        "00 13 * * *":[
-            'teampro.email_alerts.send_daily_candidate_status_alert1'
-		],
-        "00 15 * * *":[
-            'teampro.email_alerts.send_daily_candidate_status_alert2'
-		],
-        "30 16 * * *":[
-            'teampro.email_alerts.send_daily_candidate_status_alert3'
-		],
-        "00 21 * * *":[
-            'teampro.email_alerts.send_daily_candidate_status_alert4',
+		"00 21 * * *": [
+			"teampro.email_alerts.send_daily_candidate_status_alert4",
 			"teampro.email_alerts.send_closure_report_with_table_dsr",
+			"teampro.email_alerts.send_fp_mail",
 		],
-        "50 23 * * 0":[
-            'teampro.teampro.doctype.rec_week_plan.rec_week_plan.create_nc_for_weekplan'
+		"50 23 * * 0": [
+			"teampro.teampro.doctype.rec_week_plan.rec_week_plan.create_nc_for_weekplan",
 		],
-        "30 18 * * *":[
-            'teampro.teampro.doctype.rec_week_plan.rec_week_plan.run_week_monitor_rec_dpr',
-            "teampro.email_alerts.dpr_excel_format_bcs",
-            "teampro.email_alerts.send_closure_mail"
+		"30 18 * * *": [
+			"teampro.teampro.doctype.rec_week_plan.rec_week_plan.run_week_monitor_rec_dpr",
+			"teampro.email_alerts.dpr_excel_format_bcs",
+			"teampro.email_alerts.send_closure_mail",
+			"teampro.email_alerts.dsr_mail",
+			"teampro.email_alerts.dpnd_excel_format",
+			"teampro.custom.send_closure_report_with_table",
+			"checkpro.custom.statement_of_account",
 		],
-		"00 7 * * *":[
-            "teampro.email_alerts.kt_email"
+		"00 7 * * *": [
+			"teampro.email_alerts.kt_email",
+			"checkpro.checkpro.doctype.case.case.update_case_age",
 		],
-        "0 1 * * *":[
-            "teampro.utility.create_update_leave_allocation_new",
-            "teampro.email_alerts.task_mail"
+		"0 1 * * *": [
+			"teampro.utility.create_update_leave_allocation_new",
+			"teampro.email_alerts.task_mail",
+			"checkpro.custom.task_mail",
+			"checkpro.custom.dpr_over_all_task",
+			"checkpro.custom.dpr_over_all_meeting",
+			"checkpro.custom.dpr_over_all",
 		],
-        "0 0 * * *":[
-            "teampro.email_alerts.check_daily_attendance"
-		],
-        "0 * * * *":[
-            "teampro.teampro_py.task.update_task_positions_count_hourly",
+		"0 * * * *": [
+			"teampro.teampro_py.task.update_task_positions_count_hourly",
 			"teampro.teampro_py.project.update_proj_positions_count_hourly",
-            "teampro.teampro.doctype.target_manager.target_manager.calculate_target"
+			"teampro.teampro.doctype.target_manager.target_manager.calculate_target",
 		],
-       
-        "0 21 * * *":[
-            "teampro.email_alerts.send_fp_mail"
+		"*/5 * * * *": [
+			"teampro.teampro_py.task.update_task_positions_count_min",
+			"teampro.teampro_py.project.update_proj_positions_count_min1",
 		],
-        "0 23 * * *":[
-            "teampro.att_request.create_comp_off_requests"
-		],
-        
-        "00 23 * * *":[
-            "teampro.teampro.doctype.daily_monitor.dm_it_dev.send_daily_pr_report",
+		"0 23 * * *": [
+			"teampro.att_request.create_comp_off_requests",
+			"teampro.teampro.doctype.daily_monitor.dm_it_dev.send_daily_pr_report",
 			"teampro.teampro.doctype.daily_monitor.dm_it_dev.kt_not_confirmed_task",
-            "teampro.email_alerts.statement_of_account_test_1"
-            'teampro.teampro.doctype.rec_week_plan.rec_week_plan.update_week_plan_ac_by_cron'
+			"teampro.email_alerts.statement_of_account_test_1",
+			"teampro.teampro.doctype.rec_week_plan.rec_week_plan.update_week_plan_ac_by_cron",
 		],
-        "00 10 * * *":[
-            "teampro.teampro.doctype.daily_monitor.dm_it_dev.send_next_contact_by_report"
+		"00 10 * * *": [
+			"teampro.teampro.doctype.daily_monitor.dm_it_dev.send_next_contact_by_report",
+			"teampro.email_alerts.attendance_alert_mail",
 		],
-        "00 9 * * *" : [
-			"teampro.teampro.doctype.food_count.food_count.create_food_count",
-            "teampro.email_alerts.sendmail_luo_nad_alert"
+		"00 9 * * 1-6": [
+			"teampro.lunch_attendance.send_daily_lunch_attendance",
 		],
-        "00 1 1 * *" : [
-			"teampro.utility.update_leave_ledger_entry"
+		"05 10 * * 1-6": [
+			"teampro.lunch_attendance.mark_expired_logs",
 		],
-        "00 10 * * 1,4" : [
-			"teampro.email_alerts.sales_invoice_overdue_docs"
+		"30 10 * * 1-6": [
+			"teampro.lunch_attendance.send_consolidated_lunch_count",
 		],
-        "*/55 * * * *" : [
-			"teampro.mark_attendance.mark_att"
+		"00 1 1 * *": [
+			"teampro.utility.update_leave_ledger_entry",
 		],
-        "30 00 * * *" : [
-			"teampro.email_alerts.validate_for_easytimepro"
+		"00 10 * * 1,4": [
+			"teampro.email_alerts.sales_invoice_overdue_docs",
+			"teampro.email_alerts.sales_invoice_follow_up_test",
 		],
-        "00 11 * * *" : [
-			"teampro.email_alerts.fp_candidate_to_acc_manager"
+		"30 00 * * *": [
+			"teampro.email_alerts.validate_for_easytimepro",
 		],
-        "00 11 * * *" : [
-			"teampro.email_alerts.fp_candidate_to_spoc"
+		"00 11 * * *": [
+			"teampro.email_alerts.fp_candidate_to_acc_manager",
+			"teampro.email_alerts.fp_candidate_to_spoc",
+			"teampro.email_alerts.fp_candidate_list_send_mails",
+			"teampro.email_alerts.fp_candidate_list_send_mail_to_spoc",
 		],
-        "00 10 * * *" : [
-			"teampro.email_alerts.attendance_alert_mail"
-		],
-        "00 11 * * *" : [
-			"teampro.email_alerts.fp_candidate_list_send_mails"
-		],
-        "00 11 * * *" : [
-			"teampro.email_alerts.fp_candidate_list_send_mail_to_spoc"
-		],
-        "0 18 * * *" : [
-			"teampro.email_alerts.send_miss_punch"
-		],
-        "00 10 1 * *" : [
-			"teampro.mark_attendance.mark_att"
-		],
-        "35 10 * * *" : [
-			"teampro.email_alerts.daily_emc_report"
-		],
-        "30 10 * * *" : [
-			"teampro.email_alerts.daily_att_report"
-		],
-        "0 1 * * *" : [
-			"checkpro.custom.task_mail"
-		],
-        "00 18 * * *" : [
-			"teampro.email_alerts.candidate_excel_format"
-		],
-        "00 10 * * 1,4" : [
-			"teampro.email_alerts.sales_invoice_follow_up_test"
-		],
-        "00 10 * * 2,5" : [
-			"checkpro.custom.sales_order_follow_up_test"
-		],
-        "00 10 * * 2,5" : [
-			"checkpro.custom.sales_order_follow_up"
-		],
-       
-        "00 18 * * *" : [
-			"teampro.email_alerts.cases_with_generate_report_status"
-		],
-        "00 18 * * *" : [
-			"teampro.email_alerts.cases_with_to_be_billed_status"
-		],
-        "00 18 * * *" : [
-			"teampro.email_alerts.cases_with_gr_daily_report"
-		],
-        "00 18 * * *" : [
-			"teampro.email_alerts.insuff_consolidated_mail"
-		],
-        "00 18 * * *" : [
-			"teampro.email_alerts.submitted_bg_entry"
-		],
-        "00 09 * * *" : [
-			"checkpro.custom.dpr_excel_format"
-		],
-        "30 18 * * *" : [
-			"teampro.email_alerts.dsr_mail"
-		],
-        "00 18 * * *" : [
-			"teampro.email_alerts.cases_with_insuff_daily_report"
-		],
-        "00 9 * * *" : [
-			"teampro.email_alerts.cases_beyond_tat_age_10"
-		],
-        "0 18 * * *" : [
-			"teampro.custom.send_project_spoc_report_daily"
-		],
-        "30 9 * * *" : [
-			"teampro.teampro_py.opportunity.update_opportunity_age"
-		],
-        "30 20 * * *" : [
-			"teampro.custom.send_sales_dsr_daily"
-		],
-		"00 9 * * *" : [
-			"teampro.custom.sales_dpr"
-		],
-        "30 9 * * *" : [
-			"teampro.email_alerts.purchase_invoice_beyond_duedate"
-		],
-        "30 9 * * *" : [
-			"teampro.email_alerts.purchase_invoice_due_above"
-		],
-        "0 0 * * *" : [
-			"teampro.custom.update_issue_status"
-		],
-        "30 10 * * *" : [
-			"teampro.custom.dsr_send_alert"
-		],
-		"30 10 * * *" : [
-			"teampro.custom.dpr_send_alert"
-		],
-		"30 18 * * *" : [
-			"teampro.email_alerts.dpnd_excel_format"
-		],
-        "00 06 * * *" : [
-			"jobpro.jobpro.doctype.candidate.candidate.update_cv_age"
-		],
-        "00 19 * * *" : [
-			"teampro.custom.send_project_report"
-		],
-        "00 07 * * *" : [
-			"checkpro.checkpro.doctype.case.case.update_case_age"
-		],
-		"30 18 * * *" : [
-			"teampro.custom.send_closure_report_with_table"
-		],
-        "00 9 * * *" : [
-			"teampro.custom.create_food_count"
-		],
-        "00 10 1 * *" : [
-			"teampro.mark_attendance.mark_att"
-		],
-        "00 9 * * *" : [
-			"teampro.teampro.doctype.food_count.food_count.create_food_count"
-		],
-        "35 10 * * *" : [
-			"teampro.email_alerts.daily_emc_report"
-		],
-        "30 10 * * *" : [
-			"teampro.email_alerts.daily_att_report"
-		],
-       
-		"*/10 * * * *" : [
-			"teampro.mark_attendance.mark_att"
-		],
-		"00 18 * * *" : [
-			"teampro.email_alerts.cases_with_to_be_billed_status",
+		"0 18 * * *": [
+			"teampro.email_alerts.send_miss_punch",
+			# "teampro.custom.send_project_spoc_report_daily",
+			"teampro.email_alerts.candidate_excel_format",
 			"teampro.email_alerts.cases_with_generate_report_status",
-            "teampro.email_alerts.insuff_consolidated_mail"
+			"teampro.email_alerts.cases_with_to_be_billed_status",
+			"teampro.email_alerts.cases_with_gr_daily_report",
+			"teampro.email_alerts.insuff_consolidated_mail",
+			"teampro.email_alerts.submitted_bg_entry",
+			"teampro.email_alerts.cases_with_insuff_daily_report",
 		],
-		
-		"00 09 * * *" : [
-			"checkpro.custom.dpr_excel_format"
+		"35 10 * * *": [
+			"teampro.email_alerts.daily_emc_report",
 		],
-		"00 18 * * *" : [
-			"teampro.email_alerts.cases_with_gr_daily_report"
+		"30 10 * * *": [
+			"teampro.email_alerts.daily_att_report",
+			"teampro.custom.dsr_send_alert",
+			"teampro.custom.dpr_send_alert",
 		],
-		"00 18 * * *" : [
-			"teampro.email_alerts.submitted_bg_entry"
+		"00 10 * * 2,5": [
+			"checkpro.custom.sales_order_follow_up_test",
+			"checkpro.custom.sales_order_follow_up",
 		],
-		"00 09 * * *" : [
-			"jobpro.jobpro.doctype.closure.closure.visa_expiry_alert"
+		"30 9 * * *": [
+			"teampro.teampro_py.opportunity.update_opportunity_age",
+			"teampro.email_alerts.purchase_invoice_beyond_duedate",
+			"teampro.email_alerts.purchase_invoice_due_above",
 		],
-		"00 09 * * *" : [
-			"jobpro.jobpro.doctype.closure.closure.fm_expiry_alert"
+		"30 20 * * *": [
+			"teampro.custom.send_sales_dsr_daily",
 		],
-		"30 18 * * *" : [
-			"teampro.email_alerts.dsr_mail"
+		"00 06 * * *": [
+			"jobpro.jobpro.doctype.candidate.candidate.update_cv_age",
 		],
-		"00 18 * * *" : [
-			"teampro.email_alerts.cases_with_insuff_daily_report"
+		"00 19 * * *": [
+			"teampro.custom.send_project_report",
 		],
-		"00 09 * * *" : [
-			"teampro.email_alerts.cases_with_insuff"
+		"*/10 * * * *": [
+			"teampro.mark_attendance.mark_att",
 		],
-		"00 09 * * *" : [
-			"teampro.email_alerts.cases_beyond_tat_age_10"
+		"00 10 * * 1": [
+			"checkpro.custom.task_mail_notification",
+			"checkpro.custom.task_mail_notification_status",
+			"checkpro.custom.sales_order_follow_up_test",
+			"checkpro.custom.sales_invoice_follow_up_test",
 		],
-		"00 1 1 * *" : [
-			"teampro.utility.update_leave_ledger_entry"
+		"59 23 * * *": [
+			"checkpro.custom.statement_of_account_test",
 		],
-        "30 18 * * *" : [
-			"checkpro.custom.statement_of_account"
-		],'00 10 * * 1,4':[
-            'teampro.email_alerts.sales_invoice_overdue_docs'
-		],'00 10 * * 1':[
-            'checkpro.custom.task_mail_notification'
-		],'00 10 * * 2,5':[
-            'checkpro.custom.sales_order_follow_up'
-		],'00 10 * * 1':[
-            'checkpro.custom.task_mail_notification_status'
+		"0 2 1 * *": [
+			"teampro.tpe.calculator.scheduled_monthly_calculation",
 		],
-       "00 10 * * 1":[
-            'checkpro.custom.sales_order_follow_up_test'
-		],"00 10 * * 1":[
-            'checkpro.custom.sales_invoice_follow_up_test'
-		],"59 23 * * *":[
-            'checkpro.custom.statement_of_account_test'
-		],
-        # "0 1 * * * ":[
-        #     'checkpro.custom.dpr_mail'
-		# ],
-        "0 1 * * * ":[
-            'checkpro.custom.dpr_over_all_task'
-		],"0 1 * * * ":[
-            'checkpro.custom.dpr_over_all_meeting'
-		],"0 1 * * * ":[
-            'checkpro.custom.dpr_over_all'
-		],"00 10 * * *":[
-            'teampro.email_alerts.attendance_alert_mail'
-		]
-	}
+	},
+	"weekly": [
+		"checkpro.custom.task_mail_notification_status",
+		"checkpro.custom.sales_order_invoiced",
+		"teampro.email_alerts.create_email_sales_invoice_overdue_docs",
+		"teampro.teampro.doctype.accounts_checklist.accounts_checklist.generate_weekly",
+	]
 }
 jinja = {
 	"methods": [
@@ -652,17 +528,6 @@ jinja = {
 # 	]
 # }
 
-scheduler_events={
-    "Weekly":[
-		"checkpro.custom.task_mail_notification_status"
-	],
-    "Weekly":[
-        "checkpro.custom.sales_order_invoiced"
-	],
-    "Weekly":[
-        "teampro.email_alerts.create_email_sales_invoice_overdue_docs"
-	]
-}
 # print_formats = {
 #     "Employee Onboarding": {
 #         "set_data": "checkpro.custom.get_employee_onboarding_data"
@@ -700,6 +565,18 @@ override_doctype_class = {
 #
 # auto_cancel_exempted_doctypes = ["Auto Repeat"]
 
-# fixtures = ['Client Script','Custom Field','Workspace','Print Format']
+fixtures = ['Custom Field']
 
+# ============================================================
+# TEAMPRO Performance Engine (TPE) hooks
+# ============================================================
+
+# Auto-install / seed TPE masters on first install
+after_install = "teampro.tpe.install.after_install"
+
+# TPE dashboard page CSS (loaded per-page via Page JS)
+
+# === Accounts Checklist (DPR/DSR) hooks ===
+# Added by accounts_checklist deploy. Idempotent.
+# NOTE: scheduler entries injected via _inject_hooks.py
 
