@@ -689,3 +689,20 @@ def create_candidate(
   
 def test_check():
 	return get_filter_values()
+
+@frappe.whitelist()
+def closure_data(limit=0, name=None):
+	if not limit:
+		limit = 20
+
+	if name:
+		closure_data = frappe.db.get_all("Closure", {"migrated": 0}, ["*"])
+	else:
+		closure_data = frappe.db.get_all("Closure", {"migrated": 0}, ["*"], limit=limit)
+
+	return closure_data
+
+@frappe.whitelist()
+def closure_migrated(name):
+	frappe.db.set_value("Closure", name, "migrated", 1)
+	
