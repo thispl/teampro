@@ -2,6 +2,7 @@ import frappe
 
 @frappe.whitelist(allow_guest=True)
 def new_kbl_bg(**args):
+    # frappe.log_error(message=f"Error : Checking",title=("BG Entry"))
     frappe.log_error(message=f"Error :{args}",title=("BG Entry"))
     try:
 		# if not frappe.db.exists('BG Entry Form',{'email_id':args['email']}):

@@ -1,0 +1,33 @@
+{
+ "actions": [],
+ "autoname": "TPEA-.#####",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["user", "doctype", "docname", "action", "column_break_1", "timestamp", "details"],
+ "fields": [
+  {"fieldname": "user", "fieldtype": "Link", "label": "User", "options": "User", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "doctype", "fieldtype": "Data", "label": "DocType", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "docname", "fieldtype": "Data", "label": "Document", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "action", "fieldtype": "Select", "label": "Action", "options": "Create\nUpdate\nDelete\nCalculate\nApprove\nReject", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "timestamp", "fieldtype": "Datetime", "label": "Timestamp", "in_list_view": 1, "in_standard_filter": 1, "default": "Now"},
+  {"fieldname": "details", "fieldtype": "Code", "label": "Details", "options": "JSON", "in_list_view": 1}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "TPE Audit Log",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 0, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "Director", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 1},
+  {"role": "Employee", "read": 0}
+ ],
+ "sort_field": "timestamp desc",
+ "sort_order": "DESC",
+ "states": []
+}

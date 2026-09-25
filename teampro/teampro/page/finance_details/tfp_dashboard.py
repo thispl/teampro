@@ -8495,6 +8495,57 @@ def make_lsvm_data(sheet_name="LSVM Stock Data", wb=None):
 
     return output.read()
 
+
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+
+def apply_full_grid_border(ws, min_row, max_row, min_col, max_col, thin_border):
+    """
+    Forces a thin border on EVERY cell in the given range, row by row,
+    column by column - so every single cell has a full border on all
+    4 sides, not just the cells that happened to get data written to them.
+    """
+    for row in range(min_row, max_row + 1):
+        for col in range(min_col, max_col + 1):
+            ws.cell(row=row, column=col).border = thin_border
+
+
+def apply_outer_border(ws, min_row, max_row, min_col, max_col, style="medium", color="000000"):
+    """
+    Draws a bold outer border around the full table range (min_row:max_row,
+    min_col:max_col), on top of the thin inner borders already set on each
+    cell, so the whole table has a complete/finished boundary.
+    """
+    side = Side(style=style, color=color)
+
+    for col in range(min_col, max_col + 1):
+        top_cell = ws.cell(row=min_row, column=col)
+        top_cell.border = Border(
+            left=top_cell.border.left, right=top_cell.border.right,
+            top=side, bottom=top_cell.border.bottom
+        )
+        bottom_cell = ws.cell(row=max_row, column=col)
+        bottom_cell.border = Border(
+            left=bottom_cell.border.left, right=bottom_cell.border.right,
+            top=bottom_cell.border.top, bottom=side
+        )
+
+    for row in range(min_row, max_row + 1):
+        left_cell = ws.cell(row=row, column=min_col)
+        left_cell.border = Border(
+            left=side, right=left_cell.border.right,
+            top=left_cell.border.top, bottom=left_cell.border.bottom
+        )
+        right_cell = ws.cell(row=row, column=max_col)
+        right_cell.border = Border(
+            left=right_cell.border.left, right=side,
+            top=right_cell.border.top, bottom=right_cell.border.bottom
+        )
+
+
+
 import frappe
 from frappe.utils import getdate, nowdate, formatdate
 @frappe.whitelist()
@@ -8810,6 +8861,339 @@ def get_shop_stock_html_data():
     </script>
     """
     return html
+
+
+# @frappe.whitelist()
+# def download_shop_stock_excel():
+#     """
+#     Excel export - same data/format as get_shop_stock_html_data(), shown as a
+#     plain flat sheet (no row grouping / outline +/- symbols on the side,
+#     everything visible by default).
+#     Called from client JS via:
+#         cmd = teampro.teampro.page.finance_details.tfp_dashboard.download_shop_stock_excel
+#     """
+#     shop_data = frappe.get_all(
+#         "Shop RC", filters={"workflow_state": "Approved"},
+#         fields=["name", "customer_name", "city"], order_by="name asc"
+#     )
+
+#     headers = ["Sr", "Shop ID", "Shop Name", "Location", "Stock Qty", "UOM", "Age Of Delivery", "Next Delivery"]
+
+#     wb = Workbook()
+#     ws = wb.active
+#     ws.title = "Shop Stock"
+#     ws.sheet_view.showGridLines = False
+
+#     header_fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+#     header_font = Font(color="FFFFFF", bold=True)
+#     thin = Side(style="thin", color="000000")
+#     border = Border(left=thin, right=thin, top=thin, bottom=thin)
+#     center = Alignment(horizontal="center", vertical="center")
+#     right = Alignment(horizontal="right", vertical="center")
+#     left = Alignment(horizontal="left", vertical="center")
+
+#     parent_even_fill = PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
+#     parent_odd_fill = PatternFill(start_color="E5E7EB", end_color="E5E7EB", fill_type="solid")
+#     child_header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+#     child_even_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+#     child_odd_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+
+#     ws.append(headers)
+#     for col in range(1, len(headers) + 1):
+#         cell = ws.cell(row=1, column=col)
+#         cell.fill = header_fill
+#         cell.font = header_font
+#         cell.alignment = center
+#         cell.border = border
+#     ws.freeze_panes = "A2"
+
+#     col_widths = [6, 16, 26, 24, 12, 10, 16, 16]
+#     for i, w in enumerate(col_widths, start=1):
+#         ws.column_dimensions[get_column_letter(i)].width = w
+
+#     row_idx = 2
+#     sr = 1
+
+#     for shop in shop_data:
+#         customer_id = frappe.db.get_value("Customer", {"custom_retail_customer": shop.name}, "name")
+#         if not customer_id:
+#             continue
+
+#         warehouse = frappe.db.get_value(
+#             "Warehouse", {"custom_retail_customer": shop.name, "disabled": 0}, ["name"], as_dict=True
+#         )
+#         if not warehouse:
+#             continue
+#         warehouse_name = warehouse.name
+
+#         stock_summary = frappe.db.sql("""
+#             SELECT SUM(actual_qty) as total_qty
+#             FROM `tabBin`
+#             WHERE warehouse = %s AND actual_qty > 0
+#         """, (warehouse_name,), as_dict=True)
+#         total_qty = stock_summary[0].total_qty or 0
+
+#         last_delivery = frappe.db.get_value(
+#             "RS Delivery", {"customer": customer_id, "docstatus": 1},
+#             ["delivered_date"], order_by="delivered_date desc"
+#         )
+#         next_delivery = frappe.db.get_value(
+#             "RS Delivery",
+#             {"customer": customer_id, "docstatus": 1, "next_delivery_date": ["is", "set"]},
+#             "next_delivery_date", order_by="next_delivery_date asc"
+#         )
+
+#         age_days = ""
+#         if last_delivery:
+#             age_days = str((getdate(nowdate()) - getdate(last_delivery)).days) + " Days"
+
+#         child_data = frappe.db.sql("""
+#             SELECT bin.item_code, item.item_name, bin.actual_qty, item.stock_uom
+#             FROM `tabBin` bin
+#             INNER JOIN `tabItem` item ON item.name = bin.item_code
+#             WHERE bin.warehouse = %s AND bin.actual_qty > 0
+#             ORDER BY item.item_name
+#         """, (warehouse_name,), as_dict=True)
+
+#         parent_fill = parent_even_fill if sr % 2 == 0 else parent_odd_fill
+
+#         ws.append([
+#             sr, shop.name, shop.customer_name or "", shop.city or "",
+#             total_qty, "", age_days,
+#             formatdate(getdate(next_delivery)) if next_delivery else ""
+#         ])
+#         for col in range(1, len(headers) + 1):
+#             cell = ws.cell(row=row_idx, column=col)
+#             cell.fill = parent_fill
+#             cell.border = border
+#             if col == 5:
+#                 cell.alignment = right
+#             elif col in (1, 6, 7, 8):
+#                 cell.alignment = center
+#             else:
+#                 cell.alignment = left
+#         ws.cell(row=row_idx, column=2).font = Font(bold=True)
+#         row_idx += 1
+
+#         if child_data:
+#             ws.append(["", "Item Code", "Item Name", "Quantity", "UOM", "", "", ""])
+#             child_header_row = row_idx
+#             for col in range(1, len(headers) + 1):
+#                 cell = ws.cell(row=child_header_row, column=col)
+#                 cell.border = border
+#                 cell.alignment = center
+#                 if col in (2, 3, 4, 5):
+#                     cell.fill = child_header_fill
+#                     cell.font = Font(bold=True)
+#             row_idx += 1
+
+#             child_sr = 1
+#             for row in child_data:
+#                 child_fill = child_even_fill if child_sr % 2 == 0 else child_odd_fill
+#                 ws.append([
+#                     "", row.item_code or "", row.item_name or "",
+#                     row.actual_qty or 0, row.stock_uom or "", "", "", ""
+#                 ])
+#                 for col in range(1, len(headers) + 1):
+#                     cell = ws.cell(row=row_idx, column=col)
+#                     cell.border = border
+#                     if col in (2, 3, 4, 5):
+#                         cell.fill = child_fill
+#                     if col == 4:
+#                         cell.alignment = right
+#                     elif col == 5:
+#                         cell.alignment = center
+#                     else:
+#                         cell.alignment = left
+#                 row_idx += 1
+#                 child_sr += 1
+#         else:
+#             ws.append(["", "No Stock Available", "", "", "", "", "", ""])
+#             ws.merge_cells(start_row=row_idx, start_column=2, end_row=row_idx, end_column=5)
+#             for col in range(1, len(headers) + 1):
+#                 cell = ws.cell(row=row_idx, column=col)
+#                 cell.border = border
+#                 cell.alignment = center
+#             row_idx += 1
+
+#         sr += 1
+
+#     apply_full_grid_border(ws, min_row=1, max_row=row_idx - 1, min_col=1, max_col=len(headers), thin_border=border)
+#     apply_outer_border(ws, min_row=1, max_row=row_idx - 1, min_col=1, max_col=len(headers))
+
+#     xlsx_data = io.BytesIO()
+#     wb.save(xlsx_data)
+#     xlsx_data.seek(0)
+
+#     frappe.response["filename"] = f"Shop_Stock_{nowdate()}.xlsx"
+#     frappe.response["filecontent"] = xlsx_data.getvalue()
+#     frappe.response["type"] = "binary"
+
+
+#crt code
+@frappe.whitelist()
+def download_shop_stock_excel():
+    """
+    Excel export - same data/format as get_shop_stock_html_data(), shown as a
+    plain flat sheet (no row grouping / outline +/- symbols on the side,
+    everything visible by default).
+    Called from client JS via:
+        cmd = teampro.teampro.page.finance_details.tfp_dashboard.download_shop_stock_excel
+    """
+    shop_data = frappe.get_all(
+        "Shop RC", filters={"workflow_state": "Approved"},
+        fields=["name", "customer_name", "city"], order_by="name asc"
+    )
+
+    headers = ["Sr", "Shop ID", "Shop Name", "Location", "Stock Qty", "UOM", "Age Of Delivery", "Next Delivery"]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Shop Stock"
+
+    header_fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal="center", vertical="center")
+    right = Alignment(horizontal="right", vertical="center")
+    left = Alignment(horizontal="left", vertical="center")
+
+    parent_even_fill = PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
+    parent_odd_fill = PatternFill(start_color="E5E7EB", end_color="E5E7EB", fill_type="solid")
+    child_header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+    child_even_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    child_odd_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+    ws.freeze_panes = "A2"
+
+    col_widths = [6, 16, 26, 24, 12, 10, 16, 16]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    row_idx = 2
+    sr = 1
+
+    for shop in shop_data:
+        customer_id = frappe.db.get_value("Customer", {"custom_retail_customer": shop.name}, "name")
+        if not customer_id:
+            continue
+
+        warehouse = frappe.db.get_value(
+            "Warehouse", {"custom_retail_customer": shop.name, "disabled": 0}, ["name"], as_dict=True
+        )
+        if not warehouse:
+            continue
+        warehouse_name = warehouse.name
+
+        stock_summary = frappe.db.sql("""
+            SELECT SUM(actual_qty) as total_qty
+            FROM `tabBin`
+            WHERE warehouse = %s AND actual_qty > 0
+        """, (warehouse_name,), as_dict=True)
+        total_qty = stock_summary[0].total_qty or 0
+
+        last_delivery = frappe.db.get_value(
+            "RS Delivery", {"customer": customer_id, "docstatus": 1},
+            ["delivered_date"], order_by="delivered_date desc"
+        )
+        next_delivery = frappe.db.get_value(
+            "RS Delivery",
+            {"customer": customer_id, "docstatus": 1, "next_delivery_date": ["is", "set"]},
+            "next_delivery_date", order_by="next_delivery_date asc"
+        )
+
+        age_days = ""
+        if last_delivery:
+            age_days = str((getdate(nowdate()) - getdate(last_delivery)).days) + " Days"
+
+        child_data = frappe.db.sql("""
+            SELECT bin.item_code, item.item_name, bin.actual_qty, item.stock_uom
+            FROM `tabBin` bin
+            INNER JOIN `tabItem` item ON item.name = bin.item_code
+            WHERE bin.warehouse = %s AND bin.actual_qty > 0
+            ORDER BY item.item_name
+        """, (warehouse_name,), as_dict=True)
+
+        parent_fill = parent_even_fill if sr % 2 == 0 else parent_odd_fill
+
+        ws.append([
+            sr, shop.name, shop.customer_name or "", shop.city or "",
+            total_qty, "", age_days,
+            formatdate(getdate(next_delivery)) if next_delivery else ""
+        ])
+        for col in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_idx, column=col)
+            cell.fill = parent_fill
+            cell.border = border
+            if col == 5:
+                cell.alignment = right
+            elif col in (1, 6, 7, 8):
+                cell.alignment = center
+            else:
+                cell.alignment = left
+        ws.cell(row=row_idx, column=2).font = Font(bold=True)
+        row_idx += 1
+
+        if child_data:
+            ws.append(["", "Item Code", "Item Name", "Quantity", "UOM", "", "", ""])
+            child_header_row = row_idx
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=child_header_row, column=col)
+                cell.border = border
+                cell.alignment = center
+                if col in (2, 3, 4, 5):
+                    cell.fill = child_header_fill
+                    cell.font = Font(bold=True)
+            row_idx += 1
+
+            child_sr = 1
+            for row in child_data:
+                child_fill = child_even_fill if child_sr % 2 == 0 else child_odd_fill
+                ws.append([
+                    "", row.item_code or "", row.item_name or "",
+                    row.actual_qty or 0, row.stock_uom or "", "", "", ""
+                ])
+                for col in range(1, len(headers) + 1):
+                    cell = ws.cell(row=row_idx, column=col)
+                    cell.border = border
+                    if col in (2, 3, 4, 5):
+                        cell.fill = child_fill
+                    if col == 4:
+                        cell.alignment = right
+                    elif col == 5:
+                        cell.alignment = center
+                    else:
+                        cell.alignment = left
+                row_idx += 1
+                child_sr += 1
+        else:
+            ws.append(["", "No Stock Available", "", "", "", "", "", ""])
+            ws.merge_cells(start_row=row_idx, start_column=2, end_row=row_idx, end_column=5)
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_idx, column=col)
+                cell.border = border
+                cell.alignment = center
+            row_idx += 1
+
+        sr += 1
+
+    xlsx_data = io.BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response["filename"] = f"Shop_Stock_{nowdate()}.xlsx"
+    frappe.response["filecontent"] = xlsx_data.getvalue()
+    frappe.response["type"] = "binary"
+
+
 
 
 import frappe
@@ -9285,6 +9669,335 @@ def get_payment_outstanding_html_data():
     """
 
     return html
+
+
+
+# @frappe.whitelist()
+# def download_payment_outstanding_excel():
+#     """
+#     Excel export - same data/format as get_payment_outstanding_html_data(),
+#     plain flat sheet (no row grouping / outline symbols, everything visible
+#     by default).
+#     Called from client JS via:
+#         cmd = teampro.teampro.page.finance_details.tfp_dashboard.download_payment_outstanding_excel
+#     """
+#     shop_data = frappe.get_all(
+#         "Shop RC", filters={"workflow_state": "Approved"},
+#         fields=["name", "customer_name", "city"], order_by="name asc"
+#     )
+
+#     headers = ["Sr", "Shop ID", "Shop Name", "Location", "Billed", "Outstanding"]
+
+#     wb = Workbook()
+#     ws = wb.active
+#     ws.title = "Payment Outstanding"
+
+#     header_fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+#     header_font = Font(color="FFFFFF", bold=True)
+#     thin = Side(style="thin", color="CBD5E1")
+#     border = Border(left=thin, right=thin, top=thin, bottom=thin)
+#     center = Alignment(horizontal="center", vertical="center")
+#     right = Alignment(horizontal="right", vertical="center")
+#     left = Alignment(horizontal="left", vertical="center")
+
+#     parent_even_fill = PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
+#     parent_odd_fill = PatternFill(start_color="E5E7EB", end_color="E5E7EB", fill_type="solid")
+#     child_header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+#     child_even_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+#     child_odd_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+
+#     ws.append(headers)
+#     for col in range(1, len(headers) + 1):
+#         cell = ws.cell(row=1, column=col)
+#         cell.fill = header_fill
+#         cell.font = header_font
+#         cell.alignment = center
+#         cell.border = border
+#     ws.freeze_panes = "A2"
+
+#     col_widths = [6, 16, 26, 22, 16, 16]
+#     for i, w in enumerate(col_widths, start=1):
+#         ws.column_dimensions[get_column_letter(i)].width = w
+
+#     currency_fmt = "₹ #,##0.00"
+
+#     row_idx = 2
+#     sr = 1
+
+#     for shop in shop_data:
+#         customer_id = frappe.db.get_value("Customer", {"custom_retail_customer": shop.name}, "name")
+#         if not customer_id:
+#             continue
+
+#         bill_summary = frappe.db.sql("""
+#             SELECT
+#                 SUM(total_amount) as billed,
+#                 SUM(total_amount - paid_amount) as outstanding
+#             FROM `tabRS Invoice`
+#             WHERE customer = %s AND docstatus = 1
+#         """, (customer_id,), as_dict=True)
+
+#         billed = bill_summary[0].billed or 0
+#         outstanding = bill_summary[0].outstanding or 0
+
+#         if billed <= 0:
+#             continue
+
+#         invoice_data = frappe.db.sql("""
+#             SELECT
+#                 name,
+#                 invoice_date,
+#                 total_amount,
+#                 paid_amount,
+#                 (total_amount - paid_amount) as outstanding
+#             FROM `tabRS Invoice`
+#             WHERE customer = %s AND docstatus = 1
+#             ORDER BY invoice_date desc
+#         """, (customer_id,), as_dict=True)
+
+#         parent_fill = parent_even_fill if sr % 2 == 0 else parent_odd_fill
+
+#         ws.append([
+#             sr, shop.name, shop.customer_name or "", shop.city or "",
+#             round(billed, 2), round(outstanding, 2)
+#         ])
+#         for col in range(1, len(headers) + 1):
+#             cell = ws.cell(row=row_idx, column=col)
+#             cell.fill = parent_fill
+#             cell.border = border
+#             if col in (5, 6):
+#                 cell.alignment = right
+#                 cell.number_format = currency_fmt
+#             elif col == 1:
+#                 cell.alignment = center
+#             else:
+#                 cell.alignment = left
+#         ws.cell(row=row_idx, column=2).font = Font(bold=True)
+#         row_idx += 1
+
+#         if invoice_data:
+#             ws.append(["", "Bill Number", "Invoice Date", "Billed", "Outstanding", "Age"])
+#             child_header_row = row_idx
+#             for col in range(1, len(headers) + 1):
+#                 cell = ws.cell(row=child_header_row, column=col)
+#                 cell.border = border
+#                 cell.alignment = center
+#                 if col in (2, 3, 4, 5, 6):
+#                     cell.fill = child_header_fill
+#                     cell.font = Font(bold=True)
+#             row_idx += 1
+
+#             child_sr = 1
+#             for row in invoice_data:
+#                 child_fill = child_even_fill if child_sr % 2 == 0 else child_odd_fill
+
+#                 age = ""
+#                 if row.invoice_date:
+#                     age = str((getdate(nowdate()) - getdate(row.invoice_date)).days) + " Days"
+
+#                 ws.append([
+#                     "", row.name, formatdate(row.invoice_date) if row.invoice_date else "",
+#                     round(row.total_amount or 0, 2), round(row.outstanding or 0, 2), age
+#                 ])
+#                 for col in range(1, len(headers) + 1):
+#                     cell = ws.cell(row=row_idx, column=col)
+#                     cell.border = border
+#                     if col in (2, 3, 4, 5, 6):
+#                         cell.fill = child_fill
+#                     if col in (4, 5):
+#                         cell.alignment = right
+#                         cell.number_format = currency_fmt
+#                     elif col in (3, 6):
+#                         cell.alignment = center
+#                     else:
+#                         cell.alignment = left
+#                 row_idx += 1
+#                 child_sr += 1
+#         else:
+#             ws.append(["", "No Invoice Available", "", "", "", ""])
+#             ws.merge_cells(start_row=row_idx, start_column=2, end_row=row_idx, end_column=6)
+#             for col in range(1, len(headers) + 1):
+#                 cell = ws.cell(row=row_idx, column=col)
+#                 cell.border = border
+#                 cell.alignment = center
+#             row_idx += 1
+
+#         sr += 1
+
+#     apply_full_grid_border(ws, min_row=1, max_row=row_idx - 1, min_col=1, max_col=len(headers), thin_border=border)
+#     apply_outer_border(ws, min_row=1, max_row=row_idx - 1, min_col=1, max_col=len(headers))
+
+#     xlsx_data = io.BytesIO()
+#     wb.save(xlsx_data)
+#     xlsx_data.seek(0)
+
+#     frappe.response["filename"] = f"Payment_Outstanding_{nowdate()}.xlsx"
+#     frappe.response["filecontent"] = xlsx_data.getvalue()
+#     frappe.response["type"] = "binary"
+
+#crt code
+@frappe.whitelist()
+def download_payment_outstanding_excel():
+    """
+    Excel export - same data/format as get_payment_outstanding_html_data(),
+    plain flat sheet (no row grouping / outline symbols, everything visible
+    by default).
+    Called from client JS via:
+        cmd = teampro.teampro.page.finance_details.tfp_dashboard.download_payment_outstanding_excel
+    """
+    shop_data = frappe.get_all(
+        "Shop RC", filters={"workflow_state": "Approved"},
+        fields=["name", "customer_name", "city"], order_by="name asc"
+    )
+
+    headers = ["Sr", "Shop ID", "Shop Name", "Location", "Billed", "Outstanding"]
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Payment Outstanding"
+
+    header_fill = PatternFill(start_color="002060", end_color="002060", fill_type="solid")
+    header_font = Font(color="FFFFFF", bold=True)
+    thin = Side(style="thin", color="CBD5E1")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    center = Alignment(horizontal="center", vertical="center")
+    right = Alignment(horizontal="right", vertical="center")
+    left = Alignment(horizontal="left", vertical="center")
+
+    parent_even_fill = PatternFill(start_color="F3F4F6", end_color="F3F4F6", fill_type="solid")
+    parent_odd_fill = PatternFill(start_color="E5E7EB", end_color="E5E7EB", fill_type="solid")
+    child_header_fill = PatternFill(start_color="D9E1F2", end_color="D9E1F2", fill_type="solid")
+    child_even_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    child_odd_fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
+
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = center
+        cell.border = border
+    ws.freeze_panes = "A2"
+
+    col_widths = [6, 16, 26, 22, 16, 16]
+    for i, w in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    currency_fmt = "₹ #,##0.00"
+
+    row_idx = 2
+    sr = 1
+
+    for shop in shop_data:
+        customer_id = frappe.db.get_value("Customer", {"custom_retail_customer": shop.name}, "name")
+        if not customer_id:
+            continue
+
+        bill_summary = frappe.db.sql("""
+            SELECT
+                SUM(total_amount) as billed,
+                SUM(total_amount - paid_amount) as outstanding
+            FROM `tabRS Invoice`
+            WHERE customer = %s AND docstatus = 1
+        """, (customer_id,), as_dict=True)
+
+        billed = bill_summary[0].billed or 0
+        outstanding = bill_summary[0].outstanding or 0
+
+        if billed <= 0:
+            continue
+
+        invoice_data = frappe.db.sql("""
+            SELECT
+                name,
+                invoice_date,
+                total_amount,
+                paid_amount,
+                (total_amount - paid_amount) as outstanding
+            FROM `tabRS Invoice`
+            WHERE customer = %s AND docstatus = 1
+            ORDER BY invoice_date desc
+        """, (customer_id,), as_dict=True)
+
+        parent_fill = parent_even_fill if sr % 2 == 0 else parent_odd_fill
+
+        ws.append([
+            sr, shop.name, shop.customer_name or "", shop.city or "",
+            round(billed, 2), round(outstanding, 2)
+        ])
+        for col in range(1, len(headers) + 1):
+            cell = ws.cell(row=row_idx, column=col)
+            cell.fill = parent_fill
+            cell.border = border
+            if col in (5, 6):
+                cell.alignment = right
+                cell.number_format = currency_fmt
+            elif col == 1:
+                cell.alignment = center
+            else:
+                cell.alignment = left
+        ws.cell(row=row_idx, column=2).font = Font(bold=True)
+        row_idx += 1
+
+        if invoice_data:
+            ws.append(["", "Bill Number", "Invoice Date", "Billed", "Outstanding", "Age"])
+            child_header_row = row_idx
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=child_header_row, column=col)
+                cell.border = border
+                cell.alignment = center
+                if col in (2, 3, 4, 5, 6):
+                    cell.fill = child_header_fill
+                    cell.font = Font(bold=True)
+            row_idx += 1
+
+            child_sr = 1
+            for row in invoice_data:
+                child_fill = child_even_fill if child_sr % 2 == 0 else child_odd_fill
+
+                age = ""
+                if row.invoice_date:
+                    age = str((getdate(nowdate()) - getdate(row.invoice_date)).days) + " Days"
+
+                ws.append([
+                    "", row.name, formatdate(row.invoice_date) if row.invoice_date else "",
+                    round(row.total_amount or 0, 2), round(row.outstanding or 0, 2), age
+                ])
+                for col in range(1, len(headers) + 1):
+                    cell = ws.cell(row=row_idx, column=col)
+                    cell.border = border
+                    if col in (2, 3, 4, 5, 6):
+                        cell.fill = child_fill
+                    if col in (4, 5):
+                        cell.alignment = right
+                        cell.number_format = currency_fmt
+                    elif col in (3, 6):
+                        cell.alignment = center
+                    else:
+                        cell.alignment = left
+                row_idx += 1
+                child_sr += 1
+        else:
+            ws.append(["", "No Invoice Available", "", "", "", ""])
+            ws.merge_cells(start_row=row_idx, start_column=2, end_row=row_idx, end_column=6)
+            for col in range(1, len(headers) + 1):
+                cell = ws.cell(row=row_idx, column=col)
+                cell.border = border
+                cell.alignment = center
+            row_idx += 1
+
+        sr += 1
+
+    xlsx_data = io.BytesIO()
+    wb.save(xlsx_data)
+    xlsx_data.seek(0)
+
+    frappe.response["filename"] = f"Payment_Outstanding_{nowdate()}.xlsx"
+    frappe.response["filecontent"] = xlsx_data.getvalue()
+    frappe.response["type"] = "binary"
+
+
+
 @frappe.whitelist()
 def get_total_stock_qty_value():
 

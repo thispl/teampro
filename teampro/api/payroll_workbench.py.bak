@@ -1,0 +1,1739 @@
+# -*- coding: utf-8 -*-
+"""
+Payroll Workbench API controller for the teampro app.
+
+Coordinates Attendance, Salary Slips, Journal Entries, and bank payouts
+(via the india_banking app) without modifying any core doctypes.
+"""
+
+import json
+from datetime import date, timedelta
+
+import frappe
+from frappe import _
+from frappe.utils import (
+	add_days,
+	cint,
+	flt,
+	get_first_day,
+	get_last_day,
+	getdate,
+	nowdate,
+)
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def _daterange(start_date, end_date):
+	"""Yield each date (datetime.date) from start_date to end_date inclusive."""
+	start = getdate(start_date)
+	end = getdate(end_date)
+	current = start
+	while current <= end:
+		yield current
+		current += timedelta(days=1)
+
+
+def _get_company_currency(company):
+	return frappe.get_cached_value("Company", company, "default_currency") or "INR"
+
+
+def _get_payroll_payable_account(company, payroll_entry=None):
+	"""Return the payroll payable account for the company / payroll entry."""
+	if payroll_entry:
+		acc = frappe.db.get_value("Payroll Entry", payroll_entry, "payroll_payable_account")
+		if acc:
+			return acc
+	acc = frappe.db.get_value("Company", company, "default_payroll_payable_account")
+	if not acc:
+		frappe.throw(
+			_("Please set a Default Payroll Payable Account in Company {0}").format(
+				frappe.bold(company)
+			)
+		)
+	return acc
+
+
+def _get_company_cost_center(company):
+	"""Return the default cost center for the company."""
+	cc = frappe.db.get_value("Company", company, "cost_center")
+	if not cc:
+		frappe.throw(_("Please set a default Cost Center in Company {0}").format(frappe.bold(company)))
+	return cc
+
+
+def _get_employee_bank_account(employee):
+	"""Return the default Bank Account name linked to an employee, if any."""
+	return frappe.db.get_value(
+		"Bank Account",
+		{"party_type": "Employee", "party": employee, "is_default": 1},
+		"name",
+	) or frappe.db.get_value(
+		"Bank Account",
+		{"party_type": "Employee", "party": employee},
+		"name",
+		order_by="modified desc",
+	)
+
+
+def _india_banking_installed():
+	return "india_banking" in frappe.get_installed_apps()
+
+
+def _estimate_late_penalty_days(late_count, offsets=0):
+	"""Estimate deduction days from a raw late count and approved offsets.
+
+	Mirrors the slab logic in utility.py:
+	  - first 3 late days are allowed
+	  - offsets (approved First-Half Permission / On-Duty / Leave entries)
+	    further reduce the count
+	  - penalty days start once actual late days reach 3.
+	"""
+	actual_late = max(0, late_count - 3 - offsets)
+	if actual_late < 3:
+		return 0
+	if actual_late <= 5:
+		return 0.5
+	if actual_late <= 8:
+		return 1
+	if actual_late <= 11:
+		return 1.5
+	if actual_late <= 14:
+		return 2
+	if actual_late <= 17:
+		return 2.5
+	if actual_late <= 20:
+		return 3
+	if actual_late <= 23:
+		return 3.5
+	if actual_late <= 26:
+		return 4
+	if actual_late <= 29:
+		return 4.5
+	return 5
+
+
+# ---------------------------------------------------------------------------
+# Step 1 & 2: Attendance Summary & Reactive Grid
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def get_employees(filters):
+	"""Return active employees matching the given filter dict.
+
+	filters keys: company, branch, department, designation, grade
+	"""
+	if isinstance(filters, str):
+		filters = json.loads(filters)
+	filters = frappe._dict(filters or {})
+
+	conditions = ["e.status = 'Active'"]
+	params = {}
+
+	if filters.company:
+		conditions.append("e.company = %(company)s")
+		params["company"] = filters.company
+	if filters.branch:
+		conditions.append("e.branch = %(branch)s")
+		params["branch"] = filters.branch
+	if filters.department:
+		conditions.append("e.department = %(department)s")
+		params["department"] = filters.department
+	if filters.designation:
+		conditions.append("e.designation = %(designation)s")
+		params["designation"] = filters.designation
+	if filters.grade:
+		conditions.append("e.grade = %(grade)s")
+		params["grade"] = filters.grade
+
+	employees = frappe.db.sql(
+		f"""
+		SELECT e.name, e.employee_name, e.employee_number,
+		       e.department, e.designation, e.branch, e.grade,
+		       e.company, e.bank_ac_no, e.ifsc_code
+		FROM `tabEmployee` e
+		WHERE {' AND '.join(conditions)}
+		ORDER BY e.employee_name
+		""",
+		params,
+		as_dict=True,
+	)
+	return employees
+
+
+@frappe.whitelist()
+def get_attendance_matrix(employees, from_date, to_date):
+	"""Return an attendance matrix {employee: {date_str: {name, status, half_day}}}
+	plus summary counts."""
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+	if not employees or not from_date or not to_date:
+		return {"matrix": {}, "summary": {}, "days": []}
+
+	records = frappe.db.sql(
+		"""
+		SELECT name, employee, attendance_date, status,
+		       half_day_status, shift, in_time, out_time, late_entry,
+		       early_exit, leave_type, leave_application, docstatus
+		FROM `tabAttendance`
+		WHERE employee IN %(employees)s
+		  AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND docstatus != 2
+		ORDER BY attendance_date
+		""",
+		{
+			"employees": tuple(employees),
+			"from_date": from_date,
+			"to_date": to_date,
+		},
+		as_dict=True,
+	)
+
+	matrix = {emp: {} for emp in employees}
+	summary = {"Present": 0, "Absent": 0, "Half Day": 0, "On Leave": 0, "Work From Home": 0, "Unmarked": 0}
+
+	for r in records:
+		date_str = str(r.attendance_date)
+		matrix.setdefault(r.employee, {})[date_str] = {
+			"name": r.name,
+			"status": r.status,
+			"half_day": bool(r.half_day_status),
+			"half_day_status": r.half_day_status,
+			"shift": r.shift,
+			"in_time": str(r.in_time) if r.in_time else "",
+			"out_time": str(r.out_time) if r.out_time else "",
+			"late_entry": r.late_entry,
+			"early_exit": r.early_exit,
+			"leave_type": r.leave_type or "",
+			"leave_application": r.leave_application or "",
+			"docstatus": r.docstatus,
+		}
+		if r.status in summary:
+			summary[r.status] += 1
+
+	# Count unmarked days
+	days = list(_daterange(from_date, to_date))
+	total_cells = len(employees) * len(days)
+	marked = sum(1 for emp_data in matrix.values() for v in emp_data.values())
+	summary["Unmarked"] = max(0, total_cells - marked)
+
+	return {
+		"matrix": matrix,
+		"summary": summary,
+		"days": [str(d) for d in days],
+	}
+
+
+@frappe.whitelist()
+def get_attendance_summary(employees, from_date, to_date, company=None):
+	"""Return per-employee attendance summary for the Summary View.
+
+	For each employee returns:
+	  - calendar_days: total days in the date range
+	  - holidays: days that fall on a Holiday (from the employee's Holiday List)
+	  - present: Present + Work From Home days (full) + Half Day (0.5)
+	  - paid_leave: On Leave days where the leave type is NOT leave-without-pay
+	  - absent_unpaid: Absent days + On Leave days where the leave type IS LWP
+	  - payment_days: present + paid_leave + holidays - penalty_days (capped at calendar_days, min 0)
+	  - late_count: days where in_time is later than the cutoff (09:30, 09:45 for HOD)
+	  - penalty_days: deduction_days from the Late Penalty record, or estimated from late_count
+	    minus approved First-Half Permission / On-Duty / Leave offsets
+	  - penalty_amount: monetary late penalty from the Late Penalty record, or estimated from SSA
+	"""
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+	if not employees or not from_date or not to_date:
+		return {"rows": [], "totals": {}}
+
+	start = getdate(from_date)
+	end = getdate(to_date)
+	calendar_days = (end - start).days + 1
+
+	# --- Fetch leave types and classify as LWP or paid ---
+	lwp_types = set()
+	ppl_types = set()
+	for lt in frappe.get_all("Leave Type", fields=["name", "is_lwp", "is_ppl"]):
+		if lt.is_lwp:
+			lwp_types.add(lt.name)
+		if lt.is_ppl:
+			ppl_types.add(lt.name)
+
+	# --- Fetch attendance records ---
+	records = frappe.db.sql(
+		"""
+		SELECT employee, attendance_date, status, half_day_status, leave_type
+		FROM `tabAttendance`
+		WHERE employee IN %(employees)s
+		  AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND docstatus != 2
+		""",
+		{"employees": tuple(employees), "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+
+	# Group records by employee
+	emp_records = {}
+	for r in records:
+		emp_records.setdefault(r.employee, []).append(r)
+
+	# --- Fetch holiday dates per employee ---
+	# Each employee may have their own Holiday List, or fall back to the company default
+	holiday_dates_by_emp = {}
+	emp_holiday_lists = {}
+	for emp in employees:
+		hl = frappe.db.get_value("Employee", emp, "holiday_list")
+		if not hl and company:
+			hl = frappe.db.get_value("Company", company, "default_holiday_list")
+		emp_holiday_lists[emp] = hl
+
+	# Batch-fetch holiday dates for each unique holiday list
+	hl_cache = {}
+	for emp, hl in emp_holiday_lists.items():
+		if not hl:
+			holiday_dates_by_emp[emp] = set()
+			continue
+		if hl not in hl_cache:
+			hdates = frappe.get_all(
+				"Holiday",
+				filters={"parent": hl},
+				fields=["holiday_date"],
+			)
+			hl_cache[hl] = {
+				getdate(h.holiday_date) for h in hdates if h.holiday_date
+			}
+		holiday_dates_by_emp[emp] = hl_cache[hl]
+
+	# --- Determine HOD employees (09:45 cutoff) vs others (09:30 cutoff) ---
+	hod_users = frappe.db.sql(
+		"""
+		SELECT DISTINCT parent
+		FROM `tabHas Role`
+		WHERE role = 'HOD' AND parenttype = 'User'
+		""",
+		as_dict=True,
+	)
+	hod_user_set = {row.parent for row in hod_users}
+	hod_employees = set()
+	if hod_user_set:
+		hod_employees = {
+			row.name
+			for row in frappe.db.sql(
+				"""
+				SELECT name
+				FROM `tabEmployee`
+				WHERE user_id IN %(users)s
+				""",
+				{"users": list(hod_user_set) or [""]},
+				as_dict=True,
+			)
+		}
+
+	# --- Fetch in_time for attendance records to compute late count ---
+	# Match the existing Late Penalty logic: exclude holiday dates and
+	# attendances linked to a Leave Application from the raw late count.
+	att_in_records = frappe.db.sql(
+		"""
+		SELECT employee, attendance_date, in_time
+		FROM `tabAttendance`
+		WHERE employee IN %(employees)s
+		  AND attendance_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND docstatus != 2
+		  AND in_time IS NOT NULL
+		  AND leave_application IS NULL
+		""",
+		{"employees": tuple(employees), "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+
+	late_count_by_emp = {}
+	for r in att_in_records:
+		holidays_set = holiday_dates_by_emp.get(r.employee, set())
+		if getdate(r.attendance_date) in holidays_set:
+			continue
+		in_time_str = str(r.in_time).split(" ")[-1]
+		cutoff = "09:45:00" if r.employee in hod_employees else "09:30:00"
+		if in_time_str > cutoff:
+			late_count_by_emp[r.employee] = late_count_by_emp.get(r.employee, 0) + 1
+
+	# --- Fetch Late Penalty records for the period ---
+	penalty_records = frappe.db.sql(
+		"""
+		SELECT emp_name, deduction_days, late_penalty
+		FROM `tabLate Penalty`
+		WHERE emp_name IN %(employees)s
+		  AND from_date = %(from_date)s
+		  AND to_date = %(to_date)s
+		""",
+		{"employees": tuple(employees), "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+	penalty_by_emp = {r.emp_name: r for r in penalty_records}
+
+	# --- Fetch latest Salary Structure Assignment per employee for amount estimate ---
+	ssa_by_emp = {}
+	for ssa in frappe.db.sql(
+		"""
+		SELECT employee, base, variable
+		FROM `tabSalary Structure Assignment`
+		WHERE employee IN %(employees)s
+		  AND docstatus = 1
+		ORDER BY from_date DESC
+		""",
+		{"employees": tuple(employees)},
+		as_dict=True,
+	):
+		if ssa.employee not in ssa_by_emp:
+			ssa_by_emp[ssa.employee] = ssa
+
+	# --- Fetch approved attendance request offsets for late-penalty estimation ---
+	emp_list = tuple(employees)
+
+	attendance_perm_by_emp = {}
+	for r in frappe.db.sql(
+		"""
+		SELECT employee, COUNT(*) as cnt
+		FROM `tabAttendance Permission`
+		WHERE employee IN %(employees)s
+		  AND status IN ('Approved', 'Open')
+		  AND permission_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND session = 'First Half'
+		GROUP BY employee
+		""",
+		{"employees": emp_list, "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	):
+		attendance_perm_by_emp[r.employee] = r.cnt
+
+	on_duty_half_by_emp = {}
+	for r in frappe.db.sql(
+		"""
+		SELECT employee, COUNT(*) as cnt
+		FROM `tabAttendance Request`
+		WHERE employee IN %(employees)s
+		  AND docstatus = 1
+		  AND workflow_state = 'Approved'
+		  AND half_day_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND half_day = 1
+		  AND custom_session = 'First Half'
+		GROUP BY employee
+		""",
+		{"employees": emp_list, "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	):
+		on_duty_half_by_emp[r.employee] = r.cnt
+
+	permission_full_by_emp = {}
+	for r in frappe.db.sql(
+		"""
+		SELECT employee, COUNT(*) as cnt
+		FROM `tabAttendance Request`
+		WHERE employee IN %(employees)s
+		  AND docstatus = 1
+		  AND workflow_state = 'Approved'
+		  AND from_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND reason = 'Permission'
+		  AND custom_permission_session = 'First Half'
+		GROUP BY employee
+		""",
+		{"employees": emp_list, "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	):
+		permission_full_by_emp[r.employee] = r.cnt
+
+	on_duty_full_by_emp = {}
+	for r in frappe.db.sql(
+		"""
+		SELECT ar.employee, COUNT(*) as cnt
+		FROM `tabAttendance Request` ar
+		WHERE ar.employee IN %(employees)s
+		  AND ar.docstatus = 1
+		  AND ar.from_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND ar.reason = 'On Duty Working Day'
+		  AND ar.half_day = 0
+		  AND ar.workflow_state = 'Approved'
+		  AND EXISTS (
+			  SELECT 1 FROM `tabAttendance` att
+			  WHERE att.attendance_request = ar.name AND att.in_time IS NOT NULL
+		  )
+		GROUP BY ar.employee
+		""",
+		{"employees": emp_list, "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	):
+		on_duty_full_by_emp[r.employee] = r.cnt
+
+	leave_half_by_emp = {}
+	for r in frappe.db.sql(
+		"""
+		SELECT employee, COUNT(*) as cnt
+		FROM `tabLeave Application`
+		WHERE employee IN %(employees)s
+		  AND docstatus = 1
+		  AND half_day = 1
+		  AND half_day_date BETWEEN %(from_date)s AND %(to_date)s
+		  AND custom_session = 'First Half'
+		GROUP BY employee
+		""",
+		{"employees": emp_list, "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	):
+		leave_half_by_emp[r.employee] = r.cnt
+
+	# --- Build per-employee summary ---
+	rows = []
+	totals = {
+		"calendar_days": 0,
+		"holidays": 0,
+		"present": 0,
+		"paid_leave": 0,
+		"absent_unpaid": 0,
+		"payment_days": 0,
+		"late_count": 0,
+		"penalty_days": 0,
+		"penalty_amount": 0,
+	}
+
+	for emp in employees:
+		recs = emp_records.get(emp, [])
+		holidays_set = holiday_dates_by_emp.get(emp, set())
+
+		# Count holidays within the date range
+		holiday_count = sum(
+			1 for d in _daterange(from_date, to_date) if d in holidays_set
+		)
+
+		present = 0.0
+		paid_leave = 0.0
+		absent_unpaid = 0.0
+
+		for r in recs:
+			is_half = bool(r.half_day_status)
+			weight = 0.5 if is_half else 1.0
+
+			if r.status in ("Present", "Work From Home"):
+				present += weight
+			elif r.status == "Half Day":
+				present += 0.5
+				# The other half: if leave_type is LWP, count as absent_unpaid
+				if r.leave_type and r.leave_type in lwp_types:
+					absent_unpaid += 0.5
+				else:
+					paid_leave += 0.5
+			elif r.status == "On Leave":
+				if r.leave_type and r.leave_type in lwp_types:
+					absent_unpaid += weight
+				else:
+					paid_leave += weight
+			elif r.status == "Absent":
+				absent_unpaid += weight
+
+		emp_doc = frappe.db.get_value(
+			"Employee", emp, ["name", "employee_name", "department", "designation"], as_dict=True
+		) or {"name": emp, "employee_name": emp, "department": "", "designation": ""}
+
+		penalty = penalty_by_emp.get(emp, {})
+		late_count = late_count_by_emp.get(emp, 0)
+		penalty_days = flt(penalty.get("deduction_days") or 0)
+		penalty_amount = flt(penalty.get("late_penalty") or 0)
+
+		# Estimate penalty from late count when no Late Penalty record exists,
+		# taking approved First-Half Permission / On-Duty / Leave offsets into account.
+		if not penalty_days and late_count:
+			offsets = (
+				attendance_perm_by_emp.get(emp, 0)
+				+ on_duty_half_by_emp.get(emp, 0)
+				+ permission_full_by_emp.get(emp, 0)
+				+ on_duty_full_by_emp.get(emp, 0)
+				+ leave_half_by_emp.get(emp, 0)
+			)
+			penalty_days = _estimate_late_penalty_days(late_count, offsets)
+		if not penalty_amount and penalty_days:
+			ssa = ssa_by_emp.get(emp)
+			if ssa and calendar_days:
+				daily = (flt(ssa.base) + flt(ssa.variable)) / calendar_days
+				penalty_amount = flt(penalty_days) * daily
+
+		# Payment days = present + paid_leave + holidays - penalty (capped at calendar_days, min 0)
+		payment_days = present + paid_leave + holiday_count - penalty_days
+		payment_days = max(0, min(payment_days, calendar_days))
+
+		row = {
+			"employee": emp,
+			"employee_name": emp_doc.employee_name,
+			"department": emp_doc.department or "",
+			"designation": emp_doc.designation or "",
+			"calendar_days": calendar_days,
+			"holidays": holiday_count,
+			"present": present,
+			"paid_leave": paid_leave,
+			"absent_unpaid": absent_unpaid,
+			"payment_days": payment_days,
+			"late_count": late_count,
+			"penalty_days": penalty_days,
+			"penalty_amount": penalty_amount,
+		}
+		rows.append(row)
+
+		totals["calendar_days"] += calendar_days
+		totals["holidays"] += holiday_count
+		totals["present"] += present
+		totals["paid_leave"] += paid_leave
+		totals["absent_unpaid"] += absent_unpaid
+		totals["payment_days"] += payment_days
+		totals["late_count"] += late_count
+		totals["penalty_days"] += penalty_days
+		totals["penalty_amount"] += penalty_amount
+
+	return {"rows": rows, "totals": totals}
+
+
+@frappe.whitelist()
+def _debug_attendance_summary(employees, from_date, to_date, company=None):
+	import json
+
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+
+	from collections import defaultdict
+
+	hod_users = frappe.db.sql(
+		"""SELECT DISTINCT parent FROM `tabHas Role` WHERE role = 'HOD' AND parenttype = 'User'""",
+		as_dict=True,
+	)
+	hod_user_set = {row.parent for row in hod_users}
+	hod_employees = set()
+	if hod_user_set:
+		hod_employees = {
+			row.name
+			for row in frappe.db.sql(
+				"""SELECT name FROM `tabEmployee` WHERE user_id IN %(users)s""",
+				{"users": list(hod_user_set) or [""]},
+				as_dict=True,
+			)
+		}
+
+	att_records = frappe.db.sql(
+		"""
+		SELECT attendance_date, status, half_day_status, leave_type, in_time, attendance_request, leave_application
+		FROM `tabAttendance`
+		WHERE employee = %(emp)s AND attendance_date BETWEEN %(from_date)s AND %(to_date)s AND docstatus != 2
+		ORDER BY attendance_date
+		""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+
+	late_count = 0
+	late_dates = []
+	for r in att_records:
+		if not r.in_time:
+			continue
+		holiday_list = frappe.db.get_value("Employee", employees[0], "holiday_list") or ""
+		is_hol = frappe.db.exists("Holiday", {"parent": holiday_list, "holiday_date": r.attendance_date})
+		if is_hol or r.leave_application:
+			continue
+		in_time_str = str(r.in_time).split(" ")[-1]
+		cutoff = "09:45:00" if employees[0] in hod_employees else "09:30:00"
+		if in_time_str > cutoff:
+			late_count += 1
+			late_dates.append({"date": str(r.attendance_date), "in_time": in_time_str})
+
+	# offsets
+	att_perm = frappe.db.sql(
+		"""SELECT permission_date, session, status FROM `tabAttendance Permission` WHERE employee = %(emp)s AND status IN ('Approved','Open') AND permission_date BETWEEN %(from_date)s AND %(to_date)s AND session = 'First Half'""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+	on_duty_half = frappe.db.sql(
+		"""SELECT half_day_date, reason FROM `tabAttendance Request` WHERE employee = %(emp)s AND docstatus = 1 AND workflow_state = 'Approved' AND half_day_date BETWEEN %(from_date)s AND %(to_date)s AND half_day = 1 AND custom_session = 'First Half'""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+	perm_full = frappe.db.sql(
+		"""SELECT from_date, reason FROM `tabAttendance Request` WHERE employee = %(emp)s AND docstatus = 1 AND workflow_state = 'Approved' AND from_date BETWEEN %(from_date)s AND %(to_date)s AND reason = 'Permission' AND custom_permission_session = 'First Half'""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+	on_duty_full = frappe.db.sql(
+		"""SELECT ar.name, ar.from_date FROM `tabAttendance Request` ar WHERE ar.employee = %(emp)s AND ar.docstatus = 1 AND ar.from_date BETWEEN %(from_date)s AND %(to_date)s AND ar.reason = 'On Duty Working Day' AND ar.half_day = 0 AND ar.workflow_state = 'Approved' AND EXISTS (SELECT 1 FROM `tabAttendance` att WHERE att.attendance_request = ar.name AND att.in_time IS NOT NULL)""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+	leave_half = frappe.db.sql(
+		"""SELECT half_day_date, leave_type FROM `tabLeave Application` WHERE employee = %(emp)s AND docstatus = 1 AND half_day = 1 AND half_day_date BETWEEN %(from_date)s AND %(to_date)s AND custom_session = 'First Half'""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+
+	ssa = frappe.db.sql(
+		"""SELECT base, variable FROM `tabSalary Structure Assignment` WHERE employee = %(emp)s AND docstatus = 1 ORDER BY from_date DESC LIMIT 1""",
+		{"emp": employees[0]},
+		as_dict=True,
+	)
+
+	penalty_rec = frappe.db.sql(
+		"""SELECT deduction_days, late_penalty FROM `tabLate Penalty` WHERE emp_name = %(emp)s AND from_date = %(from_date)s AND to_date = %(to_date)s""",
+		{"emp": employees[0], "from_date": from_date, "to_date": to_date},
+		as_dict=True,
+	)
+
+	return {
+		"employee": employees[0],
+		"late_count": late_count,
+		"late_dates": late_dates,
+		"offsets": {
+			"attendance_permissions_first_half": len(att_perm),
+			"on_duty_half_first_half": len(on_duty_half),
+			"permission_full_first_half": len(perm_full),
+			"on_duty_full_day": len(on_duty_full),
+			"leave_half_first_half": len(leave_half),
+		},
+		"salary_structure_assignment": ssa[0] if ssa else None,
+		"late_penalty_record": penalty_rec[0] if penalty_rec else None,
+	}
+
+
+@frappe.whitelist()
+def get_attendance_detail(attendance_name):
+	"""Return full detail of a single Attendance record for the day-detail modal."""
+	doc = frappe.db.get_value(
+		"Attendance",
+		attendance_name,
+		[
+			"name", "employee", "employee_name", "attendance_date", "status",
+			"half_day_status", "shift", "in_time", "out_time",
+			"late_entry", "early_exit", "leave_type", "leave_application",
+			"docstatus", "company", "department",
+		],
+		as_dict=True,
+	)
+	if not doc:
+		frappe.throw(_("Attendance record {0} not found").format(attendance_name))
+	if doc.attendance_date:
+		doc.attendance_date = str(doc.attendance_date)
+	if doc.in_time:
+		doc.in_time = str(doc.in_time)
+	if doc.out_time:
+		doc.out_time = str(doc.out_time)
+	return doc
+
+
+# ---------------------------------------------------------------------------
+# Step 3: On-Demand Payroll Generation & Salary Register
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def generate_payroll(
+	employees,
+	start_date,
+	end_date,
+	company,
+	currency=None,
+	payroll_payable_account=None,
+	posting_date=None,
+	payroll_frequency="Monthly",
+):
+	"""Generate Draft Salary Slips for the selected employees and period.
+
+	Creates a Draft Payroll Entry (never submitted by this function) and uses
+	HRMS's create_salary_slips_for_employees to build the slips. Idempotent:
+	employees with an existing non-cancelled slip for the period are skipped.
+	"""
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+	if not employees:
+		frappe.throw(_("No employees selected"))
+
+	if not currency:
+		currency = _get_company_currency(company)
+	if not payroll_payable_account:
+		payroll_payable_account = _get_payroll_payable_account(company)
+	if not posting_date:
+		posting_date = nowdate()
+
+	# Check for existing non-cancelled slips for this period — idempotency
+	existing = frappe.db.sql(
+		"""
+		SELECT employee, name FROM `tabSalary Slip`
+		WHERE employee IN %(employees)s
+		  AND start_date = %(start_date)s
+		  AND end_date = %(end_date)s
+		  AND docstatus != 2
+		""",
+		{
+			"employees": tuple(employees),
+			"start_date": start_date,
+			"end_date": end_date,
+		},
+		as_dict=True,
+	)
+	existing_emps = {r.employee for r in existing}
+	to_create = [e for e in employees if e not in existing_emps]
+
+	# Filter out employees without an active Salary Structure Assignment
+	# applicable on or before the start_date — HRMS will throw otherwise.
+	if to_create:
+		ssa_employees = {
+			r.employee
+			for r in frappe.db.sql(
+				"""
+				SELECT DISTINCT ssa.employee
+				FROM `tabSalary Structure Assignment` ssa
+				INNER JOIN `tabSalary Structure` ss
+					ON ss.name = ssa.salary_structure
+				WHERE ssa.employee IN %(employees)s
+				  AND ssa.docstatus = 1
+				  AND ssa.from_date <= %(start_date)s
+				  AND ss.docstatus = 1
+				  AND ss.is_active = 'Yes'
+				""",
+				{"employees": tuple(to_create), "start_date": start_date},
+				as_dict=True,
+			)
+		}
+		no_ssa = [e for e in to_create if e not in ssa_employees]
+		to_create = [e for e in to_create if e in ssa_employees]
+		if no_ssa:
+			emp_names = {
+				e: frappe.db.get_value("Employee", e, "employee_name") or e
+				for e in no_ssa
+			}
+			frappe.logger().warning(
+				"Payroll Workbench: skipped employees without active Salary Structure "
+				f"Assignment for {start_date}: {emp_names}"
+			)
+
+	# Find or create a Draft Payroll Entry for this period
+	# First, check if any existing slip is already linked to a Payroll Entry
+	pe_name = None
+	if existing_emps:
+		pe_name = frappe.db.get_value(
+			"Salary Slip",
+			{
+				"employee": ["in", list(existing_emps)],
+				"start_date": start_date,
+				"end_date": end_date,
+				"docstatus": ["!=", 2],
+				"payroll_entry": ["is", "set"],
+			},
+			"payroll_entry",
+		)
+
+	# If not found via slip, look for a draft PE with slips not yet created
+	if not pe_name:
+		pe_name = frappe.db.get_value(
+			"Payroll Entry",
+			{
+				"company": company,
+				"start_date": start_date,
+				"end_date": end_date,
+				"docstatus": 0,
+				"salary_slips_created": 0,
+			},
+		)
+	if not pe_name:
+		pe = frappe.get_doc(
+			{
+				"doctype": "Payroll Entry",
+				"company": company,
+				"start_date": start_date,
+				"end_date": end_date,
+				"posting_date": posting_date,
+				"payroll_frequency": payroll_frequency,
+				"currency": currency,
+				"exchange_rate": 1,
+				"payroll_payable_account": payroll_payable_account,
+				"salary_slip_based_on_timesheet": 0,
+			}
+		)
+		pe.insert(ignore_permissions=True)
+		pe_name = pe.name
+	else:
+		pe = frappe.get_doc("Payroll Entry", pe_name)
+
+	# Fill employee details into the PE — only if it's still a Draft
+	# (cannot modify a submitted PE)
+	if pe.docstatus == 0:
+		pe.set("employees", [])
+		for emp_name in employees:
+			emp_doc = frappe.db.get_value(
+				"Employee",
+				emp_name,
+				["name", "employee_name", "department", "designation", "branch", "company"],
+				as_dict=True,
+			)
+			if emp_doc:
+				pe.append(
+					"employees",
+					{
+						"employee": emp_doc.name,
+						"employee_name": emp_doc.employee_name,
+						"department": emp_doc.department,
+						"designation": emp_doc.designation,
+						"branch": emp_doc.branch,
+						"company": emp_doc.company,
+					},
+				)
+		pe.save(ignore_permissions=True)
+
+	created_slips = []
+	skipped = list(existing_emps)
+	skipped_no_ssa = [e for e in employees if e not in existing_emps and e not in to_create] if to_create else []
+
+	if to_create:
+		from hrms.payroll.doctype.payroll_entry.payroll_entry import (
+			create_salary_slips_for_employees,
+		)
+
+		args = frappe._dict(
+			{
+				"salary_slip_based_on_timesheet": 0,
+				"payroll_frequency": payroll_frequency,
+				"start_date": start_date,
+				"end_date": end_date,
+				"company": company,
+				"posting_date": posting_date,
+				"deduct_tax_for_unsubmitted_tax_exemption_proof": 0,
+				"payroll_entry": pe_name,
+				"exchange_rate": 1.0,
+				"currency": currency,
+			}
+		)
+		# Temporarily disable the appraisal gate error so we can surface it gracefully
+		try:
+			create_salary_slips_for_employees(to_create, args, publish_progress=False)
+		except Exception as e:
+			frappe.log_error(title="Payroll Workbench: generate_payroll failed", message=frappe.get_traceback())
+			frappe.throw(_("Salary slip generation failed: {0}").format(str(e)))
+
+		# Fetch newly created draft slips
+		created_slips = frappe.db.sql(
+			"""
+			SELECT name, employee FROM `tabSalary Slip`
+			WHERE employee IN %(employees)s
+			  AND start_date = %(start_date)s
+			  AND end_date = %(end_date)s
+			  AND docstatus = 0
+			""",
+			{
+				"employees": tuple(to_create),
+				"start_date": start_date,
+				"end_date": end_date,
+			},
+			as_dict=True,
+		)
+
+	return {
+		"payroll_entry": pe_name,
+		"created": [{"name": s.name, "employee": s.employee} for s in created_slips],
+		"skipped": skipped,
+		"skipped_no_salary_structure": skipped_no_ssa,
+	}
+
+
+@frappe.whitelist()
+def get_payroll_period_status(start_date, end_date, company, employees=None):
+	"""Return existing payroll state for a period so the workbench can auto-populate.
+
+	Returns:
+		payroll_entry: name of the most recent non-cancelled Payroll Entry for the period
+		booked_je:     name of the accrual JE linked to that Payroll Entry (if booked)
+		slip_counts:   {draft, submitted, paid, total}
+		payout_status: {employee: {status, message, reference_number}} for paid slips
+
+	Uses date overlap (not exact match) so that minor start_date differences
+	(e.g. user selects June 30, slips created with July 1) still match.
+	"""
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+
+	# Find the most recent non-cancelled Payroll Entry whose dates overlap
+	# with the selected period (not just exact match)
+	pe_name = frappe.db.sql(
+		"""
+		SELECT name FROM `tabPayroll Entry`
+		WHERE company = %s
+		  AND docstatus != 2
+		  AND start_date <= %s
+		  AND end_date >= %s
+		ORDER BY creation DESC
+		LIMIT 1
+		""",
+		[company, end_date, start_date],
+	)[0][0] if frappe.db.sql(
+		"""
+		SELECT name FROM `tabPayroll Entry`
+		WHERE company = %s
+		  AND docstatus != 2
+		  AND start_date <= %s
+		  AND end_date >= %s
+		ORDER BY creation DESC
+		LIMIT 1
+		""",
+		[company, end_date, start_date],
+	) else None
+
+	booked_je = None
+	slip_counts = {"draft": 0, "submitted": 0, "paid": 0, "total": 0}
+	payout_status = {}
+
+	if pe_name:
+		# Check for accrual JE linked to this PE (Journal Entry type, not Bank Entry)
+		booked_je = frappe.db.sql(
+			"""
+			SELECT jea.parent
+			FROM `tabJournal Entry Account` jea
+			INNER JOIN `tabJournal Entry` je ON je.name = jea.parent
+			WHERE jea.reference_type = 'Payroll Entry'
+			  AND jea.reference_name = %s
+			  AND jea.docstatus = 1
+			  AND je.voucher_type = 'Journal Entry'
+			LIMIT 1
+			""",
+			[pe_name],
+		)[0][0] if frappe.db.sql(
+			"""
+			SELECT jea.parent
+			FROM `tabJournal Entry Account` jea
+			INNER JOIN `tabJournal Entry` je ON je.name = jea.parent
+			WHERE jea.reference_type = 'Payroll Entry'
+			  AND jea.reference_name = %s
+			  AND jea.docstatus = 1
+			  AND je.voucher_type = 'Journal Entry'
+			LIMIT 1
+			""",
+			[pe_name],
+		) else None
+
+	# Count slips whose dates overlap with the selected period
+	# (slip.start_date <= selected.end_date AND slip.end_date >= selected.start_date)
+	slip_conditions = "docstatus != 2 AND company = %s AND start_date <= %s AND end_date >= %s"
+	slip_values = [company, end_date, start_date]
+	if employees:
+		slip_conditions += " AND employee IN (%s)" % ",".join(["%s"] * len(employees))
+		slip_values.extend(employees)
+
+	slips = frappe.db.sql(
+		f"""
+		SELECT name, employee, docstatus, custom_payment_status, custom_payment_je
+		FROM `tabSalary Slip`
+		WHERE {slip_conditions}
+		""",
+		slip_values,
+		as_dict=True,
+	)
+	slip_counts["total"] = len(slips)
+	payment_je = None
+	for s in slips:
+		if s.docstatus == 0:
+			slip_counts["draft"] += 1
+		elif s.docstatus == 1:
+			slip_counts["submitted"] += 1
+			if s.custom_payment_status == "Paid":
+				slip_counts["paid"] += 1
+				payout_status[s.employee] = {
+					"status": "Paid",
+					"message": "Payment released",
+					"reference_number": "",
+				}
+				if s.custom_payment_je and not payment_je:
+					payment_je = s.custom_payment_je
+
+	return {
+		"payroll_entry": pe_name,
+		"booked_je": booked_je,
+		"payment_je": payment_je,
+		"slip_counts": slip_counts,
+		"payout_status": payout_status,
+	}
+
+
+@frappe.whitelist()
+def get_salary_register(start_date, end_date, employees=None):
+	"""Return the salary register: per-employee earnings/deductions breakdown.
+
+	Uses date overlap (not exact match) so minor start_date differences
+	between user selection and slip dates still match.
+	"""
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+
+	# Use overlapping date range instead of exact match
+	conditions = ["docstatus != 2", "start_date <= %s", "end_date >= %s"]
+	values = [end_date, start_date]
+	if employees:
+		placeholders = ",".join(["%s"] * len(employees))
+		conditions.append(f"employee IN ({placeholders})")
+		values.extend(employees)
+
+	slips = frappe.db.sql(
+		f"""
+		SELECT name, employee, employee_name, salary_structure,
+		       gross_pay, total_deduction, net_pay, rounded_total,
+		       docstatus, status, start_date, end_date,
+		       custom_payment_status, custom_payment_je, journal_entry
+		FROM `tabSalary Slip`
+		WHERE {' AND '.join(conditions)}
+		ORDER BY employee_name
+		""",
+		values,
+		as_dict=True,
+	)
+
+	# Collect all unique component names for dynamic columns
+	all_earnings = []
+	all_deductions = []
+	seen_earnings = set()
+	seen_deductions = set()
+
+	for slip in slips:
+		slip_doc = frappe.get_doc("Salary Slip", slip.name)
+		slip.earnings = []
+		slip.deductions = []
+		for e in slip_doc.earnings:
+			if not e.statistical_component and not e.do_not_include_in_total:
+				slip.earnings.append(
+					{"component": e.salary_component, "amount": flt(e.amount)}
+				)
+				if e.salary_component not in seen_earnings:
+					seen_earnings.add(e.salary_component)
+					all_earnings.append(e.salary_component)
+		for d in slip_doc.deductions:
+			if not d.statistical_component and not d.do_not_include_in_total:
+				slip.deductions.append(
+					{"component": d.salary_component, "amount": flt(d.amount)}
+				)
+				if d.salary_component not in seen_deductions:
+					seen_deductions.add(d.salary_component)
+					all_deductions.append(d.salary_component)
+
+	return {
+		"slips": slips,
+		"earnings_columns": all_earnings,
+		"deductions_columns": all_deductions,
+	}
+
+
+@frappe.whitelist()
+def recalculate_sheet(start_date, end_date, employees=None):
+	"""Re-fetch fresh DB values for the salary register (after user edits slips in another tab)."""
+	return get_salary_register(start_date, end_date, employees)
+
+
+# ---------------------------------------------------------------------------
+# Step 4: Payable & Expense Voucher Booking
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def book_payroll(payroll_entry_name):
+	"""Submit salary slips + create the accrual Journal Entry.
+
+	Idempotent: if slips are already submitted and a JE exists, returns the
+	existing JE. Otherwise submits draft slips and creates the accrual JE.
+	"""
+	pe = frappe.get_doc("Payroll Entry", payroll_entry_name)
+	if pe.docstatus == 2:
+		frappe.throw(_("Payroll Entry {0} is cancelled").format(payroll_entry_name))
+
+	# Check if already booked — idempotency
+	if cint(pe.salary_slips_submitted):
+		je_name = frappe.db.get_value(
+			"Journal Entry Account",
+			{"reference_type": "Payroll Entry", "reference_name": payroll_entry_name, "docstatus": 1},
+			"parent",
+		)
+		if je_name:
+			return {"journal_entry": je_name, "already_booked": True}
+
+	# Get draft slips linked to this PE
+	draft_slips = pe.get_sal_slip_list(ss_status=0)
+
+	# If no slips linked to this PE, look for draft slips in the same period
+	# (may be linked to a different/older Payroll Entry)
+	if not draft_slips:
+		draft_slips_raw = frappe.db.sql(
+			"""
+			SELECT name, salary_structure FROM `tabSalary Slip`
+			WHERE start_date = %(start_date)s
+			  AND end_date = %(end_date)s
+			  AND company = %(company)s
+			  AND docstatus = 0
+			""",
+			{
+				"start_date": pe.start_date,
+				"end_date": pe.end_date,
+				"company": pe.company,
+			},
+		)
+		# Re-link these slips to the current Payroll Entry
+		for row in draft_slips_raw:
+			frappe.db.set_value("Salary Slip", row[0], "payroll_entry", payroll_entry_name)
+		draft_slips = draft_slips_raw
+
+	if not draft_slips:
+		frappe.throw(_("No draft salary slips found to submit for this Payroll Entry"))
+
+	# Note: We do NOT submit the Payroll Entry here because HRMS's before_submit
+	# validation rejects duplicate slips (including cancelled ones from prior runs).
+	# The slips and JE can be created without submitting the PE itself.
+
+	# Submit each draft slip individually (avoids the silent error-swallowing
+	# in HRMS's submit_salary_slips_for_employees)
+	frappe.flags.via_payroll_entry = True
+	submitted_slips = []
+	unsubmitted = []
+	errors = []
+
+	try:
+		for entry in draft_slips:
+			slip_name = entry[0] if isinstance(entry, (list, tuple)) else entry.get("name")
+			slip = frappe.get_doc("Salary Slip", slip_name)
+			if slip.net_pay < 0:
+				unsubmitted.append(slip_name)
+				continue
+			try:
+				slip.submit()
+				submitted_slips.append(slip)
+				frappe.db.commit()
+			except Exception as e:
+				frappe.db.rollback()
+				unsubmitted.append(slip_name)
+				errors.append(f"{slip_name}: {str(e)}")
+
+		# Create the accrual JE directly with full control over party & cost center
+		if submitted_slips:
+			je_name = _make_accrual_je(pe, submitted_slips)
+			# Link JE to salary slips
+			for slip in submitted_slips:
+				frappe.db.set_value("Salary Slip", slip.name, "journal_entry", je_name)
+			pe.db_set({"salary_slips_submitted": 1, "status": "Submitted", "error_message": ""})
+			frappe.db.commit()
+	except Exception as e:
+		frappe.db.rollback()
+		frappe.throw(_("Payroll booking failed: {0}").format(str(e)))
+	finally:
+		frappe.flags.via_payroll_entry = False
+
+	# Find the JE that was created
+	je_name = frappe.db.get_value(
+		"Journal Entry Account",
+		{"reference_type": "Payroll Entry", "reference_name": payroll_entry_name, "docstatus": 1},
+		"parent",
+	)
+
+	if errors:
+		frappe.msgprint(
+			_("Some slips could not be submitted:\n{0}").format("\n".join(errors[:5])),
+			title=_("Partial Booking"),
+			indicator="orange",
+		)
+
+	return {"journal_entry": je_name, "already_booked": False}
+
+
+def _make_accrual_je(pe, submitted_slips):
+	"""Create and submit the accrual Journal Entry for submitted salary slips.
+
+	Debits:  Each earning component's expense account (per employee)
+	Credits: Each deduction component's account (per employee)
+	Credits: Payroll Payable account with party_type=Employee for the net pay
+
+	This replaces HRMS's make_accrual_jv_entry to ensure party_type and
+	cost_center are correctly set on every row.
+	"""
+	company = pe.company
+	cost_center = pe.cost_center or _get_company_cost_center(company)
+	payroll_payable_account = pe.payroll_payable_account or _get_payroll_payable_account(company)
+	currency = _get_company_currency(company)
+	precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
+
+	# Aggregate amounts by component and employee
+	# earnings: {component: {employee: amount}}
+	# deductions: {component: {employee: amount}}
+	earnings_by_comp = {}
+	deductions_by_comp = {}
+	# Track total debited/credited per employee for payable calculation
+	employee_total_earnings = {}
+	employee_total_deductions = {}
+
+	for slip in submitted_slips:
+		emp = slip.employee
+
+		for e in slip.earnings:
+			comp = e.salary_component
+			# Skip statistical components (e.g. employer PF contribution) — they
+			# are not part of gross_pay and should not be in the accrual JE
+			if _is_statistical_component(comp):
+				continue
+			# Skip components excluded from total (e.g. Provident Fund-Employer)
+			# These are not part of gross_pay, so including them inflates the payable
+			if cint(e.do_not_include_in_total):
+				continue
+			amt = flt(e.amount, precision)
+			earnings_by_comp.setdefault(comp, {})[emp] = amt + earnings_by_comp.get(comp, {}).get(emp, 0)
+			employee_total_earnings[emp] = amt + employee_total_earnings.get(emp, 0)
+
+		for d in slip.deductions:
+			comp = d.salary_component
+			if _is_statistical_component(comp):
+				continue
+			if cint(d.do_not_include_in_total):
+				continue
+			amt = flt(d.amount, precision)
+			deductions_by_comp.setdefault(comp, {})[emp] = amt + deductions_by_comp.get(comp, {}).get(emp, 0)
+			employee_total_deductions[emp] = amt + employee_total_deductions.get(emp, 0)
+
+	# Build JE account rows
+	accounts = []
+
+	# Debit earnings (expense accounts) — per employee with party
+	for comp, emp_amounts in earnings_by_comp.items():
+		account = _get_component_account(comp, company)
+		for emp, amount in emp_amounts.items():
+			if amount > 0:
+				accounts.append({
+					"account": account,
+					"debit_in_account_currency": flt(amount, precision),
+					"cost_center": cost_center,
+					"party_type": "Employee",
+					"party": emp,
+				})
+
+	# Credit deductions — per employee with party
+	for comp, emp_amounts in deductions_by_comp.items():
+		account = _get_component_account(comp, company)
+		for emp, amount in emp_amounts.items():
+			if amount > 0:
+				accounts.append({
+					"account": account,
+					"credit_in_account_currency": flt(amount, precision),
+					"cost_center": cost_center,
+					"party_type": "Employee",
+					"party": emp,
+				})
+
+	# Credit Payroll Payable — per employee with party
+	# Payable = total earnings (debited) - total deductions (credited)
+	# This ensures the JE always balances, even with employer contributions
+	# that are in earnings but not in net_pay (e.g. Provident Fund-Employer)
+	for emp in employee_total_earnings:
+		total_earn = employee_total_earnings.get(emp, 0)
+		total_ded = employee_total_deductions.get(emp, 0)
+		payable = flt(total_earn - total_ded, precision)
+		if payable > 0:
+			accounts.append({
+				"account": payroll_payable_account,
+				"credit_in_account_currency": payable,
+				"cost_center": cost_center,
+				"party_type": "Employee",
+				"party": emp,
+				"reference_type": "Payroll Entry",
+				"reference_name": pe.name,
+			})
+
+	# Create and submit the Journal Entry
+	je = frappe.new_doc("Journal Entry")
+	je.voucher_type = "Journal Entry"
+	je.company = company
+	je.posting_date = pe.posting_date
+	je.user_remark = _("Accrual Journal Entry for salaries from {0} to {1}").format(
+		pe.start_date, pe.end_date
+	)
+	je.title = payroll_payable_account
+	je.party_not_required = False
+	# Set custom_cost_center so the teampro update_cost_center hook
+	# doesn't clear the per-row cost_center we set above
+	je.custom_cost_center = cost_center
+	je.set("accounts", accounts)
+	je.save(ignore_permissions=True)
+	je.submit()
+
+	return je.name
+
+
+def _get_component_account(component, company):
+	"""Return the account for a Salary Component for the given company."""
+	account = frappe.db.get_value(
+		"Salary Component Account",
+		{"parent": component, "company": company},
+		"account",
+	)
+	if not account:
+		frappe.throw(
+			_("Please set account in Salary Component {0} for company {1}").format(
+				frappe.bold(component), frappe.bold(company)
+			)
+		)
+	return account
+
+
+def _is_statistical_component(component):
+	"""Check if a Salary Component is statistical (e.g. employer contribution).
+
+	Statistical components appear in the earnings/deductions table but are NOT
+	part of gross_pay or net_pay. They should be excluded from the accrual JE.
+	"""
+	return cint(frappe.db.get_value("Salary Component", component, "statistical_component")) == 1
+
+
+# ---------------------------------------------------------------------------
+# Step 5: Dual-Mode Salary Release & Payout Integration
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def release_payment(
+	employees,
+	mode,
+	bank_account,
+	payroll_entry_name=None,
+	company=None,
+	start_date=None,
+	end_date=None,
+	reference_no=None,
+	reference_date=None,
+):
+	"""Release salary payment to selected employees.
+
+	mode: "Manual" or "Automated"
+	 - Manual:   Create a Bank Entry JE (Debit Payroll Payable, Credit Bank),
+	            mark slips as Paid.
+	 - Automated: Same JE, then delegate to india_banking
+	            (make_payment_order + make_payment) for real bank payout.
+
+	Idempotent: skips slips already marked Paid.
+	"""
+	if isinstance(employees, str):
+		employees = json.loads(employees)
+	if not employees:
+		frappe.throw(_("No employees selected for payment release"))
+	if not company:
+		company = frappe.db.get_value("Payroll Entry", payroll_entry_name, "company") if payroll_entry_name else None
+	if not company:
+		frappe.throw(_("Company is required"))
+
+	payroll_payable_account = _get_payroll_payable_account(company, payroll_entry_name)
+	cost_center = _get_company_cost_center(company)
+	currency = _get_company_currency(company)
+	precision = frappe.get_precision("Journal Entry Account", "debit_in_account_currency")
+
+	# Gather submitted salary slips for these employees in the period
+	slip_filters = {
+		"employee": ["in", employees],
+		"docstatus": 1,
+		"custom_payment_status": ["!=", "Paid"],
+	}
+	if start_date and end_date:
+		slip_filters["start_date"] = start_date
+		slip_filters["end_date"] = end_date
+	elif payroll_entry_name:
+		slip_filters["payroll_entry"] = payroll_entry_name
+
+	slips = frappe.get_all(
+		"Salary Slip",
+		filters=slip_filters,
+		fields=["name", "employee", "employee_name", "net_pay", "rounded_total", "start_date", "end_date"],
+	)
+
+	if not slips:
+		return {"journal_entry": None, "payment_order": None, "results": [], "message": "All selected slips are already paid or not submitted."}
+
+	# Build the Bank Entry JE — one row per employee (debit payable) + one credit to bank
+	accounts = []
+	total_amount = 0.0
+
+	for slip in slips:
+		amount = flt(slip.rounded_total or slip.net_pay, precision)
+		if amount <= 0:
+			continue
+
+		# Debit Payroll Payable (per employee)
+		row = {
+			"account": payroll_payable_account,
+			"debit_in_account_currency": amount,
+			"cost_center": cost_center,
+			"party_type": "Employee",
+			"party": slip.employee,
+		}
+		if payroll_entry_name:
+			row["reference_type"] = "Payroll Entry"
+			row["reference_name"] = payroll_entry_name
+
+		# For Automated mode, attach the employee's Bank Account so india_banking can pick it up
+		if mode == "Automated":
+			emp_bank = _get_employee_bank_account(slip.employee)
+			if emp_bank:
+				row["bank_account"] = emp_bank
+
+		accounts.append(row)
+		total_amount += amount
+
+		# Track for slip update
+		slip._amount = amount
+
+	if not accounts:
+		return {"journal_entry": None, "payment_order": None, "results": [], "message": "No payable amounts found."}
+
+	# Credit the Bank Account
+	bank_gl_account = frappe.db.get_value("Bank Account", bank_account, "account")
+	if not bank_gl_account:
+		frappe.throw(_("No GL Account linked to Bank Account {0}").format(bank_account))
+
+	accounts.append(
+		{
+			"account": bank_gl_account,
+			"credit_in_account_currency": total_amount,
+			"bank_account": bank_account,
+			"cost_center": cost_center,
+		}
+	)
+
+	# Create + submit the Bank Entry JE
+	je = frappe.new_doc("Journal Entry")
+	je.voucher_type = "Bank Entry"
+	je.company = company
+	je.posting_date = nowdate()
+	je.cheque_no = reference_no or ""
+	je.cheque_date = reference_date or nowdate()
+	je.user_remark = _("Payroll payout for {0} to {1}").format(start_date or "", end_date or "")
+	je.set("accounts", accounts)
+	je.party_not_required = True
+	je.custom_cost_center = cost_center
+	je.save(ignore_permissions=True)
+	je.submit()
+
+	je_name = je.name
+
+	# Mark slips as Paid
+	results = []
+	for slip in slips:
+		if not hasattr(slip, "_amount"):
+			continue
+		frappe.db.set_value(
+			"Salary Slip",
+			slip.name,
+			{
+				"custom_payment_status": "Paid",
+				"custom_payment_je": je_name,
+			},
+		)
+		results.append(
+			{
+				"employee": slip.employee,
+				"employee_name": slip.employee_name,
+				"salary_slip": slip.name,
+				"amount": slip._amount,
+				"status": "Paid",
+				"message": "Payment recorded via Bank Entry",
+				"journal_entry": je_name,
+			}
+		)
+
+	payment_order_name = None
+
+	# Automated mode — delegate to india_banking
+	if mode == "Automated":
+		if not _india_banking_installed():
+			frappe.throw(_("india_banking app is not installed. Cannot use Automated mode."))
+		try:
+			from india_banking.overrides.journal_entry import make_payment_order
+
+			po = make_payment_order(je_name)
+			po.posting_date = nowdate()
+			# Set default mode of transfer (IMPS is common for salary)
+			if not po.default_mode_of_transfer:
+				po.default_mode_of_transfer = "IMPS"
+			po.save(ignore_permissions=True)
+			po.submit()
+			payment_order_name = po.name
+
+			# Initiate the bank payment
+			from india_banking.india_banking.doctype.india_banking_connector.india_banking_connector import (
+				make_payment,
+			)
+
+			make_payment(payment_order_name)
+
+			# Read back per-employee status from Payment Order Summary
+			summaries = frappe.get_all(
+				"Payment Order Summary",
+				{"parent": payment_order_name},
+				["name", "party", "payment_status", "message", "reference_number"],
+			)
+			summary_map = {s.party: s for s in summaries}
+			for r in results:
+				s = summary_map.get(r["employee"])
+				if s:
+					r["status"] = s.payment_status or "Pending"
+					r["message"] = s.message or ""
+					r["reference_number"] = s.reference_number or ""
+					# Update slip payment status based on bank response
+					if s.payment_status == "Processed":
+						frappe.db.set_value("Salary Slip", r["salary_slip"], "custom_payment_status", "Paid")
+					elif s.payment_status in ("Failed", "Rejected"):
+						frappe.db.set_value("Salary Slip", r["salary_slip"], "custom_payment_status", "Unpaid")
+
+		except Exception as e:
+			frappe.log_error(
+				title="Payroll Workbench: Automated payout failed",
+				message=frappe.get_traceback(),
+			)
+			# Don't throw — return partial results with error info
+			for r in results:
+				if r["status"] == "Paid":
+					r["status"] = "Bank Entry Created (Payout Failed)"
+					r["message"] = str(e)
+
+	return {
+		"journal_entry": je_name,
+		"payment_order": payment_order_name,
+		"results": results,
+	}
+
+
+@frappe.whitelist()
+def get_payout_status(payment_order_name):
+	"""Poll the Payment Order Summary for per-row payout status updates."""
+	summaries = frappe.get_all(
+		"Payment Order Summary",
+		{"parent": payment_order_name},
+		["name", "party", "party_type", "payment_status", "message", "reference_number", "payment_date"],
+	)
+	results = []
+	for s in summaries:
+		if s.party_type == "Employee":
+			results.append(
+				{
+					"employee": s.party,
+					"status": s.payment_status or "Pending",
+					"message": s.message or "",
+					"reference_number": s.reference_number or "",
+					"payment_date": str(s.payment_date) if s.payment_date else "",
+				}
+			)
+			# Sync slip status
+			if s.payment_status == "Processed":
+				frappe.db.set_value(
+					"Salary Slip",
+					{"employee": s.party, "custom_payment_je": ["is", "set"]},
+					"custom_payment_status",
+					"Paid",
+				)
+			elif s.payment_status in ("Failed", "Rejected"):
+				frappe.db.set_value(
+					"Salary Slip",
+					{"employee": s.party, "custom_payment_je": ["is", "set"]},
+					"custom_payment_status",
+					"Unpaid",
+				)
+	return results
+
+
+# ---------------------------------------------------------------------------
+# Utility: get bank accounts for the company (for the Manual mode picker)
+# ---------------------------------------------------------------------------
+
+@frappe.whitelist()
+def get_company_bank_accounts(company):
+	"""Return Bank Accounts linked to the company for the payment release picker."""
+	accounts = frappe.get_all(
+		"Bank Account",
+		{"company": company, "is_company_account": 1},
+		["name", "bank", "bank_account_no", "account_name", "is_default"],
+		order_by="is_default desc, modified desc",
+	)
+	return accounts
+
+
+@frappe.whitelist()
+def get_companies():
+	"""Return all companies for the filter dropdown."""
+	return frappe.get_all("Company", ["name", "abbr"], order_by="name")
+
+
+@frappe.whitelist()
+def _debug_setup():
+	"""Debug: check existing setup for the new features."""
+	company = "TEAMPRO HR & IT Services Pvt. Ltd."
+	out = {}
+
+	# 1. Salary Components
+	out["components"] = frappe.db.sql(
+		"""
+		SELECT name, type, statistical_component, do_not_include_in_total
+		FROM `tabSalary Component`
+		ORDER BY name
+		""",
+		as_dict=True,
+	)
+
+	# 2. Component accounts for THIS company
+	out["component_accounts"] = frappe.db.sql(
+		"""
+		SELECT sca.parent as component, sca.account
+		FROM `tabSalary Component Account` sca
+		WHERE sca.company = %s
+		ORDER BY sca.parent
+		""",
+		[company],
+		as_dict=True,
+	)
+
+	# 3. PF/ESI/PT payable accounts
+	out["payable_accounts"] = frappe.db.sql(
+		"""
+		SELECT name, account_name, account_type, parent_account
+		FROM `tabAccount`
+		WHERE company = %s
+		  AND (account_name LIKE '%%PF%%' OR account_name LIKE '%%ESI%%'
+		       OR account_name LIKE '%%Provident%%' OR account_name LIKE '%%Professional Tax%%'
+		       OR account_name LIKE '%%Payable%%')
+		ORDER BY name
+		""",
+		[company],
+		as_dict=True,
+	)
+
+	# 4. Active Salary Structures
+	out["salary_structures"] = frappe.db.sql(
+		"""
+		SELECT name, is_active, company, payroll_frequency
+		FROM `tabSalary Structure`
+		WHERE is_active = 'Yes'
+		ORDER BY name
+		""",
+		as_dict=True,
+	)
+
+	# 5. Check for Arrear Salary component
+	out["arrear_component"] = frappe.db.get_value(
+		"Salary Component", "Arrear Salary",
+		["name", "type", "statistical_component", "do_not_include_in_total"],
+		as_dict=True,
+	)
+
+	# 6. CFO user - check for users with CFO role
+	out["cfo_users"] = frappe.db.sql(
+		"""
+		SELECT u.name, u.email, u.full_name, r.role
+		FROM `tabUser` u
+		INNER JOIN `tabHas Role` r ON r.parent = u.name
+		WHERE r.role IN ('CFO', 'Accounts Manager', 'Accounts User')
+		  AND u.enabled = 1
+		ORDER BY u.name
+		""",
+		as_dict=True,
+	)
+
+	# 7. Holiday Lists
+	out["holiday_lists"] = frappe.db.sql(
+		"""
+		SELECT name, from_date, to_date
+		FROM `tabHoliday List`
+		ORDER BY name
+		""",
+		as_dict=True,
+	)
+
+	return out

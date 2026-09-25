@@ -1,0 +1,1134 @@
+
+import frappe
+from frappe import _
+from frappe.utils import flt
+
+@frappe.whitelist()
+def get_leave_applications():
+
+    user = frappe.session.user
+
+    if "Leave Approver" not in frappe.get_roles(user):
+        return []
+
+    data = frappe.get_all(
+        "Leave Application",
+        filters={
+            "workflow_state": "Pending for HOD",
+            "leave_approver": user
+        },
+        fields=[
+            "name",
+            "employee",
+            "employee_name",
+            "from_date",
+            "to_date",
+            "total_leave_days",
+            "leave_type",
+            "description",
+            "workflow_state",
+            "creation",
+            "half_day",
+            "half_day_date"
+        ],
+        order_by="creation desc"
+    )
+
+    return data
+
+
+@frappe.whitelist()
+def approve_leave(docname):
+
+    doc = frappe.get_doc("Leave Application", docname)
+
+    doc.workflow_state = "Approved"
+    doc.save(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    return "Approved"
+
+
+@frappe.whitelist()
+def reject_leave(docname):
+
+    doc = frappe.get_doc("Leave Application", docname)
+
+    doc.workflow_state = "Rejected"
+    doc.save(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    return "Rejected"
+
+
+@frappe.whitelist()
+def get_leave_details(docname):
+
+    doc = frappe.get_doc("Leave Application", docname)
+
+    return {
+        "name": doc.name,
+        "employee": doc.employee,
+        "employee_name": doc.employee_name,
+        "from_date": doc.from_date,
+        "to_date": doc.to_date,
+        "creation": doc.creation,
+        "total_leave_days": doc.total_leave_days,
+        "leave_type": doc.leave_type,
+        "description": doc.description,
+        "status": doc.workflow_state,
+        "half_day": doc.half_day,
+        "half_day_date": doc.half_day_date,
+        "custom_session":doc.custom_session
+    }
+
+@frappe.whitelist()
+def bulk_approve(docs):
+
+    import json
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    from frappe.model.workflow import apply_workflow
+
+    for docname in docs:
+
+        doc = frappe.get_doc(
+            "Leave Application",
+            docname
+        )
+
+        apply_workflow(doc, "Approve")
+
+    frappe.db.commit()
+
+    return True
+
+@frappe.whitelist()
+def bulk_reject(docs):
+
+    import json
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    from frappe.model.workflow import apply_workflow
+
+    for docname in docs:
+
+        doc = frappe.get_doc(
+            "Leave Application",
+            docname
+        )
+
+        apply_workflow(doc, "Reject")
+
+    frappe.db.commit()
+
+    return True
+
+
+# @frappe.whitelist()
+# def get_expense_claims():
+
+#     user = frappe.session.user
+#     roles = frappe.get_roles(user)
+
+#     states = []
+
+#     if "HOD" in roles:
+#         states.append("Pending for HOD")
+
+#     if "Accounts Manager" in roles:
+#         states.append("Pending for Accounts")
+
+#     if "CEO" in roles:
+#         states.append("Pending for CEO")
+
+#     if not states:
+#         return []
+
+#     return frappe.get_all(
+#         "Expense Claim",
+#         filters={
+#             "workflow_state": ["in", states]
+#         },
+#         fields=[
+#             "name",
+#             "employee",
+#             "employee_name",
+#             "grand_total",
+#             "workflow_state"
+#         ],
+#         order_by="creation desc"
+#     )
+
+@frappe.whitelist()
+def get_expense_claims():
+
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+
+    # Priority order — CEO > Accounts Manager > HOD
+    if "CEO" in roles:
+        state = "Pending for CEO"
+    elif "Accounts Manager" in roles:
+        state = "Pending for Accounts"
+    elif "HOD" in roles:
+        state = "Pending for HOD"
+    else:
+        return []
+
+    return frappe.get_all(
+        "Expense Claim",
+        filters={
+            "workflow_state": state
+        },
+        fields=[
+            "name",
+            "employee",
+            "employee_name",
+            "grand_total",
+            "workflow_state"
+        ],
+        order_by="creation desc"
+    )
+@frappe.whitelist()
+def get_expense_details(docname):
+    doc = frappe.get_doc("Expense Claim", docname)
+    
+    expenses = []
+    for row in doc.expenses:
+        expenses.append({
+            "expense_date": row.expense_date,
+            "description": row.description,
+            "expense_type": row.expense_type,
+            "custom_meet_log": row.custom_meet_log,
+            "custom_meetlog_distance": row.custom_meetlog_distance,
+            "amount": row.amount
+        })
+    
+    return {
+        "name": doc.name,
+        "employee": doc.employee,
+        "employee_name": doc.employee_name,
+        "grand_total": doc.grand_total,
+        "workflow_state": doc.workflow_state,
+        "expenses": expenses
+    }
+
+
+@frappe.whitelist()
+def expense_approve(docs):
+
+    import json
+    from frappe.model.workflow import apply_workflow
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    for name in docs:
+
+        doc = frappe.get_doc(
+            "Expense Claim",
+            name
+        )
+
+        action = None
+
+        if doc.workflow_state == "Pending for HOD":
+            action = "Send to Accounts"
+
+        elif doc.workflow_state == "Pending for Accounts":
+            action = "Send to CEO"
+
+        elif doc.workflow_state == "Pending for CEO":
+            action = "Approve"
+
+        if action:
+            apply_workflow(doc, action)
+
+    frappe.db.commit()
+
+    return True
+
+@frappe.whitelist()
+def expense_reject(docs):
+
+    import json
+    from frappe.model.workflow import apply_workflow
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    for name in docs:
+
+        doc = frappe.get_doc(
+            "Expense Claim",
+            name
+        )
+
+        apply_workflow(doc, "Reject")
+
+    frappe.db.commit()
+
+    return True
+
+
+
+@frappe.whitelist()
+def get_att_applications():
+
+    user = frappe.session.user
+
+    if "HOD" not in frappe.get_roles(user):
+        return []
+
+    data = frappe.get_all(
+        "Attendance Request",
+        filters={
+            "workflow_state": "Pending for HOD",
+            "approver": user
+        },
+        fields=[
+            "name",
+            "employee",
+            "employee_name",
+            "from_date",
+            "to_date",
+            "total_days",
+            "reason",
+            "explanation",
+            "workflow_state",
+            "half_day",
+            "half_day_date"
+        ],
+        order_by="creation desc"
+    )
+
+    return data
+
+
+@frappe.whitelist()
+def approve_att(docname):
+
+    doc = frappe.get_doc("Attendance Request", docname)
+
+    doc.workflow_state = "Approved"
+    doc.save(ignore_permissions=True)
+    doc.submit()
+
+    frappe.db.commit()
+
+    return "Approved"
+
+
+@frappe.whitelist()
+def reject_att(docname):
+
+    doc = frappe.get_doc("Attendance Request", docname)
+
+    doc.workflow_state = "Rejected"
+    doc.save(ignore_permissions=True)
+
+    frappe.db.commit()
+
+    return "Rejected"
+
+
+@frappe.whitelist()
+def get_att_details(docname):
+
+    doc = frappe.get_doc("Attendance Request", docname)
+
+    return {
+        "name": doc.name,
+        "employee": doc.employee,
+        "employee_name": doc.employee_name,
+        "from_date": doc.from_date,
+        "to_date": doc.to_date,
+        "explanation": doc.explanation,
+        "total_days":doc.total_days,
+        "reason": doc.reason,
+        "status": doc.workflow_state,
+        "half_day": doc.half_day,
+        "half_day_date": doc.half_day_date,
+        "custom_session":doc.custom_session
+    }
+
+@frappe.whitelist()
+def bulk_approve_att(docs):
+
+    import json
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    from frappe.model.workflow import apply_workflow
+
+    for docname in docs:
+
+        doc = frappe.get_doc(
+            "Attendance Request",
+            docname
+        )
+
+        apply_workflow(doc, "Approve")
+
+    frappe.db.commit()
+
+    return True
+
+@frappe.whitelist()
+def bulk_reject_att(docs):
+
+    import json
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    from frappe.model.workflow import apply_workflow
+
+    for docname in docs:
+
+        doc = frappe.get_doc(
+            "Attendance Request",
+            docname
+        )
+
+        apply_workflow(doc, "Reject")
+
+    frappe.db.commit()
+
+    return True
+
+
+
+
+@frappe.whitelist()
+def get_pur_applications():
+
+    user = frappe.session.user
+
+    if "Approver" not in frappe.get_roles(user):
+        return []
+
+    data = frappe.get_all(
+        "Purchase Order",
+        filters={
+            "workflow_state": "Pending for CEO",
+        },
+        fields=[
+            "name",
+            "supplier",
+            "purchase_type",
+            "transaction_date",
+            "schedule_date",
+            "payment_type",
+            "custom_service",
+            "total_qty",
+            "workflow_state",
+            "total",
+            "base_grand_total",
+            "custom_attach_bill",
+            "status"
+        ],
+        order_by="creation desc"
+    )
+
+    return data
+
+
+from frappe.model.workflow import apply_workflow
+import frappe
+
+@frappe.whitelist()
+def approve_pur(docname):
+
+    doc = frappe.get_doc("Purchase Order", docname)
+
+    if doc.workflow_state == "Preview":
+        apply_workflow(doc, "Send to Submit")
+
+    elif doc.workflow_state == "Pending for CEO":
+        apply_workflow(doc, "Approve")
+
+    frappe.db.commit()
+
+    return True
+
+
+
+@frappe.whitelist()
+def reject_pur(docname):
+
+    doc = frappe.get_doc("Purchase Order", docname)
+
+    if doc.workflow_state == "Pending for CEO":
+        apply_workflow(doc, "Revoke")
+
+
+    frappe.db.commit()
+
+    return True
+
+
+@frappe.whitelist()
+def get_pur_details(docname):
+    doc = frappe.get_doc("Purchase Order", docname)
+
+    items = []
+    for row in doc.items:
+        items.append({
+            "item_code": row.item_code,
+            "item_name": row.item_name,
+            "schedule_date": row.schedule_date,
+            "expected_delivery_date": row.expected_delivery_date,
+            "qty": row.qty,
+            "uom": row.uom,
+            "rate": row.rate,
+            "amount": row.amount,
+            "image_view": row.get("image_view") or row.get("image") or None
+        })
+
+    # ✅ Attachments fetch
+    attachments = frappe.get_all(
+        "File",
+        filters={
+            "attached_to_doctype": "Purchase Order",
+            "attached_to_name": docname
+        },
+        fields=["file_name", "file_url"]
+    )
+
+    return {
+        "name": doc.name,
+        "supplier": doc.supplier,
+        "purchase_type": doc.purchase_type,
+        "transaction_date": doc.transaction_date,
+        "schedule_date": doc.schedule_date,
+        "payment_type": doc.payment_type,
+        "custom_service": doc.custom_service,
+        "total_qty": doc.total_qty,
+        "workflow_state": doc.workflow_state,
+        "status": doc.status,
+        "total": doc.total,
+        "custom_attach_bill": doc.get("custom_attach_bill"),
+        "items": items,
+        "attachments": attachments
+    }
+
+
+@frappe.whitelist()
+def bulk_approve_pur(docs):
+
+    import json
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    from frappe.model.workflow import apply_workflow
+
+    for docname in docs:
+
+        doc = frappe.get_doc(
+            "Purchase Order",
+            docname
+        )
+
+        if doc.workflow_state == "Preview":
+            apply_workflow(doc, "Send to Submit")
+
+        elif doc.workflow_state == "Pending for CEO":
+            apply_workflow(doc, "Approve")
+
+    frappe.db.commit()
+
+    return True
+
+@frappe.whitelist()
+def bulk_reject_pur(docs):
+
+    import json
+
+    if isinstance(docs, str):
+        docs = json.loads(docs)
+
+    from frappe.model.workflow import apply_workflow
+
+    for docname in docs:
+
+        doc = frappe.get_doc(
+            "Purchase Order",
+            docname
+        )
+
+        if doc.workflow_state == "Pending for CEO":
+            apply_workflow(doc, "Revoke")
+
+    frappe.db.commit()
+
+    return True
+
+
+@frappe.whitelist()
+def get_pur_inv_applications():
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+
+    if "CEO" not in roles:
+        return []
+
+    return frappe.get_all(
+        "Purchase Invoice",
+        filters={
+            "workflow_state": "Pending for CEO"
+        },
+        fields=[
+            "name",
+            "supplier",
+            "posting_date",
+            "posting_time",
+            "due_date",
+            "services",
+            "bill_no",
+            "total",
+            "base_grand_total",
+            "custom_attach_bill",
+            "workflow_state"
+        ],
+        order_by="creation desc"
+    )
+
+
+@frappe.whitelist()
+def approve_pur_inv(docname):
+    doc = frappe.get_doc("Purchase Invoice", docname)
+    doc.workflow_state = "Approved"
+    doc.save(ignore_permissions=True)
+    doc.submit()
+    frappe.db.commit()
+    return "ok"
+
+
+
+@frappe.whitelist()
+def get_pur_inv_details(docname):
+    doc = frappe.get_doc("Purchase Invoice", docname)
+
+    items = []
+    for row in doc.items:
+        items.append({
+            "item_code": row.item_code,
+            "item_name": row.item_name,
+            "qty": row.qty,
+            "uom": row.uom,
+            "rate": row.rate,
+            "amount": row.amount
+        })
+
+    taxes = []
+    for row in doc.taxes:
+        taxes.append({
+            "charge_type": row.charge_type,
+            "account_head": row.account_head,
+            "description": row.description,
+            "rate": row.rate,
+            "tax_amount": row.tax_amount,
+            "base_tax_amount": row.base_tax_amount,
+            "total": row.total
+        })
+
+    # ✅ Attachments fetch
+    attachments = frappe.get_all(
+        "File",
+        filters={
+            "attached_to_doctype": "Purchase Invoice",
+            "attached_to_name": docname
+        },
+        fields=["file_name", "file_url"]
+    )
+
+    return {
+        "name": doc.name,
+        "supplier": doc.supplier,
+        "posting_date": str(doc.posting_date),
+        "posting_time": str(doc.posting_time),
+        "due_date": str(doc.due_date) if doc.due_date else None,
+        "services": doc.services if hasattr(doc, 'services') else None,
+        "bill_no": doc.bill_no if hasattr(doc, 'bill_no') else None,
+        "total": doc.total,
+        "base_total": doc.base_total,
+        "base_net_total": doc.base_net_total,
+        "base_total_taxes_and_charges": doc.base_total_taxes_and_charges,
+        "base_grand_total": doc.base_grand_total,
+        "currency": doc.currency,
+        "workflow_state": doc.workflow_state,
+        "custom_attach_bill": doc.get("custom_attach_bill"),
+        "items": items,
+        "taxes": taxes,
+        "attachments": attachments
+    }
+
+
+@frappe.whitelist()
+def get_sal_inv_applications():
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+
+    if "Director" in roles:
+        states = ["Reviewed by Accounts"]
+    # elif "Sales Manager" in roles:
+    #     states = ["Draft by Account user"]
+    # elif "Accounts Manager" in roles:
+    #     states = ["Draft by Account user", "Draft"]
+    else:
+        return []
+
+    return frappe.get_all(
+        "Sales Invoice",
+        filters={
+             "workflow_state": ["in", states]
+        },
+        fields=[
+            "name",
+            "customer",
+            "posting_date",
+            "custom_rc_invoice_",
+            "pos_profile",
+            "services",
+            "company",
+            "total_qty",
+            "total",
+            "base_grand_total",
+            "workflow_state"
+        ],
+        order_by="creation desc"
+    )
+
+
+@frappe.whitelist()
+def approve_sal_inv(docname):
+    user = frappe.session.user
+    roles = frappe.get_roles(user)
+
+    doc = frappe.get_doc("Sales Invoice", docname)
+
+    if "Director" in roles:
+        doc.workflow_state = "Approved"
+        doc.save(ignore_permissions=True)
+        doc.submit()
+    # elif "Sales Manager" in roles:
+    #     doc.workflow_state = "Reviewed by Sales Manager"
+    #     doc.save(ignore_permissions=True)
+    elif "Accounts Manager" in roles:
+        doc.workflow_state = "Reviewed by Accounts"
+        doc.save(ignore_permissions=True)
+    else:
+        frappe.throw("Not authorized")
+
+    frappe.db.commit()
+    return "ok"
+
+
+# @frappe.whitelist()
+# def reject_sal_inv(docname):
+#     user = frappe.session.user
+#     roles = frappe.get_roles(user)
+
+#     doc = frappe.get_doc("Sales Invoice", docname)
+
+#     if "Director" in roles:
+#         doc.workflow_state = "Rejected by Director"
+#     elif "Sales Manager" in roles:
+#         doc.workflow_state = "Rejected by Sales Manager"
+#     else:
+#         frappe.throw("Not authorized")
+
+#     doc.save(ignore_permissions=True)
+#     frappe.db.commit()
+#     return "ok"
+
+
+
+@frappe.whitelist()
+def get_sal_inv_details(docname):
+    doc = frappe.get_doc("Sales Invoice", docname)
+
+    items = []
+    for row in doc.items:
+        items.append({
+            "item_code": row.item_code,
+            "item_name": row.item_name,
+            "image_view": row.get("image_view") or row.get("image") or None,
+            "qty": row.qty,
+            "uom": row.uom,
+            "stock_qty": row.stock_qty,
+            "rate": row.rate,
+            "amount":row.amount,
+            "mrp":row.mrp,
+            "base_net_amount":row.base_net_amount
+        })
+
+    taxes = []
+    for row in doc.taxes:
+        taxes.append({
+            "charge_type": row.charge_type,
+            "account_head": row.account_head,
+            "description": row.description,
+            "rate": row.rate,
+            "base_total": row.base_total
+        })
+
+    # ✅ Attachments
+    attachments = frappe.get_all(
+        "File",
+        filters={
+            "attached_to_doctype": "Sales Invoice",
+            "attached_to_name": docname
+        },
+        fields=["file_name", "file_url"]
+    )
+
+    return {
+        "name": doc.name,
+        "customer": doc.customer,
+        "posting_date": str(doc.posting_date),
+        "custom_rc_invoice_": doc.custom_rc_invoice_ if hasattr(doc, 'custom_rc_invoice_') else None,
+        "pos_profile": doc.pos_profile,
+        "services": doc.services if hasattr(doc, 'services') else None,
+        "company": doc.company,
+        "total_qty": doc.total_qty,
+        "total": doc.total,
+        "workflow_state": doc.workflow_state,
+        "items": items,
+        "taxes": taxes,
+        "attachments": attachments
+    }
+
+
+# ============================================================
+# Payment button support — fetch outstanding & create payment
+# ============================================================
+
+_STANDARD_PARTY_TYPES = (
+    "Customer", "Supplier", "Employee"
+)
+
+
+@frappe.whitelist()
+def get_outstanding_documents(company, party_type, party):
+    """Return outstanding bills / claims for a party to allocate a payment against."""
+
+    out = []
+
+    if party_type in ("Customer", "Supplier", "Shareholder", "Donor", "Member", "Student"):
+        from erpnext.accounts.doctype.payment_entry.payment_entry import (
+            get_party_details, get_outstanding_reference_documents
+        )
+        pd = get_party_details(company, party_type, party, frappe.utils.today())
+        args = {
+            "posting_date": frappe.utils.today(),
+            "company": company,
+            "party_type": party_type,
+            "party": party,
+            "party_account": pd.get("party_account"),
+            "get_outstanding_invoices": True,
+            "get_orders_to_be_billed": False,
+        }
+        for d in get_outstanding_reference_documents(args) or []:
+            out.append({
+                "reference_doctype": d.get("voucher_type"),
+                "reference_name": d.get("voucher_no"),
+                "posting_date": str(d.get("posting_date")) if d.get("posting_date") else None,
+                "due_date": str(d.get("due_date")) if d.get("due_date") else None,
+                "total_amount": d.get("invoice_amount"),
+                "outstanding_amount": d.get("outstanding_amount"),
+            })
+
+    if party_type == "Employee":
+        claims = frappe.db.sql(
+            """
+            select name, posting_date, grand_total, total_amount_reimbursed
+            from `tabExpense Claim`
+            where employee = %s and docstatus = 1
+              and status in ('Unpaid', 'Partly Paid')
+              and (grand_total - ifnull(total_amount_reimbursed, 0)) > 0.5
+            order by posting_date asc
+            """,
+            (party,),
+            as_dict=True,
+        )
+        for c in claims:
+            out.append({
+                "reference_doctype": "Expense Claim",
+                "reference_name": c.name,
+                "posting_date": str(c.posting_date) if c.posting_date else None,
+                "due_date": None,
+                "total_amount": c.grand_total,
+                "outstanding_amount": c.grand_total - flt(c.total_amount_reimbursed),
+            })
+
+    return out
+
+
+@frappe.whitelist()
+def make_payment(company, payment_type, party_type, party, payment_for, mode, paid_from, amount, references=None, reference_no=None, reference_date=None, balance_action=None):
+    """Create & submit a Payment Entry (standard party) or Journal Entry (fallback).
+
+    payment_type: 'Pay' (money out) or 'Receive' (money in)
+    paid_from: the bank/cash account (paid from for Pay, received into for Receive)
+    """
+
+    import json
+    from erpnext.accounts.party import get_party_account
+    from erpnext.accounts.doctype.payment_entry.payment_entry import get_company_defaults
+
+    if isinstance(references, str):
+        references = json.loads(references)
+    references = references or []
+    amount = flt(amount)
+
+    bal_action = None
+    if isinstance(balance_action, str) and balance_action:
+        bal_action = json.loads(balance_action)
+
+    if party_type in _STANDARD_PARTY_TYPES:
+        pe = frappe.new_doc("Payment Entry")
+        pe.payment_type = payment_type  # Pay or Receive
+        pe.company = company
+        pe.party_type = party_type
+        pe.party = party
+        pe.posting_date = frappe.utils.today()
+        pe.paid_amount = amount
+        pe.received_amount = amount
+        if reference_no:
+            pe.reference_no = reference_no
+        if reference_date:
+            pe.reference_date = reference_date
+
+        # Set paid_from / paid_to based on payment type
+        # paid_from arg is the bank/cash account chosen by user
+        if payment_type == "Pay":
+            pe.paid_from = paid_from
+        else:
+            pe.paid_to = paid_from
+
+        if mode == "Cash":
+            pe.mode_of_payment = "Cash"
+        else:
+            bank_mop = frappe.db.get_value("Mode of Payment", {"type": "Bank", "enabled": 1}, "name")
+            if bank_mop:
+                pe.mode_of_payment = bank_mop
+
+        if payment_for == "Against Bill/Claim":
+            for r in references:
+                pe.append("references", {
+                    "reference_doctype": r.get("reference_doctype"),
+                    "reference_name": r.get("reference_name"),
+                    "allocated_amount": flt(r.get("allocated_amount")),
+                })
+
+        # Handle unallocated balance via deductions table
+        if bal_action and bal_action.get("action") and bal_action.get("action") != "Keep as Unallocated":
+            bal_amt = flt(bal_action.get("amount", 0))
+            action = bal_action.get("action")
+            remark = bal_action.get("remark", "")
+            company_defaults = get_company_defaults(company)
+            cost_center = company_defaults.get("cost_center")
+            ded_account = None
+
+            if action == "Write Off":
+                ded_account = company_defaults.get("write_off_account") or frappe.db.get_value("Account",
+                    {"company": company, "is_group": 0, "account_type": "Write Off"}, "name")
+
+            elif action == "Foreign Exchange Gain/Loss":
+                ded_account = company_defaults.get("exchange_gain_loss_account") or frappe.db.get_value("Account",
+                    {"company": company, "is_group": 0, "name": ["like", "%Exchange%"]}, "name")
+
+            elif action == "TDS Receivable":
+                ded_account = frappe.db.get_value("Account",
+                    {"company": company, "is_group": 0, "name": ["like", "%TDS%"]}, "name")
+
+            if ded_account:
+                pe.append("deductions", {
+                    "account": ded_account,
+                    "cost_center": cost_center,
+                    "amount": bal_amt,
+                    "description": action + ((": " + remark) if remark else ""),
+                })
+
+        pe.insert(ignore_permissions=True)
+        pe.submit()
+        return {"doctype": "Payment Entry", "name": pe.name}
+
+    # Fallback — Journal Entry for non-standard party types
+    party_account = get_party_account(party_type, party, company)
+    je = frappe.new_doc("Journal Entry")
+    je.voucher_type = "Bank Entry" if mode == "Bank" else "Cash Entry"
+    je.company = company
+    je.posting_date = frappe.utils.today()
+    je.user_remark = "{0} {1} {2}".format(payment_type, party_type, party)
+    if mode == "Bank":
+        je.cheque_no = reference_no or "NA"
+        je.cheque_date = reference_date or frappe.utils.today()
+
+    if payment_type == "Pay":
+        # Debit party (give), Credit bank/cash (take from)
+        party_row = je.append("accounts", {
+            "account": party_account,
+            "party_type": party_type,
+            "party": party,
+            "debit_in_account_currency": amount,
+            "is_advance": "Yes" if payment_for == "Advance" else "No",
+        })
+        je.append("accounts", {
+            "account": paid_from,
+            "credit_in_account_currency": amount,
+        })
+    else:
+        # Receive: Credit party (take), Debit bank/cash (put into)
+        party_row = je.append("accounts", {
+            "account": party_account,
+            "party_type": party_type,
+            "party": party,
+            "credit_in_account_currency": amount,
+            "is_advance": "Yes" if payment_for == "Advance" else "No",
+        })
+        je.append("accounts", {
+            "account": paid_from,
+            "debit_in_account_currency": amount,
+        })
+
+    if payment_for == "Against Bill/Claim" and references:
+        r0 = references[0]
+        party_row.reference_type = r0.get("reference_doctype")
+        party_row.reference_name = r0.get("reference_name")
+
+    je.insert(ignore_permissions=True)
+    je.submit()
+    return {"doctype": "Journal Entry", "name": je.name}
+
+@frappe.whitelist()
+def get_transactions(from_date=None, to_date=None, company=None, party_type=None, party=None, payment_type=None, mode=None):
+    """Fetch Payment Entries AND Journal Entries (Bank/Cash) with filters."""
+
+    result = []
+
+    # Build date filter
+    date_filter = {}
+    if from_date and to_date:
+        date_filter["posting_date"] = ["between", [from_date, to_date]]
+    elif from_date:
+        date_filter["posting_date"] = [">=", from_date]
+    elif to_date:
+        date_filter["posting_date"] = ["<=", to_date]
+
+    # --- 1. Payment Entries ---
+    pe_filters = {"docstatus": 1}
+    pe_filters.update(date_filter)
+    if company:
+        pe_filters["company"] = company
+    if party_type:
+        pe_filters["party_type"] = party_type
+    if party:
+        pe_filters["party"] = party
+    if payment_type:
+        pe_filters["payment_type"] = payment_type
+
+    pe_list = frappe.get_all(
+        "Payment Entry",
+        filters=pe_filters,
+        fields=[
+            "name", "posting_date", "payment_type", "party_type", "party",
+            "party_name", "company", "paid_amount", "mode_of_payment",
+            "reference_no", "reference_date", "paid_from", "paid_to"
+        ],
+        order_by="posting_date desc, creation desc",
+        limit=500
+    )
+
+    # Enrich PE with mode_of_payment_type
+    mop_type_map = {}
+    mop_names = list(set([d.get("mode_of_payment") for d in pe_list if d.get("mode_of_payment")]))
+    for mop in mop_names:
+        mop_type_map[mop] = frappe.db.get_value("Mode of Payment", mop, "type") or "General"
+
+    for d in pe_list:
+        d["doctype_source"] = "Payment Entry"
+        d["mode_of_payment_type"] = mop_type_map.get(d.get("mode_of_payment"), "General")
+        d["amount"] = d["paid_amount"]
+
+    result.extend(pe_list)
+
+    # --- 2. Journal Entries (Bank Entry / Cash Entry) ---
+    je_filters = {"docstatus": 1, "voucher_type": ["in", ["Bank Entry", "Cash Entry"]]}
+    je_filters.update(date_filter)
+    if company:
+        je_filters["company"] = company
+
+    je_list = frappe.get_all(
+        "Journal Entry",
+        filters=je_filters,
+        fields=[
+            "name", "posting_date", "voucher_type", "company",
+            "total_debit", "total_credit", "cheque_no", "cheque_date",
+            "user_remark", "pay_to_recd_from"
+        ],
+        order_by="posting_date desc, creation desc",
+        limit=500
+    )
+
+    # For each JE, get the party info from the accounts table
+    for d in je_list:
+        d["doctype_source"] = "Journal Entry"
+        d["payment_type"] = "Pay"  # Default; JEs created by our payment button are Pay
+        d["mode_of_payment"] = d.get("voucher_type", "")
+        d["mode_of_payment_type"] = "Bank" if d.get("voucher_type") == "Bank Entry" else "Cash"
+        d["paid_amount"] = d.get("total_debit") or d.get("total_credit") or 0
+        d["amount"] = d["paid_amount"]
+        d["reference_no"] = d.get("cheque_no") or ""
+        d["reference_date"] = d.get("cheque_date")
+
+        # Get party from JE accounts table
+        je_accounts = frappe.get_all(
+            "Journal Entry Account",
+            filters={"parent": d["name"], "party_type": ["!=", ""]},
+            fields=["party_type", "party", "account"],
+            limit=1
+        )
+        if je_accounts:
+            d["party_type"] = je_accounts[0].get("party_type") or ""
+            d["party"] = je_accounts[0].get("party") or ""
+            # Get party name
+            if d["party_type"] and d["party"]:
+                name_field = d["party_type"].lower() + "_name" if d["party_type"] != "Shareholder" else "title"
+                d["party_name"] = frappe.db.get_value(d["party_type"], d["party"], name_field) or d["party"]
+            else:
+                d["party_name"] = d.get("pay_to_recd_from") or ""
+        else:
+            d["party_type"] = ""
+            d["party"] = ""
+            d["party_name"] = d.get("pay_to_recd_from") or d.get("user_remark") or ""
+
+    # Apply party filters to JE list
+    if party_type:
+        je_list = [d for d in je_list if d.get("party_type") == party_type]
+    if party:
+        je_list = [d for d in je_list if d.get("party") == party]
+    if payment_type:
+        je_list = [d for d in je_list if d.get("payment_type") == payment_type]
+
+    result.extend(je_list)
+
+    # Apply mode filter (Bank/Cash) to combined list
+    if mode:
+        result = [d for d in result if d.get("mode_of_payment_type") == mode]
+
+    # Sort by posting_date desc
+    result.sort(key=lambda x: x.get("posting_date", ""), reverse=True)
+
+    return result

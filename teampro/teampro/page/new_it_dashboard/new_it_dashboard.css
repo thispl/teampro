@@ -1,0 +1,274 @@
+#non_allocated_task_table_new table thead {
+    background-color: #0F1568;
+    color: white;
+}
+
+/* =====================================================
+   Sprint Progress Bars — Single Combined Bar
+   ===================================================== */
+.sprint-team-block {
+    margin-bottom: 28px;
+}
+
+.sprint-team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0F1568 0%, #1a237e 100%);
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(15, 21, 104, 0.25);
+}
+
+.sprint-team-header h4 {
+    margin: 0;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
+.sprint-team-header .sprint-id-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.sprint-cb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+}
+
+.sprint-cb-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 18px 18px;
+    border: 1px solid #e8eaf0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sprint-cb-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.sprint-cb-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f1f5;
+}
+
+.sprint-cb-name {
+    margin: 0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #1a237e;
+    letter-spacing: 0.5px;
+}
+
+.sprint-cb-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+/* ---- Legend ---- */
+.sprint-legend {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 10px 16px;
+    margin-bottom: 20px;
+    background: #f8f9fc;
+    border-radius: 10px;
+    border: 1px solid #e8eaf0;
+}
+
+.sprint-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #555;
+}
+
+.sprint-legend-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+/* ---- Combined single bar ---- */
+.sprint-combined-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+.sprint-combined-aph-label,
+.sprint-combined-rt-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 52px;
+}
+
+.sprint-combined-aph-val,
+.sprint-combined-rt-val {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.sprint-combined-aph-val { color: #1e88e5; }
+.sprint-combined-rt-val { color: #00897b; }
+
+.sprint-combined-aph-tag,
+.sprint-combined-rt-tag {
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #999;
+    margin-top: 2px;
+}
+
+.sprint-combined-track {
+    flex: 1;
+    height: 28px;
+    background: #e3f2fd;
+    border: 1px solid #90caf9;
+    border-radius: 14px;
+    overflow: visible;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* RT fill */
+.sprint-combined-fill {
+    height: 100%;
+    border-radius: 14px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: linear-gradient(135deg, #4bc0c0 0%, #26a69a 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.sprint-combined-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 14px 14px 0 0;
+}
+
+.sprint-combined-fill-pct {
+    position: relative;
+    z-index: 1;
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+/* Lifespan marker */
+.sprint-combined-marker {
+    position: absolute;
+    top: -4px;
+    bottom: -4px;
+    width: 0;
+    transition: left 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.sprint-combined-marker-line {
+    width: 3px;
+    height: 100%;
+    background: #ffa726;
+    border-radius: 2px;
+    box-shadow: 0 0 6px rgba(255, 167, 38, 0.6);
+    margin: 0 auto;
+}
+
+.sprint-combined-marker-flag {
+    position: absolute;
+    top: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #ffa726;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    box-shadow: 0 2px 4px rgba(255, 167, 38, 0.4);
+}
+
+.sprint-combined-marker-flag::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #ffa726;
+}
+
+/* ---- Summary footer ---- */
+.sprint-cb-summary {
+    margin-top: 16px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f1f5;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+.sprint-cb-summary-item {
+    text-align: center;
+    flex: 1;
+}
+
+.sprint-cb-summary-item .label {
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-size: 9px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.sprint-cb-summary-item .value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a237e;
+}

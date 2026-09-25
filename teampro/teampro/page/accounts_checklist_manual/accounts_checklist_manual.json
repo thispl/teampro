@@ -1,0 +1,23 @@
+{
+ "actions": [],
+ "creation": "2026-08-11 00:00:00.000000",
+ "doctype": "Page",
+ "idx": 0,
+ "is_standard": 1,
+ "modified": "2026-08-11 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "accounts-checklist-manual",
+ "owner": "Administrator",
+ "page_name": "Accounts Checklist Manual",
+ "roles": [
+  {"role": "System Manager", "doctype": "Role", "name": "System Manager"},
+  {"role": "Accounts Manager", "doctype": "Role", "name": "Accounts Manager"},
+  {"role": "Accounts User", "doctype": "Role", "name": "Accounts User"}
+ ],
+ "script": "accounts_checklist_manual.js",
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0,
+ "title": "Accounts Checklist Manual"
+}

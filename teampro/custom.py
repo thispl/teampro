@@ -791,21 +791,6 @@ def update_pi():
        doc.delete()
 
 
-@frappe.whitelist()
-def create_food_count():
-    from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
-    holiday_list_name = 'TEAMPRO 2023'
-    start_date = getdate(today())
-    if not is_holiday(holiday_list_name, start_date):
-        emp = ["TI00149","TC00042"]
-        for i in emp:
-            if not frappe.db.exists("Food Count",{'employee':i,'date':nowdate()}):
-                doc = frappe.new_doc("Food Count")
-                doc.employee = i
-                doc.department="IT"
-                doc.food_type="Veg"
-                doc.date = nowdate()
-                doc.save(ignore_permissions=True)
 
 # @frappe.whitelist()
 # def delete_document(name,checks_list):
@@ -923,20 +908,18 @@ def get_po_qty(item,company):
 #     so.save(ignore_permissions=True)
 
 def on_task_save(doc, method):
-    if doc.service == 'IT-SW':
+    if doc.service == 'IT-SW' and doc.issue:
         if doc.status == "Pending Review":
-            issue = frappe.get_doc("Issue", doc.issue)
-            task = frappe.db.count("Task",{'issue':doc.issue})
+            task = frappe.db.count("Task", {'issue': doc.issue})
             if task == 1:
-                if issue and issue.status != "Resolved":
-                    issue.status = "Resolved"
-                    issue.save()
+                current_status = frappe.db.get_value("Issue", doc.issue, "status")
+                if current_status and current_status != "Resolved":
+                    frappe.db.set_value("Issue", doc.issue, "status", "Resolved")
 
-        if doc.status == "Completed":
-            issue = frappe.get_doc("Issue", doc.issue)
-            if issue and issue.status != "Closed":
-                issue.status = "Closed"
-                issue.save()
+        elif doc.status == "Completed":
+            current_status = frappe.db.get_value("Issue", doc.issue, "status")
+            if current_status and current_status != "Closed":
+                frappe.db.set_value("Issue", doc.issue, "status", "Closed")
 
 
 
@@ -7434,13 +7417,13 @@ import requests
 import json
 
 
-MATTERMOST_WEBHOOK_URL = "https://pm.teamproit.com/hooks/8rm94z3knfdptf8phf6cmrszpe"
+MATTERMOST_WEBHOOK_URL = "https://pm.teamproit.com/hooks/j4aeemuwi3nijfcds6d4ghzksc"
 
 
 @frappe.whitelist(allow_guest=True)
 def create_issue_from_mattermost_new():
     data = frappe.local.form_dict
-    # frappe.log_error("Data Mattermost", data)
+    frappe.log_error("Data Mattermost", data)
     user_name = data.get("user_name")
     text = data.get("text") 
     channel = data.get("channel_name")
@@ -7475,7 +7458,7 @@ def create_issue_from_mattermost_new():
             url = f"https://pm.teamproit.com/api/v4/files/{f_id}"
             file_links_html += f'<br><a href="{url}" target="_blank">{url}</a>'
     issue=frappe.new_doc("Task")
-    issue.subject=f"Issue from Mattermost by {user_name}"
+    issue.subject=re.sub(r'#issue', '', f"{text}", flags=re.IGNORECASE).strip()
     issue.description =f"{text}<br>{file_links_html}"
     issue.project=project_name
     issue.priority="Medium"
@@ -7487,7 +7470,8 @@ def create_issue_from_mattermost_new():
         
     else:
         WEBHOOK_URL=MATTERMOST_WEBHOOK_URL
-    message = f"Your query has been registered successfully against the project {project_name}. Please refer to Ticket Number:*{issue.name}* for any future communication.\n> {text}"
+    task_link = get_url_to_form("Task", issue.name)
+    message = f"Your query has been registered successfully against the project {project_name}. Please refer to Ticket Number: [{issue.name}]({task_link}) for any future communication.\n> {text}"
     try:
         response = requests.post(
             WEBHOOK_URL,
@@ -9610,7 +9594,7 @@ def auto_task_age_calculate():
         sjt = frappe.new_doc("Scheduled Job Type")
         sjt.update({
             "name": job_name,
-            "method": "teampro.custom.task_age_calculation",
+            "method": "teampro.teampro_py.task.task_age_calculation",
             "frequency": "Daily",
             "enabled": 1
         })
@@ -9835,127 +9819,519 @@ def force_non_stock_status_update(invoice_name):
 
     return "Non-stock delivery updated successfully"
 
+@frappe.whitelist()
+def remove_cancel_doc():
+    doc=frappe.get_doc("Expense Claim",'HR-EXP-2026-00005')
+    doc.cancel()
+
+
+
+
 
 import frappe
-
-
-import frappe
-
-
-@frappe.whitelist()
-def delete_test_sales_invoices():
-
-    # Get all cancelled Sales Invoices where customer_name contains 'test'
-    sales_invoices = frappe.get_all(
-        "Sales Invoice",
-        {
-            "customer_name": ["like", "%test%"],
-            "workflow_state": "Cancelled",
-        },
-        ["name"]
-    )
-                # "name":['not in',['SINV-26-00141','SINV-26-00140','SINV-26-00124','SINV-26-00123','SINV-26-00122','SINV-26-00121','SINV-26-00120','SINV-26-00119','SINV-26-00118','SINV-26-00117','SINV-26-00116','SINV-26-00115','SINV-26-00114','SINV-26-00113','SINV-26-00112','SINV-26-00111','SINV-26-00110','SINV-26-00109','SINV-26-00108','SINV-25-00091','IT-SW/0086','IT-SW/0085','IT-SW/0079-1','SINV-24-00480','IT-SW/0079','REC-D/0027']]
-
-    for si in sales_invoices:
-        
-        gl_entries = frappe.get_all(
-            "GL Entry",
-           {
-                "voucher_type": "Sales Invoice",
-                "voucher_no": si.name,
-                "is_cancelled": 1
-            },
-            ["name"]
-        )
-
-        # Delete GL Entries
-        for gl in gl_entries:
-            print(gl.name)
-            gl_doc=frappe.get_doc('GL Entry',gl.name)
-            gl_doc.delete()
-        pe_entries = frappe.get_all(
-            "Payment Ledger Entry",
-           {
-                "against_voucher_type": "Sales Invoice",
-                "against_voucher_no": si.name,
-                "delinked": 1
-            },
-            ["name"]
-        )
-
-        # Delete GL Entries
-        for gl in pe_entries:
-            print(gl.name)
-            gl_doc=frappe.get_doc('Payment Ledger Entry',gl.name)
-            gl_doc.delete()
-        
-        repost_entries = frappe.get_all(
-            "Repost Item Valuation",
-            filters={
-                "voucher_type": "Sales Invoice",
-                "voucher_no": si.name
-            },
-            fields=["name"]
-        )
-
-        for repost in repost_entries:
-            print(repost.name)
-
-            repost_doc = frappe.get_doc("Repost Item Valuation", repost.name)
-
-            if repost_doc.docstatus == 1:
-                repost_doc.cancel()
-
-            repost_doc.delete()
-
-    si_doc = frappe.get_doc("Sales Invoice", si.name)
-    si_doc.delete()
-
-    stock_entries = frappe.get_all(
-    "Stock Ledger Entry",
-    filters={
-        "voucher_type": "Sales Invoice",
-        "voucher_no": si.name
-    },
-    fields=["name"]
-    )
-
-    for sle in stock_entries:
-        print(sle.name)
-
-        sle_doc = frappe.get_doc("Stock Ledger Entry", sle.name)
-
-        if sle_doc.docstatus == 1:
-            sle_doc.cancel()
-
-        sle_doc.delete()
-
-    si_doc = frappe.get_doc("Sales Invoice", si.name)
-    si_doc.delete()
-
-
+from frappe import _
+from frappe.utils import flt
+from openpyxl import load_workbook
+import re
 
 @frappe.whitelist()
-def update_cancelled_sales_invoice_status():
+def import_sales_invoice_sheet(file_url, company=None, customer=None):
 
-    sales_invoices = frappe.get_all(
-        "Sales Invoice",
-        filters={
-            "workflow_state": "Cancelled",
-            "custom_document_status": "Draft"
-        },
-        pluck="name"
+    if not file_url:
+        frappe.throw(_("Please attach an Excel or CSV file."))
+
+    file_name = frappe.db.get_value(
+        "File",
+        {"file_url": file_url},
+        "name"
     )
-    count = 0
-    for si in sales_invoices:
-        count += 1
-        # frappe.db.set_value(
-        #     "Sales Invoice",
-        #     si,
-        #     "custom_document_status",
-        #     "Cancelled",
-        #     update_modified=False
-        # )
-    print(count)
 
-    frappe.db.commit()
+    if not file_name:
+        frappe.throw(_("Attached file could not be found."))
+
+    file_doc = frappe.get_doc("File", file_name)
+    file_path = file_doc.get_full_path()
+
+    if not file_path:
+        frappe.throw(_("Unable to access the attached file."))
+
+    rows = []
+    file_name_lower = (file_doc.file_name or "").lower()
+
+    if file_name_lower.endswith(".csv"):
+        with open(file_path, "r", encoding="utf-8-sig") as f:
+            file_content = f.read()
+        rows = read_csv_content(file_content)
+    else:
+        try:
+            workbook = load_workbook(
+                filename=file_path,
+                data_only=True
+            )
+        except Exception as e:
+            frappe.throw(
+                _("Unable to read Excel file: {0}").format(str(e))
+            )
+
+        worksheet = workbook.active
+        rows = list(
+            worksheet.iter_rows(values_only=True)
+        )
+
+    if not rows:
+        frappe.throw(_("Uploaded file is empty."))
+
+    def _normalize_header(value):
+        if value is None:
+            return ""
+        return re.sub(r"[^a-z0-9]", "", str(value).lower())
+
+    header_map = {
+        "company": [
+            "company"
+        ],
+
+        "customer": [
+            "customer"
+        ],
+
+        "item_code": [
+            "productno",
+            "productnumber",
+            "productnum",
+            "productnoitems",
+            "productcode",
+            "productcodeitems",
+            "itemcode",
+            "itemcodeitems",
+            "itemitems",
+            "item",
+            "commoditycode",
+            "customproductid"
+        ],
+
+        "item_name": [
+            "productname",
+            "productnameitems",
+            "description",
+            "commodity",
+            "commodityname",
+            "commoditynameitems",
+            "itemname",
+            "itemnameitems"
+        ],
+
+        "uom": [
+            "uom",
+            "uomitems",
+            "unit",
+            "unitofmeasure",
+            "units"
+        ],
+
+        "rate": [
+            "unitprice",
+            "unitpriceitems",
+            "taxableprice",
+            "subtotal",
+            "price",
+            "rate",
+            "rateitem",
+            "rateitems",
+            "unitcost"
+        ],
+
+        "quantity": [
+            "quantity",
+            "quantityitems",
+            "qty"
+        ],
+
+        "mode_of_payment": [
+            "modeofpayment",
+            "modeofpaymentsalesinvoicepayment",
+            "paymentmode",
+            "mop"
+        ],
+
+        "pos_profile": [
+            "posprofile",
+            "pos",
+            "pointofsale"
+        ],
+        "machine_id": [
+            "machineid",
+            "machine",
+            "machinecode"
+        ],
+        "status": [
+            "status",
+            "Status"
+        ]
+    }
+
+    all_aliases = set()
+    for aliases in header_map.values():
+        all_aliases.update(aliases)
+
+    header_row_idx = None
+    headers = []
+
+    for i, r in enumerate(rows[:5]):
+        row_headers = [_normalize_header(h) for h in r]
+        if any(h in all_aliases for h in row_headers):
+            if any(h in header_map["item_code"] for h in row_headers):
+                header_row_idx = i
+                headers = row_headers
+                break
+
+    if header_row_idx is None:
+        sample = []
+        for i, r in enumerate(rows[:5]):
+            sample.append(
+                "Row {0}: {1}".format(
+                    i + 1,
+                    " | ".join(str(h) for h in r)
+                )
+            )
+        frappe.throw(
+            _(
+                "Could not find an Item / Product No column. "
+                "Expected headers like: Product no, Product number, Item, Item Code. "
+                "First 5 rows found:\n{0}"
+            ).format("\n".join(sample))
+        )
+
+    col_idx = {}
+
+    for field, aliases in header_map.items():
+        for i, h in enumerate(headers):
+            if h in aliases:
+                col_idx[field] = i
+                break
+
+    item_code_header = headers[col_idx["item_code"]]
+
+    default_company = frappe.defaults.get_user_default("Company") \
+        or frappe.db.get_single_value("Global Defaults", "default_company")
+
+    machine_id = None
+    mode_of_payment = None
+    status = None
+    pos_profile = None
+    imported_items = []
+
+    # company and customer come from the function parameters or the file
+    if not company:
+        company = None
+    if not customer:
+        customer = None
+
+    for row_number, row in enumerate(rows[header_row_idx + 1:], start=header_row_idx + 2):
+
+        if not any(value for value in row):
+            continue
+
+        def _val(field):
+            return get_value(row, col_idx.get(field, 99))
+
+        row_company = _val("company")
+        row_customer = _val("customer")
+        row_mode_of_payment = _val("mode_of_payment")
+        row_status  = _val("status")
+        row_pos_profile = _val("pos_profile")
+        row_machine_id = _val("machine_id")
+
+        if row_company:
+            company = str(row_company).strip()
+
+        if row_customer:
+            customer = str(row_customer).strip()
+
+        if row_mode_of_payment:
+            mode_of_payment = str(row_mode_of_payment).strip()
+
+        if row_pos_profile:
+            pos_profile = str(row_pos_profile).strip()
+
+        if not machine_id and row_machine_id:
+            machine_id = str(row_machine_id).strip()
+
+        if row_status:
+            status = str(row_status).strip()
+
+        item_code = _val("item_code")
+
+        if not item_code:
+            continue
+
+        item_code = str(item_code).strip()
+
+        # if not frappe.db.exists("Item", item_code):
+        #     frappe.throw(
+        #         _(
+        #             "Row {0}: Item {1} does not exist."
+        #         ).format(
+        #             row_number,
+        #             frappe.bold(item_code)
+        #         )
+        #     )
+
+        # Check exact item code first
+        matched_item_code = frappe.db.get_value(
+            "Item",
+            {"name": item_code},
+            "name"
+        )
+
+        # If not found, match after removing hyphens
+        if not matched_item_code:
+
+            normalized_item_code = re.sub(
+                r"[^a-zA-Z0-9]",
+                "",
+                item_code
+            ).lower()
+
+            item_list = frappe.get_all(
+                "Item",
+                fields=["name"]
+            )
+
+            for item in item_list:
+                normalized_erp_code = re.sub(
+                    r"[^a-zA-Z0-9]",
+                    "",
+                    item.name
+                ).lower()
+
+                if normalized_erp_code == normalized_item_code:
+                    matched_item_code = item.name
+                    break
+
+        if not matched_item_code:
+            frappe.throw(
+                _(
+                    "Row {0}: Item {1} does not exist."
+                ).format(
+                    row_number,
+                    frappe.bold(item_code)
+                )
+            )
+
+        # Use actual ERP Item Code
+        item_code = matched_item_code
+
+        item_details = frappe.db.get_value(
+            "Item",
+            item_code,
+            [
+                "item_name",
+                "stock_uom",
+                "description"
+            ],
+            as_dict=True
+        )
+
+        if not item_details:
+            frappe.throw(
+                _(
+                    "Row {0}: Unable to get Item details for {1}."
+                ).format(
+                    row_number,
+                    frappe.bold(item_code)
+                )
+            )
+
+        excel_item_name = _val("item_name")
+
+        if excel_item_name:
+            item_name = str(excel_item_name).strip()
+        else:
+            item_name = item_details.item_name
+
+        if "uom" in col_idx:
+            excel_uom = _val("uom")
+        else:
+            excel_uom = None
+
+        if excel_item_name and not excel_uom:
+            match = re.search(r"\(([^)]+)\)", item_name)
+            if match:
+                excel_uom = match.group(1).strip()
+                item_name = re.sub(r"\s*\([^)]+\)", "", item_name).strip()
+
+        if excel_uom:
+            uom = str(excel_uom).strip()
+        else:
+            uom = item_details.stock_uom
+
+        rate = flt(_val("rate"))
+        quantity = flt(_val("quantity")) or 1
+
+        if quantity <= 0:
+            frappe.throw(
+                _(
+                    "Row {0}: Quantity must be greater than zero."
+                ).format(row_number)
+            )
+
+        income_account = None
+        item_company = (str(row_company).strip() if row_company else None) or company or default_company
+
+        if item_company:
+            income_account = frappe.db.get_value(
+                "Item Default",
+                {"parent": item_code, "parenttype": "Item", "company": item_company},
+                "income_account"
+            )
+            if not income_account:
+                income_account = "Sales - TFP"
+
+        description = item_details.description or item_name
+
+        imported_items.append({
+            "item_code": item_code,
+            "item_name": item_name,
+            "description": description,
+            "uom": uom,
+            "qty": quantity,
+            "rate": rate,
+            "income_account": income_account
+        })
+
+    if not imported_items:
+        frappe.throw(
+            _("No valid items were found in the uploaded file.")
+        )
+
+    # if not company:
+    #     frappe.throw(
+    #         _(
+    #             "Company is required. Please set the Company on the Sales Invoice or add a Company column in the file."
+    #         )
+    #     )
+
+    # if not frappe.db.exists("Company", company):
+    #     frappe.throw(
+    #         _(
+    #             "Company {0} does not exist. Please set a valid Company."
+    #         ).format(
+    #             frappe.bold(company)
+    #         )
+    #     )
+
+    # if customer and not frappe.db.exists("Customer", customer):
+    #     frappe.throw(
+    #         _("Customer {0} does not exist.").format(
+    #             frappe.bold(customer)
+    #         )
+    #     )
+    if customer:
+        customer_name = frappe.db.get_value(
+            "Customer",
+            {"name": customer},
+            "name"
+        )
+
+        if not customer_name:
+            customer_name = frappe.db.sql(
+                """
+                SELECT name
+                FROM `tabCustomer`
+                WHERE LOWER(name) = LOWER(%s)
+                LIMIT 1
+                """,
+                customer
+            )
+
+            customer_name = customer_name[0][0] if customer_name else None
+
+        if not customer_name:
+            frappe.throw(
+                _("Customer {0} does not exist.").format(
+                    frappe.bold(customer)
+                )
+            )
+
+        customer = customer_name
+
+    if company:
+        company_name = frappe.db.get_value(
+            "Company",
+            {"name": company},
+            "name"
+        )
+
+        if not company_name:
+            company_name = frappe.db.sql(
+                """
+                SELECT name
+                FROM `tabCompany`
+                WHERE LOWER(name) = LOWER(%s)
+                LIMIT 1
+                """,
+                company
+            )
+
+            company_name = company_name[0][0] if company_name else None
+
+        if not company_name:
+            frappe.throw(
+                _("Company {0} does not exist.").format(
+                    frappe.bold(company)
+                )
+            )
+
+        # Use actual ERP Company name
+        company = company_name
+
+    if not pos_profile and customer:
+        customer_lower = customer.lower()
+        if "precision" in customer_lower:
+            pos_profile = "VM1_Precision"
+        elif "infac" in customer_lower:
+            pos_profile = "VM2_INFAC - TFP"
+
+    is_pos = 1 if pos_profile else 0
+
+    if pos_profile and not frappe.db.exists("POS Profile", pos_profile):
+        frappe.throw(
+            _(
+                "POS Profile {0} does not exist."
+            ).format(
+                frappe.bold(pos_profile)
+            )
+        )
+
+    return {
+        "company": company,
+        "customer": customer,
+        "mode_of_payment": mode_of_payment,
+        "pos_profile": pos_profile,
+        "is_pos": is_pos,
+        "items": imported_items,
+        "status":status,
+        "total_items": len(imported_items)
+    }
+
+
+
+def get_value(row, index):
+
+    if index is None:
+        return None
+
+    if index >= len(row):
+        return None
+
+    value = row[index]
+
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        value = value.strip()
+
+    return value
+

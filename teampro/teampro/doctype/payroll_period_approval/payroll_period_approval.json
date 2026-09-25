@@ -1,0 +1,168 @@
+{
+ "actions": [],
+ "autoname": "PPA-.YYYY.-.#####",
+ "creation": "2026-08-01 00:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "company",
+  "start_date",
+  "end_date",
+  "status",
+  "column_break_4",
+  "requested_by",
+  "requested_on",
+  "approved_by",
+  "approved_on",
+  "employees_section",
+  "employee_count",
+  "column_break_8",
+  "total_payment_days",
+  "remarks"
+ ],
+ "fields": [
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Start Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "end_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "End Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nPending for Approval\nApproved\nRejected",
+   "default": "Draft",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "requested_by",
+   "fieldtype": "Link",
+   "label": "Requested By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "requested_on",
+   "fieldtype": "Datetime",
+   "label": "Requested On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_on",
+   "fieldtype": "Datetime",
+   "label": "Approved On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "employees_section",
+   "fieldtype": "Section Break",
+   "label": "Summary"
+  },
+  {
+   "fieldname": "employee_count",
+   "fieldtype": "Int",
+   "label": "Employee Count",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_payment_days",
+   "fieldtype": "Float",
+   "label": "Total Payment Days",
+   "read_only": 1
+  },
+  {
+   "fieldname": "remarks",
+   "fieldtype": "Small Text",
+   "label": "Remarks"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "is_submittable": 0,
+ "links": [],
+ "modified": "2026-08-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Payroll Period Approval",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "All"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "company",
+ "track_changes": 1
+}

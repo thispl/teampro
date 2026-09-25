@@ -1,0 +1,24 @@
+{
+ "content": null,
+ "creation": "2026-07-15 00:00:00.000000",
+ "docstatus": 0,
+ "doctype": "Page",
+ "idx": 0,
+ "modified": "2026-07-15 00:00:00.000000",
+ "module": "Teampro",
+ "name": "payroll-workbench",
+ "owner": "Administrator",
+ "page_name": "payroll-workbench",
+ "roles": [
+  {
+   "role": "HR Manager"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "script": null,
+ "standard": "Yes",
+ "style": null,
+ "system_page": 0
+}

@@ -1,0 +1,130 @@
+{
+  "header": "<style>\nheader img { width: 100% !important; height: auto !important; display: block; }\nheader { width: 210mm !important; }\n</style>",
+  "sections": [
+    {
+      "label": "",
+      "page_break": false,
+      "columns": [
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "<div class=\"doc-header\">\n    <div class=\"doc-title\">\n        {% if doc.return_against %}\n        <h2>Credit Note</h2>\n        {% else %}\n        <h2>Sales Invoice</h2>\n        {% endif %}\n        <p class=\"doc-number\">{{ doc.name }}</p>\n    </div>\n    <div class=\"doc-meta\">\n        <p><span class=\"meta-label\">Date</span> {{ frappe.utils.formatdate(doc.posting_date, \"dd-MMM-yyyy\") }}</p>\n        {% if doc.po_no %}\n        <p><span class=\"meta-label\">PO Number</span> {{ doc.po_no }}</p>\n        {% endif %}\n        {% if doc.date_range %}\n        <p><span class=\"meta-label\">Date Range</span> {{ doc.date_range }}</p>\n        {% endif %}\n        {% if doc.return_against %}\n        <p><span class=\"meta-label\">Return Against</span> {{ doc.return_against }}</p>\n        {% endif %}\n    </div>\n</div>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "",
+      "page_break": false,
+      "columns": [
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "Bill To",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "<div class=\"party-block\">\n    <div class=\"party-name\">{{ doc.customer_name or '' }}</div>\n    <div class=\"party-address\">{{ doc.address_display or '' }}</div>\n</div>"
+            }
+          ]
+        },
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "From",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "<div class=\"party-block\">\n    <div class=\"party-name\">{{ doc.company or '' }}</div>\n    <div class=\"party-address\">{{ doc.company_address_display or '' }}</div>\n</div>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "",
+      "page_break": false,
+      "columns": [
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "Items",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "{% if doc.items %}\n<div class=\"child-table\">\n    <table class=\"table items-table\">\n        <thead>\n            <tr>\n                <th class=\"col-idx\" style=\"width:5%\">#</th>\n                <th class=\"col-desc\" style=\"width:45%\">Description</th>\n                <th class=\"col-qty\" style=\"width:10%\">Qty</th>\n                <th class=\"col-rate\" style=\"width:15%\">Rate</th>\n                <th class=\"col-amount\" style=\"width:15%\">Amount</th>\n                <th class=\"col-hsn\" style=\"width:10%\">HSN</th>\n            </tr>\n        </thead>\n        <tbody>\n            {% for item in doc.items %}\n            <tr class=\"{{ loop.cycle('odd', 'even') }}\">\n                <td class=\"col-idx\">{{ item.idx }}</td>\n                <td class=\"col-desc\">\n                    <div class=\"item-name\">{{ item.item_name }}</div>\n                    {% if item.description and item.description|striptags|trim != item.item_name|trim %}\n                    <div class=\"item-description\">{{ item.description }}</div>\n                    {% endif %}\n                </td>\n                <td class=\"col-qty\">{{ item.get_formatted('qty') }} {{ item.uom or '' }}</td>\n                <td class=\"col-rate\">{{ item.get_formatted('rate') }}</td>\n                <td class=\"col-amount\">{{ item.get_formatted('amount') }}</td>\n                <td class=\"col-hsn\">{{ item.gst_hsn_code or '' }}</td>\n            </tr>\n            {% endfor %}\n        </tbody>\n    </table>\n</div>\n{% endif %}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "",
+      "page_break": false,
+      "columns": [
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "HSN Based Tax Table",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "{% if doc.items %}\n{% set has_cgst = namespace(val=False) %}\n{% set has_sgst = namespace(val=False) %}\n{% set has_igst = namespace(val=False) %}\n{% for item in doc.items %}\n{% if item.cgst_amount %}{% set has_cgst.val = True %}{% endif %}\n{% if item.sgst_amount %}{% set has_sgst.val = True %}{% endif %}\n{% if item.igst_amount %}{% set has_igst.val = True %}{% endif %}\n{% endfor %}\n\n{% set groups = doc.items|groupby('gst_hsn_code') %}\n{% if groups|length > 0 %}\n<div class=\"hsn-tax-table\">\n    <table class=\"table hsn-table\">\n        <thead>\n            <tr>\n                <th class=\"hsn-col\">HSN/SAC</th>\n                <th class=\"taxable-col\">Taxable Amount</th>\n                {% if has_igst.val %}\n                <th>IGST Rate</th>\n                <th>IGST Amount</th>\n                {% endif %}\n                {% if has_cgst.val %}\n                <th>CGST Rate</th>\n                <th>CGST Amount</th>\n                {% endif %}\n                {% if has_sgst.val %}\n                <th>SGST Rate</th>\n                <th>SGST Amount</th>\n                {% endif %}\n                <th class=\"total-tax-col\">Total Tax</th>\n                <th class=\"total-amount-col\">Total Amount</th>\n            </tr>\n        </thead>\n        <tbody>\n            {% for group in groups %}\n            {% set ns = namespace(taxable=0, cgst_amt=0, sgst_amt=0, igst_amt=0, cgst_rate=0, sgst_rate=0, igst_rate=0) %}\n            {% for item in group.list %}\n            {% set ns.taxable = ns.taxable + item.taxable_value %}\n            {% set ns.cgst_amt = ns.cgst_amt + (item.cgst_amount or 0) %}\n            {% set ns.sgst_amt = ns.sgst_amt + (item.sgst_amount or 0) %}\n            {% set ns.igst_amt = ns.igst_amt + (item.igst_amount or 0) %}\n            {% set ns.cgst_rate = item.cgst_rate or 0 %}\n            {% set ns.sgst_rate = item.sgst_rate or 0 %}\n            {% set ns.igst_rate = item.igst_rate or 0 %}\n            {% endfor %}\n            {% set total_tax = ns.cgst_amt + ns.sgst_amt + ns.igst_amt %}\n            <tr>\n                <td class=\"hsn-col\">{{ group.grouper or 'N/A' }}</td>\n                <td class=\"taxable-col\">{{ frappe.utils.fmt_money(ns.taxable, currency=doc.company_currency) }}</td>\n                {% if has_igst.val %}\n                <td>{{ ns.igst_rate }}%</td>\n                <td>{{ frappe.utils.fmt_money(ns.igst_amt, currency=doc.company_currency) }}</td>\n                {% endif %}\n                {% if has_cgst.val %}\n                <td>{{ ns.cgst_rate }}%</td>\n                <td>{{ frappe.utils.fmt_money(ns.cgst_amt, currency=doc.company_currency) }}</td>\n                {% endif %}\n                {% if has_sgst.val %}\n                <td>{{ ns.sgst_rate }}%</td>\n                <td>{{ frappe.utils.fmt_money(ns.sgst_amt, currency=doc.company_currency) }}</td>\n                {% endif %}\n                <td class=\"total-tax-col\">{{ frappe.utils.fmt_money(total_tax, currency=doc.company_currency) }}</td>\n                <td class=\"total-amount-col\">{{ frappe.utils.fmt_money(ns.taxable + total_tax, currency=doc.company_currency) }}</td>\n            </tr>\n            {% endfor %}\n        </tbody>\n    </table>\n</div>\n{% endif %}\n{% endif %}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "",
+      "page_break": false,
+      "columns": [
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "Tax Summary",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "{% if doc.taxes %}\n<div class=\"tax-summary\">\n    {% for i in doc.taxes %}\n    <div class=\"tax-row\">\n        <span class=\"tax-label\">{{ i.account_head }}</span>\n        <span class=\"tax-amount\">{{ i.get_formatted('tax_amount') }}</span>\n    </div>\n    {% endfor %}\n</div>\n{% endif %}\n{% if doc.in_words %}\n<div class=\"in-words\">\n    <span class=\"iw-label\">In Words:</span>\n    <span class=\"iw-value\">{{ doc.in_words }}</span>\n</div>\n{% endif %}"
+            }
+          ]
+        },
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "Totals",
+              "fieldname": "_custom_html",
+              "fieldtype": "HTML Editor",
+              "html": "<div class=\"totals-block\">\n    {% if doc.discount_amount and doc.discount_amount != 0 %}\n    <div class=\"total-row\">\n        <span class=\"t-label\">Total</span>\n        <span class=\"t-value\">{{ doc.get_formatted('total') }}</span>\n    </div>\n    <div class=\"total-row\">\n        <span class=\"t-label\">Discount Amount</span>\n        <span class=\"t-value\">{{ doc.get_formatted('discount_amount') }}</span>\n    </div>\n    {% endif %}\n    <div class=\"total-row\">\n        <span class=\"t-label\">Net Total</span>\n        <span class=\"t-value\">{{ doc.get_formatted('net_total') }}</span>\n    </div>\n    {% if doc.total_taxes_and_charges and doc.total_taxes_and_charges != 0 %}\n    <div class=\"total-row\">\n        <span class=\"t-label\">Total Tax</span>\n        <span class=\"t-value\">{{ doc.get_formatted('total_taxes_and_charges') }}</span>\n    </div>\n    {% endif %}\n    <div class=\"total-row grand\">\n        <span class=\"t-label\">Grand Total</span>\n        <span class=\"t-value\">{{ doc.get_formatted('grand_total') }}</span>\n    </div>\n</div>"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "label": "",
+      "page_break": false,
+      "columns": [
+        {
+          "label": "",
+          "fields": [
+            {
+              "label": "",
+              "fieldname": "terms",
+              "fieldtype": "Text Editor",
+              "nolabel": 1
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "footer": "<style>\nfooter img { width: 100% !important; height: auto !important; display: block; }\nfooter { width: 210mm !important; }\n</style>"
+}

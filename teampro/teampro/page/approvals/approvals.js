@@ -1,210 +1,43 @@
 
-// frappe.pages['approvals'].on_page_load = function(wrapper) {
+frappe.pages['approvals'].on_page_load = function (wrapper) {
 
-// 	let page = frappe.ui.make_app_page({
-// 		parent: wrapper,
-// 		title: 'Approvals',
-// 		single_column: true
-// 	});
-    
+    let page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: 'Approvals',
+        single_column: true
+    });
 
-// 	$(page.body).html(`
-//     <div class="approvals-container" style="background-color:white;">
 
-//         <div style="text-align:center; margin-bottom:5px; margin-top:15px;">
-//             <h2 style="margin:0; font-weight:bold;">APPROVALS</h2>
-//             <div style="font-size:16px; color:#555; margin-top:4px;" id="current-datetime"></div>
-//         </div>
-
-//         <div style="background:#f2f2f2; padding:10px; border-radius:8px; margin:15px;">
-
-//             <!-- Leave Application -->
-//             <div style="border:1px solid #d1d5db; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-//                 <div style="background:#ffffff; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #d1d5db;">
-//                     <h4 style="margin:0; font-size:13px; font-weight:700; letter-spacing:1px;">LEAVE APPLICATION</h4>
-//                 </div>
-//                 <div style="background:#ffffff; padding:10px; overflow-x:auto;">
-//                     <div id="leave-table"></div>
-//                 </div>
-//             </div>
-
-//             <!-- Expense Claim -->
-//             <div style="border:1px solid #d1d5db; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-//                 <div style="background:#ffffff; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #d1d5db;">
-//                     <h4 style="margin:0; font-size:13px; font-weight:700; letter-spacing:1px;">EXPENSE CLAIM</h4>
-//                 </div>
-//                 <div style="background:#ffffff; padding:10px; overflow-x:auto;">
-//                     <div id="expense-table"></div>
-//                 </div>
-//             </div>
-
-//             <!-- Attendance Request -->
-//             <div style="border:1px solid #d1d5db; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-//                 <div style="background:#ffffff; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #d1d5db;">
-//                     <h4 style="margin:0; font-size:13px; font-weight:700; letter-spacing:1px;">ATTENDANCE REQUEST</h4>
-//                 </div>
-//                 <div style="background:#ffffff; padding:10px; overflow-x:auto;">
-//                     <div id="att-table"></div>
-//                 </div>
-//             </div>
-
-//             <!-- Purchase Order -->
-//             <div style="border:1px solid #d1d5db; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-//                 <div style="background:#ffffff; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #d1d5db;">
-//                     <h4 style="margin:0; font-size:13px; font-weight:700; letter-spacing:1px;">PURCHASE ORDER</h4>
-//                 </div>
-//                 <div style="background:#ffffff; padding:10px; overflow-x:auto;">
-//                     <div id="pur-table"></div>
-//                 </div>
-//             </div>
-
-//             <!-- Purchase Invoice -->
-//             <div style="border:1px solid #d1d5db; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-//                 <div style="background:#ffffff; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #d1d5db;">
-//                     <h4 style="margin:0; font-size:13px; font-weight:700; letter-spacing:1px;">PURCHASE INVOICE</h4>
-//                 </div>
-//                 <div style="background:#ffffff; padding:10px; overflow-x:auto;">
-//                     <div id="pur-inv-table"></div>
-//                 </div>
-//             </div>
-
-//             <!-- Sales Invoice -->
-//             <div style="border:1px solid #d1d5db; border-radius:8px; overflow:hidden;">
-//                 <div style="background:#ffffff; height:40px; display:flex; align-items:center; padding:0 15px; border-bottom:1px solid #d1d5db;">
-//                     <h4 style="margin:0; font-size:13px; font-weight:700; letter-spacing:1px;">SALES INVOICE</h4>
-//                 </div>
-//                 <div style="background:#ffffff; padding:10px; overflow-x:auto;">
-//                     <div id="sal-inv-table"></div>
-//                 </div>
-//             </div>
-
-//         </div>
-//     </div>
-// `);
-
-// // ✅ Time format — match R&S style
-// function update_datetime() {
-//     const now = new Date();
-//     const date = now.toLocaleDateString('en-IN', {
-//         year: 'numeric', month: 'long', day: 'numeric'
-//     });
-//     const time = now.toLocaleTimeString('en-IN', {
-//         hour: '2-digit', minute: '2-digit', second: '2-digit',
-//         hour12: true
-//     }).toUpperCase();
-//     $('#current-datetime').text(`${date} | ${time}`);
-// }
-// update_datetime();
-// setInterval(update_datetime, 1000);
-
-	
-// 	$(`<style>
+    $(page.body).html(`
+    <div class="approvals-container" style="background-color:#F8FAFC;margin-top:0px;">
 
         
 
-// 		.approvals-container{
-// 			padding-left:20px;
-// 			padding-right:20px;
-// 		}
-//         .page-head.flex{
-//             display:none !important;
-//         }
-
-// 		/* Header */
-// 		.approval-table thead th{
-// 			background:#0F1568 !important;
-// 			color:white !important;
-// 			text-align:center;
-// 			vertical-align:middle;
-// 		}
-
-// 		/* Odd Rows */
-// 		.approval-table tbody tr:nth-child(odd){
-// 			background:#ffffff;
-// 		}
-
-// 		/* Even Rows */
-// 		.approval-table tbody tr:nth-child(even){
-// 			background:#E7E6EC;
-// 		}
-
-// 		/* Hover */
-// 		.approval-table tbody tr:hover{
-// 			background:#F3C98B !important;
-// 			cursor:pointer;
-// 			transition:0.2s;
-// 		}
-
-// 		/* Cell Alignment */
-// 		.approval-table td,
-// 		.approval-table th{
-// 			text-align:center;
-// 			vertical-align:middle;
-// 	}
-
-//     .leave-section {
-//     border: 1px solid #d1d5db;
-//     border-radius: 8px;
-//     overflow: hidden;
-//     margin-bottom: 20px;
-// }
-
-// .leave-section-header {
-//     background: #ffffff;
-//     height: 40px;
-    
-//     display: flex;
-//     justify-content: space-between;
-//     align-items: center;
-//     padding: 0 15px;
-//     border-bottom: 1px solid #d1d5db;
-// }
-
-// .leave-section-body {
-//     background: #f2f2f2;
-//     padding: 10px;
-//     overflow-x: auto;
-// }
-// 	</style>`).appendTo("head");
-
-// 	load_leave_applications();
-// 	load_expense_claims();
-// 	load_att_table();
-// 	load_pur_table();
-//     load_pur_inv_table();
-//     load_sal_inv_table();
-// };
-
-frappe.pages['approvals'].on_page_load = function(wrapper) {
-
-	let page = frappe.ui.make_app_page({
-		parent: wrapper,
-		title: 'Approvals',
-		single_column: true
-	});
-    
-
-	$(page.body).html(`
-    <div class="approvals-container" style="background-color:white;">
-
-        
-
-        <div style="text-align:center; margin-bottom:5px; margin-top:15px;">
+        <div style="text-align:center; margin-bottom:5px; margin-top:0px;">
             <h2 style="margin:0; font-weight:bold;">APPROVALS</h2>
             <div style="font-size:16px; color:#555; margin-top:5px;" id="current-datetime"></div>
 
-            <div style="margin-top:12px; display:flex; justify-content:center;gap:10px; flex-wrap:wrap;">
-                <button class="nav-btn" data-target="leave-section">Leave Application</button>
-                <button class="nav-btn" data-target="expense-section">Expense Claim</button>
-                <button class="nav-btn" data-target="att-section">Attendance Request</button>
-                <button class="nav-btn" data-target="pur-section">Purchase Order</button>
-                <button class="nav-btn" data-target="pur-inv-section">Purchase Invoice</button>
-                <button class="nav-btn" data-target="sal-inv-section">Sales Invoice</button>
+            <!-- Main tabs: Approve | Pay | Report -->
+            <div style="margin-top:12px; display:flex; justify-content:center;gap:4px; flex-wrap:wrap;">
+                <button class="main-tab-btn active" data-tab="approvals">Approve</button>
+                <button class="main-tab-btn" data-tab="payment">Pay</button>
+                <button class="main-tab-btn" data-tab="transactions">Report</button>
+            </div>
+
+            <!-- Sub-nav for Approve tab -->
+            <div id="approvals-subnav" style="margin-top:10px; display:flex; justify-content:center;gap:8px; flex-wrap:wrap;">
+                <button class="nav-btn" data-target="leave-section">Leave Applications</button>
+                <button class="nav-btn" data-target="expense-section">Expense Claims</button>
+                <button class="nav-btn" data-target="att-section">Attendance Requests</button>
+                <button class="nav-btn" data-target="pur-section">Purchase Orders</button>
+                <button class="nav-btn" data-target="pur-inv-section">Purchase Invoices</button>
+                <button class="nav-btn" data-target="sal-inv-section">Sales Invoices</button>
             </div>
         </div>
 
+        <div id="approvals-tab-content">
         <br>
-        <div id="approval-cards" style="display:flex;justify-content:center;align-items:center;gap:15px;flex-wrap:wrap;border:1px solid #d1d5db;background:#f2f2f2;border-radius:8px;margin-top:5px;margin-bottom:10px;padding-top:8px;padding-bottom:8px;">
+        <div id="dashboard-cards" style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;border:1px solid #d1d5db;background:#f2f2f2;border-radius:8px;margin-top:5px;margin-bottom:10px;padding-top:8px;padding-bottom:8px;">
 
             <div id="leave-card"></div>
             <div id="expense-card"></div>
@@ -212,39 +45,39 @@ frappe.pages['approvals'].on_page_load = function(wrapper) {
             <div id="po-card"></div>
             <div id="pi-card"></div>
             <div id="si-card"></div>
+            
 
         </div>
 
         <br>
         <!-- Leave Application -->
-        <div id="leave-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden;margin-top:5px; margin-bottom:10px;">
-            <br>   
-            <div style="border:1px solid #ffffff; background:#ffffff;height:40px;width:1240px;margin-left:10px; display:flex; justify-content:center; align-items:center; padding:0 6px; border-radius:2px;">
+        <div id="leave-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden;margin-top:5px; margin-bottom:10px;">  
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
                 <h2 style="margin:0;font-size:16px; font-weight:700;">LEAVE APPLICATION</h2>
             </div>
-            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;">
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
                 <div id="leave-table"></div>
             </div>
         </div>
 
         <!-- Expense Claim -->
-        <div id="expense-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-            <br>   
-            <div style="border:1px solid #ffffff; background:#ffffff;height:40px;width:1240px;margin-left:10px; display:flex; justify-content:center; align-items:center; padding:0 6px; border-radius:2px;">
-                <h2 style="margin:0;font-size:16px; font-weight:700;">EXPENSE CLAIM</h2>
+        <div id="expense-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">  
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0; font-size:16px; font-weight:700;">
+                    EXPENSE CLAIM
+                </h2>
             </div>
-            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;">
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;margin-top:2px;padding-top:0px !important;">
                 <div id="expense-table"></div>
             </div>
         </div> 
 
         <!-- Attendance Request -->
-        <div id="att-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-            <br>   
-            <div style="border:1px solid #ffffff; background:#ffffff;height:40px;width:1240px;margin-left:10px; display:flex; justify-content:center; align-items:center; padding:0 6px; border-radius:2px;">
+        <div id="att-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;"> 
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
                 <h2 style="margin:0;font-size:16px; font-weight:700;">ATTENDANCE REQUEST</h2>
             </div>
-            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;">
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
                 <div id="att-table"></div>
             </div>
         </div> 
@@ -252,68 +85,2259 @@ frappe.pages['approvals'].on_page_load = function(wrapper) {
 
         <!-- Purchase Order -->
         <div id="pur-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-            <br>   
-            <div style="border:1px solid #ffffff; background:#ffffff;height:40px;width:1240px;margin-left:10px; display:flex; justify-content:center; align-items:center; padding:0 6px; border-radius:2px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
                 <h2 style="margin:0;font-size:16px; font-weight:700;">PURCHASE ORDER</h2>
             </div>
-            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;">
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
                 <div id="pur-table"></div>
             </div>
         </div> 
 
         <!-- Purchase Invoice -->
-        <div id="pur-inv-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-            <br>   
-            <div style="border:1px solid #ffffff; background:#ffffff;height:40px;width:1240px;margin-left:10px; display:flex; justify-content:center; align-items:center; padding:0 6px; border-radius:2px;">
+        <div id="pur-inv-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">  
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
                 <h2 style="margin:0;font-size:16px; font-weight:700;">PURCHASE INVOICE</h2>
             </div>
-            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;">
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
                 <div id="pur-inv-table"></div>
             </div>
         </div> 
 
         <!-- Sales Invoice -->
-         <div id="sal-inv-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
-            <br>   
-            <div style="border:1px solid #ffffff; background:#ffffff;height:40px;width:1240px;margin-left:10px; display:flex; justify-content:center; align-items:center; padding:0 6px; border-radius:2px;">
+         <div id="sal-inv-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;"> 
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
                 <h2 style="margin:0;font-size:16px; font-weight:700;">SALES INVOICE</h2>
             </div>
-            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;">
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
                 <div id="sal-inv-table"></div>
             </div>
         </div> 
 
+        </div>
 
+        </div><!-- end approvals-tab-content -->
+
+        <!-- Payment tab content (sub-tabs: Receive Payment | Request Payment) -->
+        <div id="payment-tab-content" style="display:none;">
+        <br>
+
+        <!-- Sub-tabs within Payment -->
+        <div style="text-align:center;margin-bottom:10px;">
+            <button class="payment-subtab-btn active" data-subtab="receive">Receive Payment</button>
+            <button class="payment-subtab-btn" data-subtab="request">Request Payment</button>
+        </div>
+
+        <!-- Sub-tab: Receive Payment -->
+        <div id="payment-subtab-receive" class="payment-subtab-content" style="display:block;">
+
+        <!-- Receive Payment List -->
+        <div id="recv-list-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;padding:0 10px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">RECEIVE PAYMENT LIST</h2>
+                <button class="btn btn-primary btn-sm payment-btn" type="button" style="background:#16a34a;border-color:#16a34a;font-size:12px;font-weight:600;">+ New Receive Payment</button>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; padding-top:0px !important;">
+                <div id="recv-list-filters" style="background:#fff;border-radius:6px;padding:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">From Date</label>
+                        <input type="date" id="recv-list-from-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">To Date</label>
+                        <input type="date" id="recv-list-to-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:140px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Company</label>
+                        <input type="text" id="recv-list-company" class="form-control" placeholder="All" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Party Type</label>
+                        <select id="recv-list-party-type" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Customer">Customer</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:80px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Mode</label>
+                        <select id="recv-list-mode" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    <button id="recv-list-filter-btn" class="btn btn-primary btn-sm" style="background:#16a34a;border-color:#16a34a;height:30px;font-size:12px;font-weight:600;">Filter</button>
+                    <button id="recv-list-refresh-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Refresh</button>
+                </div>
+                <div id="recv-list-cards" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
+                <div id="recv-list-table" style="background:#fff;border-radius:6px;overflow:hidden;"></div>
+            </div>
+        </div>
+        </div><!-- end payment-subtab-receive -->
+
+        <!-- Sub-tab: Request Payment -->
+        <div id="payment-subtab-request" class="payment-subtab-content" style="display:none;">
+
+        <!-- Request Payment List -->
+        <div id="rp-list-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:space-between;align-items:center;border-radius:4px;padding:0 10px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">REQUEST PAYMENT LIST</h2>
+                <button class="btn btn-primary btn-sm request-payment-btn" type="button" style="background:#be185d;border-color:#be185d;font-size:12px;font-weight:600;">+ New Request Payment</button>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; padding-top:0px !important;">
+                <div id="rp-list-filters" style="background:#fff;border-radius:6px;padding:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">From Date</label>
+                        <input type="date" id="rp-list-from-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">To Date</label>
+                        <input type="date" id="rp-list-to-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:140px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Company</label>
+                        <input type="text" id="rp-list-company" class="form-control" placeholder="All" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Status</label>
+                        <select id="rp-list-status" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Draft">Draft</option>
+                            <option value="Pending Approval">Pending Approval</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Partially Paid">Partially Paid</option>
+                            <option value="Closed">Closed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                    <button id="rp-list-filter-btn" class="btn btn-primary btn-sm" style="background:#be185d;border-color:#be185d;height:30px;font-size:12px;font-weight:600;">Filter</button>
+                    <button id="rp-list-refresh-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Refresh</button>
+                </div>
+                <div id="rp-list-cards" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
+                <div id="rp-list-table" style="background:#fff;border-radius:6px;overflow:hidden;"></div>
+            </div>
+        </div>
+        </div><!-- end payment-subtab-request -->
+
+        </div><!-- end payment-tab-content -->
+
+        <div id="txn-tab-content" style="display:none;">
+
+        <!-- Sub-tabs within Transactions -->
+        <div style="text-align:center;margin-bottom:10px;">
+            <button class="txn-subtab-btn active" data-subtab="payments">Payment Transactions</button>
+            <button class="txn-subtab-btn" data-subtab="dtr">Daily Transaction Report</button>
+        </div>
+
+        <!-- Sub-tab 1: Payment Transactions (existing) -->
+        <div id="txn-subtab-payments" class="txn-subtab-content" style="display:block;">
+        <!-- Transactions -->
+        <div id="txn-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">TRANSACTIONS</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; padding-top:0px !important;">
+
+                <!-- Filters bar -->
+                <div id="txn-filters" style="background:#fff;border-radius:6px;padding:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">From Date</label>
+                        <input type="date" id="txn-from-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">To Date</label>
+                        <input type="date" id="txn-to-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Company</label>
+                        <input type="text" id="txn-company" class="form-control" placeholder="All" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Party Type</label>
+                        <select id="txn-party-type" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Customer">Customer</option>
+                            <option value="Supplier">Supplier</option>
+                            <option value="Employee">Employee</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Party</label>
+                        <input type="text" id="txn-party" class="form-control" placeholder="All" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:100px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Type</label>
+                        <select id="txn-payment-type" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Pay">Pay</option>
+                            <option value="Receive">Receive</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:80px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Mode</label>
+                        <select id="txn-mode" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    <button id="txn-filter-btn" class="btn btn-primary btn-sm" style="background:#0F1568;border-color:#0F1568;height:30px;font-size:12px;font-weight:600;">Filter</button>
+                    <button id="txn-refresh-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Refresh</button>
+                </div>
+
+                <!-- Analytics cards -->
+                <div id="txn-cards" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+                <!-- Charts row -->
+                <div id="txn-charts" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                    <div id="txn-chart-mode" style="flex:1;min-width:280px;background:#fff;border-radius:6px;padding:10px;min-height:200px;"></div>
+                    <div id="txn-chart-trend" style="flex:2;min-width:400px;background:#fff;border-radius:6px;padding:10px;min-height:200px;"></div>
+                </div>
+
+                <!-- Transaction table -->
+                <div id="txn-table" style="background:#fff;border-radius:6px;overflow:hidden;"></div>
+
+            </div>
+        </div>
+        </div><!-- end txn-subtab-payments -->
+
+        <!-- Sub-tab 2: Daily Transaction Report -->
+        <div id="txn-subtab-dtr" class="txn-subtab-content" style="display:none;">
+        <div id="dtr-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">DAILY TRANSACTION REPORT</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; padding-top:0px !important;">
+
+                <!-- DTR Controls -->
+                <div style="background:#fff;border-radius:6px;padding:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Report Date</label>
+                        <input type="date" id="dtr-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <button id="dtr-load-btn" class="btn btn-primary btn-sm" style="background:#0F1568;border-color:#0F1568;height:30px;font-size:12px;font-weight:600;">Load Report</button>
+                    <button id="dtr-print-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Print / PDF</button>
+                    <button id="dtr-csv-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Download CSV</button>
+                </div>
+
+                <!-- DTR Summary Cards -->
+                <div id="dtr-cards" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+                <!-- DTR Tab Navigation -->
+                <div id="dtr-tab-nav" style="display:flex;gap:2px;border-bottom:3px solid #1d4ed8;margin-bottom:0;flex-wrap:wrap;"></div>
+
+                <!-- DTR Tab Contents -->
+                <div id="dtr-tab-bankcash" class="dtr-tab-panel" style="display:block;padding-top:12px;"></div>
+                <div id="dtr-tab-sales" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+                <div id="dtr-tab-purchase" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+                <div id="dtr-tab-rp" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+                <div id="dtr-tab-summary" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+
+            </div>
+        </div>
+        </div><!-- end txn-subtab-dtr -->
+
+        </div><!-- end txn-tab-content -->
 
     </div>
 `);
 
-// ✅ Time format — match R&S style
-function update_datetime() {
-    const now = new Date();
-    const date = now.toLocaleDateString('en-IN', {
-        year: 'numeric', month: 'long', day: 'numeric'
+    // ✅ Time format — match R&S style
+    function update_datetime() {
+        const now = new Date();
+        const date = now.toLocaleDateString('en-IN', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        const time = now.toLocaleTimeString('en-IN', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: true
+        }).toUpperCase();
+        $('#current-datetime').text(`${date} | ${time}`);
+    }
+    update_datetime();
+    setInterval(update_datetime, 1000);
+
+    // Main tab switching: Approve | Pay | Report
+    $(document).off("click", ".main-tab-btn").on("click", ".main-tab-btn", function () {
+        const tab = $(this).data("tab");
+        // Update button states
+        $(".main-tab-btn").removeClass("active");
+        $(this).addClass("active");
+        // Show/hide tab content
+        $("#approvals-tab-content").hide();
+        $("#payment-tab-content").hide();
+        $("#txn-tab-content").hide();
+        // Only show approval sub-nav buttons under Approve tab
+        if (tab === "approvals") {
+            $("#approvals-tab-content").show();
+            $("#approvals-subnav").show();
+        } else if (tab === "payment") {
+            $("#payment-tab-content").show();
+            $("#approvals-subnav").hide();
+            // Load the active sub-tab's data
+            const active_subtab = $(".payment-subtab-btn.active").data("subtab");
+            if (active_subtab === "receive") {
+                if (typeof load_receive_payment_list === "function") load_receive_payment_list();
+            } else if (active_subtab === "request") {
+                if (typeof load_request_payment_list === "function") load_request_payment_list();
+            }
+        } else if (tab === "transactions") {
+            $("#txn-tab-content").show();
+            $("#approvals-subnav").hide();
+            console.log("[txn] switching to transactions tab, loading data");
+            load_transactions();
+        }
     });
-    const time = now.toLocaleTimeString('en-IN', {
-        hour: '2-digit', minute: '2-digit', second: '2-digit',
-        hour12: true
-    }).toUpperCase();
-    $('#current-datetime').text(`${date} | ${time}`);
-}
-update_datetime();
-setInterval(update_datetime, 1000);
 
-$(document).on("click", ".nav-btn", function () {
-    const target = $(this).data("target");
-
-    document.getElementById(target).scrollIntoView({
-        behavior: "smooth",
-        block: "start"
+    // Sub-tab switching within Payment tab — sub-tab acts as both tab switcher and action button
+    $(document).off("click", ".payment-subtab-btn").on("click", ".payment-subtab-btn", function () {
+        var subtab = $(this).data("subtab");
+        var was_active = $(this).hasClass("active");
+        $(".payment-subtab-btn").removeClass("active");
+        $(this).addClass("active");
+        $(".payment-subtab-content").hide();
+        $("#payment-subtab-" + subtab).show();
+        if (subtab === "receive") {
+            if (typeof load_receive_payment_list === "function") load_receive_payment_list();
+            // If already active, open the dialog (button behavior)
+            if (was_active && typeof open_payment_dialog === "function") open_payment_dialog();
+        } else if (subtab === "request") {
+            if (typeof load_request_payment_list === "function") load_request_payment_list();
+            if (was_active && typeof open_request_payment_dialog === "function") open_request_payment_dialog();
+        }
     });
-});
 
-	
-	$(`<style>
+    // Sub-nav: scroll to section within approvals tab
+    $(document).off("click", ".nav-btn").on("click", ".nav-btn", function () {
+        const target = $(this).data("target");
+        if (target) {
+            document.getElementById(target).scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+    });
+
+    // ============================================================
+    // Receive Payment button — opens dialog to create Payment/Journal Entry
+    // ============================================================
+    let _payment_dialog_open = false;
+    $(document).off("click", ".payment-btn").on("click", ".payment-btn", function () {
+        if (_payment_dialog_open) return;
+        _payment_dialog_open = true;
+        open_payment_dialog();
+    });
+
+    // ============================================================
+    // Request Payment button — opens dialog to create Request Payment
+    // ============================================================
+    let _rp_dialog_open = false;
+    $(document).off("click", ".request-payment-btn").on("click", ".request-payment-btn", function () {
+        if (_rp_dialog_open) return;
+        _rp_dialog_open = true;
+        open_request_payment_dialog();
+    });
+
+    window.open_request_payment_dialog = open_request_payment_dialog;
+
+    function open_request_payment_dialog() {
+
+        let rp_rows = []; // references table rows
+
+        const dialog = new frappe.ui.Dialog({
+            title: __("Request Payment"),
+            fields: [
+                // --- Section 1: Request Details ---
+                { fieldname: "sec1", fieldtype: "Section Break",
+                  label: __("Request Details") },
+                { fieldname: "company", fieldtype: "Select", options: "",
+                  label: __("Company"), reqd: 1, default: frappe.defaults.get_user_default("Company"),
+                  onchange: () => { rp_rows = []; render_rp_table(); } },
+                { fieldname: "request_date", fieldtype: "Date",
+                  label: __("Request Date"), reqd: 1, default: frappe.datetime.get_today() },
+                { fieldname: "col1", fieldtype: "Column Break" },
+                { fieldname: "requested_by", fieldtype: "Link", options: "Employee",
+                  label: __("Requested By"), reqd: 1,
+                  default: frappe.defaults.get_user_default("Employee"),
+                  get_query: () => { return { filters: { status: "Active" } }; },
+                  onchange: () => {
+                      const emp = dialog.get_value("requested_by");
+                      if (emp) {
+                          frappe.db.get_value("Employee", emp, ["employee_name", "department"])
+                              .then(r => {
+                                  if (r && r.message) {
+                                      dialog.set_value("requested_by_name", r.message.employee_name || "");
+                                      dialog.set_value("department", r.message.department || "");
+                                  }
+                              });
+                      }
+                  } },
+                { fieldname: "requested_by_name", fieldtype: "Data",
+                  label: __("Requested By Name"), read_only: 1 },
+                { fieldname: "department", fieldtype: "Link", options: "Department",
+                  label: __("Department"), read_only: 1 },
+
+                // --- Section 2: Payment Info ---
+                { fieldname: "sec2", fieldtype: "Section Break",
+                  label: __("Payment Info") },
+                { fieldname: "required_by_date", fieldtype: "Date",
+                  label: __("Required By Date") },
+                { fieldname: "payment_mode", fieldtype: "Link", options: "Mode of Payment",
+                  label: __("Preferred Payment Mode"), default: "Wire Transfer" },
+                { fieldname: "col2", fieldtype: "Column Break" },
+                { fieldname: "currency", fieldtype: "Link", options: "Currency",
+                  label: __("Currency"), reqd: 1, default: "INR" },
+
+                // --- Section 3: References ---
+                { fieldname: "sec3", fieldtype: "Section Break",
+                  label: __("References / Advance") },
+                { fieldname: "fetch_btn_rp", fieldtype: "Button", label: __("Fetch Outstanding Bills") },
+                { fieldname: "add_row_btn_rp", fieldtype: "Button", label: __("Add Row") },
+                { fieldname: "outstanding_html_rp", fieldtype: "HTML" },
+
+                // --- Section 4: Totals ---
+                { fieldname: "sec4", fieldtype: "Section Break",
+                  label: __("Totals") },
+                { fieldname: "total_against_bills", fieldtype: "Currency",
+                  label: __("Total Against Bills"), read_only: 1, default: 0, options: "currency" },
+                { fieldname: "col4", fieldtype: "Column Break" },
+                { fieldname: "total_advance", fieldtype: "Currency",
+                  label: __("Total Advance"), read_only: 1, default: 0, options: "currency" },
+                { fieldname: "col4b", fieldtype: "Column Break" },
+                { fieldname: "total_amount", fieldtype: "Currency",
+                  label: __("Total Amount"), read_only: 1, default: 0, options: "currency" },
+
+                // --- Section 5: Remarks ---
+                { fieldname: "sec5", fieldtype: "Section Break",
+                  label: __("Remarks") },
+                { fieldname: "remarks", fieldtype: "Small Text",
+                  label: __("Remarks") }
+            ],
+            primary_action_label: __("Create Request Payment"),
+            primary_action: (values) => create_request_payment(values, dialog)
+        });
+
+        // Style the dialog - same as Receive Payment
+        const $modal = dialog.$wrapper.find(".modal-dialog");
+        const $body = dialog.$wrapper.find(".modal-body");
+        $modal.css("max-width", "900px");
+        $body.css({ "padding": "12px 16px", "max-height": "75vh", "overflow-y": "auto" });
+        dialog.$wrapper.find(".modal-title").css({ "font-weight": "700", "color": "#0F1568", "font-size": "15px" });
+        dialog.$wrapper.find(".modal-header").css("padding", "10px 16px");
+        dialog.$wrapper.find(".modal-footer").css("padding", "8px 16px");
+        dialog.$wrapper.find(".frappe-control").css("margin-bottom", "6px");
+        dialog.$wrapper.find(".control-label").css({ "font-size": "11px", "font-weight": "600", "margin-bottom": "2px" });
+        dialog.$wrapper.find('input[data-fieldtype="Date"]').css({ "height": "28px", "padding": "4px 8px" });
+        dialog.$wrapper.find(".input-group-btn .date-picker").css("height", "28px");
+        dialog.$wrapper.find(".section-head").css({
+            "font-weight": "700", "color": "#0F1568",
+            "border-bottom": "2px solid #0F1568",
+            "padding-bottom": "3px", "margin-bottom": "8px", "margin-top": "10px",
+            "font-size": "13px", "text-transform": "uppercase", "letter-spacing": "0.3px"
+        });
+        dialog.$wrapper.find(".modal-footer .btn-primary").css({
+            "background": "#be185d", "border-color": "#be185d",
+            "font-weight": "600", "padding": "5px 18px", "font-size": "12px"
+        });
+        dialog.$wrapper.find(".modal-footer .btn-default").css({ "padding": "5px 14px", "font-size": "12px" });
+        dialog.$wrapper.find(".form-control").css({ "border-radius": "4px", "height": "28px", "font-size": "12px", "padding": "4px 8px" });
+        dialog.$wrapper.find(".input-sm").css("height", "26px");
+        dialog.$wrapper.find(".form-column").css("padding", "0 4px");
+
+        // Fetch outstanding bills button
+        dialog.get_field("fetch_btn_rp").$input.on("click", () => fetch_rp_outstanding());
+        // Add row button
+        dialog.get_field("add_row_btn_rp").$input.on("click", () => {
+            rp_rows.push({
+                reference_type: "Advance",
+                party_type: "",
+                party: "",
+                reference_name: "",
+                outstanding_amount: 0,
+                amount: 0,
+                allocated_amount: 0,
+                payment_account: "",
+                description: "",
+                required_by: ""
+            });
+            render_rp_table();
+        });
+
+        function fetch_rp_outstanding() {
+            const company = dialog.get_value("company");
+            if (!company) {
+                frappe.msgprint(__("Please select Company first."));
+                return;
+            }
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.get_request_payment_outstanding",
+                args: { company: company },
+                freeze: true,
+                callback: (r) => {
+                    if (r.message) {
+                        // Merge fetched rows into rp_rows (avoid duplicates)
+                        const existing_keys = new Set(rp_rows.filter(d => d.reference_name).map(d => d.reference_type + ":" + d.reference_name));
+                        r.message.forEach(d => {
+                            const key = d.reference_doctype + ":" + d.reference_name;
+                            if (!existing_keys.has(key)) {
+                                rp_rows.push({
+                                    reference_type: d.reference_doctype,
+                                    party_type: d.party_type,
+                                    party: d.party,
+                                    reference_name: d.reference_name,
+                                    outstanding_amount: d.outstanding_amount,
+                                    amount: d.outstanding_amount,
+                                    allocated_amount: d.outstanding_amount,
+                                    payment_account: "",
+                                    description: "",
+                                    required_by: ""
+                                });
+                            }
+                        });
+                        render_rp_table();
+                    }
+                }
+            });
+        }
+
+        function render_rp_table() {
+            const html = dialog.get_field("outstanding_html_rp");
+            if (!rp_rows.length) {
+                html.$wrapper.html('<div style="padding:12px;text-align:center;color:#888;background:#f9fafb;border:1px dashed #d1d5db;border-radius:4px;font-size:12px;">No references added yet.<br>Click <b>"Fetch Outstanding Bills"</b> to load bills automatically, or <b>"Add Row"</b> to add a reference manually.</div>');
+                update_rp_totals();
+                return;
+            }
+
+            const ref_type_options = ["", "Purchase Order", "Purchase Invoice", "Expense Claim", "Account", "Advance"];
+
+            // Build table rows — each cell has a labeled container for Frappe controls
+            const rows_html = rp_rows.map((d, i) => {
+                const is_advance = d.reference_type === "Advance";
+                const is_account = d.reference_type === "Account";
+                const show_party = !is_advance && !is_account;
+                const show_ref = !is_advance;
+                const show_outstanding = !is_advance;
+
+                return `
+                <tr class="rp-row" data-idx="${i}">
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <select class="form-control rp-ref-type" data-idx="${i}" style="height:30px;font-size:12px;width:130px;">
+                            ${ref_type_options.map(o => `<option value="${o}" ${d.reference_type === o ? "selected" : ""}>${o || "-- Select --"}</option>`).join("")}
+                        </select>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <div class="rp-party-container" data-idx="${i}" style="min-width:120px;"></div>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <div class="rp-refname-container" data-idx="${i}" style="min-width:140px;"></div>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;text-align:right;">
+                        ${show_outstanding
+                            ? `<span class="rp-outstanding-display" style="font-size:12px;font-weight:600;">${frappe.format(d.outstanding_amount, { fieldtype: "Currency" })}</span>`
+                            : `<span style="color:#ccc;">—</span>`}
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <input type="number" step="0.01" min="0" class="form-control rp-amount" data-idx="${i}" value="${d.amount || ""}" style="height:30px;font-size:12px;width:100px;text-align:right;"/>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <input type="number" step="0.01" min="0" class="form-control rp-alloc" data-idx="${i}" value="${d.allocated_amount || ""}" style="height:30px;font-size:12px;width:100px;text-align:right;" ${show_outstanding ? "" : "disabled"}/>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <div class="rp-account-container" data-idx="${i}" style="min-width:120px;"></div>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;">
+                        <input type="text" class="form-control rp-desc" data-idx="${i}" value="${d.description || ""}" placeholder="Remarks" style="height:30px;font-size:12px;width:110px;"/>
+                    </td>
+                    <td style="vertical-align:top;padding:6px 4px;text-align:center;">
+                        <button class="btn btn-danger btn-xs rp-del-row" data-idx="${i}" style="padding:3px 8px;font-size:11px;">✕</button>
+                    </td>
+                </tr>`;
+            }).join("");
+
+            html.$wrapper.html(`
+                <div style="max-height:300px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">
+                    <table class="table table-bordered table-sm" style="margin:0;font-size:12px;">
+                        <thead style="background:#be185d;color:white;position:sticky;top:0;z-index:10;">
+                            <tr>
+                                <th style="padding:6px 4px;">Reference Type</th>
+                                <th style="padding:6px 4px;">Party</th>
+                                <th style="padding:6px 4px;">Reference Doc</th>
+                                <th style="padding:6px 4px;text-align:right;">Outstanding</th>
+                                <th style="padding:6px 4px;text-align:right;">Amount</th>
+                                <th style="padding:6px 4px;text-align:right;">Allocated</th>
+                                <th style="padding:6px 4px;">Payment Account</th>
+                                <th style="padding:6px 4px;">Remarks</th>
+                                <th style="padding:6px 4px;width:30px;"></th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows_html}</tbody>
+                    </table>
+                </div>
+            `);
+
+            // Wire up events
+            html.$wrapper.find(".rp-ref-type").on("change", function () {
+                const idx = +$(this).data("idx");
+                rp_rows[idx].reference_type = $(this).val();
+                if (rp_rows[idx].reference_type === "Advance" || rp_rows[idx].reference_type === "Account") {
+                    rp_rows[idx].party_type = "";
+                    rp_rows[idx].party = "";
+                }
+                if (rp_rows[idx].reference_type === "Advance") {
+                    rp_rows[idx].reference_name = "";
+                    rp_rows[idx].outstanding_amount = 0;
+                }
+                if (rp_rows[idx].reference_type === "Purchase Order" || rp_rows[idx].reference_type === "Purchase Invoice") {
+                    rp_rows[idx].party_type = "Supplier";
+                } else if (rp_rows[idx].reference_type === "Expense Claim") {
+                    rp_rows[idx].party_type = "Employee";
+                }
+                render_rp_table();
+            });
+
+            html.$wrapper.find(".rp-amount").on("change", function () {
+                const idx = +$(this).data("idx");
+                rp_rows[idx].amount = parseFloat($(this).val()) || 0;
+                update_rp_totals();
+            });
+            html.$wrapper.find(".rp-alloc").on("change", function () {
+                const idx = +$(this).data("idx");
+                rp_rows[idx].allocated_amount = parseFloat($(this).val()) || 0;
+                update_rp_totals();
+            });
+            html.$wrapper.find(".rp-desc").on("change", function () {
+                const idx = +$(this).data("idx");
+                rp_rows[idx].description = $(this).val();
+            });
+            html.$wrapper.find(".rp-del-row").on("click", function () {
+                const idx = +$(this).data("idx");
+                rp_rows.splice(idx, 1);
+                render_rp_table();
+            });
+
+            // Build Frappe Link controls in table cells
+            const company = dialog.get_value("company");
+
+            // Party Link pickers
+            html.$wrapper.find(".rp-party-container").each(function () {
+                const idx = +$(this).data("idx");
+                const pt = rp_rows[idx].party_type;
+                const is_advance = rp_rows[idx].reference_type === "Advance";
+                const is_account = rp_rows[idx].reference_type === "Account";
+                if (!pt || is_advance || is_account) {
+                    $(this).html('<span style="color:#ccc;font-size:12px;">—</span>');
+                    return;
+                }
+                const $container = $(this);
+                $container.empty();
+                const control = frappe.ui.form.make_control({
+                    df: {
+                        fieldtype: "Link",
+                        options: pt,
+                        fieldname: "rp_party_" + idx,
+                        placeholder: "Select " + pt,
+                        only_input: true,
+                        default: rp_rows[idx].party || ""
+                    },
+                    parent: $container,
+                    render_input: true
+                });
+                $container.find("input").css({ "height": "30px", "font-size": "12px", "width": "120px" });
+                control.set_value(rp_rows[idx].party || "");
+                $container.on("change", "input", function () {
+                    rp_rows[idx].party = $(this).val();
+                });
+                if (control.awesomplete) {
+                    control.awesomplete.list.addEventListener("awesomplete-selectcomplete", function () {
+                        rp_rows[idx].party = $container.find("input").val();
+                    });
+                }
+            });
+
+            // Reference Document Link pickers
+            html.$wrapper.find(".rp-refname-container").each(function () {
+                const idx = +$(this).data("idx");
+                const rt = rp_rows[idx].reference_type;
+                if (!rt || rt === "Advance") {
+                    $(this).html('<span style="color:#ccc;font-size:12px;">—</span>');
+                    return;
+                }
+                const $container = $(this);
+                $container.empty();
+                const control = frappe.ui.form.make_control({
+                    df: {
+                        fieldtype: "Link",
+                        options: rt,
+                        fieldname: "rp_ref_" + idx,
+                        placeholder: "Select " + rt,
+                        only_input: true,
+                        default: rp_rows[idx].reference_name || "",
+                        get_query: () => {
+                            const filters = { docstatus: 1 };
+                            if (company) filters.company = company;
+                            if (rt === "Purchase Invoice") filters.outstanding_amount = [">", 0];
+                            if (rt === "Expense Claim") filters.status = ["in", ["Unpaid", "Partly Reimbursed"]];
+                            return { filters: filters };
+                        }
+                    },
+                    parent: $container,
+                    render_input: true
+                });
+                $container.find("input").css({ "height": "30px", "font-size": "12px", "width": "140px" });
+                control.set_value(rp_rows[idx].reference_name || "");
+                $container.on("change", "input", function () {
+                    const val = $(this).val();
+                    rp_rows[idx].reference_name = val;
+                    if (val && rp_rows[idx].reference_type) {
+                        fetch_rp_reference_outstanding(idx);
+                    }
+                });
+                if (control.awesomplete) {
+                    control.awesomplete.list.addEventListener("awesomplete-selectcomplete", function () {
+                        const val = $container.find("input").val();
+                        rp_rows[idx].reference_name = val;
+                        if (val && rp_rows[idx].reference_type) {
+                            fetch_rp_reference_outstanding(idx);
+                        }
+                    });
+                }
+            });
+
+            // Payment Account Link pickers
+            html.$wrapper.find(".rp-account-container").each(function () {
+                const idx = +$(this).data("idx");
+                const $container = $(this);
+                $container.empty();
+                const control = frappe.ui.form.make_control({
+                    df: {
+                        fieldtype: "Link",
+                        options: "Account",
+                        fieldname: "rp_acct_" + idx,
+                        placeholder: "Select Account",
+                        only_input: true,
+                        default: rp_rows[idx].payment_account || "",
+                        get_query: () => {
+                            return { filters: { company: company || "", is_group: 0 } };
+                        }
+                    },
+                    parent: $container,
+                    render_input: true
+                });
+                $container.find("input").css({ "height": "30px", "font-size": "12px", "width": "120px" });
+                control.set_value(rp_rows[idx].payment_account || "");
+                $container.on("change", "input", function () {
+                    rp_rows[idx].payment_account = $(this).val();
+                });
+                if (control.awesomplete) {
+                    control.awesomplete.list.addEventListener("awesomplete-selectcomplete", function () {
+                        rp_rows[idx].payment_account = $container.find("input").val();
+                    });
+                }
+            });
+
+            update_rp_totals();
+        }
+
+        function fetch_rp_reference_outstanding(idx) {
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.get_reference_outstanding",
+                args: {
+                    reference_type: rp_rows[idx].reference_type,
+                    reference_name: rp_rows[idx].reference_name
+                },
+                callback: (r) => {
+                    if (r && r.message) {
+                        rp_rows[idx].outstanding_amount = r.message.outstanding_amount || 0;
+                        if (r.message.party) rp_rows[idx].party = r.message.party;
+                        if (r.message.party_type) rp_rows[idx].party_type = r.message.party_type;
+                        if (!rp_rows[idx].amount) rp_rows[idx].amount = rp_rows[idx].outstanding_amount;
+                        if (!rp_rows[idx].allocated_amount) rp_rows[idx].allocated_amount = rp_rows[idx].outstanding_amount;
+                        render_rp_table();
+                    }
+                }
+            });
+        }
+
+        function update_rp_totals() {
+            let total_bills = 0, total_adv = 0;
+            rp_rows.forEach(d => {
+                if (d.reference_type === "Advance") {
+                    total_adv += parseFloat(d.amount) || 0;
+                } else {
+                    total_bills += parseFloat(d.allocated_amount) || 0;
+                }
+            });
+            dialog.set_value("total_against_bills", total_bills);
+            dialog.set_value("total_advance", total_adv);
+            dialog.set_value("total_amount", total_bills + total_adv);
+        }
+
+        function create_request_payment(values, dlg) {
+            if (!values.company || !values.requested_by || !values.request_date) {
+                frappe.msgprint(__("Please fill all required fields."));
+                return;
+            }
+
+            const references = rp_rows
+                .filter(d => d.reference_type && (d.amount > 0 || d.allocated_amount > 0))
+                .map(d => ({
+                    reference_type: d.reference_type,
+                    reference_name: d.reference_name || "",
+                    party_type: d.party_type || "",
+                    party: d.party || "",
+                    outstanding_amount: d.outstanding_amount || 0,
+                    amount: d.amount || 0,
+                    allocated_amount: d.allocated_amount || 0,
+                    payment_account: d.payment_account || "",
+                    description: d.description || ""
+                }));
+
+            if (!references.length) {
+                frappe.msgprint(__("Please add at least one reference row with an amount."));
+                return;
+            }
+
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.create_request_payment",
+                args: {
+                    company: values.company,
+                    request_date: values.request_date,
+                    requested_by: values.requested_by,
+                    required_by_date: values.required_by_date,
+                    payment_mode: values.payment_mode,
+                    currency: values.currency,
+                    remarks: values.remarks,
+                    references: JSON.stringify(references)
+                },
+                freeze: true,
+                callback: (r) => {
+                    if (r && r.message) {
+                        frappe.show_alert({
+                            message: __("Request Payment {0} created", [r.message.name]),
+                            indicator: "green"
+                        });
+                        dialog.hide();
+                        setTimeout(() => {
+                            if (typeof load_request_payment_list === "function") load_request_payment_list();
+                        }, 300);
+                    }
+                }
+            });
+        }
+
+        dialog.onhide = function () { _rp_dialog_open = false; };
+        dialog.show();
+
+        // Populate company dropdown
+        frappe.db.get_list("Company", { fields: ["name"], limit: 100 }).then(res => {
+            const names = (res || []).map(d => d.name);
+            const f = dialog.get_field("company");
+            f.df.options = names.join("\n");
+            f.refresh();
+            const def = frappe.defaults.get_user_default("Company");
+            if (def && names.includes(def)) {
+                dialog.set_value("company", def);
+            } else if (names.length) {
+                dialog.set_value("company", names[0]);
+            }
+        });
+    }
+
+    window.open_payment_dialog = open_payment_dialog;
+
+    function open_payment_dialog() {
+
+        const PARTY_TYPES_PAY = ["Supplier", "Employee"];
+        const PARTY_TYPES_RECEIVE = ["Customer"];
+
+        const dialog = new frappe.ui.Dialog({
+            title: __("Receive Payment Entry"),
+                        fields: [
+                // --- Section 1: Payment Details ---
+                { fieldname: "sec1", fieldtype: "Section Break",
+                  label: __("Payment Details") },
+                { fieldname: "company", fieldtype: "Select", options: "",
+                  label: __("Company"), reqd: 1, default: frappe.defaults.get_user_default("Company"),
+                  onchange: () => { set_default_bank(); refresh_outstanding(); } },
+                { fieldname: "payment_type", fieldtype: "Select", options: "Receive",
+                  label: __("Payment Type"), reqd: 1, default: "Receive", read_only: 1,
+                  onchange: () => {
+                      const pt = dialog.get_value("payment_type") || "Receive";
+                      const opts = (pt === "Receive" ? PARTY_TYPES_RECEIVE : PARTY_TYPES_PAY).join("\n");
+                      dialog.get_field("party_type").df.options = opts;
+                      dialog.get_field("party_type").refresh();
+                      dialog.set_value("party_type", opts.split("\n")[0]);
+                      dialog.set_value("party", "");
+                      refresh_outstanding();
+                  } },
+                { fieldname: "col1", fieldtype: "Column Break" },
+                { fieldname: "party_type", fieldtype: "Select", options: PARTY_TYPES_RECEIVE.join("\n"),
+                  label: __("Party Type"), reqd: 1, default: "Customer",
+                  onchange: () => { dialog.set_value("party", ""); refresh_outstanding(); } },
+                { fieldname: "party", fieldtype: "Dynamic Link", options: "party_type",
+                  label: __("Party"), reqd: 1,
+                  onchange: () => {
+                      refresh_outstanding();
+                      // For Employee, show name + code in the description
+                      const pt = dialog.get_value("party_type");
+                      const pv = dialog.get_value("party");
+                      if (pt === "Employee" && pv) {
+                          frappe.db.get_value("Employee", pv, "employee_name")
+                              .then(r => {
+                                  if (r && r.message) {
+                                      const f = dialog.get_field("party");
+                                      f.set_description(pv + " - " + r.message.employee_name);
+                                  }
+                              });
+                      } else {
+                          dialog.get_field("party").set_description("");
+                      }
+                  },
+                  get_query: () => {
+                      const pt = dialog.get_value("party_type");
+                      if (pt === "Employee") {
+                          return { query: "erpnext.controllers.queries.employee_query", filters: { status: "Active" } };
+                      }
+                      return null;
+                  } },
+
+                // --- Section 2: Payment Mode ---
+                { fieldname: "sec2", fieldtype: "Section Break",
+                  label: __("Payment Mode") },
+                { fieldname: "payment_for", fieldtype: "Select", options: "Advance\nAgainst Bill/Claim",
+                  label: __("Payment For"), reqd: 1, default: "Against Bill/Claim",
+                  onchange: () => toggle_outstanding_section() },
+                { fieldname: "mode", fieldtype: "Select", options: "Bank\nCash",
+                  label: __("Mode"), reqd: 1, default: "Bank",
+                  onchange: () => {
+                      dialog.set_value("paid_from", "");
+                      set_default_bank();
+                      toggle_reference_fields();
+                  } },
+                { fieldname: "col2", fieldtype: "Column Break" },
+                { fieldname: "paid_from", fieldtype: "Link", options: "Account",
+                  label: __("Bank / Cash Account"), reqd: 1 },
+                { fieldname: "amount", fieldtype: "Currency", label: __("Amount"), reqd: 1,
+                  onchange: () => auto_allocate() },
+
+                // --- Section 3: Reference (Bank only) ---
+                { fieldname: "sec3", fieldtype: "Section Break",
+                  label: __("Reference"), depends_on: "eval:doc.mode == 'Bank'" },
+                { fieldname: "reference_no", fieldtype: "Data",
+                  label: __("Cheque / Ref No"), depends_on: "eval:doc.mode == 'Bank'" },
+                { fieldname: "col3", fieldtype: "Column Break",
+                  depends_on: "eval:doc.mode == 'Bank'" },
+                { fieldname: "reference_date", fieldtype: "Date",
+                  label: __("Cheque / Ref Date"), depends_on: "eval:doc.mode == 'Bank'",
+                  default: frappe.datetime.get_today() },
+
+                // --- Section 4: Outstanding ---
+                { fieldname: "outstanding_section", fieldtype: "Section Break",
+                  label: __("Outstanding Bills / Claims") },
+                { fieldname: "fetch_btn", fieldtype: "Button", label: __("Fetch Outstanding") },
+                { fieldname: "outstanding_html", fieldtype: "HTML" }
+            ],
+            primary_action_label: __("Receive Payment"),
+            primary_action: (values) => create_payment(values, dialog)
+        });
+
+        let outstanding_rows = [];
+
+        // Style the dialog - ultra compact & professional
+        const $modal = dialog.$wrapper.find(".modal-dialog");
+        const $body = dialog.$wrapper.find(".modal-body");
+        $modal.css("max-width", "820px");
+        $body.css({ "padding": "12px 16px", "max-height": "70vh", "overflow-y": "auto" });
+        dialog.$wrapper.find(".modal-title").css({ "font-weight": "700", "color": "#0F1568", "font-size": "15px" });
+        dialog.$wrapper.find(".modal-header").css("padding", "10px 16px");
+        dialog.$wrapper.find(".modal-footer").css("padding", "8px 16px");
+        // Compact field spacing
+        dialog.$wrapper.find(".frappe-control").css("margin-bottom", "6px");
+        dialog.$wrapper.find(".control-label").css({ "font-size": "11px", "font-weight": "600", "margin-bottom": "2px" });
+        // Fix date field cutoff
+        dialog.$wrapper.find('input[data-fieldtype="Date"]').css({ "height": "28px", "padding": "4px 8px" });
+        dialog.$wrapper.find(".input-group-btn .date-picker").css("height", "28px");
+        // Section headers - blue line, professional
+        dialog.$wrapper.find(".section-head").css({
+            "font-weight": "700", "color": "#0F1568",
+            "border-bottom": "2px solid #0F1568",
+            "padding-bottom": "3px", "margin-bottom": "8px", "margin-top": "10px",
+            "font-size": "13px", "text-transform": "uppercase", "letter-spacing": "0.3px"
+        });
+        // Buttons
+        dialog.$wrapper.find(".modal-footer .btn-primary").css({
+            "background": "#0F1568", "border-color": "#0F1568",
+            "font-weight": "600", "padding": "5px 18px", "font-size": "12px"
+        });
+        dialog.$wrapper.find(".modal-footer .btn-default").css({ "padding": "5px 14px", "font-size": "12px" });
+        // Smaller inputs
+        dialog.$wrapper.find(".form-control").css({ "border-radius": "4px", "height": "28px", "font-size": "12px", "padding": "4px 8px" });
+        dialog.$wrapper.find(".input-sm").css("height", "26px");
+        // 2-column layout: make columns tighter
+        dialog.$wrapper.find(".form-column").css("padding", "0 4px");
+
+        // Paid-from account filter depends on mode
+        dialog.get_field("paid_from").get_query = function () {
+            const mode = dialog.get_value("mode") || "Bank";
+            const company = dialog.get_value("company");
+            const at = mode === "Bank" ? "Bank" : "Cash";
+            return {
+                filters: [
+                    ["Account", "account_type", "=", at],
+                    ["Account", "company", "=", company],
+                    ["Account", "is_group", "=", 0]
+                ]
+            };
+        };
+
+        // Set default bank account (ICICI for THIS company)
+        function set_default_bank() {
+            const mode = dialog.get_value("mode") || "Bank";
+            const company = dialog.get_value("company");
+            if (mode !== "Bank" || !company) return;
+            // Try ICICI first, fall back to first bank account
+            frappe.db.get_value("Account", { account_type: "Bank", company: company, is_group: 0, name: ["like", "%ICICI%"] }, "name")
+                .then(r => {
+                    if (r && r.message && r.message.name) {
+                        dialog.set_value("paid_from", r.message.name);
+                    } else {
+                        frappe.db.get_value("Account", { account_type: "Bank", company: company, is_group: 0 }, "name")
+                            .then(r2 => {
+                                if (r2 && r2.message && r2.message.name) {
+                                    dialog.set_value("paid_from", r2.message.name);
+                                }
+                            });
+                    }
+                });
+        }
+
+        function toggle_reference_fields() {
+            const show = dialog.get_value("mode") === "Bank";
+            ["sec3", "reference_no", "col3", "reference_date"].forEach(fn => {
+                const f = dialog.get_field(fn);
+                if (f) { f.df.hidden = !show; f.refresh(); }
+            });
+        }
+
+        dialog.get_field("fetch_btn").$input.on("click", () => refresh_outstanding(true));
+
+        function toggle_outstanding_section() {
+            const show = dialog.get_value("payment_for") === "Against Bill/Claim";
+            ["outstanding_section", "fetch_btn", "outstanding_html"].forEach(fn => {
+                const f = dialog.get_field(fn);
+                f.df.hidden = !show;
+                f.refresh();
+            });
+            if (!show) {
+                outstanding_rows = [];
+                render_outstanding();
+            }
+        }
+
+        function refresh_outstanding(force) {
+            const pf = dialog.get_value("payment_for");
+            if (pf !== "Against Bill/Claim" && !force) return;
+            const company = dialog.get_value("company");
+            const party_type = dialog.get_value("party_type");
+            const party = dialog.get_value("party");
+            if (!company || !party_type || !party) {
+                if (force) frappe.msgprint(__("Please select Company, Party Type and Party first."));
+                return;
+            }
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.get_outstanding_documents",
+                args: { company, party_type, party },
+                freeze: true,
+                callback: (r) => {
+                    if (r.message) {
+                        outstanding_rows = r.message.map(d => ({
+                            reference_doctype: d.reference_doctype,
+                            reference_name: d.reference_name,
+                            posting_date: d.posting_date,
+                            due_date: d.due_date,
+                            total_amount: d.total_amount,
+                            outstanding_amount: d.outstanding_amount,
+                            allocated: 0,
+                            selected: false
+                        }));
+                        auto_allocate();
+                        render_outstanding();
+                    }
+                }
+            });
+        }
+
+        function render_outstanding() {
+            const html = dialog.get_field("outstanding_html");
+            if (!outstanding_rows.length) {
+                html.$wrapper.html('<div style="padding:8px;text-align:center;color:#888;background:#f9fafb;border:1px dashed #d1d5db;border-radius:4px;font-size:12px;">No outstanding documents. Click "Fetch Outstanding".</div>');
+                return;
+            }
+            const rows = outstanding_rows.map((d, i) => `
+                <tr>
+                    <td style="text-align:center;vertical-align:middle;"><input type="checkbox" data-idx="${i}" class="out-chk" ${d.selected ? "checked" : ""}/></td>
+                    <td style="vertical-align:middle;font-size:11px;">${d.reference_doctype}</td>
+                    <td style="vertical-align:middle;font-size:11px;font-weight:600;color:#0F1568;">${d.reference_name}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:11px;">${frappe.format(d.total_amount, { fieldtype: "Currency" })}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:11px;font-weight:600;">${frappe.format(d.outstanding_amount, { fieldtype: "Currency" })}</td>
+                    <td><input type="number" step="0.01" min="0" max="${d.outstanding_amount}" class="form-control input-sm out-alloc" data-idx="${i}" value="${d.allocated || ""}" style="width:90px;height:24px;font-size:11px;"/></td>
+                </tr>
+            `).join("");
+            const total_alloc = outstanding_rows.reduce((s, d) => s + (d.selected ? d.allocated : 0), 0);
+            const amt = parseFloat(dialog.get_value("amount")) || 0;
+            const unallocated = amt - total_alloc;
+            const unalloc_color = unallocated > 0.01 ? "#dc2626" : (unallocated < -0.01 ? "#dc2626" : "#16a34a");
+            const unalloc_bg = unallocated > 0.01 ? "#fef2f2" : (unallocated < -0.01 ? "#fef2f2" : "#f0fdf4");
+
+            html.$wrapper.html(`
+                <div style="margin-bottom:6px;padding:5px 10px;background:${unalloc_bg};border-radius:4px;display:flex;justify-content:space-between;align-items:center;font-size:12px;white-space:nowrap;">
+                    <span style="font-weight:600;color:#555;white-space:nowrap;">Total Allocated: <span style="color:#0F1568;display:inline;">${format_cur(total_alloc)}</span></span>
+                    <span style="font-weight:700;color:${unalloc_color};white-space:nowrap;">Unallocated: <span class="txn-unallocated" style="display:inline;">${format_cur(unallocated)}</span></span>
+                </div>
+                <div style="max-height:180px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">
+                    <table class="table table-bordered table-sm" style="margin:0;font-size:11px;">
+                        <thead style="background:#0F1568;color:white;position:sticky;top:0;z-index:10;">
+                            <tr>
+                                <th style="text-align:center;width:24px;"></th>
+                                <th>Type</th>
+                                <th>Document</th>
+                                <th style="text-align:right;">Total</th>
+                                <th style="text-align:right;">Outstanding</th>
+                                <th style="text-align:center;width:100px;">Allocate</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `);
+            html.$wrapper.find(".out-chk").on("change", function () {
+                const idx = +$(this).data("idx");
+                outstanding_rows[idx].selected = $(this).is(":checked");
+                if (outstanding_rows[idx].selected && !outstanding_rows[idx].allocated) {
+                    outstanding_rows[idx].allocated = parseFloat(outstanding_rows[idx].outstanding_amount) || 0;
+                    render_outstanding();
+                }
+            });
+            html.$wrapper.find(".out-alloc").on("change", function () {
+                const idx = +$(this).data("idx");
+                outstanding_rows[idx].allocated = parseFloat($(this).val()) || 0;
+                if (outstanding_rows[idx].allocated > 0) outstanding_rows[idx].selected = true;
+                render_outstanding();
+            });
+            html.$wrapper.find(".out-alloc").on("input", function () {
+                const idx = +$(this).data("idx");
+                outstanding_rows[idx].allocated = parseFloat($(this).val()) || 0;
+                if (outstanding_rows[idx].allocated > 0) outstanding_rows[idx].selected = true;
+                // Update unallocated display without full re-render
+                const ta = outstanding_rows.reduce((s, d) => s + (d.selected ? d.allocated : 0), 0);
+                const am = parseFloat(dialog.get_value("amount")) || 0;
+                const ua = am - ta;
+                html.$wrapper.find(".txn-unallocated").text(format_cur(ua));
+            });
+        }
+
+        function auto_allocate() {
+            const amt = parseFloat(dialog.get_value("amount")) || 0;
+            if (!amt) return;
+            let remaining = amt;
+            outstanding_rows.forEach(d => {
+                const out_amt = parseFloat(d.outstanding_amount) || 0;
+                if (remaining <= 0.01) { d.allocated = 0; d.selected = false; return; }
+                const alloc = Math.min(remaining, out_amt);
+                d.allocated = Math.round(alloc * 100) / 100;
+                d.selected = alloc > 0.01;
+                remaining = Math.round((remaining - alloc) * 100) / 100;
+            });
+            render_outstanding();
+        }
+
+        function create_payment(values, dlg) {
+            if (!values.company || !values.party_type || !values.party || !values.paid_from || !values.amount) {
+                frappe.msgprint(__("Please fill all required fields."));
+                return;
+            }
+            const references = outstanding_rows
+                .filter(d => d.selected && d.allocated > 0)
+                .map(d => ({
+                    reference_doctype: d.reference_doctype,
+                    reference_name: d.reference_name,
+                    allocated_amount: d.allocated
+                }));
+
+            if (values.mode === "Bank" && (!values.reference_no || !values.reference_date)) {
+                frappe.msgprint(__("Cheque/Reference No and Date are required for Bank mode."));
+                return;
+            }
+
+            if (values.payment_for === "Against Bill/Claim") {
+                if (!references.length) {
+                    frappe.msgprint(__("Please fetch and select at least one outstanding document to allocate."));
+                    return;
+                }
+                const total_alloc = references.reduce((s, d) => s + d.allocated_amount, 0);
+                const unallocated = values.amount - total_alloc;
+                if (Math.abs(unallocated) > 0.01) {
+                    // Ask user what to do with the balance
+                    ask_balance_action(values, references, unallocated, dlg);
+                    return;
+                }
+            }
+
+            submit_payment(values, references, null);
+        }
+
+        function ask_balance_action(values, references, unallocated, dlg) {
+            const bal_dialog = new frappe.ui.Dialog({
+                title: __("Unallocated Balance: " + format_cur(unallocated)),
+                fields: [
+                    { fieldname: "balance_action", fieldtype: "Select",
+                      label: __("Action for balance amount"),
+                      options: "Write Off\nForeign Exchange Gain/Loss\nTDS Receivable\nKeep as Unallocated",
+                      reqd: 1, default: "Keep as Unallocated" },
+                    { fieldname: "balance_remark", fieldtype: "Data",
+                      label: __("Remark"), }
+                ],
+                primary_action_label: __("Proceed"),
+                primary_action: (bvals) => {
+                    bal_dialog.hide();
+                    submit_payment(values, references, {
+                        action: bvals.balance_action,
+                        amount: unallocated,
+                        remark: bvals.balance_remark || ""
+                    });
+                }
+            });
+            bal_dialog.show();
+        }
+
+        function submit_payment(values, references, balance_action) {
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.make_payment",
+                args: {
+                    company: values.company,
+                    payment_type: values.payment_type,
+                    party_type: values.party_type,
+                    party: values.party,
+                    payment_for: values.payment_for,
+                    mode: values.mode,
+                    paid_from: values.paid_from,
+                    amount: values.amount,
+                    reference_no: values.reference_no,
+                    reference_date: values.reference_date,
+                    references: JSON.stringify(references),
+                    balance_action: balance_action ? JSON.stringify(balance_action) : null
+                },
+                freeze: true,
+                callback: (r) => {
+                    if (r && r.message) {
+                        frappe.show_alert({
+                            message: __("{0} {1} created & submitted", [r.message.doctype, r.message.name]),
+                            indicator: "green"
+                        });
+                        dialog.hide();
+                        setTimeout(() => {
+                            document.getElementById("txn-section").scrollIntoView({ behavior: "smooth", block: "start" });
+                            load_transactions(r.message.name);
+                        }, 300);
+                    }
+                }
+            });
+        }
+
+        dialog.onhide = function () { _payment_dialog_open = false; };
+        dialog.show();
+
+        // Populate company dropdown
+        frappe.db.get_list("Company", { fields: ["name"], limit: 100 }).then(res => {
+            const names = (res || []).map(d => d.name);
+            const f = dialog.get_field("company");
+            f.df.options = names.join("\n");
+            f.refresh();
+            const def = frappe.defaults.get_user_default("Company");
+            if (def && names.includes(def)) {
+                dialog.set_value("company", def);
+            } else if (names.length) {
+                dialog.set_value("company", names[0]);
+            }
+        });
+
+        toggle_outstanding_section();
+        toggle_reference_fields();
+        set_default_bank();
+    }
+
+    // ============================================================
+    // Transactions tab — load, filter, charts, highlight
+    // ============================================================
+    let _txn_data = [];
+    let _txn_highlight_name = null;
+
+    function load_transactions(highlight_name) {
+        _txn_highlight_name = highlight_name || null;
+        const from_date = $("#txn-from-date").val() || "";
+        const to_date = $("#txn-to-date").val() || "";
+        const company = $("#txn-company").val() || "";
+        const party_type = $("#txn-party-type").val() || "";
+        const party = $("#txn-party").val() || "";
+        const payment_type = $("#txn-payment-type").val() || "";
+        const mode = $("#txn-mode").val() || "";
+
+        frappe.call({
+            method: "teampro.teampro.page.approvals.approvals.get_transactions",
+            args: { from_date, to_date, company, party_type, party, payment_type, mode },
+            freeze: true,
+            callback: (r) => {
+                console.log("[txn] response:", r);
+                if (r.message) {
+                    _txn_data = r.message;
+                    render_txn_cards();
+                    render_txn_charts();
+                    render_txn_table();
+                } else {
+                    _txn_data = [];
+                    render_txn_cards();
+                    render_txn_table();
+                    $("#txn-chart-mode").html("<p style='text-align:center;color:#888;padding:20px;'>No data</p>");
+                    $("#txn-chart-trend").html("<p style='text-align:center;color:#888;padding:20px;'>No data</p>");
+                }
+            },
+            error: (err) => {
+                console.error("[txn] error:", err);
+                frappe.msgprint("Failed to load transactions. Check console for details.");
+            }
+        });
+    }
+
+    function render_txn_cards() {
+        const total_pay = _txn_data.filter(d => d.payment_type === "Pay").reduce((s, d) => s + d.paid_amount, 0);
+        const total_recv = _txn_data.filter(d => d.payment_type === "Receive").reduce((s, d) => s + d.paid_amount, 0);
+        const total_count = _txn_data.length;
+        const bank_total = _txn_data.filter(d => d.mode_of_payment_type === "Bank").reduce((s, d) => s + d.paid_amount, 0);
+        const cash_total = _txn_data.filter(d => d.mode_of_payment_type === "Cash").reduce((s, d) => s + d.paid_amount, 0);
+
+        const cards = [
+            { label: "Total Received", value: format_cur(total_recv), sub: _txn_data.filter(d => d.payment_type === "Receive").length + " entries", color: "#16a34a" },
+            { label: "Total Paid", value: format_cur(total_pay), sub: total_count + " entries", color: "#dc2626" },
+            { label: "Bank", value: format_cur(bank_total), sub: "Bank transactions", color: "#2563eb" },
+            { label: "Cash", value: format_cur(cash_total), sub: "Cash transactions", color: "#d97706" },
+        ];
+        $("#txn-cards").html(cards.map(c => `
+            <div class="txn-card" style="border-left-color:${c.color};">
+                <div class="txn-card-label">${c.label}</div>
+                <div class="txn-card-value" style="color:${c.color};">${c.value}</div>
+                <div class="txn-card-sub">${c.sub}</div>
+            </div>
+        `).join(""));
+    }
+
+    function render_txn_charts() {
+        try {
+        // Chart 1: Pay vs Receive by Mode (donut/pie)
+        const mode_data = {
+            labels: ["Bank Pay", "Cash Pay", "Bank Receive", "Cash Receive"],
+            datasets: [{
+                values: [
+                    _txn_data.filter(d => d.payment_type === "Pay" && d.mode_of_payment_type === "Bank").reduce((s, d) => s + d.paid_amount, 0),
+                    _txn_data.filter(d => d.payment_type === "Pay" && d.mode_of_payment_type === "Cash").reduce((s, d) => s + d.paid_amount, 0),
+                    _txn_data.filter(d => d.payment_type === "Receive" && d.mode_of_payment_type === "Bank").reduce((s, d) => s + d.paid_amount, 0),
+                    _txn_data.filter(d => d.payment_type === "Receive" && d.mode_of_payment_type === "Cash").reduce((s, d) => s + d.paid_amount, 0),
+                ]
+            }]
+        };
+        const chart1 = new frappe.Chart("#txn-chart-mode", {
+            title: "Pay / Receive by Mode",
+            data: { labels: mode_data.labels, datasets: mode_data.datasets },
+            type: "donut",
+            height: 180,
+            colors: ["#dc2626", "#f87171", "#16a34a", "#4ade80"],
+            truncateLegends: true,
+        });
+
+        // Chart 2: Daily trend (bar)
+        const by_date = {};
+        _txn_data.forEach(d => {
+            const dt = d.posting_date;
+            if (!by_date[dt]) by_date[dt] = { pay: 0, receive: 0 };
+            if (d.payment_type === "Pay") by_date[dt].pay += d.paid_amount;
+            else by_date[dt].receive += d.paid_amount;
+        });
+        const dates = Object.keys(by_date).sort();
+        const chart2 = new frappe.Chart("#txn-chart-trend", {
+            title: "Daily Trend",
+            data: {
+                labels: dates,
+                datasets: [
+                    { name: "Paid", values: dates.map(d => by_date[d].pay) },
+                    { name: "Received", values: dates.map(d => by_date[d].receive) },
+                ]
+            },
+            type: "line",
+            height: 180,
+            colors: ["#dc2626", "#16a34a"],
+            axisOptions: { xIsSeries: true },
+            tooltipOptions: { formatTooltipY: v => format_cur(v) },
+        });
+        } catch (e) {
+            console.error("[txn] chart error:", e);
+            $("#txn-chart-mode").html("<p style='text-align:center;color:#888;padding:20px;'>Chart unavailable</p>");
+            $("#txn-chart-trend").html("<p style='text-align:center;color:#888;padding:20px;'>Chart unavailable</p>");
+        }
+    }
+
+    function render_txn_table() {
+        if (!_txn_data.length) {
+            $("#txn-table").html('<div style="padding:20px;text-align:center;color:#888;font-size:13px;">No transactions found for the selected filters.</div>');
+            return;
+        }
+        const rows = _txn_data.map(d => {
+            const is_highlight = _txn_highlight_name === d.name;
+            const type_color = d.payment_type === "Pay" ? "#dc2626" : "#16a34a";
+            const type_bg = d.payment_type === "Pay" ? "#fef2f2" : "#f0fdf4";
+            return `
+                <tr class="txn-row" data-name="${d.name}" style="${is_highlight ? 'animation: txn-glow 1.5s ease-in-out 3;' : ''}">
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;white-space:nowrap;">${fmt_date_ddmmyyyy(d.posting_date)}</td>
+                    <td style="text-align:center;vertical-align:middle;">
+                        <span style="background:${type_bg};color:${type_color};padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;">${d.payment_type}</span>
+                    </td>
+                    <td style="vertical-align:middle;font-size:12px;font-weight:600;"><a href="${get_txn_link(d)}" target="_blank" style="color:#0F1568;text-decoration:none;">${d.name}</a></td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.party_type || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.party_name || d.party || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.company}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;">${d.mode_of_payment || d.mode_of_payment_type || "-"}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:12px;font-weight:600;color:${type_color};">${format_cur(d.paid_amount)}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:11px;">${d.reference_no || "-"}</td>
+                </tr>
+            `;
+        }).join("");
+        $("#txn-table").html(`
+            <table class="table table-bordered table-sm" style="margin:0;font-size:12px;">
+                <thead style="background:#0F1568;color:white;">
+                    <tr>
+                        <th style="text-align:center;width:90px;">Date</th>
+                        <th style="text-align:center;width:70px;">Type</th>
+                        <th style="text-align:center;width:140px;">Entry No</th>
+                        <th>Party Type</th>
+                        <th>Party</th>
+                        <th>Company</th>
+                        <th style="text-align:center;width:80px;">Mode</th>
+                        <th style="text-align:right;width:110px;">Amount</th>
+                        <th style="text-align:center;width:80px;">Ref No</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `);
+        // Clear highlight after animation
+        if (_txn_highlight_name) {
+            setTimeout(() => { _txn_highlight_name = null; }, 5000);
+        }
+    }
+
+    function format_cur(v) {
+        return frappe.format(v || 0, { fieldtype: "Currency" });
+    }
+
+    function fmt_date_ddmmyyyy(dt) {
+        if (!dt) return "";
+        const parts = dt.split("-");
+        if (parts.length === 3) return parts[2] + "-" + parts[1] + "-" + parts[0];
+        return dt;
+    }
+
+    function get_txn_link(d) {
+        if (d.doctype_source === "Journal Entry") return "/app/journal-entry/" + d.name;
+        return "/app/payment-entry/" + d.name;
+    }
+
+    // Wire up filter and refresh buttons
+    $(document).off("click", "#txn-filter-btn").on("click", "#txn-filter-btn", () => load_transactions());
+    $(document).off("click", "#txn-refresh-btn").on("click", "#txn-refresh-btn", () => load_transactions());
+
+    // Set default date range (last 30 days) and load on page load
+    function init_txn_filters() {
+        const today = frappe.datetime.get_today();
+        const from = today;
+        $("#txn-from-date").val(from);
+        $("#txn-to-date").val(today);
+        // Make company field a link picker
+        $("#txn-company").attr("data-doctype", "Company").attr("placeholder", "All Companies");
+        // Make party field a link picker based on party type
+        $("#txn-party").attr("placeholder", "All Parties");
+    }
+    init_txn_filters();
+    // Transactions load on tab click, not on page load
+
+    // ============================================================
+    // Request Payment List
+    // ============================================================
+    let _rp_list_data = [];
+
+    function load_request_payment_list() {
+        const from_date = $("#rp-list-from-date").val() || "";
+        const to_date = $("#rp-list-to-date").val() || "";
+        const company = $("#rp-list-company").val() || "";
+        const status = $("#rp-list-status").val() || "";
+
+        frappe.call({
+            method: "teampro.teampro.page.approvals.approvals.get_request_payment_list",
+            args: { from_date, to_date, company, status },
+            freeze: true,
+            callback: (r) => {
+                if (r.message) {
+                    _rp_list_data = r.message;
+                    render_rp_list_cards();
+                    render_rp_list_table();
+                } else {
+                    _rp_list_data = [];
+                    render_rp_list_cards();
+                    render_rp_list_table();
+                }
+            }
+        });
+    }
+
+    function render_rp_list_cards() {
+        const total = _rp_list_data.reduce((s, d) => s + (d.total_amount || 0), 0);
+        const total_allocated = _rp_list_data.reduce((s, d) => s + (d.total_allocated_amount || 0), 0);
+        const draft_count = _rp_list_data.filter(d => d.status === "Draft").length;
+        const pending_count = _rp_list_data.filter(d => d.status === "Pending Approval").length;
+        const approved_count = _rp_list_data.filter(d => d.status === "Approved").length;
+        const paid_count = _rp_list_data.filter(d => d.status === "Paid" || d.status === "Closed").length;
+
+        const cards = [
+            { label: "Total Requested", value: format_cur(total), sub: _rp_list_data.length + " requests", color: "#be185d" },
+            { label: "Total Allocated", value: format_cur(total_allocated), sub: "allocated amount", color: "#0F1568" },
+            { label: "Draft / Pending", value: draft_count + " / " + pending_count, sub: "awaiting approval", color: "#d97706" },
+            { label: "Approved / Paid", value: approved_count + " / " + paid_count, sub: "approved or paid", color: "#16a34a" },
+        ];
+        $("#rp-list-cards").html(cards.map(c => `
+            <div class="txn-card" style="border-left-color:${c.color};">
+                <div class="txn-card-label">${c.label}</div>
+                <div class="txn-card-value" style="color:${c.color};">${c.value}</div>
+                <div class="txn-card-sub">${c.sub}</div>
+            </div>
+        `).join(""));
+    }
+
+    function render_rp_list_table() {
+        if (!_rp_list_data.length) {
+            $("#rp-list-table").html('<div style="padding:20px;text-align:center;color:#888;font-size:13px;">No Request Payment records found for the selected filters.</div>');
+            return;
+        }
+        const status_colors = {
+            "Draft": { bg: "#f3f4f6", color: "#6b7280" },
+            "Pending Approval": { bg: "#fef3c7", color: "#92400e" },
+            "Approved": { bg: "#dbeafe", color: "#1d4ed8" },
+            "Rejected": { bg: "#fef2f2", color: "#dc2626" },
+            "Paid": { bg: "#f0fdf4", color: "#16a34a" },
+            "Partially Paid": { bg: "#fffbeb", color: "#d97706" },
+            "Closed": { bg: "#f0fdf4", color: "#059669" },
+            "Cancelled": { bg: "#f3f4f6", color: "#9ca3af" }
+        };
+        const rows = _rp_list_data.map(d => {
+            const sc = status_colors[d.status] || status_colors["Draft"];
+            return `
+                <tr class="txn-row" data-name="${d.name}">
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;white-space:nowrap;">${fmt_date_ddmmyyyy(d.request_date)}</td>
+                    <td style="vertical-align:middle;font-size:12px;font-weight:600;"><a href="/app/request-payment/${d.name}" target="_blank" style="color:#be185d;text-decoration:none;">${d.name}</a></td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.company || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.requested_by_name || "-"}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;">${fmt_date_ddmmyyyy(d.required_by_date) || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.payment_mode || "-"}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:12px;font-weight:600;color:#be185d;">${format_cur(d.total_amount)}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:12px;">${format_cur(d.total_allocated_amount)}</td>
+                    <td style="text-align:center;vertical-align:middle;">
+                        <span style="background:${sc.bg};color:${sc.color};padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;">${d.status}</span>
+                    </td>
+                </tr>
+            `;
+        }).join("");
+        $("#rp-list-table").html(`
+            <table class="table table-bordered table-sm" style="margin:0;font-size:12px;">
+                <thead style="background:#be185d;color:white;">
+                    <tr>
+                        <th style="text-align:center;width:90px;">Req Date</th>
+                        <th style="text-align:center;width:140px;">RP No</th>
+                        <th>Company</th>
+                        <th>Requested By</th>
+                        <th style="text-align:center;width:90px;">Required By</th>
+                        <th style="text-align:center;width:90px;">Mode</th>
+                        <th style="text-align:right;width:110px;">Total Amount</th>
+                        <th style="text-align:right;width:110px;">Allocated</th>
+                        <th style="text-align:center;width:100px;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `);
+    }
+
+    // Wire up RP list filter and refresh buttons
+    $(document).off("click", "#rp-list-filter-btn").on("click", "#rp-list-filter-btn", () => load_request_payment_list());
+    $(document).off("click", "#rp-list-refresh-btn").on("click", "#rp-list-refresh-btn", () => load_request_payment_list());
+
+    // Init RP list filters with default date range
+    function init_rp_list_filters() {
+        const today = frappe.datetime.get_today();
+        const from = today;
+        $("#rp-list-from-date").val(from);
+        $("#rp-list-to-date").val(today);
+        $("#rp-list-company").attr("data-doctype", "Company").attr("placeholder", "All Companies");
+    }
+    init_rp_list_filters();
+    // RP list loads on tab switch
+
+    // ============================================================
+    // Receive Payment List
+    // ============================================================
+    let _recv_list_data = [];
+
+    function load_receive_payment_list() {
+        const from_date = $("#recv-list-from-date").val() || "";
+        const to_date = $("#recv-list-to-date").val() || "";
+        const company = $("#recv-list-company").val() || "";
+        const party_type = $("#recv-list-party-type").val() || "";
+        const mode = $("#recv-list-mode").val() || "";
+
+        frappe.call({
+            method: "teampro.teampro.page.approvals.approvals.get_receive_payment_list",
+            args: { from_date, to_date, company, party_type, mode },
+            freeze: true,
+            callback: (r) => {
+                if (r.message) {
+                    _recv_list_data = r.message;
+                    render_recv_list_cards();
+                    render_recv_list_table();
+                } else {
+                    _recv_list_data = [];
+                    render_recv_list_cards();
+                    render_recv_list_table();
+                }
+            }
+        });
+    }
+
+    function render_recv_list_cards() {
+        const total = _recv_list_data.reduce((s, d) => s + (d.paid_amount || 0), 0);
+        const bank_total = _recv_list_data.filter(d => d.mode_of_payment_type === "Bank").reduce((s, d) => s + (d.paid_amount || 0), 0);
+        const cash_total = _recv_list_data.filter(d => d.mode_of_payment_type === "Cash").reduce((s, d) => s + (d.paid_amount || 0), 0);
+        const customer_count = _recv_list_data.filter(d => d.party_type === "Customer").length;
+
+        const cards = [
+            { label: "Total Received", value: format_cur(total), sub: _recv_list_data.length + " entries", color: "#16a34a" },
+            { label: "Bank", value: format_cur(bank_total), sub: "Bank transactions", color: "#2563eb" },
+            { label: "Cash", value: format_cur(cash_total), sub: "Cash transactions", color: "#d97706" },
+            { label: "Customers", value: customer_count, sub: "customer payments", color: "#0F1568" },
+        ];
+        $("#recv-list-cards").html(cards.map(c => `
+            <div class="txn-card" style="border-left-color:${c.color};">
+                <div class="txn-card-label">${c.label}</div>
+                <div class="txn-card-value" style="color:${c.color};">${c.value}</div>
+                <div class="txn-card-sub">${c.sub}</div>
+            </div>
+        `).join(""));
+    }
+
+    function render_recv_list_table() {
+        if (!_recv_list_data.length) {
+            $("#recv-list-table").html('<div style="padding:20px;text-align:center;color:#888;font-size:13px;">No Receive Payment records found for the selected filters.</div>');
+            return;
+        }
+        const rows = _recv_list_data.map(d => {
+            return `
+                <tr class="txn-row" data-name="${d.name}">
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;white-space:nowrap;">${fmt_date_ddmmyyyy(d.posting_date)}</td>
+                    <td style="vertical-align:middle;font-size:12px;font-weight:600;"><a href="/app/payment-entry/${d.name}" target="_blank" style="color:#16a34a;text-decoration:none;">${d.name}</a></td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.party_type || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.party_name || d.party || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.company || "-"}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;">${d.mode_of_payment || d.mode_of_payment_type || "-"}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:12px;font-weight:600;color:#16a34a;">${format_cur(d.paid_amount)}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:11px;">${d.reference_no || "-"}</td>
+                </tr>
+            `;
+        }).join("");
+        $("#recv-list-table").html(`
+            <table class="table table-bordered table-sm" style="margin:0;font-size:12px;">
+                <thead style="background:#16a34a;color:white;">
+                    <tr>
+                        <th style="text-align:center;width:90px;">Date</th>
+                        <th style="text-align:center;width:140px;">Entry No</th>
+                        <th>Party Type</th>
+                        <th>Party</th>
+                        <th>Company</th>
+                        <th style="text-align:center;width:80px;">Mode</th>
+                        <th style="text-align:right;width:110px;">Amount</th>
+                        <th style="text-align:center;width:80px;">Ref No</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `);
+    }
+
+    // Wire up Receive list filter and refresh buttons
+    $(document).off("click", "#recv-list-filter-btn").on("click", "#recv-list-filter-btn", () => load_receive_payment_list());
+    $(document).off("click", "#recv-list-refresh-btn").on("click", "#recv-list-refresh-btn", () => load_receive_payment_list());
+
+    // Init Receive list filters with default date range
+    function init_recv_list_filters() {
+        const today = frappe.datetime.get_today();
+        const from = today;
+        $("#recv-list-from-date").val(from);
+        $("#recv-list-to-date").val(today);
+        $("#recv-list-company").attr("data-doctype", "Company").attr("placeholder", "All Companies");
+    }
+    init_recv_list_filters();
+    // Receive list loads on tab switch
+
+    // ============ DTR (Daily Transaction Report) ============
+    var _dtr_data = null;
+    var _dtr_date = frappe.datetime.get_today();
+
+    // Sub-tab switching within Transactions
+    $(document).off("click", ".txn-subtab-btn").on("click", ".txn-subtab-btn", function() {
+        var subtab = $(this).data("subtab");
+        $(".txn-subtab-btn").removeClass("active");
+        $(this).addClass("active");
+        $(".txn-subtab-content").hide();
+        $("#txn-subtab-" + subtab).show();
+        if (subtab === "dtr" && !_dtr_data) {
+            $("#dtr-date").val(_dtr_date);
+            load_dtr();
+        }
+    });
+
+    // DTR load button
+    $(document).off("click", "#dtr-load-btn").on("click", "#dtr-load-btn", function() {
+        _dtr_date = $("#dtr-date").val() || frappe.datetime.get_today();
+        load_dtr();
+    });
+
+    // DTR print button
+    $(document).off("click", "#dtr-print-btn").on("click", "#dtr-print-btn", function() {
+        print_dtr();
+    });
+
+    // DTR CSV button
+    $(document).off("click", "#dtr-csv-btn").on("click", "#dtr-csv-btn", function() {
+        download_dtr_csv();
+    });
+
+    // DTR tab switching
+    $(document).off("click", ".dtr-tab-btn").on("click", ".dtr-tab-btn", function() {
+        var tab = $(this).data("tab");
+        $(".dtr-tab-btn").removeClass("active");
+        $(this).addClass("active");
+        $(".dtr-tab-panel").hide();
+        $("#dtr-tab-" + tab).show();
+    });
+
+    function load_dtr() {
+        $("#dtr-cards").html('<div style="padding:20px;text-align:center;color:#888;font-size:13px;">Loading Daily Transaction Report for ' + dtr_date(_dtr_date) + '...</div>');
+        $("#dtr-tab-bankcash").html("");
+        $("#dtr-tab-sales").html("");
+        $("#dtr-tab-purchase").html("");
+        $("#dtr-tab-rp").html("");
+        $("#dtr-tab-summary").html("");
+
+        frappe.call({
+            method: "get_dtr_data",
+            args: { date: _dtr_date },
+            callback: function(r) {
+                if (r.message) {
+                    _dtr_data = r.message;
+                    render_dtr();
+                } else {
+                    $("#dtr-cards").html('<div style="padding:20px;text-align:center;color:#dc2626;font-size:13px;">Failed to load DTR data.</div>');
+                }
+            },
+            error: function() {
+                $("#dtr-cards").html('<div style="padding:20px;text-align:center;color:#dc2626;font-size:13px;">Error loading DTR data. Check console.</div>');
+            }
+        });
+    }
+
+    function dtr_fmt(n) {
+        if (n === null || n === undefined || n === "") return "";
+        return parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function dtr_date(dt) {
+        if (!dt) return "";
+        var parts = dt.split("-");
+        if (parts.length === 3) return parts[2] + "-" + parts[1] + "-" + parts[0];
+        return dt;
+    }
+
+    function dtr_co(company) {
+        if (!company) return "";
+        if (company.indexOf("Food") >= 0) return "TFP";
+        if (company.indexOf("HR") >= 0 || company.indexOf("IT Services") >= 0) return "THIS";
+        return company.substring(0, 4);
+    }
+
+    function dtr_status_pill(status) {
+        var cls = "dtr-pill-draft";
+        if (status === "Submitted" || status === "Paid" || status === "Unpaid") cls = "dtr-pill-submitted";
+        if (status === "Cancelled") cls = "dtr-pill-cancelled";
+        if (status === "Approved") cls = "dtr-pill-approved";
+        return '<span class="dtr-pill ' + cls + '">' + status + "</span>";
+    }
+
+    function dtr_docstatus_pill(ds) {
+        if (ds === 0) return '<span class="dtr-pill dtr-pill-draft">Draft</span>';
+        if (ds === 1) return '<span class="dtr-pill dtr-pill-submitted">Submitted</span>';
+        if (ds === 2) return '<span class="dtr-pill dtr-pill-cancelled">Cancelled</span>';
+        return "";
+    }
+
+    function dtr_find_rp(voucherName, rpList) {
+        for (var i = 0; i < rpList.length; i++) {
+            var rp = rpList[i];
+            if (!rp.references) continue;
+            for (var j = 0; j < rp.references.length; j++) {
+                var ref = rp.references[j];
+                if (ref.payment_entry === voucherName || ref.book_entry === voucherName || ref.journal_entry === voucherName) return rp;
+            }
+        }
+        return null;
+    }
+
+    function dtr_card(label, value, color) {
+        return '<div class="dtr-card" style="border-left:4px solid ' + color + '"><div class="dtr-card-label">' + label + '</div><div class="dtr-card-value" style="color:' + color + '">' + value + "</div></div>";
+    }
+
+    function render_dtr() {
+        if (!_dtr_data) return;
+        var d = _dtr_data;
+        var pe = d.pe, je = d.je, si = d.si, pi = d.pi, rp = d.rp, bal = d.balances || {};
+        var movements = [], totalDr = 0, totalCr = 0, postedDr = 0, postedCr = 0;
+
+        pe.forEach(function(p) {
+            var isReceive = p.payment_type === "Receive";
+            var isPay = p.payment_type === "Pay";
+            var bankCashAcct, acctType, amount, isDr, against;
+            if (isReceive) { bankCashAcct = p.paid_to; acctType = p.paid_to_account_type; amount = p.paid_amount; isDr = true; against = p.paid_from + " (Receivable)"; }
+            else if (isPay) { bankCashAcct = p.paid_from; acctType = p.paid_from_account_type; amount = p.paid_amount; isDr = false; against = p.paid_to + " (Payable)"; }
+            else { bankCashAcct = p.paid_from; acctType = p.paid_from_account_type; amount = p.paid_amount; isDr = false; against = p.paid_to; }
+            if (acctType !== "Bank" && acctType !== "Cash") return;
+            var rpMatch = dtr_find_rp(p.name, rp);
+            var isDraft = p.docstatus === 0;
+            var refStr = "";
+            if (p.references && p.references.length > 0) {
+                refStr = p.references.map(function(r) { return (r.reference_doctype || "").replace(" Invoice","I").replace("Sales ","S").replace("Purchase ","P") + " " + r.reference_name; }).join(", ");
+            }
+            movements.push({ voucher: p.name, co: dtr_co(p.company), type: "PE - " + p.payment_type, party: p.party_name || p.party || "", acct: bankCashAcct, acctType: acctType, against: against + (refStr ? " &middot; " + refStr : ""), dr: isDr ? amount : 0, cr: isDr ? 0 : amount, rp: rpMatch ? rpMatch.name : "", isDraft: isDraft, docstatus: p.docstatus });
+            if (isDr) { totalDr += amount; if (!isDraft) postedDr += amount; }
+            else { totalCr += amount; if (!isDraft) postedCr += amount; }
+        });
+
+        je.forEach(function(j) {
+            if (!j.accounts) return;
+            j.accounts.forEach(function(a) {
+                if (a.account_type !== "Bank" && a.account_type !== "Cash") return;
+                var rpMatch = dtr_find_rp(j.name, rp);
+                var isDraft = j.docstatus === 0;
+                var againstLeg = j.accounts.filter(function(x) { return x.account !== a.account; }).map(function(x) { return x.account + (x.party ? " (" + x.party + ")" : ""); }).join(", ");
+                movements.push({ voucher: j.name, co: dtr_co(j.company), type: "JE", party: j.pay_to_recd_from || "", acct: a.account, acctType: a.account_type, against: againstLeg, dr: a.debit || 0, cr: a.credit || 0, rp: rpMatch ? rpMatch.name : "", isDraft: isDraft, docstatus: j.docstatus });
+                totalDr += a.debit || 0; if (!isDraft) postedDr += a.debit || 0;
+                totalCr += a.credit || 0; if (!isDraft) postedCr += a.credit || 0;
+            });
+        });
+
+        var siTotal = si.reduce(function(s, x) { return s + (x.base_grand_total || 0); }, 0);
+        var siOutstanding = si.reduce(function(s, x) { return s + (x.outstanding_amount || 0); }, 0);
+        var piTotal = pi.reduce(function(s, x) { return s + (x.base_grand_total || 0); }, 0);
+        var piOutstanding = pi.reduce(function(s, x) { return s + (x.outstanding_amount || 0); }, 0);
+        var rpPending = rp.filter(function(r) { return r.status === "Approved"; }).reduce(function(s, r) { return s + (r.total_allocated_amount || 0); }, 0);
+
+        // Calculate per-account Dr/Cr from movements
+        var acctDrCr = {};
+        movements.forEach(function(m) {
+            var key = m.acct;
+            if (!key) return;
+            if (!acctDrCr[key]) acctDrCr[key] = { dr: 0, cr: 0, postedDr: 0, postedCr: 0 };
+            acctDrCr[key].dr += m.dr || 0;
+            acctDrCr[key].cr += m.cr || 0;
+            if (!m.isDraft) { acctDrCr[key].postedDr += m.dr || 0; acctDrCr[key].postedCr += m.cr || 0; }
+        });
+
+        // Sort accounts: THIS first, then TFP; Bank first, then Cash
+        var balKeys = Object.keys(bal).sort(function(a, b) {
+            var va = bal[a], vb = bal[b];
+            var ca = (va.company || "").indexOf("Food") >= 0 ? 1 : 0;
+            var cb = (vb.company || "").indexOf("Food") >= 0 ? 1 : 0;
+            if (ca !== cb) return ca - cb;
+            var ta = va.account_type === "Bank" ? 0 : 1;
+            var tb = vb.account_type === "Bank" ? 0 : 1;
+            if (ta !== tb) return ta - tb;
+            return (va.account_name || "").localeCompare(vb.account_name || "");
+        });
+
+        var totalOpening = 0, totalClosing = 0;
+        balKeys.forEach(function(k) {
+            totalOpening += Math.abs(bal[k].opening || 0);
+            totalClosing += Math.abs(bal[k].closing || 0);
+        });
+        var draftPending = totalDr - postedDr;
+        var netCash = totalDr - totalCr;
+        var netPosted = postedDr - postedCr;
+        var projectedClosing = totalClosing + draftPending;
+
+        // Summary cards
+        var cardsHtml = "";
+        cardsHtml += dtr_card("Payment Entries", pe.length, "#1d4ed8");
+        cardsHtml += dtr_card("Journal Entries", je.length, "#7c3aed");
+        cardsHtml += dtr_card("Sales Invoices", si.length, "#16a34a");
+        cardsHtml += dtr_card("Purchase Invoices", pi.length, "#d97706");
+        cardsHtml += dtr_card("Request Payments", rp.length, "#be185d");
+        cardsHtml += dtr_card("RP Matched", movements.filter(function(m){return m.rp;}).length, "#16a34a");
+        $("#dtr-cards").html(cardsHtml);
+
+        // Tab navigation
+        var tabNavHtml = "";
+        tabNavHtml += '<button class="dtr-tab-btn active" data-tab="bankcash">Bank &amp; Cash <span class="dtr-badge">' + movements.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="sales">Sales Invoices <span class="dtr-badge">' + si.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="purchase">Purchase Invoices <span class="dtr-badge">' + pi.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="rp">Request Payments <span class="dtr-badge">' + rp.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="summary">Day Summary</button>';
+        $("#dtr-tab-nav").html(tabNavHtml);
+
+        // Tab 1: Bank & Cash
+        var bcHtml = "";
+        // Balance table - all accounts
+        bcHtml += '<table class="dtr-table" style="margin-bottom:14px;border:1px solid #cbd5e1;"><thead><tr style="background:#1e293b;color:#fff;"><th>Account</th><th>Type</th><th>Co</th><th class="num">Opening</th><th class="num">Dr (In)</th><th class="num">Cr (Out)</th><th class="num">Net</th><th class="num">Closing</th></tr></thead><tbody>';
+        var prevCompany = "";
+        balKeys.forEach(function(k) {
+            var b = bal[k];
+            var co = dtr_co(b.company || "");
+            var acctName = b.account_name || k;
+            var acctType = b.account_type || "";
+            var openBal = b.opening || 0;
+            var closeBal = b.closing || 0;
+            var mvmt = acctDrCr[k] || { dr: 0, cr: 0, postedDr: 0, postedCr: 0 };
+            var net = (mvmt.dr || 0) - (mvmt.cr || 0);
+            var hasDraftMvmt = (mvmt.dr || 0) !== (mvmt.postedDr || 0) || (mvmt.cr || 0) !== (mvmt.postedCr || 0);
+            var openStr = Math.abs(openBal).toLocaleString("en-IN", {minimumFractionDigits:2,maximumFractionDigits:2}) + (openBal >= 0 ? " Dr" : " Cr");
+            var closeStr = Math.abs(closeBal).toLocaleString("en-IN", {minimumFractionDigits:2,maximumFractionDigits:2}) + (closeBal >= 0 ? " Dr" : " Cr");
+            var typePill = '<span class="dtr-pill dtr-pill-' + (acctType === "Bank" ? "bank" : "cash") + '">' + acctType + "</span>";
+            bcHtml += '<tr><td>' + acctName + '</td><td>' + typePill + '</td><td>' + co + '</td><td class="num">' + openStr + '</td><td class="num" style="color:#16a34a">' + dtr_fmt(mvmt.dr || 0) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(mvmt.cr || 0) + '</td><td class="num" style="color:' + (net >= 0 ? "#16a34a" : "#dc2626") + '">' + (net >= 0 ? "+" : "") + dtr_fmt(net) + '</td><td class="num" style="font-weight:700">' + closeStr + "</td></tr>";
+        });
+        // Total row
+        bcHtml += '<tr class="dtr-total"><td colspan="3">Total All Bank + Cash</td><td class="num">' + dtr_fmt(totalOpening) + ' Dr</td><td class="num" style="color:#16a34a">' + dtr_fmt(totalDr) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(totalCr) + '</td><td class="num">' + dtr_fmt(netCash) + '</td><td class="num">' + dtr_fmt(totalClosing) + ' Dr</td></tr>';
+        bcHtml += "</tbody></table>";
+
+        if (draftPending > 0) {
+            bcHtml += '<div class="dtr-alert dtr-alert-warn"><b>&#9888; ' + dtr_fmt(draftPending) + ' of inflows are in DRAFT</b> and not yet posted to GL. Projected closing: <b>' + dtr_fmt(projectedClosing) + ' Dr</b></div>';
+        }
+
+        // Movements table
+        bcHtml += '<table class="dtr-table"><thead><tr><th>Voucher #</th><th>Co</th><th>Type</th><th>Party</th><th>Bank/Cash Account</th><th>Acct Type</th><th>Against Leg</th><th class="num">Dr (Inflow)</th><th class="num">Cr (Outflow)</th><th>RP</th><th>Status</th></tr></thead><tbody>';
+        movements.forEach(function(m) {
+            var rowClass = m.isDraft ? ' class="dtr-draft-row"' : "";
+            var rpPill = m.rp ? '<span class="dtr-pill dtr-pill-match" title="Matched to ' + m.rp + '">&#10003; ' + m.rp + "</span>" : '<span class="dtr-pill dtr-pill-nomatch" title="No RP needed">&ndash;</span>';
+            var stPill = dtr_docstatus_pill(m.docstatus);
+            bcHtml += '<tr' + rowClass + '><td class="dtr-ref">' + m.voucher + "</td><td>" + m.co + "</td><td>" + m.type + "</td><td>" + m.party + "</td><td>" + (m.acct || "") + '</td><td><span class="dtr-pill dtr-pill-' + (m.acctType === "Bank" ? "bank" : "cash") + '">' + m.acctType + "</span></td><td>" + m.against + '</td><td class="num">' + (m.dr ? '<span style="color:#16a34a">' + dtr_fmt(m.dr) + "</span>" : "") + '</td><td class="num">' + (m.cr ? '<span style="color:#dc2626">' + dtr_fmt(m.cr) + "</span>" : "") + "</td><td>" + rpPill + "</td><td>" + stPill + "</td></tr>";
+        });
+        bcHtml += '<tr class="dtr-total"><td colspan="7">Total Bank &amp; Cash Movement</td><td class="num" style="color:#16a34a">' + dtr_fmt(totalDr) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(totalCr) + '</td><td colspan="2">' + movements.filter(function(m){return m.rp;}).length + " RP matched</td></tr>";
+        if (postedDr !== totalDr || postedCr !== totalCr) {
+            bcHtml += '<tr style="background:#fef3c7;font-style:italic;"><td colspan="7" style="color:#92400e;">&nbsp;&nbsp;of which Posted to GL</td><td class="num" style="color:#9ca3af">' + dtr_fmt(postedDr) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(postedCr) + '</td><td colspan="2" style="color:#92400e;">Net posted: ' + dtr_fmt(netPosted) + "</td></tr>";
+        }
+        bcHtml += "</tbody></table>";
+        bcHtml += '<div style="font-size:11px;color:#6b7280;margin:6px 0 0 2px;"><b>Dr</b> = money INTO bank/cash &middot; <b>Cr</b> = money OUT &middot; <span style="color:#4b5563;font-style:italic;">Italic rows with dashed left border and (DRAFT) tag = Draft (informational only)</span></div>';
+        $("#dtr-tab-bankcash").html(bcHtml);
+
+        // Tab 2: Sales Invoices
+        var siHtml = '<table class="dtr-table"><thead><tr><th>Invoice #</th><th>Co</th><th>Customer</th><th>Curr</th><th class="num">Grand Total</th><th class="num">Base (INR)</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>';
+        si.forEach(function(s) {
+            var rowClass = s.docstatus === 0 ? ' class="dtr-draft-row"' : "";
+            siHtml += '<tr' + rowClass + '><td class="dtr-ref">' + s.name + "</td><td>" + dtr_co(s.company) + "</td><td>" + (s.customer_name || s.customer || "") + "</td><td>" + (s.currency || "") + '</td><td class="num">' + dtr_fmt(s.grand_total) + '</td><td class="num">' + dtr_fmt(s.base_grand_total) + '</td><td class="num">' + dtr_fmt(s.outstanding_amount) + "</td><td>" + dtr_status_pill(s.status) + "</td></tr>";
+        });
+        siHtml += '<tr class="dtr-total"><td colspan="5">Total Sales (Base INR)</td><td class="num">' + dtr_fmt(siTotal) + '</td><td class="num">' + dtr_fmt(siOutstanding) + "</td><td>" + si.filter(function(s){return s.docstatus===1;}).length + " Submitted &middot; " + si.filter(function(s){return s.docstatus===0;}).length + " Draft</td></tr>";
+        siHtml += "</tbody></table>";
+        $("#dtr-tab-sales").html(siHtml);
+
+        // Tab 3: Purchase Invoices
+        var piHtml = '<table class="dtr-table"><thead><tr><th>Invoice #</th><th>Co</th><th>Supplier</th><th>Curr</th><th class="num">Grand Total</th><th class="num">Base (INR)</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>';
+        pi.forEach(function(p) {
+            var rowClass = p.docstatus === 0 ? ' class="dtr-draft-row"' : "";
+            piHtml += '<tr' + rowClass + '><td class="dtr-ref">' + p.name + "</td><td>" + dtr_co(p.company) + "</td><td>" + (p.supplier_name || p.supplier || "") + "</td><td>" + (p.currency || "") + '</td><td class="num">' + dtr_fmt(p.grand_total) + '</td><td class="num">' + dtr_fmt(p.base_grand_total) + '</td><td class="num">' + dtr_fmt(p.outstanding_amount) + "</td><td>" + dtr_status_pill(p.status) + "</td></tr>";
+        });
+        piHtml += '<tr class="dtr-total"><td colspan="5">Total Purchase (Base INR)</td><td class="num">' + dtr_fmt(piTotal) + '</td><td class="num">' + dtr_fmt(piOutstanding) + "</td><td>" + pi.filter(function(p){return p.docstatus===1;}).length + " Submitted &middot; " + pi.filter(function(p){return p.docstatus===0;}).length + " Draft</td></tr>";
+        piHtml += "</tbody></table>";
+        $("#dtr-tab-purchase").html(piHtml);
+
+        // Tab 4: Request Payments
+        var rpHtml = '<table class="dtr-table"><thead><tr><th>RP #</th><th>Req Date</th><th>Requested By</th><th>Co</th><th>Party</th><th>Against</th><th class="num">Amount</th><th>Linked Payment</th><th>Status</th></tr></thead><tbody>';
+        rp.forEach(function(r) {
+            if (!r.references || r.references.length === 0) {
+                rpHtml += '<tr><td class="dtr-ref">' + r.name + "</td><td>" + dtr_date(r.request_date || "") + "</td><td>" + (r.requested_by_name || "") + "</td><td>" + dtr_co(r.company) + '</td><td>-</td><td>-</td><td class="num">' + dtr_fmt(r.total_allocated_amount || 0) + '</td><td>-</td><td>' + dtr_status_pill(r.status) + "</td></tr>";
+            } else {
+                r.references.forEach(function(ref) {
+                    var linkedPay = ref.payment_entry || ref.journal_entry || ref.book_entry || "-";
+                    rpHtml += '<tr><td class="dtr-ref">' + r.name + "</td><td>" + dtr_date(r.request_date || "") + "</td><td>" + (r.requested_by_name || "") + "</td><td>" + dtr_co(r.company) + "</td><td>" + (ref.party || "-") + "</td><td>" + (ref.reference_type || "") + " " + (ref.reference_name || "") + '</td><td class="num">' + dtr_fmt(ref.allocated_amount || 0) + '</td><td class="dtr-ref">' + linkedPay + "</td><td>" + dtr_status_pill(r.status) + "</td></tr>";
+                });
+            }
+        });
+        rpHtml += "</tbody></table>";
+        $("#dtr-tab-rp").html(rpHtml);
+
+        // Tab 5: Day Summary
+        var sumHtml = "";
+        sumHtml += '<div class="dtr-alert dtr-alert-info"><b>Dr</b> = money into bank/cash &middot; <b>Cr</b> = money out. Cash Flow and Billing shown separately. Draft amounts not yet posted to GL.</div>';
+        // Cash flow cards
+        sumHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
+        sumHtml += dtr_card("Money In (Dr)", "+" + dtr_fmt(totalDr), "#16a34a");
+        sumHtml += dtr_card("Money Out (Cr)", "-" + dtr_fmt(totalCr), "#dc2626");
+        sumHtml += dtr_card("Net (All)", (netCash >= 0 ? "+" : "") + dtr_fmt(netCash), "#1d4ed8");
+        sumHtml += dtr_card("Net (Posted)", (netPosted >= 0 ? "+" : "") + dtr_fmt(netPosted), "#d97706");
+        sumHtml += "</div>";
+        // Billing cards
+        sumHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
+        sumHtml += dtr_card("Sales Billed", dtr_fmt(siTotal), "#16a34a");
+        sumHtml += dtr_card("Purchase Billed", dtr_fmt(piTotal), "#d97706");
+        sumHtml += dtr_card("Net New Billing", dtr_fmt(siTotal - piTotal), "#dc2626");
+        sumHtml += dtr_card("RP Pending Payout", dtr_fmt(rpPending), "#be185d");
+        sumHtml += "</div>";
+        // Real picture table
+        sumHtml += '<table class="dtr-table" style="margin-top:14px;"><thead><tr><th>The Real Picture</th><th class="num">Amount (INR)</th><th>Meaning</th></tr></thead><tbody>';
+        sumHtml += '<tr><td>Net Cash Movement (all, incl. draft)</td><td class="num" style="color:' + (netCash >= 0 ? "#16a34a" : "#dc2626") + '">' + (netCash >= 0 ? "+" : "") + dtr_fmt(netCash) + "</td><td>" + dtr_fmt(totalDr) + " in - " + dtr_fmt(totalCr) + " out</td></tr>";
+        sumHtml += '<tr><td>Net Cash Movement (posted to GL)</td><td class="num" style="color:' + (netPosted >= 0 ? "#16a34a" : "#dc2626") + '">' + (netPosted >= 0 ? "+" : "") + dtr_fmt(netPosted) + "</td><td>Drafts pending: " + dtr_fmt(draftPending) + "</td></tr>";
+        sumHtml += '<tr><td>Bank + Cash Closing (actual)</td><td class="num">' + dtr_fmt(totalClosing) + ' Dr</td><td>Posted balance</td></tr>';
+        sumHtml += '<tr><td>Bank + Cash Projected Closing</td><td class="num" style="color:#16a34a">' + dtr_fmt(projectedClosing) + ' Dr</td><td>If drafts submitted</td></tr>';
+        sumHtml += '<tr><td>New Receivables (Sales, unpaid)</td><td class="num">' + dtr_fmt(siOutstanding) + "</td><td>Will become cash when customers pay</td></tr>";
+        sumHtml += '<tr><td>New Payables (Purchase, outstanding)</td><td class="num" style="color:#dc2626">' + dtr_fmt(piOutstanding) + "</td><td>Will need payment</td></tr>";
+        sumHtml += '<tr><td>RP Approved - Awaiting Payout</td><td class="num" style="color:#d97706">' + dtr_fmt(rpPending) + "</td><td>Authorized but not disbursed</td></tr>";
+        sumHtml += '<tr class="dtr-grand"><td>Net Position (Projected Cash + Receivable - Payable)</td><td class="num">' + dtr_fmt(projectedClosing + siOutstanding - piOutstanding) + "</td><td>Projected cash + receivable - payable</td></tr>";
+        sumHtml += "</tbody></table>";
+
+        // Party-wise Receivables - overall outstanding as on date
+        var recvAll = d.recv_outstanding || [];
+        var recvTotalBilled = recvAll.reduce(function(s, r) { return s + (r.total_billed || 0); }, 0);
+        var recvTotalOut = recvAll.reduce(function(s, r) { return s + (r.total_outstanding || 0); }, 0);
+        if (recvAll.length > 0) {
+            sumHtml += '<table class="dtr-table" style="margin-top:14px;"><thead><tr><th colspan="5" style="background:#374151;">Party-wise Receivables (As on ' + dtr_date(_dtr_date) + ' - All Outstanding Sales Invoices)</th></tr><tr><th>Customer</th><th>Co</th><th class="num">Invoices</th><th class="num">Billed (INR)</th><th class="num">Outstanding (INR)</th></tr></thead><tbody>';
+            recvAll.forEach(function(r) {
+                sumHtml += '<tr><td>' + (r.customer_name || r.customer || "") + '</td><td>' + dtr_co(r.company) + '</td><td class="num">' + r.invoice_count + '</td><td class="num">' + dtr_fmt(r.total_billed) + '</td><td class="num" style="font-weight:600;">' + dtr_fmt(r.total_outstanding) + '</td></tr>';
+            });
+            sumHtml += '<tr class="dtr-total"><td colspan="3">Total Receivables (As on ' + dtr_date(_dtr_date) + ')</td><td class="num">' + dtr_fmt(recvTotalBilled) + '</td><td class="num">' + dtr_fmt(recvTotalOut) + '</td></tr>';
+            sumHtml += "</tbody></table>";
+        }
+
+        // Party-wise Payables - overall outstanding as on date
+        var payAll = d.pay_outstanding || [];
+        var payTotalBilled = payAll.reduce(function(s, p) { return s + (p.total_billed || 0); }, 0);
+        var payTotalOut = payAll.reduce(function(s, p) { return s + (p.total_outstanding || 0); }, 0);
+        if (payAll.length > 0) {
+            sumHtml += '<table class="dtr-table" style="margin-top:10px;"><thead><tr><th colspan="5" style="background:#374151;">Party-wise Payables (As on ' + dtr_date(_dtr_date) + ' - All Outstanding Purchase Invoices)</th></tr><tr><th>Supplier</th><th>Co</th><th class="num">Invoices</th><th class="num">Billed (INR)</th><th class="num">Outstanding (INR)</th></tr></thead><tbody>';
+            payAll.forEach(function(p) {
+                sumHtml += '<tr><td>' + (p.supplier_name || p.supplier || "") + '</td><td>' + dtr_co(p.company) + '</td><td class="num">' + p.invoice_count + '</td><td class="num">' + dtr_fmt(p.total_billed) + '</td><td class="num" style="font-weight:600;">' + dtr_fmt(p.total_outstanding) + '</td></tr>';
+            });
+            sumHtml += '<tr class="dtr-total"><td colspan="3">Total Payables (As on ' + dtr_date(_dtr_date) + ')</td><td class="num">' + dtr_fmt(payTotalBilled) + '</td><td class="num">' + dtr_fmt(payTotalOut) + '</td></tr>';
+            sumHtml += "</tbody></table>";
+        }
+
+        $("#dtr-tab-summary").html(sumHtml);
+    }
+
+    function print_dtr() {
+        if (!_dtr_data) { frappe.msgprint("Load the report first."); return; }
+        var win = window.open("", "_blank");
+        var css = "<style>" +
+            "@media print{body{padding:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+            ".dtr-section-title{page-break-after:avoid;}" +
+            ".dtr-table{page-break-inside:auto;}" +
+            "tr{page-break-inside:avoid;}}" +
+            "body{font-family:Segoe UI,Arial,sans-serif;padding:20px;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+            ".dtr-doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #000;padding-bottom:12px;margin-bottom:16px;}" +
+            ".dtr-doc-header-left{flex:1;}" +
+            ".dtr-doc-header-right{text-align:right;}" +
+            ".dtr-doc-title{font-size:22px;font-weight:700;color:#000;margin:0;letter-spacing:0.5px;}" +
+            ".dtr-doc-subtitle{font-size:11px;color:#333;margin:2px 0 0;}" +
+            ".dtr-doc-meta{font-size:11px;color:#333;line-height:1.6;}" +
+            ".dtr-doc-meta b{color:#000;}" +
+            ".dtr-doc-date-box{border:2px solid #000;border-radius:6px;padding:6px 14px;display:inline-block;}" +
+            ".dtr-doc-date-label{font-size:9px;color:#333;text-transform:uppercase;letter-spacing:1px;}" +
+            ".dtr-doc-date-val{font-size:16px;font-weight:700;color:#000;}" +
+            ".dtr-section-title{font-size:14px;font-weight:700;color:#000;background:#d9d9d9;padding:6px 12px;border-bottom:2px solid #000;margin:20px 0 0;}" +
+            ".dtr-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:10px;border:1px solid #000;}" +
+            ".dtr-table th{background:#000;color:#fff;padding:6px 7px;text-align:left;border-bottom:1px solid #000;font-weight:600;}" +
+            ".dtr-table td{padding:4px 7px;border-bottom:1px solid #ccc;}" +
+            ".dtr-table tr:nth-child(even){background:#f2f2f2;}" +
+            ".dtr-table th.num,.dtr-table td.num{text-align:right;white-space:nowrap;}" +
+            ".dtr-total td{font-weight:700;background:#d9d9d9;border-top:2px solid #000;}" +
+            ".dtr-grand td{font-weight:700;background:#000;color:#fff;font-size:12px;}" +
+            ".dtr-draft-row{font-style:italic;color:#000;border-left:4px dashed #000;}" +
+            ".dtr-draft-row td{color:#000;}" +
+            ".dtr-draft-row .dtr-ref::after{content:' (DRAFT)';font-weight:700;font-style:normal;font-size:8px;}" +
+            ".dtr-pill{display:inline-block;padding:1px 6px;border-radius:8px;font-size:8px;font-weight:600;border:1px solid #999;}" +
+            ".dtr-pill-draft{background:#fff;color:#000;border:2px dashed #000;font-weight:700;}" +
+            ".dtr-pill-submitted{background:#fff;color:#000;border:1px solid #000;}" +
+            ".dtr-pill-cancelled{background:#ccc;color:#000;text-decoration:line-through;}" +
+            ".dtr-pill-match{background:#fff;color:#000;border:1px solid #000;}" +
+            ".dtr-pill-nomatch{background:#fff;color:#999;border:1px solid #ccc;}" +
+            ".dtr-pill-bank{background:#eee;color:#000;border:1px solid #666;}" +
+            ".dtr-pill-cash{background:#fff;color:#000;border:1px solid #000;}" +
+            ".dtr-alert{border-radius:6px;padding:8px 12px;margin:8px 0;font-size:10px;border:1px solid #999;}" +
+            ".dtr-alert-info{background:#f2f2f2;border-left:4px solid #000;color:#000;}" +
+            ".dtr-alert-warn{background:#eee;border-left:4px solid #000;color:#000;}" +
+            ".dtr-ref{font-family:monospace;font-size:9px;color:#000;font-weight:600;}" +
+            ".dtr-card{border:1px solid #000;border-radius:4px;padding:6px 8px;background:#f2f2f2;display:inline-block;margin:2px;}" +
+            ".dtr-card-label{font-size:8px;color:#333;text-transform:uppercase;}" +
+            ".dtr-card-value{font-size:13px;font-weight:700;color:#000;}" +
+            ".dtr-cards-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px;}" +
+            ".dtr-footer{margin-top:20px;border-top:1px solid #000;padding-top:8px;font-size:9px;color:#333;text-align:center;}" +
+            "</style>";
+        win.document.write("<html><head><title>Daily Transaction Report - " + dtr_date(_dtr_date) + "</title>" + css + "</head><body>");
+
+        // Presentable document header
+        win.document.write("<div class='dtr-doc-header'>");
+        win.document.write("<div class='dtr-doc-header-left'>");
+        win.document.write("<div class='dtr-doc-title'>DAILY TRANSACTION REPORT</div>");
+        win.document.write("<div class='dtr-doc-subtitle'>TEAMPRO Group &middot; Consolidated Bank, Cash &amp; Billing Report</div>");
+        win.document.write("<div class='dtr-doc-meta' style='margin-top:8px;'>" +
+            "<b>Companies:</b> THIS (TEAMPRO HR &amp; IT Services) &middot; TFP (TEAMPRO Food Products)<br/>" +
+            "<b>Source:</b> ERPNext &middot; <b>Generated:</b> " + dtr_date(frappe.datetime.get_today()) + " " + frappe.datetime.now_time(true) +
+            "</div>");
+        win.document.write("</div>");
+        win.document.write("<div class='dtr-doc-header-right'>");
+        win.document.write("<div class='dtr-doc-date-box'>");
+        win.document.write("<div class='dtr-doc-date-label'>Report Date</div>");
+        win.document.write("<div class='dtr-doc-date-val'>" + dtr_date(_dtr_date) + "</div>");
+        win.document.write("</div>");
+        win.document.write("</div>");
+        win.document.write("</div>");
+
+        var panels = [
+            {sel: "#dtr-tab-bankcash", title: "1. Bank &amp; Cash Movements"},
+            {sel: "#dtr-tab-sales", title: "2. Sales Invoices"},
+            {sel: "#dtr-tab-purchase", title: "3. Purchase Invoices"},
+            {sel: "#dtr-tab-rp", title: "4. Request Payments"},
+            {sel: "#dtr-tab-summary", title: "5. Day Summary"}
+        ];
+        panels.forEach(function(p) {
+            var el = $(p.sel);
+            if (el.length && el.html().trim()) {
+                win.document.write("<div class='dtr-section-title'>" + p.title + "</div>");
+                win.document.write(el.html());
+            }
+        });
+
+        win.document.write("<div class='dtr-footer'>This is a system-generated report from ERPNext &middot; TEAMPRO Group &middot; Confidential</div>");
+        win.document.write("</body></html>");
+        win.document.close();
+        setTimeout(function() { win.print(); }, 500);
+    }
+
+    function download_dtr_csv() {
+        if (!_dtr_data) { frappe.msgprint("Load the report first."); return; }
+        var d = _dtr_data;
+        var csv = "Section,Voucher #,Company,Type,Party,Account,Dr (Inflow),Cr (Outflow),RP,Status\n";
+        d.pe.forEach(function(p) {
+            csv += "Bank & Cash," + p.name + "," + dtr_co(p.company) + ",PE-" + p.payment_type + "," + (p.party_name || "") + "," + (p.paid_to || p.paid_from || "") + "," + (p.payment_type === "Receive" ? p.paid_amount : "") + "," + (p.payment_type === "Pay" ? p.paid_amount : "") + ",," + p.status + "\n";
+        });
+        d.je.forEach(function(j) {
+            csv += "Bank & Cash," + j.name + "," + dtr_co(j.company) + ",JE," + (j.pay_to_recd_from || "") + ",,,," + (j.docstatus === 1 ? "Submitted" : "Draft") + "\n";
+        });
+        d.si.forEach(function(s) {
+            csv += "Sales Invoice," + s.name + "," + dtr_co(s.company) + ",Sales," + (s.customer_name || "") + ",,,," + s.status + "\n";
+        });
+        d.pi.forEach(function(p) {
+            csv += "Purchase Invoice," + p.name + "," + dtr_co(p.company) + ",Purchase," + (p.supplier_name || "") + ",,,," + p.status + "\n";
+        });
+        var blob = new Blob([csv], { type: "text/csv" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Daily_Transaction_Report_" + dtr_date(_dtr_date) + ".csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+
+    $(`<style>
+
+        /* DTR Sub-tab buttons */
+        .txn-subtab-btn{
+            background:#e5e7eb;
+            color:#6b7280;
+            border:none;
+            padding:8px 16px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:13px;
+            margin:0 2px;
+        }
+        .txn-subtab-btn:hover{ background:#dbeafe; color:#1d4ed8; }
+        .txn-subtab-btn.active{ background:#0F1568; color:#fff; }
+
+        /* Payment Sub-tab buttons */
+        .payment-subtab-btn{
+            background:#e5e7eb;
+            color:#6b7280;
+            border:none;
+            padding:8px 18px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:13px;
+            margin:0 2px;
+        }
+        .payment-subtab-btn:hover{ background:#fce7f3; color:#be185d; }
+        .payment-subtab-btn.active{ background:#0F1568; color:#fff; }
+
+        /* DTR Tab buttons */
+        .dtr-tab-btn{
+            background:#e5e7eb;
+            color:#6b7280;
+            border:none;
+            padding:7px 14px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:12px;
+        }
+        .dtr-tab-btn:hover{ background:#dbeafe; color:#1d4ed8; }
+        .dtr-tab-btn.active{ background:#1d4ed8; color:#fff; }
+        .dtr-badge{ background:rgba(255,255,255,0.3); padding:1px 6px; border-radius:8px; font-size:10px; margin-left:4px; }
+        .dtr-tab-btn:not(.active) .dtr-badge{ background:#f3f4f6; color:#6b7280; }
+
+        /* DTR Table */
+        .dtr-table{ width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px; }
+        .dtr-table th{ background:#f1f5f9; text-align:left; padding:6px 8px; font-weight:600; color:#334155; border-bottom:2px solid #cbd5e1; }
+        .dtr-table th.num, .dtr-table td.num{ text-align:right; white-space:nowrap; }
+        .dtr-table td{ padding:5px 8px; border-bottom:1px solid #eef2f7; vertical-align:top; }
+        .dtr-table tr:nth-child(even) td{ background:#fafbfc; }
+        .dtr-table tr:hover td{ background:#eff6ff; }
+        .dtr-total td{ font-weight:700; background:#e2e8f0 !important; border-top:2px solid #94a3b8; }
+        .dtr-grand td{ font-weight:700; background:#1d4ed8 !important; color:#fff !important; font-size:13px; }
+        .dtr-draft-row{ color:#4b5563 !important; font-style:italic; border-left:4px dashed #9ca3af; }
+        .dtr-draft-row td{ color:#4b5563 !important; }
+        .dtr-draft-row .dtr-ref::after{ content:' (DRAFT)'; font-weight:700; font-style:normal; font-size:9px; color:#b45309; }
+        .dtr-ref{ font-family:monospace; font-size:11px; color:#1e3a8a; }
+
+        /* DTR Pills */
+        .dtr-pill{ display:inline-block; padding:1px 7px; border-radius:10px; font-size:10px; font-weight:600; }
+        .dtr-pill-draft{ background:#fef3c7; color:#92400e; }
+        .dtr-pill-submitted{ background:#dcfce7; color:#166534; }
+        .dtr-pill-cancelled{ background:#fee2e2; color:#991b1b; }
+        .dtr-pill-approved{ background:#dbeafe; color:#1e40af; }
+        .dtr-pill-match{ background:#dcfce7; color:#166534; }
+        .dtr-pill-nomatch{ background:#fee2e2; color:#991b1b; }
+        .dtr-pill-bank{ background:#e0e7ff; color:#3730a3; }
+        .dtr-pill-cash{ background:#ffedd5; color:#9a3412; }
+
+        /* DTR Cards */
+        .dtr-card{ border:1px solid #e5e7eb; border-radius:6px; padding:8px 10px; background:#f9fafb; flex:1; min-width:120px; }
+        .dtr-card-label{ font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:.3px; }
+        .dtr-card-value{ font-size:15px; font-weight:700; margin-top:2px; }
+
+        /* DTR Alerts */
+        .dtr-alert{ border-radius:6px; padding:10px 14px; margin:10px 0; font-size:12px; line-height:1.5; }
+        .dtr-alert-info{ background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; color:#1e3a8a; }
+        .dtr-alert-warn{ background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; color:#78350f; }
 
         .nav-btn{
             background:#0F1568;
@@ -328,6 +2352,86 @@ $(document).on("click", ".nav-btn", function () {
         .nav-btn:hover{
             opacity:0.9;
         }
+
+        .payment-btn{
+            background:#16a34a;
+            color:white;
+            border:none;
+            padding:8px 14px;
+            border-radius:5px;
+            cursor:pointer;
+            font-weight:600;
+        }
+        .payment-btn:hover{
+            opacity:0.9;
+        }
+
+        .request-payment-btn{
+            background:#be185d;
+            color:white;
+            border:none;
+            padding:8px 14px;
+            border-radius:5px;
+            cursor:pointer;
+            font-weight:600;
+        }
+        .request-payment-btn:hover{
+            opacity:0.9;
+        }
+
+        .main-tab-btn{
+            background:#e5e7eb;
+            color:#374151;
+            border:none;
+            padding:10px 28px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:14px;
+            border-bottom:3px solid transparent;
+        }
+        .main-tab-btn.active{
+            background:#0F1568;
+            color:white;
+            border-bottom:3px solid #16a34a;
+        }
+        .main-tab-btn:hover{
+            opacity:0.9;
+        }
+
+        .txn-btn{
+            background:#7c3aed;
+            color:white;
+            border:none;
+            padding:8px 14px;
+            border-radius:5px;
+            cursor:pointer;
+            font-weight:600;
+        }
+        .txn-btn:hover{
+            opacity:0.9;
+        }
+
+        @keyframes txn-glow {
+            0%   { box-shadow: 0 0 5px #16a34a, 0 0 10px #16a34a; background:#dcfce7; }
+            50%  { box-shadow: 0 0 15px #16a34a, 0 0 25px #16a34a; background:#bbf7d0; }
+            100% { box-shadow: 0 0 5px #16a34a, 0 0 10px #16a34a; background:#dcfce7; }
+        }
+        .txn-row-glow {
+            animation: txn-glow 1.5s ease-in-out 3;
+        }
+
+        .txn-card {
+            flex: 1;
+            min-width: 160px;
+            background: #fff;
+            border-radius: 6px;
+            padding: 12px 16px;
+            border-left: 4px solid #0F1568;
+        }
+        .txn-card-label { font-size: 11px; color: #666; font-weight: 600; text-transform: uppercase; }
+        .txn-card-value { font-size: 22px; font-weight: 700; color: #0F1568; margin-top: 4px; }
+        .txn-card-sub { font-size: 11px; color: #888; margin-top: 2px; }
 
 		.approvals-container{
 			padding-left:20px;
@@ -392,12 +2496,31 @@ $(document).on("click", ".nav-btn", function () {
     padding: 10px;
     overflow-x: auto;
 }
+
+.dashboard-card{
+    position: relative;
+    min-width: 100px;
+    width: auto;
+    background: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    overflow: hidden;
+    transition: .25s;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-card:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(0,0,0,.15);
+}
 	</style>`).appendTo("head");
 
-	load_leave_applications();
-	load_expense_claims();
-	load_att_table();
-	load_pur_table();
+    load_leave_applications();
+    load_expense_claims();
+    load_att_table();
+    load_pur_table();
     load_pur_inv_table();
     load_sal_inv_table();
 };
@@ -406,7 +2529,7 @@ $(document).on("click", ".nav-btn", function () {
 
     let target = $(this).data("target");
 
-    if (target === "leave-section"){
+    if (target === "leave-section") {
 
         if ($("#leave-section").is(":hidden")) {
             frappe.msgprint({
@@ -417,7 +2540,7 @@ $(document).on("click", ".nav-btn", function () {
             return;
         }
     }
-    else if (target === "expense-section"){
+    else if (target === "expense-section") {
 
         if ($("#expense-section").is(":hidden")) {
             frappe.msgprint({
@@ -428,7 +2551,7 @@ $(document).on("click", ".nav-btn", function () {
             return;
         }
     }
-    else if (target === "att-section"){
+    else if (target === "att-section") {
 
         if ($("#att-section").is(":hidden")) {
             frappe.msgprint({
@@ -439,7 +2562,7 @@ $(document).on("click", ".nav-btn", function () {
             return;
         }
     }
-    else if (target === "pur-section"){
+    else if (target === "pur-section") {
 
         if ($("#pur-section").is(":hidden")) {
             frappe.msgprint({
@@ -450,7 +2573,7 @@ $(document).on("click", ".nav-btn", function () {
             return;
         }
     }
-    else if (target === "pur-inv-section"){
+    else if (target === "pur-inv-section") {
 
         if ($("#pur-inv-section").is(":hidden")) {
             frappe.msgprint({
@@ -461,7 +2584,7 @@ $(document).on("click", ".nav-btn", function () {
             return;
         }
     }
-    else if (target === "sal-inv-section"){
+    else if (target === "sal-inv-section") {
 
         if ($("#sal-inv-section").is(":hidden")) {
             frappe.msgprint({
@@ -479,11 +2602,40 @@ $(document).on("click", ".nav-btn", function () {
 });
 
 
-function renderSimpleCard(selector, label, value, color="#0d6efd", icon="fa fa-chart-bar") {
+// function renderSimpleCard(selector, label, value, color = "#0d6efd", icon = "fa fa-chart-bar") {
+
+//     $(selector).html(`
+//         <div style="
+//             width:200px;
+//             background:#fff;
+//             border-radius:10px;
+//             box-shadow:0 2px 8px rgba(0,0,0,.1);
+//             overflow:hidden;">
+
+//             <div style="height:5px;background:${color};"></div>
+
+//             <div style="padding:20px;text-align:center;">
+
+//                 <i class="${icon}" style="font-size:30px;color:${color};"></i>
+
+//                 <div style="margin-top:10px;font-size:15px;font-weight:600;">
+//                     ${label}
+//                 </div>
+
+//                 <div style="margin-top:8px;font-size:28px;font-weight:bold;color:${color};">
+//                     ${value}
+//                 </div>
+
+//             </div>
+//         </div>
+//     `);
+// }
+
+function renderSimpleCard(selector, label, value, color = "#0d6efd", icon = "fa fa-chart-bar", subtitle = "") {
 
     $(selector).html(`
         <div style="
-            width:220px;
+            width:200px;
             background:#fff;
             border-radius:10px;
             box-shadow:0 2px 8px rgba(0,0,0,.1);
@@ -493,7 +2645,11 @@ function renderSimpleCard(selector, label, value, color="#0d6efd", icon="fa fa-c
 
             <div style="padding:20px;text-align:center;">
 
-                <i class="${icon}" style="font-size:30px;color:${color};"></i>
+
+                <div class="card-icon"
+                    style="background:${color}20;color:${color};width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;">
+                    <i class="${icon}"></i>
+                </div>
 
                 <div style="margin-top:10px;font-size:15px;font-weight:600;">
                     ${label}
@@ -503,6 +2659,11 @@ function renderSimpleCard(selector, label, value, color="#0d6efd", icon="fa fa-c
                     ${value}
                 </div>
 
+                ${subtitle ? `
+                <div style="margin-top:4px;font-size:12px;color:#666;">
+                    ${subtitle}
+                </div>` : ''}
+
             </div>
         </div>
     `);
@@ -511,7 +2672,7 @@ function renderSimpleCard(selector, label, value, color="#0d6efd", icon="fa fa-c
 function load_leave_applications() {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_leave_applications",
-        callback: function(r) {
+        callback: function (r) {
             let data = r.message || [];
 
             // Leave Application
@@ -520,7 +2681,8 @@ function load_leave_applications() {
                 "Leave Applications",
                 data.length,
                 "#198754",
-                "fa fa-calendar-o"
+                "fa fa-calendar-o",
+                "Pending Leave"
             );
 
             if (data.length === 0) {
@@ -599,7 +2761,7 @@ function load_leave_applications() {
         }
     });
 }
-$(document).on("change", "#select_all", function() {
+$(document).on("change", "#select_all", function () {
 
     let checked = $(this).prop("checked");
 
@@ -607,7 +2769,7 @@ $(document).on("change", "#select_all", function() {
 
 });
 // All ticed the top check auto tic
-$(document).on("change", ".leave-check", function() {
+$(document).on("change", ".leave-check", function () {
 
     let total = $(".leave-check").length;
     let checked = $(".leave-check:checked").length;
@@ -616,38 +2778,38 @@ $(document).on("change", ".leave-check", function() {
 
 });
 
-window.bulk_approve = function(){
+window.bulk_approve = function () {
 
     let selected = [];
 
-    $(".leave-check:checked").each(function(){
+    $(".leave-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one document."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.bulk_approve",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Documents Approved",
-                indicator:"green"
+                message: "Documents Approved",
+                indicator: "green"
             });
 
             load_leave_applications();
@@ -656,38 +2818,38 @@ window.bulk_approve = function(){
 
 }
 
-window.bulk_reject = function(){
+window.bulk_reject = function () {
 
     let selected = [];
 
-    $(".leave-check:checked").each(function(){
+    $(".leave-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one document."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.bulk_reject",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Documents Rejected",
-                indicator:"red"
+                message: "Documents Rejected",
+                indicator: "red"
             });
 
             load_leave_applications();
@@ -697,49 +2859,49 @@ window.bulk_reject = function(){
 }
 
 
-window.approve_leave = function(docname){
+window.approve_leave = function (docname) {
 
-	frappe.call({
-		method:"teampro.teampro.page.approvals.approvals.bulk_approve",
-		args:{
-			docs:[docname]
-		},
-		callback:function(r){
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve",
+        args: {
+            docs: [docname]
+        },
+        callback: function (r) {
 
-			frappe.show_alert({
-				message:"Approved",
-				indicator:"green"
-			});
+            frappe.show_alert({
+                message: "Approved",
+                indicator: "green"
+            });
 
-			load_leave_applications();
-		}
-	});
+            load_leave_applications();
+        }
+    });
 }
 
-window.reject_leave = function(docname){
+window.reject_leave = function (docname) {
 
-	frappe.call({
-		method:"teampro.teampro.page.approvals.approvals.bulk_reject",
-		args:{
-			docs:[docname]
-		},
-		callback:function(r){
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject",
+        args: {
+            docs: [docname]
+        },
+        callback: function (r) {
 
-			frappe.show_alert({
-				message:"Rejected",
-				indicator:"red"
-			});
+            frappe.show_alert({
+                message: "Rejected",
+                indicator: "red"
+            });
 
-			load_leave_applications();
-		}
-	});
+            load_leave_applications();
+        }
+    });
 }
 
-window.show_leave_details = function(docname) {
+window.show_leave_details = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_leave_details",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) {
                 frappe.msgprint("No Details Found");
                 return;
@@ -749,8 +2911,7 @@ window.show_leave_details = function(docname) {
 
             let dialog = new frappe.ui.Dialog({
                 title: "Leave Application Details",
-                size: "large",
-                fields: [
+                                fields: [
                     { fieldtype: "HTML", fieldname: "details" }
                 ]
             });
@@ -806,13 +2967,13 @@ window.show_leave_details = function(docname) {
 function load_expense_claims() {
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.get_expense_claims",
-        callback:function(r){
+        method: "teampro.teampro.page.approvals.approvals.get_expense_claims",
+        callback: function (r) {
 
             let data = r.message || [];
-            renderSimpleCard("#expense-card","Expense Claims",data.length,"#fd7e14","fa fa-money");
+            renderSimpleCard("#expense-card", "Expense Claims", data.length, "#fd7e14", "fa fa-money", "Pending Expense");
 
-             if (data.length === 0) {
+            if (data.length === 0) {
                 $("#expense-section").hide();
                 return;
             } else {
@@ -838,8 +2999,8 @@ function load_expense_claims() {
             <tbody>
         `;
 
-        data.forEach((row, idx) => {
-            html += `
+            data.forEach((row, idx) => {
+                html += `
             <tr>
                 <td style="text-align:center;">${idx + 1}</td>
                 <td style="text-align:left;">
@@ -871,16 +3032,16 @@ function load_expense_claims() {
                 </td>
             </tr>
             `;
-        });
-
-        html += `</tbody></table>`;
-
-                    $("#expense-table").html(html);
-                }
             });
-        }
 
-$(document).on("change", "#expense_select_all", function(){
+            html += `</tbody></table>`;
+
+            $("#expense-table").html(html);
+        }
+    });
+}
+
+$(document).on("change", "#expense_select_all", function () {
 
     $(".expense-check").prop(
         "checked",
@@ -889,11 +3050,11 @@ $(document).on("change", "#expense_select_all", function(){
 
 });
 
-window.show_expense_details = function(docname) {
+window.show_expense_details = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_expense_details",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) {
                 frappe.msgprint("No Details Found");
                 return;
@@ -975,7 +3136,7 @@ window.show_expense_details = function(docname) {
     });
 };
 
-$(document).on("change", ".expense-check", function(){
+$(document).on("change", ".expense-check", function () {
 
     let total = $(".expense-check").length;
     let checked = $(".expense-check:checked").length;
@@ -987,38 +3148,38 @@ $(document).on("change", ".expense-check", function(){
 
 });
 
-window.bulk_expense_approve = function(){
+window.bulk_expense_approve = function () {
 
     let selected = [];
 
-    $(".expense-check:checked").each(function(){
+    $(".expense-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one Expense Claim."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one Expense Claim."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.expense_approve",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.expense_approve",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Expense Claims Processed",
-                indicator:"green"
+                message: "Expense Claims Processed",
+                indicator: "green"
             });
 
             load_expense_claims();
@@ -1027,36 +3188,36 @@ window.bulk_expense_approve = function(){
 
 }
 
-window.bulk_expense_reject = function(){
+window.bulk_expense_reject = function () {
 
     let selected = [];
 
-    $(".expense-check:checked").each(function(){
+    $(".expense-check:checked").each(function () {
         selected.push($(this).val());
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one Expense Claim."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one Expense Claim."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.expense_reject",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.expense_reject",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Expense Claims Rejected",
-                indicator:"red"
+                message: "Expense Claims Rejected",
+                indicator: "red"
             });
 
             load_expense_claims();
@@ -1065,18 +3226,18 @@ window.bulk_expense_reject = function(){
 
 }
 
-window.approve_expense = function(docname){
+window.approve_expense = function (docname) {
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.expense_approve",
-        args:{
-            docs:[docname]
+        method: "teampro.teampro.page.approvals.approvals.expense_approve",
+        args: {
+            docs: [docname]
         },
-        callback:function(r){
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Expense Claim Approved",
-                indicator:"green"
+                message: "Expense Claim Approved",
+                indicator: "green"
             });
 
             load_expense_claims();
@@ -1085,18 +3246,18 @@ window.approve_expense = function(docname){
 
 }
 
-window.reject_expense = function(docname){
+window.reject_expense = function (docname) {
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.expense_reject",
-        args:{
-            docs:[docname]
+        method: "teampro.teampro.page.approvals.approvals.expense_reject",
+        args: {
+            docs: [docname]
         },
-        callback:function(r){
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Expense Claim Rejected",
-                indicator:"red"
+                message: "Expense Claim Rejected",
+                indicator: "red"
             });
 
             load_expense_claims();
@@ -1108,7 +3269,7 @@ window.reject_expense = function(docname){
 function load_att_table() {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_att_applications",
-        callback: function(r) {
+        callback: function (r) {
             let data = r.message || [];
 
             renderSimpleCard(
@@ -1116,7 +3277,8 @@ function load_att_table() {
                 "Attendance Requests",
                 data.length,
                 "#0dcaf0",
-                "fa fa-calendar"
+                "fa fa-calendar",
+                "Pending Att Request"
             );
 
             if (data.length === 0) {
@@ -1195,17 +3357,17 @@ function load_att_table() {
         }
     });
 }
-$(document).on("change", "#att_select_all", function() {
+$(document).on("change", "#att_select_all", function () {
 
     let checked = $(this).prop("checked");
 
-    
-    
+
+
     $(".att-check").prop("checked", checked);
 
 });
 // All ticed the top check auto tic
-$(document).on("change", ".att-check", function() {
+$(document).on("change", ".att-check", function () {
 
     let total = $(".att-check").length;
     let checked = $(".att-check:checked").length;
@@ -1214,38 +3376,38 @@ $(document).on("change", ".att-check", function() {
 
 });
 
-window.bulk_att_approve = function(){
+window.bulk_att_approve = function () {
 
     let selected = [];
 
-    $(".att-check:checked").each(function(){
+    $(".att-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one document."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.bulk_approve_att",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve_att",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Documents Approved",
-                indicator:"green"
+                message: "Documents Approved",
+                indicator: "green"
             });
 
             load_att_table();
@@ -1254,38 +3416,38 @@ window.bulk_att_approve = function(){
 
 }
 
-window.bulk_att_reject = function(){
+window.bulk_att_reject = function () {
 
     let selected = [];
 
-    $(".att-check:checked").each(function(){
+    $(".att-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one document."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.bulk_reject_att",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject_att",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Documents Rejected",
-                indicator:"red"
+                message: "Documents Rejected",
+                indicator: "red"
             });
 
             load_att_table();
@@ -1294,48 +3456,48 @@ window.bulk_att_reject = function(){
 
 }
 
-window.approve_att = function(docname){
+window.approve_att = function (docname) {
 
-	frappe.call({
-		method:"teampro.teampro.page.approvals.approvals.approve_att",
-		args:{
-			docname:docname
-		},
-		callback:function(r){
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.approve_att",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
 
-			frappe.show_alert({
-				message:"Approved",
-				indicator:"green"
-			});
+            frappe.show_alert({
+                message: "Approved",
+                indicator: "green"
+            });
 
-			load_att_table();
-		}
-	});
+            load_att_table();
+        }
+    });
 }
 
-window.reject_att = function(docname){
+window.reject_att = function (docname) {
 
-	frappe.call({
-		method:"teampro.teampro.page.approvals.approvals.reject_att",
-		args:{
-			docname:docname
-		},
-		callback:function(r){
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.reject_att",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
 
-			frappe.show_alert({
-				message:"Rejected",
-				indicator:"red"
-			});
+            frappe.show_alert({
+                message: "Rejected",
+                indicator: "red"
+            });
 
-			load_att_table();
-		}
-	});
+            load_att_table();
+        }
+    });
 }
-window.show_att_details = function(docname) {
+window.show_att_details = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_att_details",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) {
                 frappe.msgprint("No Details Found");
                 return;
@@ -1345,8 +3507,7 @@ window.show_att_details = function(docname) {
 
             let dialog = new frappe.ui.Dialog({
                 title: "Attendance Request Details",
-                size: "large",
-                fields: [
+                                fields: [
                     { fieldtype: "HTML", fieldname: "details" }
                 ]
             });
@@ -1402,10 +3563,10 @@ window.show_att_details = function(docname) {
 function load_pur_table() {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_pur_applications",
-        callback: function(r) {
+        callback: function (r) {
             let data = r.message || [];
 
-            renderSimpleCard("#po-card","Purchase Orders",data.length,"#6f42c1","fa fa-shopping-cart");
+            renderSimpleCard("#po-card", "Purchase Orders", data.length, "#6f42c1", "fa fa-shopping-cart", "Pending PO");
 
             if (data.length === 0) {
                 $("#pur-section").hide();
@@ -1454,7 +3615,7 @@ function load_pur_table() {
                         <td style="text-align:center;">${format_date(row.schedule_date)}</td>
                         <td style="text-align:left;">${row.custom_service || "-"}</td>
                         <td style="text-align:center;">${row.total_qty || "-"}</td>
-                        <td style="text-align:right;">₹${parseFloat(row.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                         <td style="text-align:left;">${row.status || "-"}</td>
                         <td style="text-align:center;">
                             <button class="btn btn-xs btn-info"
@@ -1484,18 +3645,18 @@ function load_pur_table() {
     });
 }
 
-$(document).on("change", "#pur_select_all", function() {
+$(document).on("change", "#pur_select_all", function () {
 
     let checked = $(this).prop("checked");
 
-    
-    
-    
+
+
+
     $(".pur-check").prop("checked", checked);
 
 });
 // All ticed the top check auto tic
-$(document).on("change", ".pur-check", function() {
+$(document).on("change", ".pur-check", function () {
 
     let total = $(".pur-check").length;
     let checked = $(".pur-check:checked").length;
@@ -1504,38 +3665,38 @@ $(document).on("change", ".pur-check", function() {
 
 });
 
-window.bulk_pur_approve = function(){
+window.bulk_pur_approve = function () {
 
     let selected = [];
 
-    $(".pur-check:checked").each(function(){
+    $(".pur-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one document."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.bulk_approve_pur",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve_pur",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Documents Approved",
-                indicator:"green"
+                message: "Documents Approved",
+                indicator: "green"
             });
 
             load_pur_table();
@@ -1544,38 +3705,38 @@ window.bulk_pur_approve = function(){
 
 }
 
-window.bulk_pur_reject = function(){
+window.bulk_pur_reject = function () {
 
     let selected = [];
 
-    $(".pur-check:checked").each(function(){
+    $(".pur-check:checked").each(function () {
 
         selected.push($(this).val());
 
     });
 
-    if(selected.length == 0){
+    if (selected.length == 0) {
 
         frappe.msgprint({
-            title:"Message",
-            indicator:"red",
-            message:"Please select at least one document."
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
         });
 
         return;
     }
 
     frappe.call({
-        method:"teampro.teampro.page.approvals.approvals.bulk_reject_pur",
-        args:{
-            docs:selected
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject_pur",
+        args: {
+            docs: selected
         },
-        freeze:true,
-        callback:function(r){
+        freeze: true,
+        callback: function (r) {
 
             frappe.show_alert({
-                message:"Documents Rejected",
-                indicator:"red"
+                message: "Documents Rejected",
+                indicator: "red"
             });
 
             load_pur_table();
@@ -1584,49 +3745,49 @@ window.bulk_pur_reject = function(){
 
 }
 
-window.approve_pur = function(docname){
+window.approve_pur = function (docname) {
 
-	frappe.call({
-		method:"teampro.teampro.page.approvals.approvals.approve_pur",
-		args:{
-			docname:docname
-		},
-		callback:function(r){
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.approve_pur",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
 
-			frappe.show_alert({
-				message:"Approved",
-				indicator:"green"
-			});
+            frappe.show_alert({
+                message: "Approved",
+                indicator: "green"
+            });
 
-			load_pur_table();
-		}
-	});
+            load_pur_table();
+        }
+    });
 }
 
-window.reject_pur = function(docname){
+window.reject_pur = function (docname) {
 
-	frappe.call({
-		method:"teampro.teampro.page.approvals.approvals.reject_pur",
-		args:{
-			docname:docname
-		},
-		callback:function(r){
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.reject_pur",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
 
-			frappe.show_alert({
-				message:"Rejected",
-				indicator:"red"
-			});
+            frappe.show_alert({
+                message: "Rejected",
+                indicator: "red"
+            });
 
-			load_pur_table();
-		}
-	});
+            load_pur_table();
+        }
+    });
 }
 
-window.show_pur_details = function(docname) {
+window.show_pur_details = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_pur_details",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) {
                 frappe.msgprint("No Details Found");
                 return;
@@ -1733,7 +3894,7 @@ window.show_pur_details = function(docname) {
                         <th>Total</th>
                         <td><strong>₹${parseFloat(d.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
                         <th>Attachments</th>
-                        <td>${attachmentBadges}</td>
+                        <td>${d.custom_attach_bill ? `<a href="${d.custom_attach_bill}" target="_blank" class="btn btn-xs btn-primary" title="Attach: Bill" style="margin-right:4px;color:#fff;"><i class="fa fa-paperclip"></i></a>` : ''}${attachmentBadges}</td>
                     </tr>
                 </table>
 
@@ -1768,9 +3929,9 @@ window.show_pur_details = function(docname) {
 function load_pur_inv_table() {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_pur_inv_applications",
-        callback: function(r) {
+        callback: function (r) {
             let data = r.message || [];
-            renderSimpleCard("#pi-card","Purchase Invoices",data.length,"#dc3545","fa fa-file-text");
+            renderSimpleCard("#pi-card", "Purchase Invoices", data.length, "#dc3545", "fa fa-file-text", "Penidng PI");
 
             if (data.length === 0) {
                 $("#pur-inv-section").hide();
@@ -1818,7 +3979,7 @@ function load_pur_inv_table() {
                         <td style="text-align:center;">${format_date(row.due_date)}</td>
                         <td style="text-align:left;">${row.services || "-"}</td>
                         <td style="text-align:left;">${row.bill_no || "-"}</td>
-                        <td style="text-align:right;">₹${parseFloat(row.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                         <td style="text-align:center;">
                             <button class="btn btn-xs btn-info"
                                 onclick="show_pur_inv_details('${row.name}')">
@@ -1848,11 +4009,11 @@ function load_pur_inv_table() {
 }
 
 
-window.show_pur_inv_details = function(docname) {
+window.show_pur_inv_details = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_pur_inv_details",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) {
                 frappe.msgprint("No Details Found");
                 return;
@@ -1905,6 +4066,21 @@ window.show_pur_inv_details = function(docname) {
                 `;
             });
 
+            let taxRows = "";
+            (d.taxes || []).forEach((row, idx) => {
+                taxRows += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">${row.charge_type || "-"}</td>
+                        <td style="text-align:left;">${row.account_head || "-"}</td>
+                        <td style="text-align:left;">${row.description || "-"}</td>
+                        <td style="text-align:center;">${row.rate || "-"}%</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_tax_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
             let dialog = new frappe.ui.Dialog({
                 title: "Purchase Invoice Details",
                 size: "extra-large",
@@ -1940,10 +4116,16 @@ window.show_pur_inv_details = function(docname) {
                         <td style="text-align:left;">${d.services || "-"}</td>
                     </tr>
                     <tr>
-                        <th>Total</th>
-                        <td><strong>₹${parseFloat(d.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
+                        <th>Total (Company Currency)</th>
+                        <td><strong>₹${parseFloat(d.base_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
                         <th>Attachments</th>
-                        <td>${attachmentBadges}</td>
+                        <td>${d.custom_attach_bill ? `<a href="${d.custom_attach_bill}" target="_blank" class="btn btn-xs btn-primary" title="Attach: Bill" style="margin-right:4px;color:#fff;"><i class="fa fa-paperclip"></i></a>` : ''}${attachmentBadges}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Taxes & Charges (Company Currency)</th>
+                        <td><strong>₹${parseFloat(d.base_total_taxes_and_charges || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
+                        <th>Grand Total (Company Currency)</th>
+                        <td><strong>₹${parseFloat(d.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
                     </tr>
                 </table>
 
@@ -1964,6 +4146,24 @@ window.show_pur_inv_details = function(docname) {
                         ${itemRows || '<tr><td colspan="7" style="text-align:center;">No items found</td></tr>'}
                     </tbody>
                 </table>
+
+                <h4 style="font-weight:bold; margin-bottom:8px;">Taxes</h4>
+                <table class="table table-bordered table-sm">
+                    <thead style="background:#002060; color:white;">
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">Type</th>
+                            <th style="text-align:center;">Account Head</th>
+                            <th style="text-align:center;">Description</th>
+                            <th style="text-align:center;">Rate</th>
+                            <th style="text-align:center;">Amount (Company Currency)</th>
+                            <th style="text-align:center;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${taxRows || '<tr><td colspan="7" style="text-align:center;">No taxes found</td></tr>'}
+                    </tbody>
+                </table>
             `);
 
             dialog.show();
@@ -1971,7 +4171,7 @@ window.show_pur_inv_details = function(docname) {
     });
 }
 
-window.open_attachment_preview = function(index) {
+window.open_attachment_preview = function (index) {
     const att = window._current_attachments[index];
     if (!att) return;
 
@@ -2025,19 +4225,18 @@ window.open_attachment_preview = function(index) {
 
 //     let att_dialog = new frappe.ui.Dialog({
 //         title: "Attachment",
-//         size: "large",
-//         fields: [{ fieldtype: "HTML", fieldname: "preview" }]
+//         //         fields: [{ fieldtype: "HTML", fieldname: "preview" }]
 //     });
 
 //     att_dialog.fields_dict.preview.$wrapper.html(preview_html);
 //     att_dialog.show();
 // }
 
-window.approve_pur_inv = function(docname) {
+window.approve_pur_inv = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.approve_pur_inv",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (r.message === "ok") {
                 frappe.show_alert({
                     message: `${docname} Approved`,
@@ -2053,9 +4252,9 @@ window.approve_pur_inv = function(docname) {
 function load_sal_inv_table() {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_sal_inv_applications",
-        callback: function(r) {
+        callback: function (r) {
             let data = r.message || [];
-            renderSimpleCard("#si-card","Sales Invoices",data.length,"#20c997","fa fa-file");
+            renderSimpleCard("#si-card", "Sales Invoices", data.length, "#20c997", "fa fa-file", "Pending SI");
 
             if (data.length === 0) {
                 $("#sal-inv-section").hide();
@@ -2107,7 +4306,7 @@ function load_sal_inv_table() {
                         <td style="text-align:left;">${row.services || "-"}</td>
                         <td style="text-align:left;">${row.company || "-"}</td>
                         <td style="text-align:center;">${row.total_qty || "-"}</td>
-                        <td style="text-align:right;">₹${parseFloat(row.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
                         <td style="text-align:center;">
                             <button class="btn btn-xs btn-info"
                                 onclick="show_sal_inv_details('${row.name}')">
@@ -2136,11 +4335,11 @@ function load_sal_inv_table() {
     });
 }
 
-window.approve_sal_inv = function(docname) {
+window.approve_sal_inv = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.approve_sal_inv",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (r.message === "ok") {
                 frappe.show_alert({
                     message: `${docname} Approved`,
@@ -2280,7 +4479,7 @@ window.approve_sal_inv = function(docname) {
 //                     </tbody>
 //                 </table>
 
-                
+
 //             `);
 
 //             dialog.show();
@@ -2289,11 +4488,11 @@ window.approve_sal_inv = function(docname) {
 // }
 
 
-window.show_sal_inv_details = function(docname) {
+window.show_sal_inv_details = function (docname) {
     frappe.call({
         method: "teampro.teampro.page.approvals.approvals.get_sal_inv_details",
         args: { docname: docname },
-        callback: function(r) {
+        callback: function (r) {
             if (!r.message) {
                 frappe.msgprint("No Details Found");
                 return;
@@ -2437,11 +4636,13 @@ window.show_sal_inv_details = function(docname) {
                     </tbody>
                 </table>
 
-                
+
             `);
 
             dialog.show();
         }
     });
+
+
 }
 

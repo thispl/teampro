@@ -36,6 +36,9 @@ boot_session = "teampro.boot.get_boot_data"
 
 # include js in doctype views
 # doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+	"Project": "public/js/project_monitoring.js"
+}
 doctype_list_js = {
 	"Candidate": "public/js/candidate_list.js"
 }
@@ -91,6 +94,9 @@ doctype_list_js = {
 # Hook on document methods and events
 
 doc_events = {
+	# "Candidate": {
+	# 	"after_insert": "teampro.custom_sync.push_candidate_to_jobpro"
+	# },
     # "Website Item":{
     #     "after_insert":"teampro.custom.create_website_item",
 	# },
@@ -119,7 +125,7 @@ doc_events = {
         "before_save":"teampro.utility.update_task_subject_from_description",
 		"on_update": ["teampro.teampro_hooks_method.update_dm","teampro.teampro_hooks_method.issue_status","teampro.teampro_py.project.update_project_count"],
 		
-		"validate": ["teampro.teampro_hooks_method.update_issue_type","teampro.teampro_hooks_method.update_issue_typein_issue","teampro.teampro_hooks_method.old_sprint_alert","teampro.teampro_hooks_method.update_country_flag", "teampro.teampro_hooks_method.update_cb_bulk", "teampro.teampro_hooks_method.update_issue_wonjin", "teampro.teampro_py.task.update_prd_sprint_task"],
+		"validate": ["teampro.teampro_hooks_method.update_issue_type","teampro.teampro_hooks_method.update_issue_typein_issue","teampro.teampro_hooks_method.old_sprint_alert","teampro.teampro_hooks_method.update_country_flag", "teampro.teampro_hooks_method.update_cb_bulk", "teampro.teampro_hooks_method.update_issue_wonjin", "teampro.teampro_py.task.update_prd_sprint_task", "teampro.teampro_py.task.validate_et"],
   
 		"after_insert":["teampro.teampro_hooks_method.create_user_notification","teampro.teampro_hooks_method.update_criteria_table", "teampro.teampro.doctype.daily_monitor.dm_it_dev.update_daily_monitor_task"]
 
@@ -552,6 +558,9 @@ jinja = {
 # override_doctype_dashboards = {
 # 	"Task": "teampro.task.get_dashboard_data"
 # }
+override_doctype_dashboards = {
+	"Project": "teampro.teampro_py.project_monitoring.get_project_dashboard"
+}
 
 override_doctype_class = {
     "Event": "teampro.overrides.customEvent",
@@ -580,3 +589,6 @@ after_install = "teampro.tpe.install.after_install"
 # Added by accounts_checklist deploy. Idempotent.
 # NOTE: scheduler entries injected via _inject_hooks.py
 
+
+# WeasyPrint PDF generator for builder-beta print formats
+pdf_generator = "teampro.weasyprint_pdf.weasyprint_pdf_generator"

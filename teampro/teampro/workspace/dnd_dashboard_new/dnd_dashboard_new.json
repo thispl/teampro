@@ -1,0 +1,35 @@
+{
+ "app": "teampro",
+ "charts": [],
+ "content": "[{\"id\": \"dndhdr1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>DND Dashboard</b></span>\", \"col\": 12}}, {\"id\": \"dndblk1\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"DND Dashboard\", \"col\": 12}}]",
+ "creation": "2026-07-14 10:59:42.623082",
+ "custom_blocks": [
+  {
+   "custom_block_name": "DND Dashboard",
+   "label": "DND Dashboard"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "dashboard-line",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "DND Dashboard New",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-07-14 10:59:42.623082",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "DND Dashboard New",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 99.0,
+ "shortcuts": [],
+ "title": "DND Dashboard New",
+ "type": "Workspace"
+}

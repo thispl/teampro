@@ -1,0 +1,42 @@
+{
+ "app": "teampro",
+ "charts": [],
+ "content": "[{\"id\": \"ppheader1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Packing Plan \\u2014 Items by Sales Order</b></span>\", \"col\": 12}}, {\"id\": \"ppcustom1\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"TFP Packing Plan\", \"col\": 12}}]",
+ "creation": "2026-07-12 18:22:57.035506",
+ "custom_blocks": [
+  {
+   "custom_block_name": "TFP Packing Plan",
+   "label": "TFP Packing Plan"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "stock",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Packing Plan",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-09-15 16:54:00.427030",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Packing Plan",
+ "number_cards": [],
+ "owner": "abdulla.pi@groupteampro.com",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {
+   "role": "Manufacturing User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "sequence_id": 0.0,
+ "shortcuts": [],
+ "title": "Packing Plan",
+ "type": "Workspace"
+}

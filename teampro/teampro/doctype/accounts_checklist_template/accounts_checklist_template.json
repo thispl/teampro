@@ -1,0 +1,132 @@
+{
+ "actions": [
+  {
+   "action": "Generate Checklist for Period",
+   "action_type": "Server Action",
+   "function": "teampro.teampro.doctype.accounts_checklist.accounts_checklist.generate_from_template"
+  }
+ ],
+ "autoname": "naming_series:",
+ "creation": "2026-08-04 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "template_name",
+  "naming_series",
+  "company",
+  "column_break_1",
+  "is_active",
+  "default_owner",
+  "section_break_items",
+  "items",
+  "description_section",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Template Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "ACT-",
+   "default": "ACT-",
+   "hidden": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Active",
+   "default": 1
+  },
+  {
+   "fieldname": "default_owner",
+   "fieldtype": "Link",
+   "label": "Default Owner",
+   "options": "User"
+  },
+  {
+   "fieldname": "section_break_items",
+   "fieldtype": "Section Break",
+   "label": "Checklist Items"
+  },
+  {
+   "fieldname": "items",
+   "fieldtype": "Table",
+   "label": "Items",
+   "options": "Accounts Checklist Template Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description_section",
+   "fieldtype": "Section Break",
+   "label": "Description"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "links": [],
+ "modified": "2026-08-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Accounts Checklist Template",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "search_fields": "template_name,company,is_active",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

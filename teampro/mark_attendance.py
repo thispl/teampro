@@ -12,9 +12,9 @@ from frappe.utils import time_diff
 
 @frappe.whitelist()
 def mark_att_manual():
-    from_date='2026-05-22'
-    to_date='2026-05-26'
-    # employee ='TC00039'
+    from_date='2026-09-23'
+    to_date='2026-09-23'
+    # employee ='TI00282'
     dates = get_dates(from_date,to_date)
     for date in dates:
         from_date = add_days(date,-1)

@@ -1,0 +1,2105 @@
+frappe.pages['hr-and-admin'].on_page_load = function (wrapper) {
+
+    let page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: '',
+        single_column: true
+    });
+
+    frappe.breadcrumbs.add('TEAMPRO');
+
+
+    $(page.body).html(`
+        <div class="hr-admin-container" style="background-color:#F8FAFC; padding:20px; min-height:100vh;">
+
+            <div style="text-align:center; margin-bottom:20px; margin-top:0px; padding-top:0px;">
+                <h2 style="margin:0; font-weight:600; letter-spacing:0.5px;">HR & Admin</h2>
+                <div style="font-size:16px; color:#555; margin-top:5px;" id="current-datetime"></div>
+            </div>
+
+
+            <div id="ddbox-cards" style="border:1px solid #d1d8dd;border-radius:8px;padding:20px;margin-bottom:20px;">
+                <div id="hr-summary-cards" style="
+                    display:flex;
+                    gap:5px;
+                    flex-wrap:nowrap;
+                    overflow-x:auto;
+                    padding-bottom:4px;">
+                </div>
+            </div>
+            
+            <div id="ddbox-att" style="border:1px solid #d1d8dd;border-radius:8px;padding:15px;margin-bottom:20px;background:#f2f2f2;">
+                <div style="background:white;color:black;font-size:18px;font-weight:bold;text-align:center;padding:10px;border-radius:6px;margin-bottom:10px;">
+                    ATTENDANCE DETAILS
+                </div>
+                <div id="att-table"></div>
+            </div>
+
+            <!-- Chart + side table section -->
+            <div id="ddbox-chart" style="border:1px solid #d1d8dd;border-radius:8px;padding:15px;margin-bottom:20px;background:#f2f2f2;">
+                <div style="background:white;color:black;font-size:18px;font-weight:bold;text-align:center;padding:10px;border-radius:6px;margin-bottom:10px;">
+                    WEEKLY ATTENDANCE
+                </div>
+
+                <div id="attendance-chart-page" style="display:flex; gap:16px;">
+
+                    <div id="att-side-table" style="width:280px;min-width:280px;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:14px;max-height:400px;overflow-y:auto;">
+                        <div style="text-align:center; color:#9ca3af; padding:30px 10px; font-size:13px;">
+                            Loading today's attendance...
+                        </div>
+                    </div>
+
+                    <div style="flex:1;background:#ffffff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;">
+                    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">
+                        <div>
+                            <h3 style="margin:0 0 4px 0; font-weight:700;">Data Activity</h3>
+                            <p style="margin:0; font-size:12px; color:#9ca3af;" id="chart-subtitle">
+                                Present attendance for this week
+                            </p>
+                        </div>
+                        <select id="att-status-filter" class="form-control" style="width:140px; height:34px; font-size:13px;">
+                            <option value="Present" selected>Present</option>
+                            <option value="Absent">Absent</option>
+                            <option value="Half Day">Half Day</option>
+                        </select>
+                    </div>
+                        <canvas id="attendanceChart" height="120"></canvas>
+                    </div>
+
+                </div>
+            </div>
+
+            
+
+            <div id="ddbox-att" style="border:1px solid #d1d8dd;border-radius:8px;padding:15px;margin-bottom:20px;background:#f2f2f2; display:flex; gap:16px;">
+
+                <!-- Left — Late Punch -->
+                <div style="flex:1; background:#f2f2f2; border-radius:8px; padding:12px;border:1px solid #d1d8dd;">
+                    <div style="background:white; padding:10px 15px; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+
+                    <h4 style="margin:0; margin-left:130px; font-size:18px; font-weight:bold; color:black; text-transform:uppercase; text-align:center;">
+                        LATE PUNCH (This Month)
+                    </h4>
+                    </div>
+                    <div id="late-punch-table" style="max-height:300px; overflow-y:auto;"></div>
+                </div>
+
+                <!-- Right — Leave Applications -->
+                <div style="flex:1; background:#f2f2f2; border-radius:8px; padding:12px;border:1px solid #d1d8dd;">
+                    <div style="background:white; padding:10px 15px; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+
+                    <h4 style="margin:0; margin-left:130px; font-size:18px; font-weight:bold; color:black; text-transform:uppercase; text-align:center;">
+                        LEAVE APPLICATIONS (This Month)
+                    </h4>
+                    </div>
+                    <div id="month-leave-table" style="max-height:300px; overflow-y:auto;"></div>
+                </div>
+
+            </div>
+
+            <!-- Leave Balance — all active employees, one column per leave type -->
+            <div id="ddbox-leave-balance" style="border:1px solid #d1d8dd;border-radius:8px;padding:15px;margin-bottom:20px;background:#f2f2f2;">
+                <div style="background:white;color:black;font-size:18px;font-weight:bold;text-align:center;padding:10px;border-radius:6px;margin-bottom:10px;">
+                    LEAVE BALANCE — ALL ACTIVE EMPLOYEES
+                </div>
+                <div id="leave-balance-table" style="overflow:auto;">
+                    <div style="text-align:center;padding:20px;">Loading leave balance...</div>
+                </div>
+            </div>
+
+            <div id="ddbox-charts" style="border:1px solid #d1d8dd; border-radius:8px; padding:15px; margin-bottom:20px; background:#f2f2f2; display:flex; gap:16px;">
+
+            <!-- Left — Experience Chart -->
+            <div style="flex:1; background:white; border-radius:8px; padding:16px; border:1px solid #d1d8dd;">
+                <h4 style="margin:0 0 16px 0; font-size:15px; font-weight:bold; text-align:center; text-transform:uppercase;">
+                    Employees by Experience
+                </h4>
+                <canvas id="experienceChart" height="200"></canvas>
+            </div>
+
+            <!-- Right — Salary Distribution -->
+            <div style="flex:1; background:white; border-radius:8px; padding:16px; border:1px solid #d1d8dd;">
+                <h4 style="margin:0 0 16px 0; font-size:15px; font-weight:bold; text-align:center; text-transform:uppercase;">
+                    Payroll Distribution by Gender
+                </h4>
+                <canvas id="salaryChart" height="200"></canvas>
+            </div>
+
+        </div>
+
+        <!-- Add below charts section -->
+        <div id="ddbox-att-req" style="border:1px solid #d1d8dd; border-radius:8px; padding:15px; margin-bottom:20px; background:#f2f2f2;">
+
+            <div style="background:white; padding:10px 15px; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+                <h4 style="margin:0; font-size:16px; font-weight:bold; text-transform:uppercase;">
+                    Attendance Requests (This Month)
+                </h4>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button id="btn-permission" class="btn btn-sm att-req-btn"
+                        onclick="load_att_request_table('Permission')"
+                        style="background:#0F1568; color:white; border:none; border-radius:6px; padding:6px 14px;">
+                        Permission
+                    </button>
+                    <button id="btn-misspunch" class="btn btn-sm att-req-btn"
+                        onclick="load_att_request_table('Miss Punch')"
+                        style="background:#e5e7eb; color:#374151; border:none; border-radius:6px; padding:6px 14px;">
+                        Miss Punch
+                    </button>
+                    <button id="btn-onduty" class="btn btn-sm att-req-btn"
+                        onclick="load_att_request_table('On Duty Working Day')"
+                        style="background:#e5e7eb; color:#374151; border:none; border-radius:6px; padding:6px 14px;">
+                        On Duty Working Day
+                    </button>
+                    <button id="btn-compoff-od" class="btn btn-sm att-req-btn"
+                        onclick="load_att_request_table('Comp Off On Duty Holiday')"
+                        style="background:#e5e7eb; color:#374151; border:none; border-radius:6px; padding:6px 14px;">
+                        Comp Off - On Duty Holiday
+                    </button>
+                    <button id="btn-compoff-ph" class="btn btn-sm att-req-btn"
+                        onclick="load_att_request_table('Comp Off Present Holiday')"
+                        style="background:#e5e7eb; color:#374151; border:none; border-radius:6px; padding:6px 14px;">
+                        Comp Off - Present Holiday
+                    </button>
+                </div>
+            </div>
+
+            <div id="att-req-table" style="max-height:350px; overflow-y:auto;"></div>
+
+        </div>
+
+            <div id="epnc-wrapper" style="border:1px solid #d1d8dd; border-radius:8px; padding:15px; margin-bottom:20px; background:#f2f2f2;">
+
+                <div style="background:white; padding:10px 15px; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+
+                    <h4 style="margin:0; margin-left:300px; font-size:18px; font-weight:bold; color:black; text-transform:uppercase; text-align:center; flex-grow: 1;">
+                        Energy Point And Non Conformity
+                    </h4>
+
+                    <div id="epnc-filters" style="display:flex; align-items:center; gap:10px;">
+                        <input type="date" id="epnc-from-date" class="form-control" style="width:140px; height:32px; padding:4px 8px;">
+                        <input type="date" id="epnc-to-date" class="form-control" style="width:140px; height:32px; padding:4px 8px;">
+                        <button class="btn btn-primary btn-sm" id="apply-epnc-filter" style="height:32px; line-height:1;">Apply</button>
+                    </div>
+
+                </div>
+
+                <div id="epnc-table-content" style="overflow:auto; max-height:500px; padding:5px;">
+                    <div style="text-align:center; padding:20px;">Loading...</div>
+                </div>
+
+            </div>
+
+            <div style="border:1px solid #d1d8dd; border-radius:8px;background:#f2f2f2;">
+                <div class="tm-page-bg">
+
+                <!-- FILTERS -->
+                <div style="background:white; padding:10px 15px; border-radius:6px; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+
+                    <h4 style="margin:0; margin-left:300px; font-size:18px; font-weight:bold; color:black; text-transform:uppercase; text-align:center; flex-grow:1;">
+                        Target Monitor
+                    </h4>
+
+                    <div id="tm-filters" style="display:flex; align-items:center; gap:10px;">
+
+                        <select id="employeeFilter" class="form-control"
+                            style="width:180px; height:32px; padding:4px 8px;">
+                            <option value="">All Employees</option>
+                        </select>
+
+                        <select id="departmentFilter" class="form-control"
+                            style="width:180px; height:32px; padding:4px 8px;">
+                            <option value="">All Departments</option>
+                        </select>
+
+                        <select id="serviceFilter" class="form-control"
+                            style="width:180px; height:32px; padding:4px 8px;">
+                            <option value="">All Services</option>
+                        </select>
+
+                        <button class="btn btn-primary btn-sm" id="apply-team-filter"
+                            style="height:32px; line-height:1;">
+                            Apply
+                        </button>
+
+                    </div>
+
+                </div>
+
+                <div class="target-monitor-wrapper">
+
+                    <!-- HEADER BAND -->
+                    <div class="tm-header-band">
+
+                        <div class="tm-emp-left">
+                            <div class="tm-emp-avatar" id="employeeAvatarInitials">--</div>
+                            <img id="employeeImage" class="tm-emp-img" style="display:none;" />
+                            <div class="tm-emp-text">
+                                <div class="tm-emp-name" id="employeeName"></div>
+                                <div class="tm-emp-desig" id="employeeDesignation"></div>
+                            </div>
+                        </div>
+
+                        <div class="tm-title-right">
+                            <div class="tm-main-title" id="mainTitle">PERFORMANCE MONITOR</div>
+                            <div class="tm-datetime" id="currentMonth"></div>
+                        </div>
+
+                    </div>
+
+                
+                    <!-- TABLE AREA -->
+                    <div id="slideContainer" class="tm-table-wrap" style="border-top:none !important;border-bottom:none !important;border-right:none;!important;margin-bottom:-30px !important;">
+                        <div class="slide" >Fetching Target Data...</div>
+                    </div>
+
+                </div>
+            </div>
+            </div>
+
+            </div>
+    `);
+
+    $(`<style>
+        .page-head.flex, .page-head {
+            display: none !important;
+        }
+        .hr-admin-container {
+            padding-top: 5px !important;
+        }
+        .hr-stat-icon-wrap {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+        .hr-stat-text {
+            display: flex;
+            flex-direction: column;
+        }
+        .hr-stat-label {
+            font-size: 11px;
+            color: black;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+        .hr-stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-top: 2px;
+        }
+
+        
+
+        #epnc-table-content table thead th {
+            background: #0F1568 !important;
+            color: white !important;
+            text-align: center;
+            vertical-align: middle;
+            padding: 10px;
+        }
+
+        #epnc-table-content table tbody tr:nth-child(odd) {
+            background: #ffffff !important;
+        }
+
+        #epnc-table-content table tbody tr:nth-child(even) {
+            background: #E7E6EC !important;
+        }
+
+        #epnc-table-content table td {
+            text-align: center;
+            vertical-align: middle;
+            padding: 8px;
+        }
+        .tm-page-bg{
+    padding:10px;
+    min-height:85vh;
+    font-family:'Poppins',sans-serif;
+}
+
+
+
+/* ───────────────── FILTERS ───────────────── */
+.tm-filter-bar{
+    display:flex;
+    justify-content:flex-end;   /* right side move */
+    gap:10px;
+    margin-bottom:14px;
+}
+
+/* FILTER BOX SMALL SIZE */
+.tm-filter-box{
+    width:190px;               /* reduce size */
+    height:42px;
+
+    border-radius:10px;
+    background:#fff;
+
+    padding:0 14px;
+
+    font-size:13px;
+    font-weight:700;
+
+    color:#222;
+    outline:none;
+
+}
+
+/* ───────────────── WRAPPER ───────────────── */
+.target-monitor-wrapper{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
+
+/* ───────────────── HEADER ───────────────── */
+.tm-header-band{
+    width:100%;
+    position:relative;
+    overflow:hidden;
+
+    background:
+        radial-gradient(circle at 18% 50%, rgba(255,215,90,0.12) 0%, transparent 18%),
+        radial-gradient(circle at 78% 50%, rgba(255,255,255,0.10) 0%, transparent 22%),
+        linear-gradient(90deg,
+            #041c4a 0%,
+            #082f8f 28%,
+            #1f63c6 58%,
+            #8ea8d8 100%
+        );
+
+    border-radius:32px;
+    padding:28px 38px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+
+    border:4px solid #b88a1d;
+
+    box-shadow:
+    -15px 0 40px rgba(140, 40, 40, 0.38),
+    0 0 25px rgba(120, 20, 20, 0.22);
+}
+
+
+
+/* ───────────────── EMPLOYEE ───────────────── */
+.tm-emp-left{
+    display:flex;
+    align-items:center;
+    gap:24px;
+    z-index:2;
+}
+
+.tm-emp-avatar,
+.tm-emp-img{
+    width:105px;
+    height:105px;
+    border-radius:50%;
+    border:4px solid #d8ad3d;
+
+    object-fit:cover;
+    flex-shrink:0;
+
+    box-shadow:
+        0 0 0 8px rgba(216,173,61,0.15),
+        0 8px 18px rgba(0,0,0,0.28);
+}
+
+
+.tm-emp-avatar{
+    background:linear-gradient(135deg,#143d91,#1f63c6);
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    font-size:42px;
+    font-weight:800;
+    color:#e1b84b;
+    font-family:'Georgia',serif;
+}
+
+/* EMPLOYEE NAME */
+.tm-emp-name{
+    font-size:30px;
+    font-weight:800;
+    color:#ffffff;
+    line-height:1;
+    letter-spacing:1px;
+    text-transform:uppercase;
+
+    text-shadow:0 2px 6px rgba(0,0,0,0.28);
+}
+
+/* DESIGNATION */
+.tm-emp-desig{
+    margin-top:10px;
+    font-size:18px;
+    font-weight:600;
+    color:#d9d9d9;
+}
+/* ───────────────── TITLE ───────────────── */
+
+.tm-title-right{
+    text-align:right;
+    z-index:2;
+}
+
+.tm-main-title{
+    font-size:40px;
+    font-weight:900;
+
+    color:#f0c14d;
+
+    text-shadow:
+        0 3px 10px rgba(0,0,0,0.35);
+
+    letter-spacing:2px;
+    line-height:1;
+}
+
+/* DATE TIME */
+.tm-datetime{
+    margin-top:12px;
+
+    font-size:16px;
+    font-weight:600;
+
+    color:#ffffff;
+    opacity:0.95;
+}
+
+/* ───────────────── TABLE WRAP ───────────────── */
+.tm-table-wrap{
+    width:100%;
+    
+    overflow:hidden;
+    border:3px solid #d4a62a;
+   
+
+    padding:0 !important;
+    margin:0 !important;
+}
+
+.tm-perf-table{
+    width:100%;
+    min-width:100%;
+    border-collapse:collapse;
+    table-layout:auto;
+    margin:0;
+}
+
+.tm-perf-table thead th:first-child,
+.tm-perf-table tbody td:first-child{
+    border-left:none !important;
+}
+
+.slide{
+    width:100%;
+}
+
+
+/* ───────────────── HEADER ───────────────── */
+.tm-perf-table thead th{
+
+    background:linear-gradient(
+        180deg,
+        #d9aa2b 0%,
+        #c18b12 100%
+    );
+
+    color:#ffffff;
+
+    font-size:17px;
+    font-weight:800;
+
+    padding:22px 12px;
+
+    text-align:center;
+    white-space:nowrap;
+
+    border:1px solid rgba(255,255,255,0.15);
+
+    text-shadow:0 1px 4px rgba(0,0,0,0.25);
+}
+
+.tm-perf-table thead th:first-child{
+    background:linear-gradient(180deg,#c48d00,#9f6d00);
+}
+
+/* ───────────────── BODY ───────────────── */
+.tm-perf-table td{
+    padding:24px 12px;
+    text-align:center;
+    font-size:18px;
+    font-weight:700;
+    border:1px solid #edd48b;
+}
+
+/* ───────────────── LABEL COLUMN ───────────────── */
+.tm-lbl-cell{
+    color:#fff !important;
+    font-size:24px !important;
+    font-weight:900 !important;
+    letter-spacing:1px;
+}
+
+/* ───────────────── ROW COLORS ───────────────── */
+.tm-row-mtd td{
+    background:#f5f0fb;
+}
+.tm-row-mtd .tm-lbl-cell{
+    background:linear-gradient(135deg,#8a00ff,#cc66ff);
+}
+
+.tm-row-qtd td{
+    background:#edf5ff;
+}
+.tm-row-qtd .tm-lbl-cell{
+    background:linear-gradient(135deg,#0072ce,#26a6ff);
+}
+
+.tm-row-ytd td{
+    background:#eefcf4;
+}
+.tm-row-ytd .tm-lbl-cell{
+    background:linear-gradient(135deg,#00a651,#00db67);
+}
+
+.tm-row-yol td{
+    background:#fff8eb;
+}
+.tm-row-yol .tm-lbl-cell{
+    background:linear-gradient(135deg,#d67b00,#ffbc00);
+}
+
+/* ───────────────── VALUE COLORS ───────────────── */
+.tm-val-ct{
+    color:#1747d1;
+    font-weight:800;
+}
+
+.tm-val-ach{
+    color:#0087a8;
+    font-weight:800;
+}
+
+.tm-val-yta{
+    color:#2f3542;
+}
+
+.tm-val-sr{
+    color:#ff1f1f;
+    font-weight:800;
+}
+
+.tm-val-ep{
+    color:#005f99;
+}
+
+.tm-val-nc{
+    color:#7a00ff;
+}
+
+.tm-val-tes{
+    color:#ff1f1f;
+    font-weight:800;
+}
+
+.tm-val-pr{
+    color:#00695c;
+}
+
+.tm-val-prs{
+    color:#7c2cff;
+    font-weight:800;
+}
+
+.tm-val-idx{
+    font-weight:900;
+    color:#312e81;
+}
+
+/* ───────────────── BADGES ───────────────── */
+.tm-badge{
+    display:inline-block;
+    padding:8px 18px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:800;
+    background:#efe3ff;
+    color:#7c2cff;
+}
+
+/* ───────────────── EVENT IMAGE ───────────────── */
+.tm-event-img{
+    width:100%;
+    max-height:600px;
+    object-fit:contain;
+    border-radius:18px;
+}
+
+/* ───────────────── RESPONSIVE ───────────────── */
+@media(max-width:992px){
+
+    .tm-header-band{
+        flex-direction:column;
+        text-align:center;
+        gap:18px;
+    }
+
+    .tm-title-right{
+        text-align:center;
+    }
+
+    .tm-main-title{
+        font-size:34px;
+    }
+
+    .tm-filter-bar{
+        flex-direction:column;
+    }
+}
+
+@media(max-width:768px){
+
+    .tm-perf-table th,
+    .tm-perf-table td{
+        font-size:12px;
+        padding:10px 6px;
+    }
+
+    .tm-lbl-cell{
+        font-size:16px !important;
+    }
+
+    .tm-emp-name{
+        font-size:22px;
+    }}
+
+
+    .card-icon i{
+    font-size:20px;
+}
+
+.card-title{
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:0.3px;
+    margin-bottom:8px;
+    color:#24344d;
+    text-transform:uppercase;
+}
+
+.card-value{
+    font-size:26px;
+    font-weight:800;
+    line-height:1;
+}
+
+.card-sub{
+    font-size:11px;
+    color:#555;
+    font-weight:600;
+    margin-top:6px;
+}
+
+.card-sub-title{
+    font-size:11px;
+    color:#888;
+}
+
+.hr-stat-card {
+    min-width: 220px;
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+.hr-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+.dashboard-card{
+    flex:1 1 0;
+    min-width:180px;
+    background:#fff;
+    border-radius:10px;
+    box-shadow:0 1px 4px rgba(0,0,0,0.08);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+}
+
+.card-top-line{
+    height:4px;
+    width:100%;
+}
+    
+    </style>`).appendTo('head');
+
+
+
+    let attendanceChartInstance = null;
+    let weeklyChartData = [];
+    let currentStatusFilter = "Present";
+
+    const statusColors = {
+        "Present": { line: "#10b981", grad: "16, 185, 129" },
+        "Absent": { line: "#dc2626", grad: "220, 38, 38" },
+        "Half Day": { line: "#f59e0b", grad: "245, 158, 11" }
+    };
+
+    function load_attendance_chart(status = "Present") {
+        currentStatusFilter = status;
+
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_weekly_attendance_chart",
+            args: { status_filter: status },
+            callback: function (r) {
+                if (!r.message) return;
+                weeklyChartData = r.message;
+                render_attendance_chart(weeklyChartData, status);
+
+                $('#chart-subtitle').text(`${status} attendance for this week`);
+
+                // Default — today's data
+                const today = frappe.datetime.get_today();
+                const todayItem = weeklyChartData.find(d => d.date === today);
+                if (todayItem) {
+                    load_attendance_side_table(todayItem.date, todayItem.label, status);
+                }
+            }
+        });
+    }
+
+
+
+    function render_attendance_chart(data, status) {
+        const ctx = document.getElementById('attendanceChart').getContext('2d');
+
+        const labels = data.map(d => d.label);
+        const counts = data.map(d => d.count);
+        const colors = statusColors[status];
+
+        if (attendanceChartInstance) {
+            attendanceChartInstance.destroy();
+        }
+
+        const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+        gradient.addColorStop(0, `rgba(${colors.grad}, 0.25)`);
+        gradient.addColorStop(1, `rgba(${colors.grad}, 0)`);
+
+        attendanceChartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: status,
+                    data: counts,
+                    borderColor: colors.line,
+                    backgroundColor: gradient,
+                    borderWidth: 2.5,
+                    tension: 0.45,
+                    fill: true,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: colors.line,
+                    pointBorderWidth: 2,
+                    pointHoverRadius: 7,
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#ffffff',
+                        titleColor: '#111827',
+                        bodyColor: '#6b7280',
+                        borderColor: '#e5e7eb',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            title: function (ctx) {
+                                return `${ctx[0].parsed.y} ${currentStatusFilter}`;
+                            },
+                            label: function (ctx) {
+                                return weeklyChartData[ctx.dataIndex].date;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f3f4f6' },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#9ca3af' }
+                    }
+                },
+                onClick: function (evt, elements) {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        const clickedDate = weeklyChartData[idx].date;
+                        load_attendance_side_table(clickedDate, weeklyChartData[idx].label, currentStatusFilter);
+                    }
+                },
+                onHover: function (evt, elements) {
+                    evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                }
+            }
+        });
+    }
+
+    function load_attendance_side_table(date, label, status_filter) {
+        $('#att-side-table').html(`<div style="text-align:center;padding:30px;">Loading...</div>`);
+
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_attendance_by_date",
+            args: { date: date, status_filter: status_filter },
+            callback: function (r) {
+                const data = r.message || [];
+
+                let rows = data.map((row, idx) => {
+                    let badgeColor = "#dcfce7", textColor = "#16a34a", displayStatus = row.status;;
+                    if (row.status === "Absent") { badgeColor = "#fee2e2"; textColor = "#dc2626"; }
+                    else if (row.status === "Half Day") { badgeColor = "#fef3c7"; textColor = "#d97706"; displayStatus = "HD"; }
+
+                    return `
+                        <tr>
+                            <td style="text-align:center; padding:6px 4px; font-size:12px;">${idx + 1}</td>
+                            <td style="text-align:left; padding:6px 4px; font-size:12px;">${row.employee_name}</td>
+                            <td style="text-align:center; padding:6px 4px; font-size:12px;">
+                                <span style="
+                                    padding:2px 8px;
+                                    border-radius:10px;
+                                    font-size:10px;
+                                    font-weight:600;
+                                    background:${badgeColor};
+                                    color:${textColor};
+                                ">${displayStatus}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $('#att-side-table').html(`
+                    <div style="font-weight:700; font-size:13px; margin-bottom:10px; color:#111827;">
+                        ${label}
+                    </div>
+                    <table style="width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr style="border-bottom:1px solid #e5e7eb;">
+                                <th style="text-align:center; font-size:11px; color:#9ca3af; padding:6px 4px;">S#</th>
+                                <th style="text-align:left; font-size:11px; color:#9ca3af; padding:6px 4px;">Name</th>
+                                <th style="text-align:center; font-size:11px; color:#9ca3af; padding:6px 4px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="3" style="text-align:center;padding:20px;color:#9ca3af;">No records</td></tr>'}
+                        </tbody>
+                    </table>
+                `);
+            }
+        });
+    }
+
+    function loadFilters() {
+
+        frappe.call({
+            method: "frappe.client.get_list",
+            args: { doctype: "Employee", filters: { status: "Active" }, fields: ["name", "employee_name"], limit_page_length: 1000 },
+            callback: function (r) {
+                (r.message || []).forEach(emp => {
+                    $('#employeeFilter').append(`<option value="${emp.name}">${emp.employee_name}</option>`);
+                });
+            }
+        });
+
+        frappe.call({
+            method: "frappe.client.get_list",
+            args: { doctype: "Department", fields: ["name"], limit_page_length: 1000 },
+            callback: function (r) {
+                (r.message || []).forEach(dep => {
+                    $('#departmentFilter').append(`<option value="${dep.name}">${dep.name}</option>`);
+                });
+            }
+        });
+
+        frappe.call({
+            method: "frappe.client.get_list",
+            args: { doctype: "Services", fields: ["name"], limit_page_length: 1000 },
+            callback: function (r) {
+                (r.message || []).forEach(service => {
+                    $('#serviceFilter').append(`<option value="${service.name}">${service.name}</option>`);
+                });
+            }
+        });
+    }
+
+    loadFilters();
+
+    $('#employeeFilter, #departmentFilter, #serviceFilter').on('change', function () {
+        applyFilter();
+    });
+
+
+    // ──────────────────────────────────────────
+    // CLOCK
+    // ──────────────────────────────────────────
+    function displayCurrentMonth() {
+        const options = { month: 'long', day: 'numeric', year: 'numeric' };
+        const formattedDate = new Date().toLocaleDateString('en-US', options);
+        const formattedTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        $('#currentMonth').html(`Date: ${formattedDate} &nbsp;|&nbsp; Time: <span id="currentTime">${formattedTime}</span>`);
+    }
+
+    setInterval(() => {
+        const t = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        $('#currentTime').text(t);
+    }, 1000);
+
+
+    // ──────────────────────────────────────────
+    // FISCAL YEAR
+    // ──────────────────────────────────────────
+    function getCurrentFiscalYear() {
+        const d = new Date(), m = d.getMonth(), y = d.getFullYear();
+        return m >= 3 ? `${y}-${y + 1}` : `${y - 1}-${y}`;
+    }
+
+
+    // ──────────────────────────────────────────
+    // FILTER APPLY
+    // ──────────────────────────────────────────
+    function applyFilter() {
+        fetchTargetData(
+            $('#employeeFilter').val() || null,
+            $('#departmentFilter').val() || null,
+            $('#serviceFilter').val() || null
+        );
+    }
+
+
+    // ──────────────────────────────────────────
+    // PERFORMANCE BADGE HELPER
+    // ──────────────────────────────────────────
+    function perfBadge(label) {
+        const map = {
+            'Outstanding': 'tm-b-outstanding',
+            'Excellent': 'tm-b-excellent',
+            'Good': 'tm-b-good',
+            'Average': 'tm-b-average'
+        };
+        const cls = map[label] || 'tm-b-below';
+        return `<span class="tm-badge ${cls}">${label || '-'}</span>`;
+    }
+
+    function perfIndexColor(label) {
+        return label === 'Outstanding' ? '#1b5e20' :
+            label === 'Excellent' ? '#1565c0' :
+                label === 'Good' ? '#2e7d32' :
+                    label === 'Average' ? '#4527a0' : '#c62828';
+    }
+
+
+    // ──────────────────────────────────────────
+    // FETCH & RENDER
+    // ──────────────────────────────────────────
+    let slideInterval = null;
+
+    function fetchTargetData(employee = null, department = null, service = null) {
+
+        if (slideInterval) { clearInterval(slideInterval); slideInterval = null; }
+
+        const fiscalYear = getCurrentFiscalYear();
+
+        Promise.all([
+            frappe.call({ method: "teampro.teampro.page.target_monitor.target_monitor.get_slide_attachments" }),
+            frappe.call({
+                method: "teampro.teampro.page.target_monitor.target_monitor.get_ct_ft",
+                args: { fiscal_year: fiscalYear, employee, department, service }
+            })
+        ]).then(([attachmentsResponse, targetsResponse]) => {
+
+            const attachments = attachmentsResponse.message || [];
+            const targets = targetsResponse.message || [];
+
+            let slides = [];
+
+            targets.forEach(t => slides.push(t));
+
+            if (!employee) {
+                attachments.forEach(att => slides.push({
+                    is_attachment_slide: true,
+                    file_url: att.file_url,
+                    file_name: att.file_name
+                }));
+            }
+
+            let index = 0;
+            const base = window.location.origin;
+            const defaultImg = '/file/d5fa45439e/878d2ca25auser_default_image.jpeg';
+
+            function renderSlide() {
+
+                const slide = slides[index];
+
+                // ── ATTACHMENT SLIDE ──
+                if (slide.is_attachment_slide) {
+
+                    $('#mainTitle').html("Today Events &#127881;");
+                    $('#employeeAvatarInitials').hide();
+                    $('#employeeImage').hide();
+                    $('#employeeName').hide();
+                    $('#employeeDesignation').hide();
+
+                    $('.slide').html(`
+                        <div style="display:flex;justify-content:center;align-items:center;padding:20px;">
+                            <img src="${slide.file_url}" class="tm-event-img" />
+                        </div>
+                    `);
+
+                } else {
+
+                    // ── PERFORMANCE SLIDE ──
+                    $('#mainTitle').html("PERFORMANCE MONITOR");
+                    $('#employeeName').show();
+                    $('#employeeDesignation').show();
+                    $('#employeeName').text(slide.employee_name || '');
+                    $('#employeeDesignation').text(slide.employee_designation || '');
+
+                    if (slide.employee_image) {
+                        $('#employeeImage').attr('src', base + slide.employee_image).show();
+                        $('#employeeAvatarInitials').hide();
+                    } else {
+                        const initials = (slide.employee_name || '--').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+                        $('#employeeAvatarInitials').text(initials).show();
+                        $('#employeeImage').hide();
+                    }
+
+                    // ── TABLE ──
+                    const rows = [
+                        {
+                            cls: 'tm-row-mtd', rowName: 'MTD',
+                            ct: slide.data.map(i => i.revised_ct || 0).join(', '),
+                            ach: slide.data.map(i => i.achieved || 0).join(', '),
+                            yta: slide.data.map(i => i.ct_yta || 0).join(', '),
+                            sr: slide.data.map(i => i.mtd_sr || 0).join(', '),
+                            ep: slide.ep || 0,
+                            nc: slide.nc || 0,
+                            tes: slide.mtd_tes || 0,
+                            pr: slide.mtd_pr || 0,
+                            prs: slide.mtd_prs || 0,
+                            idx: slide.mtd_performance_index || 0,
+                            perfLabel: slide.mtd_performance_label || ''
+                        },
+                        {
+                            cls: 'tm-row-qtd', rowName: 'QTD',
+                            ct: slide.qtd_target_ct || 0,
+                            ach: slide.qtd_achieved || 0,
+                            yta: slide.yta_qtd || 0,
+                            sr: slide.qtd_sr || 0,
+                            ep: slide.qtd_ep_score || 0,
+                            nc: slide.qtd_ep_score || 0,
+                            tes: slide.qtd_tes || 0,
+                            pr: slide.qtd_pr || 0,
+                            prs: slide.qtd_prs || 0,
+                            idx: slide.qtd_performance_index || 0,
+                            perfLabel: slide.qtd_performance_label || ''
+                        },
+                        {
+                            cls: 'tm-row-ytd', rowName: 'YTD',
+                            ct: slide.ytd_target_ct || 0,
+                            ach: slide.ytd_achieved || 0,
+                            yta: slide.yta_ytd || 0,
+                            sr: slide.ytd_sr || 0,
+                            ep: slide.ytd_ep_score || 0,
+                            nc: slide.ytd_nc_score || 0,
+                            tes: slide.ytd_tes || 0,
+                            pr: slide.ytd_pr || 0,
+                            prs: slide.ytd_prs || 0,
+                            idx: slide.ytd_performance_index || 0,
+                            perfLabel: slide.ytd_performance_label || ''
+                        },
+                        {
+                            cls: 'tm-row-yol', rowName: 'YOL',
+                            ct: slide.annual_ct || 0,
+                            ach: slide.yol_ytd_achieved || 0,
+                            yta: slide.yol_yta_ytd || 0,
+                            sr: slide.ytd_sr || 0,
+                            ep: slide.yol_ep_score || 0,
+                            nc: slide.yol_nc_score || 0,
+                            tes: slide.yol_tes || 0,
+                            pr: slide.yol_pr || 0,
+                            prs: slide.yol_prs || 0,
+                            idx: slide.yol_performance_index || 0,
+                            perfLabel: slide.yol_performance_label || ''
+                        }
+                    ];
+
+                    const tableRows = rows.map(r => `
+                        <tr class="${r.cls}">
+                            <td class="tm-lbl-cell">${r.rowName}</td>
+                            <td class="tm-val-ct">&#8377;${r.ct}</td>
+                            <td class="tm-val-ach">&#8377;${r.ach}</td>
+                            <td class="tm-val-yta">&#8377;${r.yta}</td>
+                            <td class="tm-val-sr">${r.sr}%</td>
+                            <td class="tm-val-ep">${r.ep}</td>
+                            <td class="tm-val-nc">${r.nc}</td>
+                            <td class="tm-val-tes">${r.tes}%</td>
+                            <td class="tm-val-pr">${r.pr}</td>
+                            <td class="tm-val-prs">${r.prs}%</td>
+                            <td class="tm-val-idx" style="color:${perfIndexColor(r.perfLabel)}">${r.idx}%</td>
+                            <td>
+                                <span class="tm-badge"
+                                    style="
+                                        color:${perfIndexColor(r.perfLabel)};
+                                        border:2px solid ${perfIndexColor(r.perfLabel)};
+                                        background:transparent;
+                                    ">
+                                    ${r.perfLabel}
+                                </span>
+                            </td>
+                        </tr>
+                    `).join('');
+
+                    $('.slide').html(`
+                        <table class="tm-perf-table">
+                            <thead>
+                                <tr>
+                                    <th>MONITOR</th>
+                                    <th>CT</th>
+                                    <th>ACH</th>
+                                    <th>YTA</th>
+                                    <th>CT_SR</th>
+                                    <th>EP</th>
+                                    <th>NC</th>
+                                    <th>TES (%)</th>
+                                    <th>PR</th>
+                                    <th>PRS</th>
+                                    <th colspan="2">PERFORMANCE INDEX</th>
+                                </tr>
+                            </thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    `);
+                }
+
+                displayCurrentMonth();
+                index = (index + 1) % slides.length;
+            }
+
+            renderSlide();
+
+            if (!employee && slides.length > 1) {
+                slideInterval = setInterval(renderSlide, 20000);
+            }
+        });
+    }
+    fetchTargetData(null, null, null);
+
+    // ✅ Filter dropdown change event
+    $(wrapper).on('change', '#att-status-filter', function () {
+        const status = $(this).val();
+        load_attendance_chart(status);
+    });
+
+
+
+
+    // function renderSimpleCard(
+    //     selector,
+    //     label,
+    //     value,
+    //     color = "#0d6efd",
+    //     icon = "fa fa-chart-bar",
+    //     curr = null,
+    //     subtitle = "",
+    //     wrapper = document
+    // ) {
+    //     $(wrapper).find(selector).html(`
+    //     <div class="card-top-line" style="background:${color};"></div>
+
+    //     <div class="card-body" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:18px 15px;box-sizing:border-box;">
+
+    //         <div class="card-icon" style="background:${color}20;color:${color};width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+    //             <i class="${icon}"></i>
+    //         </div>
+
+    //         <div class="card-title">${label}</div>
+
+    //         <div class="card-value" style="color:${color};line-height:1;">
+    //             ${value}
+    //         </div>
+
+    //         ${curr !== null ? `
+    //             <div class="card-sub-title" style="margin-top:4px;">
+    //                 (${formatMoney(curr)})
+    //             </div>
+    //         ` : ""}
+
+    //         ${subtitle ? `
+    //             <div class="card-sub">
+    //                 ${subtitle}
+    //             </div>
+    //         ` : ""}
+
+    //     </div>
+    // `);
+    // }
+
+
+    // function render_summary_cards(data) {
+    //     const cards = [
+    //         { key: "active", cls: "card-active", title: "ACTIVE", icon: "fa fa-user-o", color: "#16a34a", subtitle: "Currently active" },
+    //         { key: "male", cls: "card-male", title: "MALE", icon: "fa fa-mars", color: "#2563eb", subtitle: "Male employees" },
+    //         { key: "female", cls: "card-female", title: "FEMALE", icon: "fa fa-venus", color: "#db2777", subtitle: "Female employees" },
+    //         { key: "present", cls: "card-present", title: "TODAY PRESENT", icon: "fa fa-calendar-check-o", color: "#0d9488", subtitle: "As of today" },
+    //         { key: "absent", cls: "card-absent", title: "TODAY ABSENT", icon: "fa fa-calendar-times-o", color: "#dc2626", subtitle: "As of today" }
+    //     ];
+
+    //     // 1. Empty shell cards create pannunga (dashboard-card class + unique id)
+    //     let html = cards.map(c => `
+    //     <div class="dashboard-card hr-stat-card ${c.cls}"
+    //          id="hr-card-${c.key}"
+    //          onclick='show_dept_breakdown("${c.key}", "${c.title}")'
+    //          style="cursor:pointer;">
+    //     </div>
+    // `).join('');
+
+    //     $('#hr-summary-cards').html(html);
+
+    //     // 2. Each card-a renderSimpleCard vachu fill pannunga
+    //     cards.forEach(c => {
+    //         const stat = data[c.key] || { total: 0 };
+    //         renderSimpleCard(`#hr-card-${c.key}`, c.title, stat.total, c.color, c.icon, null, c.subtitle);
+    //     });
+
+    //     window._hr_summary_data = data;
+    // }
+
+    function renderSimpleCard(
+        selector,
+        label,
+        value,
+        color = "#0d6efd",
+        icon = "fa fa-chart-bar",
+        curr = null,
+        subtitle = "",
+        wrapper = document
+    ) {
+        $(wrapper).find(selector).html(`
+        <div class="card-top-line" style="background:${color};"></div>
+
+        <div class="card-body" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:18px 15px;box-sizing:border-box;">
+
+            <div class="card-icon" style="background:${color}20;color:${color};width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">
+                <i class="${icon}"></i>
+            </div>
+
+            <div class="card-title">${label}</div>
+
+            <div class="card-value" style="color:${color};">
+                ${value}
+            </div>
+
+            ${curr !== null ? `
+                <div class="card-sub-title" style="margin-top:4px;">
+                    (${formatMoney(curr)})
+                </div>
+            ` : ""}
+
+            ${subtitle ? `
+                <div class="card-sub">
+                    ${subtitle}
+                </div>
+            ` : ""}
+
+        </div>
+    `);
+    }
+
+
+    function render_summary_cards(data) {
+        const cards = [
+            { key: "active", cls: "card-active", title: "ACTIVE", icon: "fa fa-user-o", color: "#16a34a", subtitle: "Currently active" },
+            { key: "male", cls: "card-male", title: "MALE", icon: "fa fa-mars", color: "#2563eb", subtitle: "Male employees" },
+            { key: "female", cls: "card-female", title: "FEMALE", icon: "fa fa-venus", color: "#db2777", subtitle: "Female employees" },
+            { key: "present", cls: "card-present", title: "TODAY PRESENT", icon: "fa fa-calendar-check-o", color: "#0d9488", subtitle: "As of today" },
+            { key: "absent", cls: "card-absent", title: "TODAY ABSENT", icon: "fa fa-calendar-times-o", color: "#dc2626", subtitle: "As of today" },
+
+        ];
+
+        let html = cards.map(c => `
+        <div class="dashboard-card hr-stat-card ${c.cls}"
+             id="hr-card-${c.key}"
+             onclick='show_dept_breakdown("${c.key}", "${c.title}")'
+             style="cursor:pointer;">
+        </div>
+    `).join('');
+
+        $('#hr-summary-cards').html(html);
+
+        cards.forEach(c => {
+            const stat = data[c.key] || { total: 0 };
+            renderSimpleCard(`#hr-card-${c.key}`, c.title, stat.total, c.color, c.icon, null, c.subtitle);
+        });
+
+        window._hr_summary_data = data;
+    }
+
+
+
+    function load_summary_cards() {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_hr_summary_cards",
+            callback: function (r) {
+                if (r.message) {
+                    render_summary_cards(r.message);
+                }
+            }
+        });
+    }
+
+    window.show_dept_breakdown = function (key, label) {
+        const stat = window._hr_summary_data[key];
+        if (!stat) return;
+
+        let rows = "";
+        (stat.departments || []).forEach((d, idx) => {
+            rows += `
+                <tr>
+                    <td style="text-align:center;">${idx + 1}</td>
+                    <td style="text-align:left;">${d.department || "Not Set"}</td>
+                    <td style="text-align:center;">${d.count}</td>
+                </tr>
+            `;
+        });
+
+        let dialog = new frappe.ui.Dialog({
+            title: `${label} — Department`,
+            size: "small",
+            fields: [{ fieldtype: "HTML", fieldname: "details" }]
+        });
+
+        dialog.fields_dict.details.$wrapper.html(`
+            <table class="table table-bordered table-sm">
+                <thead style="background:#002060; color:white;">
+                    <tr>
+                        <th style="text-align:center;">S#</th>
+                        <th style="text-align:center;">Department</th>
+                        <th style="text-align:center;">Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows || '<tr><td colspan="3" style="text-align:center;">No data found</td></tr>'}
+                </tbody>
+                <tfoot>
+                    <tr style="background:#f0f0f0; font-weight:bold;">
+                        <td colspan="2" style="text-align:center;">Total</td>
+                        <td style="text-align:center;">${stat.total}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        `);
+
+        dialog.show();
+    };
+
+    function loadepnc(from_date = null, to_date = null) {
+        $('#epnc-table-content').html(`<div style="text-align:center;padding:20px;">Loading...</div>`);
+
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.epnc_table",
+            args: { from_date: from_date, to_date: to_date },
+            callback: function (r) {
+                if (r.message) {
+                    $('#epnc-table-content').html(r.message);
+                } else {
+                    $('#epnc-table-content').html(`<div style="text-align:center;padding:20px;">No Data Found</div>`);
+                }
+            }
+        });
+    }
+
+    function load_att_table() {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_today_attendance",
+            callback: function (r) {
+
+                let data = r.message || [];
+                let rows = "";
+
+                data.forEach((d, i) => {
+
+                    let status_html = "";
+
+                    if (d.status === "Present") {
+                        status_html = `<span style="color:green;font-weight:bold;">Present</span>`;
+                    }
+                    else if (d.status === "Half Day") {
+                        status_html = `<span style="color:orange;font-weight:bold;">Half Day</span>`;
+                    }
+                    else {
+                        status_html = `<span style="color:red;font-weight:bold;">Absent</span>`;
+                    }
+
+                    let row_bg = (i % 2 === 0) ? "#ffffff" : "#e7e6ec";
+
+                    rows += `
+                        <tr style="background:${row_bg};">
+                            <td style="text-align:center;">${i + 1}</td>
+                            <td style="text-align:center;">${d.employee || ""}</td>
+                            <td>${d.employee_name || ""}</td>
+                            <td style="text-align:center;">
+                                ${d.attendance_date ? frappe.datetime.str_to_user(d.attendance_date) : ""}
+                            </td>
+                            <td style="text-align:center;">${d.in_time || "-"}</td>
+                            <td style="text-align:center;">${d.out_time || "-"}</td>
+                            <td style="text-align:center;">${d.bt_difference || "-"}</td>
+                            <td style="text-align:center;">${status_html}</td>
+                        </tr>
+                    `;
+                });
+
+                let html = `
+                    <div style="height:300px; overflow-y:auto;">
+                        <table class="table table-bordered" style="margin-bottom:0; width:100%; border-collapse:collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">S#</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Emp ID</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Emp Name</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Date</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">In Time</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Out Time</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">BT Difference</th>
+                                    <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rows}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                $("#att-table").html(html);
+            }
+        });
+    }
+
+    function update_datetime() {
+        const now = new Date();
+        const date = now.toLocaleDateString('en-IN', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        const time = now.toLocaleTimeString('en-IN', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: true
+        }).toUpperCase();
+        $('#current-datetime').text(`${date} | ${time}`);
+    }
+
+    function ensure_chartjs_loaded(callback) {
+        if (window.Chart) {
+            callback();
+        } else {
+            $.getScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js')
+                .done(function () {
+                    callback();
+                })
+                .fail(function () {
+                    console.error("Failed to load Chart.js");
+                    $('#attendanceChart').closest('div').html(
+                        '<div style="text-align:center;color:red;padding:20px;">Chart library failed to load</div>'
+                    );
+                });
+        }
+    }
+
+    function load_leave_balance_table() {
+        $('#leave-balance-table').html(`<div style="text-align:center;padding:20px;">Loading leave balance...</div>`);
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_leave_balance_table",
+            callback: function (r) {
+                if (r.message) {
+                    $('#leave-balance-table').html(r.message);
+                } else {
+                    $('#leave-balance-table').html(`<div style="text-align:center;padding:20px;">No Data Found</div>`);
+                }
+            }
+        });
+    }
+
+    // Init calls
+    update_datetime();
+    setInterval(update_datetime, 1000);
+
+    load_summary_cards();
+    ensure_chartjs_loaded(function () {
+        load_attendance_chart();
+    });
+    load_att_table();
+    loadepnc();
+    load_leave_balance_table();
+
+    $(wrapper).on('click', '#apply-epnc-filter', function () {
+        let from_date = $('#epnc-from-date').val() || null;
+        let to_date = $('#epnc-to-date').val() || null;
+        loadepnc(from_date, to_date);
+    });
+
+    function load_late_punch_table() {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_late_punch_summary",
+            callback: function (r) {
+                const data = r.message || [];
+                window._late_punch_data = data;
+
+                let rows = data.map((row, i) => {
+                    let row_bg = (i % 2 === 0) ? "#ffffff" : "#e7e6ec";
+                    return `
+                        <tr style="background:${row_bg};">
+                            <td style="text-align:center; padding:8px;">${i + 1}</td>
+                            <td style="text-align:left; padding:8px;">${row.employee_name}</td>
+                            <td style="text-align:center; padding:8px;">
+                                <span onclick="show_late_dates(${i})" style="
+                                    display:inline-flex;
+                                    align-items:center;
+                                    justify-content:center;
+                                    width:27px;
+                                    height:20px;
+                                    border-radius:50%;
+                                    background:#fee2e2;
+                                    color:#dc2626;
+                                    font-weight:700;
+                                    font-size:13px;
+                                    cursor:pointer;
+                                ">${row.late_count}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $('#late-punch-table').html(`
+                    <table class="table table-bordered" style="margin-bottom:0; width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">S#</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:left; z-index:10;">Emp Name</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Late Count</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="3" style="text-align:center;padding:20px;">No records</td></tr>'}
+                        </tbody>
+                    </table>
+                `);
+            }
+        });
+    }
+
+    function load_month_leave_table() {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_month_leave_applications",
+            callback: function (r) {
+                const data = r.message || [];
+
+                let rows = data.map((row, i) => {
+                    let row_bg = (i % 2 === 0) ? "#ffffff" : "#e7e6ec";
+                    const isApproved = (row.workflow_state || '').toLowerCase().includes('approved');
+                    return `
+                        <tr style="background:${row_bg};">
+                            <td style="text-align:center; padding:8px;">${i + 1}</td>
+                            <td style="text-align:left; padding:8px;">${row.employee_name}</td>
+                            <td style="text-align:center; padding:8px;">${frappe.datetime.str_to_user(row.from_date)}</td>
+                            <td style="text-align:center; padding:8px;">${frappe.datetime.str_to_user(row.to_date)}</td>
+                            <td style="text-align:center; padding:8px;">${row.total_leave_days}</td>
+                            <td style="text-align:center; padding:8px;">
+                                <span style="
+                                    padding:3px 10px;
+                                    border-radius:10px;
+                                    font-size:11px;
+                                    font-weight:600;
+                                    background:${isApproved ? '#dcfce7' : '#fef3c7'};
+                                    color:${isApproved ? '#16a34a' : '#d97706'};
+                                ">${row.workflow_state || '-'}</span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+
+                $('#month-leave-table').html(`
+                    <table class="table table-bordered" style="margin-bottom:0; width:100%; border-collapse:collapse;">
+                        <thead>
+                            <tr>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">S#</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:left; z-index:10;">Emp Name</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">From</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">To</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Days</th>
+                                <th style="position:sticky; top:0; background:#0F1568; color:white; text-align:center; z-index:10;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="6" style="text-align:center;padding:20px;">No records</td></tr>'}
+                        </tbody>
+                    </table>
+                `);
+            }
+        });
+    }
+
+    window.show_late_dates = function (idx) {
+        const row = window._late_punch_data[idx];
+        if (!row) return;
+
+        // ✅ Sort dates + times together by date
+        const combined = row.dates.map((d, i) => ({ date: d, time: row.times[i] }));
+        combined.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        let dateRows = combined.map((item, i) => `
+            <tr>
+                <td style="text-align:center; padding:6px;">${i + 1}</td>
+                <td style="text-align:center; padding:6px;">${frappe.datetime.str_to_user(item.date)}</td>
+                <td style="text-align:center; padding:6px;">${item.time}</td>
+            </tr>
+        `).join('');
+
+        let dialog = new frappe.ui.Dialog({
+            title: `Late Punch Dates — ${row.employee_name}`,
+            size: "small",
+            fields: [{ fieldtype: "HTML", fieldname: "details" }]
+        });
+
+        dialog.fields_dict.details.$wrapper.html(`
+            <table class="table table-bordered table-sm">
+                <thead style="background:#002060; color:white;">
+                    <tr>
+                        <th style="text-align:center;">S#</th>
+                        <th style="text-align:center;">Date</th>
+                        <th style="text-align:center;">In Time</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${dateRows}
+                </tbody>
+            </table>
+        `);
+
+        dialog.show();
+    };
+
+    // Init calls
+    load_late_punch_table();
+    load_month_leave_table();
+
+
+    function load_experience_chart() {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_experience_chart_data",
+            callback: function (r) {
+                if (!r.message) return;
+                const data = r.message;
+
+                const labels = Object.keys(data);
+                const maleData = labels.map(l => data[l]["Male"]);
+                const femaleData = labels.map(l => data[l]["Female"]);
+
+                const ctx = document.getElementById('experienceChart').getContext('2d');
+
+                // new Chart(ctx, {
+                //     type: 'bar',
+                //     data: {
+                //         labels: labels,
+                //         datasets: [
+                //             { label: 'Male', data: maleData, backgroundColor: '#3b82f6', borderRadius: 4 },
+                //             { label: 'Female', data: femaleData, backgroundColor: '#2dd4bf', borderRadius: 4 }
+                //         ]
+                //     },
+                //     options: {
+                //         responsive: true,
+                //         plugins: {
+                //             legend: { position: 'top', labels: { usePointStyle: true } }
+                //         },
+                //         scales: {
+                //             x: { stacked: true, grid: { display: false } },
+                //             y: { stacked: true, beginAtZero: true, grid: { color: '#f3f4f6' } }
+                //         },
+                //         // ✅ Click handler
+                //         onClick: function(evt, elements) {
+                //             if (elements.length > 0) {
+                //                 const el = elements[0];
+                //                 const bucket = labels[el.index];
+                //                 const gender = el.datasetIndex === 0 ? "Male" : "Female";
+                //                 show_experience_employees(bucket, gender);
+                //             }
+                //         },
+                //         onHover: function(evt, elements) {
+                //             evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                //         }
+                //     }
+                // });
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Male', data: maleData, backgroundColor: '#3b82f6', borderRadius: 4 },
+                            { label: 'Female', data: femaleData, backgroundColor: '#2dd4bf', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top', labels: { usePointStyle: true } },
+                            tooltip: {
+                                callbacks: {
+                                    label: function (ctx) {
+                                        return `${ctx.dataset.label}: ${ctx.parsed.y}`;
+                                    },
+                                    title: function (ctx) {
+                                        return ctx[0].label;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: { stacked: false, grid: { display: false } },
+                            y: { stacked: false, beginAtZero: true, grid: { color: '#f3f4f6' } }
+                        },
+                        onClick: function (evt, elements) {
+                            if (elements.length > 0) {
+                                const el = elements[0];
+                                const bucket = labels[el.index];
+                                const gender = el.datasetIndex === 0 ? "Male" : "Female";
+                                show_experience_employees(bucket, gender);
+                            }
+                        },
+                        onHover: function (evt, elements) {
+                            evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function load_salary_chart() {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_salary_distribution",
+            callback: function (r) {
+                if (!r.message) return;
+                const data = r.message;
+
+                const labels = Object.keys(data);
+                const maleData = labels.map(l => data[l]["Male"]);
+                const femaleData = labels.map(l => data[l]["Female"]);
+
+                const ctx = document.getElementById('salaryChart').getContext('2d');
+
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: 'Female', data: femaleData, backgroundColor: '#f97316', borderRadius: 4 },
+                            { label: 'Male', data: maleData, backgroundColor: '#eab308', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { position: 'top', labels: { usePointStyle: true } }
+                        },
+                        scales: {
+                            x: { beginAtZero: true, grid: { color: '#f3f4f6' } },
+                            y: { grid: { display: false } }
+                        },
+                        // ✅ Click handler
+                        onClick: function (evt, elements) {
+                            if (elements.length > 0) {
+                                const el = elements[0];
+                                const bucket = labels[el.index];
+                                const gender = el.datasetIndex === 0 ? "Female" : "Male";
+                                show_salary_employees(bucket, gender);
+                            }
+                        },
+                        onHover: function (evt, elements) {
+                            evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+
+    window.show_experience_employees = function (bucket, gender) {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_experience_employees",
+            args: { bucket: bucket, gender: gender },
+            callback: function (r) {
+                const data = r.message || [];
+
+                let rows = data.map((row, idx) => `
+                    <tr>
+                        <td style="text-align:center; padding:6px;">${idx + 1}</td>
+                        <td style="text-align:left; padding:6px;">${row.employee}</td>
+                        <td style="text-align:left; padding:6px;">${row.employee_name}</td>
+                        <td style="text-align:left; padding:6px;">${row.department || '-'}</td>
+                        <td style="text-align:center; padding:6px;">${row.experience} yrs</td>
+                        <td style="text-align:center; padding:6px;">
+                            <span style="
+                                padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600;
+                                background:${row.gender === 'Male' ? '#dbeafe' : '#fce7f3'};
+                                color:${row.gender === 'Male' ? '#2563eb' : '#db2777'};
+                            ">${row.gender}</span>
+                        </td>
+                    </tr>
+                `).join('');
+
+                let dialog = new frappe.ui.Dialog({
+                    title: `${gender} — ${bucket} (${data.length} employees)`,
+                    size: "large",
+                    fields: [{ fieldtype: "HTML", fieldname: "details" }]
+                });
+
+                dialog.fields_dict.details.$wrapper.html(`
+                    <table class="table table-bordered table-sm">
+                        <thead style="background:#002060; color:white;">
+                            <tr>
+                                <th style="text-align:center;">S#</th>
+                                <th style="text-align:center;">Emp ID</th>
+                                <th style="text-align:center;">Name</th>
+                                <th style="text-align:center;">Department</th>
+                                <th style="text-align:center;">Experience</th>
+                                <th style="text-align:center;">Gender</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="6" style="text-align:center;padding:20px;">No records</td></tr>'}
+                        </tbody>
+                    </table>
+                `);
+
+                dialog.show();
+            }
+        });
+    };
+
+    window.show_salary_employees = function (bucket, gender) {
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_salary_employees",
+            args: { bucket: bucket, gender: gender },
+            callback: function (r) {
+                const data = r.message || [];
+
+                let rows = data.map((row, idx) => `
+                    <tr>
+                        <td style="text-align:center; padding:6px;">${idx + 1}</td>
+                        <td style="text-align:left; padding:6px;">${row.employee}</td>
+                        <td style="text-align:left; padding:6px;">${row.employee_name}</td>
+                        <td style="text-align:left; padding:6px;">${row.department || '-'}</td>
+                        <td style="text-align:right; padding:6px;">₹${parseFloat(row.net_pay || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style="text-align:center; padding:6px;">
+                            <span style="
+                                padding:2px 8px; border-radius:10px; font-size:10px; font-weight:600;
+                                background:${row.gender === 'Male' ? '#dbeafe' : '#fce7f3'};
+                                color:${row.gender === 'Male' ? '#2563eb' : '#db2777'};
+                            ">${row.gender}</span>
+                        </td>
+                    </tr>
+                `).join('');
+
+                let dialog = new frappe.ui.Dialog({
+                    title: `${gender} — ${bucket} Salary Range (${data.length} employees)`,
+                    size: "large",
+                    fields: [{ fieldtype: "HTML", fieldname: "details" }]
+                });
+
+                dialog.fields_dict.details.$wrapper.html(`
+                    <table class="table table-bordered table-sm">
+                        <thead style="background:#002060; color:white;">
+                            <tr>
+                                <th style="text-align:center;">S#</th>
+                                <th style="text-align:center;">Emp ID</th>
+                                <th style="text-align:center;">Name</th>
+                                <th style="text-align:center;">Department</th>
+                                <th style="text-align:center;">Base Salary</th>
+                                <th style="text-align:center;">Gender</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="6" style="text-align:center;padding:20px;">No records</td></tr>'}
+                        </tbody>
+                    </table>
+                `);
+
+                dialog.show();
+            }
+        });
+    };
+
+    ensure_chartjs_loaded(function () {
+        load_experience_chart();
+        load_salary_chart();
+    });
+
+
+
+    window.load_att_request_table = function (request_type) {
+
+        $('.att-req-btn').css({ background: '#e5e7eb', color: '#374151' });
+
+        const btnMap = {
+            "Permission": "#btn-permission",
+            "Miss Punch": "#btn-misspunch",
+            "On Duty Working Day": "#btn-onduty",
+            "Comp Off On Duty Holiday": "#btn-compoff-od",
+            "Comp Off Present Holiday": "#btn-compoff-ph"
+        };
+        $(btnMap[request_type]).css({ background: '#0F1568', color: 'white' });
+
+        $('#att-req-table').html(`<div style="text-align:center; padding:20px;">Loading...</div>`);
+
+        frappe.call({
+            method: "teampro.teampro.page.hr_and_admin.hr_and_admin.get_attendance_requests",
+            args: { request_type: request_type },
+            callback: function (r) {
+                const data = r.message || [];
+
+                let headers = "";
+                let rows = "";
+
+                if (request_type === "Permission") {
+                    headers = `
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:30px;">S#</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:80px;">Emp ID</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:120px;">Name</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:100px;">Dept</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:80px;">Date</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:80px;">Session</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:90px;">Evening Time</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:80px;">Total Time</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:200px;">Explanation</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;width:70px;">Approver</th>
+                    `;
+                    rows = data.map((row, i) => {
+                        let bg = i % 2 === 0 ? "#ffffff" : "#e7e6ec";
+                        return `
+                            <tr style="background:${bg};">
+                                <td style="text-align:center;padding:7px;">${i + 1}</td>
+                                <td style="text-align:center;padding:7px;">${row.employee || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.employee_name || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.department || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.from_date ? frappe.datetime.str_to_user(row.from_date) : '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.custom_permission_session || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.custom_evening_time || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.custom_total_time || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.explanation || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.approver_code || '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                } else if (request_type === "Miss Punch") {
+                    // ✅ Miss Punch — separate table
+                    headers = `
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">S#</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Emp ID</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:left;padding:8px;">Name</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:left;padding:8px;">Dept</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Date</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:left;padding:8px;">Explanation</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Approver</th>
+                    `;
+                    rows = data.map((row, i) => {
+                        let bg = i % 2 === 0 ? "#ffffff" : "#e7e6ec";
+                        return `
+                            <tr style="background:${bg};">
+                                <td style="text-align:center;padding:7px;">${i + 1}</td>
+                                <td style="text-align:center;padding:7px;">${row.employee || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.employee_name || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.department || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.from_date ? frappe.datetime.str_to_user(row.from_date) : '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.explanation || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.approver_code || '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+
+                } else {
+                    // ✅ On Duty / Comp Off — same table format
+                    headers = `
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">S#</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Emp ID</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:left;padding:8px;">Name</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:left;padding:8px;">Dept</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">From Date</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">To Date</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Total Days</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Half Day</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Session</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:left;padding:8px;">Explanation</th>
+                        <th style="position:sticky;top:0;background:#0F1568;color:white;text-align:center;padding:8px;">Approver</th>
+                    `;
+                    rows = data.map((row, i) => {
+                        let bg = i % 2 === 0 ? "#ffffff" : "#e7e6ec";
+                        return `
+                            <tr style="background:${bg};">
+                                <td style="text-align:center;padding:7px;">${i + 1}</td>
+                                <td style="text-align:center;padding:7px;">${row.employee || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.employee_name || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.department || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.from_date ? frappe.datetime.str_to_user(row.from_date) : '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.to_date ? frappe.datetime.str_to_user(row.to_date) : '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.total_days || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.half_day ? "Yes" : "No"}</td>
+                                <td style="text-align:center;padding:7px;">${row.custom_session || '-'}</td>
+                                <td style="text-align:left;padding:7px;">${row.explanation || '-'}</td>
+                                <td style="text-align:center;padding:7px;">${row.approver_code || '-'}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                const colspan = request_type === "Permission" ? 10 : request_type === "Miss Punch" ? 7 : 11;
+
+                $('#att-req-table').html(`
+                    <table class="table table-bordered" style="margin-bottom:0; width:100%; border-collapse:collapse;">
+                        <thead><tr>${headers}</tr></thead>
+                        <tbody>
+                            ${rows || `<tr><td colspan="${colspan}" style="text-align:center;padding:20px;">No records found</td></tr>`}
+                        </tbody>
+                    </table>
+                `);
+            }
+        });
+    }
+
+    load_att_request_table('Permission');
+
+};
+
+
+

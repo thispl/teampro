@@ -280,16 +280,18 @@
    "label": "Data"
   },
   {
+   "allow_bulk_edit": 1,
    "fieldname": "achieved_data",
    "fieldtype": "Table",
    "label": "Achieved Data",
-   "options": "Achieved Data"
+   "options": "Achieved Data",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-07-02 18:05:54.124690",
- "modified_by": "gifty.p@groupteampro.com",
+ "modified": "2026-07-02 22:16:43.958686",
+ "modified_by": "amar.p@groupteampro.com",
  "module": "Teampro",
  "name": "Target Manager",
  "naming_rule": "Expression",

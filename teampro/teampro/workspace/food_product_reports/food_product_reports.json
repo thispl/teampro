@@ -1,0 +1,35 @@
+{
+ "app": "teampro",
+ "charts": [],
+ "content": "[{\"id\":\"fdheader1\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Food Product Reports</b></span>\",\"col\":12}},{\"id\":\"fdcustom1\",\"type\":\"custom_block\",\"data\":{\"custom_block_name\":\"TFP Finance Details\",\"col\":12}}]",
+ "creation": "2026-08-21 16:53:30.998737",
+ "custom_blocks": [
+  {
+   "custom_block_name": "TFP Finance Details",
+   "label": "TFP Finance Details"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "money-coins",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Food Product Reports",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-08-21 17:27:29.457777",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Food Product Reports",
+ "number_cards": [],
+ "owner": "Administrator",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [],
+ "title": "Food Product Reports",
+ "type": "Workspace"
+}

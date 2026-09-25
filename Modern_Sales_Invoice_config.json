@@ -1,0 +1,19 @@
+{
+  "name": "Modern Sales Invoice",
+  "doc_type": "Sales Invoice",
+  "module": "Accounts",
+  "print_format_type": "Jinja",
+  "custom_format": 0,
+  "standard": "No",
+  "disabled": 0,
+  "pdf_generator": "wkhtmltopdf",
+  "print_format_builder_beta": 1,
+  "margin_top": 0.0,
+  "margin_bottom": 0.0,
+  "margin_left": 0.0,
+  "margin_right": 0.0,
+  "font_size": 11,
+  "font": "Default",
+  "page_number": "Hide",
+  "default_print_language": "en"
+}

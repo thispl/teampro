@@ -1,0 +1,35 @@
+{
+ "app": "teampro",
+ "charts": [],
+ "content": "[{\"id\": \"pdhdr1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Receivables &amp; Payables Dashboard</b></span>\", \"col\": 12}}, {\"id\": \"pdblk1\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Payables Outstanding\", \"col\": 12}}]",
+ "creation": "2026-07-22 17:46:43.896694",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Payables Outstanding",
+   "label": "Payables Outstanding"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "dashboard-line",
+ "idx": 0,
+ "indicator_color": "red",
+ "is_hidden": 0,
+ "label": "Receivables & Payables Dashboard",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-07-22 22:15:46.895768",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Receivables & Payables Dashboard",
+ "number_cards": [],
+ "owner": "dineshbabu.k@groupteampro.com",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [],
+ "title": "Receivables & Payables Dashboard",
+ "type": "Workspace"
+}

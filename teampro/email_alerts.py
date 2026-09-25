@@ -105,22 +105,66 @@ def next_contact_alert():
 			<p>Dear %s,</p>
 			<P> Please find the list of Leads to be contacted today - %s %s""" % (emp_name,formatdate(today()), content)) 
 
+# @frappe.whitelist()
+# def checkin_alert():
+# 	yesterday = add_days(today(),-1)
+# 	employees = frappe.get_all('Employee',{'status':'Active'},['name','user_id','employee_name'])
+# 	for emp in employees:
+# 		ec = frappe.db.sql("select employee from `tabEmployee Checkin` where date(time) = '%s' and employee = '%s'" %(yesterday,emp.name),as_dict=True)
+# 		print(ec)
+# 		if len(ec) < 2:
+# 			frappe.sendmail(
+# 			recipients=[emp.user_id],
+# 			subject='Miss Punch Alert - '+ formatdate(yesterday),
+# 			message="""
+# 			<p>Dear %s,</p>
+# 			<P> Please be informed that, the Bio Metric Punch of yours is missing for  - %s
+# 			Please initiate action for Leave / OD in ERP immediately. In any other case contact your reporting head
+# 			""" % (emp.employee_name,yesterday))
+
+
+import frappe
+from frappe.utils import add_days, today, formatdate
+from hrms.hr.utils import get_holiday_list_for_employee
+
 @frappe.whitelist()
 def checkin_alert():
-	yesterday = add_days(today(),-1)
-	employees = frappe.get_all('Employee',{'status':'Active'},['name','user_id','employee_name'])
+	yesterday = add_days(today(), -1)
+	employees = frappe.get_all('Employee', {'status': 'Active'}, ['name', 'user_id', 'employee_name', 'holiday_list'])
+
 	for emp in employees:
-		ec = frappe.db.sql("select employee from `tabEmployee Checkin` where date(time) = '%s' and employee = '%s'" %(yesterday,emp.name),as_dict=True)
-		print(ec)
+		if is_holiday(emp.name, yesterday):
+			continue
+
+		ec = frappe.db.sql(
+			"""select employee from `tabEmployee Checkin`
+			   where date(time) = %s and employee = %s""",
+			(yesterday, emp.name),
+			as_dict=True
+		)
+
 		if len(ec) < 2:
 			frappe.sendmail(
-			recipients=[emp.user_id],
-			subject='Miss Punch Alert - '+ formatdate(yesterday),
-			message="""
-			<p>Dear %s,</p>
-			<P> Please be informed that, the Bio Metric Punch of yours is missing for  - %s
-			Please initiate action for Leave / OD in ERP immediately. In any other case contact your reporting head
-			""" % (emp.employee_name,yesterday))
+                # recipients = ["sivarenisha.m@groupteampro.com"],
+				recipients=[emp.user_id],
+				subject='Miss Punch Alert - ' + formatdate(yesterday),
+				message="""
+				<p>Dear %s,</p>
+				<p>Please be informed that the Bio Metric Punch of yours is missing for - %s.
+				Please initiate action for Leave / OD in ERP immediately. In any other case contact your reporting head.</p>
+				""" % (emp.employee_name, formatdate(yesterday))
+			)
+
+
+def is_holiday(employee, date):
+	holiday_list = get_holiday_list_for_employee(employee, raise_exception=False)
+	if not holiday_list:
+		return False
+
+	return frappe.db.exists(
+		"Holiday",
+		{"parent": holiday_list, "holiday_date": date}
+	)
 
 @frappe.whitelist()    
 def daily_att_report():
@@ -592,10 +636,37 @@ def send_cr_email(docname,client_mail):
 		</table>
 		"""
 
+    # Build recipients list: direct client email + meeting attendees (if linked) + User mentioned in task + SPOC
+    recipients = []
+    if client_mail and validate_email_address(client_mail):
+        recipients.append(client_mail)
+
+    # 1. Meeting attendees (if meeting linked in task)
+    if doc.custom_meeting_id and frappe.db.exists("Meeting", doc.custom_meeting_id):
+        meet_doc = frappe.get_doc("Meeting", doc.custom_meeting_id)
+        for row in meet_doc.get("attendees", []):
+            attendee = row.get("attendee")
+            if attendee and validate_email_address(attendee) and attendee not in recipients:
+                recipients.append(attendee)
+        for row in meet_doc.get("external_attendees", []):
+            attendee = row.get("attendee")
+            if attendee and validate_email_address(attendee) and attendee not in recipients:
+                recipients.append(attendee)
+
+    # 2. User mentioned in the task
+    task_user = getattr(doc, "custom_user", "") or getattr(doc, "custom_allocated_to", "") or ""
+    if task_user and validate_email_address(task_user) and task_user not in recipients:
+        recipients.append(task_user)
+
+    # 3. SPOC
+    spoc = getattr(doc, "spoc", "") or ""
+    if spoc and validate_email_address(spoc) and spoc not in recipients:
+        recipients.append(spoc)
+
     # Send email
     frappe.sendmail(
         sender=allocated,
-        recipients=client_mail,
+        recipients=recipients,
         cc=["dineshbabu.k@groupteampro.com","abdulla.pi@groupteampro.com"],
         # recipients="divya.p@groupteampro.com",
         subject=f"Task- {doc.name} Pending for Final Review and Acknowledgement -reg",
@@ -2867,7 +2938,7 @@ def update_sla_status_and_notify():
         """
 
 
-        recipients = ["annie.m@groupteampro.com","abdulla.pi@groupteampro.com", "sivarenisha.m@groupteampro.com", "jeniba.a@groupteampro.com"]
+        recipients = ["annie.m@groupteampro.com","abdulla.pi@groupteampro.com", "sivarenisha.m@groupteampro.com", "jeniba.a@groupteampro.com","harish.g@groupteampro.com"]
 
         frappe.sendmail(
             recipients=recipients,
@@ -2875,6 +2946,20 @@ def update_sla_status_and_notify():
             subject=subject,
             message=message,
         )
+
+
+@frappe.whitelist()
+def sla_alert():
+    job = frappe.db.exists('Scheduled Job Type', 'update_sla_status_and_notify')
+    if not job:
+        sjt = frappe.new_doc("Scheduled Job Type")
+        sjt.update({
+            "method": 'teampro.email_alerts.update_sla_status_and_notify',
+            "frequency": 'Cron',
+            "cron_format": '00 09 * * *'
+        })
+        sjt.save(ignore_permissions=True)
+
 
 import frappe
 from frappe.utils import today

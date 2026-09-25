@@ -1,0 +1,384 @@
+/* Modern Sales Invoice - WeasyPrint */
+html, body {
+    /* Bootstrap sets height: 100% on html/body which constrains body to one
+       page height, causing WeasyPrint to clip content instead of flowing to
+       new pages. Override to auto so content can grow across pages. */
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+body {
+    font-family: "InterVariable", "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: #1a1a1a;
+    font-size: 13px;
+    line-height: 1.5;
+    /* Inner padding for body content only (header/footer are position:fixed, unaffected) */
+    padding-left: 15mm;
+    padding-right: 15mm;
+    box-sizing: border-box;
+}
+
+/* Quill editor output styling — mirror editor numbering (1, a, i) */
+.ql-editor ul, .ql-editor ol {
+    list-style: none;
+    padding-left: 0;
+    margin: 4px 0;
+}
+.ql-editor ol {
+    counter-reset: indent0 indent1 indent2 indent3;
+}
+.ql-editor ol li, .ql-editor ul li {
+    display: block;
+    margin-bottom: 1px;
+}
+.ql-editor ol li::before,
+.ql-editor ul li::before {
+    margin-left: -1.2em;
+    margin-right: 0.3em;
+    min-width: 1.2em;
+    display: inline-block;
+    text-align: left;
+}
+/* Level 0: 1, 2, 3 */
+.ql-editor ol li:not([class*="ql-indent-"])::before,
+.ql-editor ol li.ql-indent-0::before {
+    content: counter(indent0) ". ";
+    counter-increment: indent0;
+}
+.ql-editor ol li:not([class*="ql-indent-"]),
+.ql-editor ol li.ql-indent-0 {
+    padding-left: 1.2em;
+    counter-reset: indent1 indent2 indent3;
+}
+/* Level 1: a, b, c */
+.ql-editor ol li.ql-indent-1::before {
+    content: counter(indent1, lower-alpha) ". ";
+    counter-increment: indent1;
+}
+.ql-editor ol li.ql-indent-1 {
+    padding-left: 2.4em;
+    counter-reset: indent2 indent3;
+}
+/* Level 2: i, ii, iii */
+.ql-editor ol li.ql-indent-2::before {
+    content: counter(indent2, lower-roman) ". ";
+    counter-increment: indent2;
+}
+.ql-editor ol li.ql-indent-2 {
+    padding-left: 3.6em;
+    counter-reset: indent3;
+}
+/* Level 3: 1, 2, 3 again */
+.ql-editor ol li.ql-indent-3::before {
+    content: counter(indent3) ". ";
+    counter-increment: indent3;
+}
+.ql-editor ol li.ql-indent-3 {
+    padding-left: 4.8em;
+}
+/* Bullets */
+.ql-editor ul li::before {
+    content: "• ";
+}
+.ql-editor ul li { padding-left: 1.2em; }
+.ql-editor ul li.ql-indent-1 { padding-left: 2.4em; }
+.ql-editor ul li.ql-indent-2 { padding-left: 3.6em; }
+.ql-editor ul li.ql-indent-3 { padding-left: 4.8em; }
+/* Hide Quill UI placeholders */
+.ql-editor .ql-ui,
+.ql-snow .ql-ui,
+.ql-ui {
+    display: none !important;
+}
+.ql-editor img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 4px 0;
+}
+
+/* Header */
+.doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 2px solid #231B4E;
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+}
+.doc-title h2 {
+    font-size: 24px;
+    font-weight: 700;
+    color: #231B4E;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+.doc-title .doc-number {
+    font-size: 15px;
+    color: #666;
+    margin: 2px 0 0 0;
+}
+.doc-meta {
+    text-align: right;
+}
+.doc-meta p {
+    margin: 1px 0;
+    font-size: 13px;
+}
+.doc-meta .meta-label {
+    display: inline-block;
+    width: 80px;
+    font-weight: 700;
+    color: #231B4E;
+    text-align: left;
+}
+
+/* Party blocks (Bill To / From) */
+.party-block {
+    margin-bottom: 8px;
+}
+.party-block .party-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #231B4E;
+    margin-bottom: 2px;
+}
+.party-block .party-address {
+    font-size: 12px;
+    line-height: 1.4;
+    color: #444;
+}
+.party-block .party-gstin {
+    font-size: 12px;
+    margin-top: 2px;
+    color: #444;
+}
+
+/* Items table */
+.child-table {
+    margin: 8px 0;
+}
+.child-table .label {
+    display: none;
+}
+.child-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+}
+.child-table thead th {
+    background-color: #231B4E !important;
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    padding: 6px 5px;
+    border: none;
+    print-color-adjust: exact;
+    -weasy-print-color-adjust: exact;
+}
+.child-table tbody td {
+    padding: 5px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+.child-table tbody tr.odd {
+    background-color: #f8f8f8;
+}
+
+/* Items table - item name + description */
+.items-table .col-idx {
+    text-align: center;
+}
+.items-table .col-qty,
+.items-table .col-rate,
+.items-table .col-amount {
+    text-align: right;
+}
+.items-table .col-hsn {
+    text-align: center;
+}
+.items-table .item-name {
+    font-weight: 700;
+    color: #231B4E;
+    margin-bottom: 2px;
+}
+.items-table .item-description {
+    font-size: 11px;
+    color: #555;
+    line-height: 1.4;
+}
+.items-table .item-description p {
+    margin: 0 0 2px 0;
+}
+
+/* Tax summary */
+.tax-summary {
+    margin-top: 8px;
+}
+.tax-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 12px;
+    border-bottom: 1px dotted #ddd;
+}
+.tax-label {
+    color: #444;
+}
+.tax-amount {
+    font-weight: 600;
+}
+
+/* In Words */
+.in-words {
+    margin-top: 10px;
+    padding: 6px 8px;
+    background-color: #f4f4f8;
+    border-left: 3px solid #231B4E;
+    font-size: 12px;
+    print-color-adjust: exact;
+    -weasy-print-color-adjust: exact;
+}
+.in-words .iw-label {
+    font-weight: 700;
+    color: #231B4E;
+}
+
+/* Totals */
+.totals-block {
+    margin-top: 8px;
+    min-width: 200px;
+}
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 8px;
+    font-size: 13px;
+}
+.total-row .t-label {
+    color: #444;
+}
+.total-row .t-value {
+    font-weight: 600;
+}
+.total-row.grand {
+    background-color: #231B4E;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 6px 8px;
+    margin: 4px 0;
+    print-color-adjust: exact;
+    -weasy-print-color-adjust: exact;
+}
+.total-row.grand .t-label,
+.total-row.grand .t-value {
+    color: #fff;
+}
+
+/* Terms */
+.field[data-fieldtype="Text Editor"] {
+    margin-top: 10px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #555;
+}
+
+/* Section spacing */
+.section {
+    margin-bottom: 2px;
+}
+.section-columns {
+    gap: 8px;
+}
+.column {
+    padding: 0 5px;
+}
+
+/* Fix: WeasyPrint can't break content inside flex containers.
+   Only single-column sections (items table, terms) need display:block to allow page breaks.
+   Two-column sections (party blocks, totals) keep flex to stay side by side. */
+.section:not(:has(.column ~ .column)) .section-columns.row {
+    display: block !important;
+}
+.section:not(:has(.column ~ .column)) .section-columns.row .column {
+    display: block !important;
+    max-width: none !important;
+}
+
+/* Custom HTML fields */
+.custom-html {
+    margin-bottom: 2px;
+}
+
+/* Allow terms/Text Editor content to break across pages */
+.field,
+.ql-snow,
+.ql-editor,
+.value {
+    page-break-inside: auto !important;
+}
+
+/* Letterhead images full-bleed */
+header img, footer img {
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Fix letterhead images to be full-width, not native size */
+header img, footer img {
+    width: 100% !important;
+    max-width: 210mm !important;
+    height: auto !important;
+    display: block;
+}
+header {
+    width: 210mm !important;
+}
+footer {
+    width: 210mm !important;
+}
+
+/* HSN Based Tax Table */
+.hsn-tax-table {
+    margin: 4px 0;
+}
+.hsn-tax-table .hsn-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 10px;
+}
+.hsn-tax-table .hsn-table thead th {
+    background-color: #231B4E !important;
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 9px;
+    text-transform: uppercase;
+    padding: 3px 3px;
+    border: none;
+    text-align: center;
+    print-color-adjust: exact;
+    -weasy-print-color-adjust: exact;
+}
+.hsn-tax-table .hsn-table tbody td {
+    padding: 2px 3px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: center;
+    vertical-align: middle;
+}
+.hsn-tax-table .hsn-table tbody tr:nth-child(odd) {
+    background-color: #f8f8f8;
+}
+.hsn-tax-table .hsn-col {
+    font-weight: 600;
+    text-align: left;
+}
+.hsn-tax-table .taxable-col,
+.hsn-tax-table .total-tax-col,
+.hsn-tax-table .total-amount-col {
+    text-align: right;
+}
+.hsn-tax-table .total-amount-col {
+    font-weight: 700;
+}

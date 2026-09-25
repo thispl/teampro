@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "autoname": "field:kra_name",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kra_name",
+  "department",
+  "weightage",
+  "column_break_1",
+  "active",
+  "kra_section",
+  "designations",
+  "kpi_mapping_section",
+  "kpi_mapping",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "kra_name",
+   "fieldtype": "Data",
+   "label": "KRA Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "weightage",
+   "fieldtype": "Float",
+   "label": "Weightage",
+   "default": "50",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "Weight of this KRA in the overall Performance Rating."
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "kra_section",
+   "fieldtype": "Section Break",
+   "label": "Applicable Designations"
+  },
+  {
+   "fieldname": "designations",
+   "fieldtype": "Table",
+   "label": "Designations",
+   "options": "KRA Designation",
+   "description": "Leave empty to apply to all designations in the department."
+  },
+  {
+   "fieldname": "kpi_mapping_section",
+   "fieldtype": "Section Break",
+   "label": "KPI Mapping"
+  },
+  {
+   "fieldname": "kpi_mapping",
+   "fieldtype": "Table",
+   "label": "KPI Mapping",
+   "options": "KRA KPI Mapping",
+   "reqd": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "KRA Master",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "import": 1, "export": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "import": 1, "export": 1, "share": 1},
+  {"role": "HR User", "read": 1, "write": 0, "create": 0, "delete": 0, "print": 1, "email": 1, "report": 1, "export": 1},
+  {"role": "Director", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 1},
+  {"role": "Employee", "read": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

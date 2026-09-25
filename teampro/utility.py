@@ -198,77 +198,69 @@ def attendance_calc(from_date,to_date):
         hod = frappe.get_value('User',{'email':user_id},['name'])
         role = "HOD"
         hod = frappe.get_value('Has Role',{'role':role,'parent':hod})
-        if hod:
-            late_list = frappe.db.sql("""
-                SELECT count(a.name) as count
-                FROM `tabAttendance` a
+        cutoff = '09:45:00' if hod else '09:30:00'
 
-                WHERE a.employee = %s
-                AND time(a.in_time) > '09:45:00'
-                AND a.leave_application IS NULL
-                AND a.attendance_date BETWEEN %s AND %s
-
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM `tabHoliday` h
-                    WHERE h.holiday_date = a.attendance_date
-                    AND h.parent = (
-                        SELECT e.holiday_list
-                        FROM `tabEmployee` e
-                        WHERE e.name = %s
+        # Count late days, EXCLUDING dates with approved permission / on-duty / first-half leave
+        late_list = frappe.db.sql("""
+            SELECT count(a.name) as count
+            FROM `tabAttendance` a
+            WHERE a.employee = %s
+              AND time(a.in_time) > %s
+              AND a.leave_application IS NULL
+              AND a.attendance_date BETWEEN %s AND %s
+              AND NOT EXISTS (
+                  SELECT 1 FROM `tabHoliday` h
+                  WHERE h.holiday_date = a.attendance_date
+                  AND h.parent = (
+                      SELECT e.holiday_list FROM `tabEmployee` e WHERE e.name = %s
+                  )
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT permission_date FROM `tabAttendance Permission`
+                  WHERE employee = %s AND status IN ('Approved','Open')
+                    AND permission_date BETWEEN %s AND %s AND session = 'First Half'
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT half_day_date FROM `tabAttendance Request`
+                  WHERE employee = %s AND docstatus=1 AND workflow_state='Approved'
+                    AND half_day=1 AND half_day_date BETWEEN %s AND %s
+                    AND custom_session='First Half'
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT from_date FROM `tabAttendance Request`
+                  WHERE employee = %s AND docstatus=1 AND workflow_state='Approved'
+                    AND from_date BETWEEN %s AND %s AND reason='Permission'
+                    AND custom_permission_session='First Half'
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT ar.from_date FROM `tabAttendance Request` ar
+                  WHERE ar.employee = %s AND ar.docstatus=1 AND ar.workflow_state='Approved'
+                    AND ar.from_date BETWEEN %s AND %s AND ar.reason='On Duty Working Day'
+                    AND ar.half_day = 0
+                    AND EXISTS (
+                        SELECT 1 FROM `tabAttendance` att
+                        WHERE att.attendance_request = ar.name AND att.in_time IS NOT NULL
                     )
-                )
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT half_day_date FROM `tabLeave Application`
+                  WHERE employee = %s AND docstatus=1 AND half_day=1
+                    AND half_day_date BETWEEN %s AND %s AND custom_session='First Half'
+              )
+        """, (emp.name, cutoff, from_date, to_date, emp.name,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date), as_dict=True)[0].count or 0
 
-            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
-            
-        else:
-            late_list = frappe.db.sql("""
-                SELECT count(a.name) as count
-                FROM `tabAttendance` a
-                WHERE a.employee = %s
-                AND time(a.in_time) > '09:30:00'
-                AND a.leave_application IS NULL
-                AND a.attendance_date BETWEEN %s AND %s
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM `tabHoliday` h
-                    WHERE h.holiday_date = a.attendance_date
-                    AND h.parent = (
-                        SELECT e.holiday_list
-                        FROM `tabEmployee` e
-                        WHERE e.name = %s
-                    )
-                )
+        # Keep counts for informational fields in the Late Penalty record
+        attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and half_day_date between '%s' and '%s' and half_day=1 and custom_session='First Half'"""%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
 
-            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
-          
-        attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and half_day_date between '%s' and '%s' and half_day=1 and custom_session='First Half'"""%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        on_duty_permission=frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and from_date between '%s' and '%s' and reason="Permission" and custom_permission_session="First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
-        on_duty_full_day = frappe.db.sql("""
-            SELECT count(*) as count
-            FROM `tabAttendance Request` ar
-
-            WHERE ar.employee = %s
-            AND ar.docstatus = 1
-            AND ar.from_date BETWEEN %s AND %s
-            AND ar.reason = 'On Duty Working Day'
-            AND ar.workflow_state="Approved"
-            AND ar.half_day = 0
-
-            AND EXISTS (
-                SELECT 1
-                FROM `tabAttendance` att
-                WHERE att.attendance_request = ar.name
-                AND att.in_time IS NOT NULL
-            )
-
-        """, (emp.name, from_date, to_date), as_dict=True)[0].count or 0
-        leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and half_day=1 and half_day_date between '%s' and '%s' and custom_session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
         allowed_late = 3
         late = 0
-        actual_late = late_list - (allowed_late+ leave+on_duty_permission+on_duty+attendance_perm+on_duty_full_day)
-        
+        actual_late = late_list - allowed_late
         if actual_late >= 0:
             at = actual_late
         else:
@@ -289,7 +281,7 @@ def attendance_calc(from_date,to_date):
             elif at <= 23 :
                 late = 3.5
             elif at <= 26 :
-                late = 41
+                late = 4
             elif at <= 29 :
                 late = 4.5
         else:
@@ -304,7 +296,7 @@ def attendance_calc(from_date,to_date):
                     adsl.emp_name = emp.name
                     adsl.deduction_days = late
                     adsl.actual_late = at
-                    adsl.late_days = late_list 
+                    adsl.late_days = late_list
                     adsl.on_duty= on_duty
                     adsl.permissions = attendance_perm
                     adsl.from_date = from_date
@@ -316,93 +308,81 @@ def attendance_calc(from_date,to_date):
                     adsl.emp_name = emp.name
                     adsl.deduction_days = late
                     adsl.actual_late = at
-                    adsl.late_days = late_list 
+                    adsl.late_days = late_list
                     adsl.on_duty= on_duty
                     adsl.permissions = attendance_perm
                     adsl.from_date = from_date
                     adsl.to_date = to_date
                     adsl.late_penalty = (late * (int(ad.base+ ad.variable)/(days)))
                     adsl.save()
-    # 
+    #
     employee = frappe.get_all("Employee",{"status":"Left",'relieving_date':['>=',from_date]},["*"],order_by='name asc')
     for emp in employee:
         user_id = frappe.get_value('Employee',{'employee':emp.name},['user_id'])
         hod = frappe.get_value('User',{'email':user_id},['name'])
         role = "HOD"
         hod = frappe.get_value('Has Role',{'role':role,'parent':hod})
-        if hod:
-            late_list = frappe.db.sql("""
-                SELECT count(a.name) as count
-                FROM `tabAttendance` a
+        cutoff = '09:45:00' if hod else '09:30:00'
 
-                WHERE a.employee = %s
-                AND time(a.in_time) > '09:45:00'
-                AND a.leave_application IS NULL
-                AND a.attendance_date BETWEEN %s AND %s
-
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM `tabHoliday` h
-                    WHERE h.holiday_date = a.attendance_date
-                    AND h.parent = (
-                        SELECT e.holiday_list
-                        FROM `tabEmployee` e
-                        WHERE e.name = %s
+        late_list = frappe.db.sql("""
+            SELECT count(a.name) as count
+            FROM `tabAttendance` a
+            WHERE a.employee = %s
+              AND time(a.in_time) > %s
+              AND a.leave_application IS NULL
+              AND a.attendance_date BETWEEN %s AND %s
+              AND NOT EXISTS (
+                  SELECT 1 FROM `tabHoliday` h
+                  WHERE h.holiday_date = a.attendance_date
+                  AND h.parent = (
+                      SELECT e.holiday_list FROM `tabEmployee` e WHERE e.name = %s
+                  )
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT permission_date FROM `tabAttendance Permission`
+                  WHERE employee = %s AND status IN ('Approved','Open')
+                    AND permission_date BETWEEN %s AND %s AND session = 'First Half'
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT half_day_date FROM `tabAttendance Request`
+                  WHERE employee = %s AND docstatus=1 AND workflow_state='Approved'
+                    AND half_day=1 AND half_day_date BETWEEN %s AND %s
+                    AND custom_session='First Half'
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT from_date FROM `tabAttendance Request`
+                  WHERE employee = %s AND docstatus=1 AND workflow_state='Approved'
+                    AND from_date BETWEEN %s AND %s AND reason='Permission'
+                    AND custom_permission_session='First Half'
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT ar.from_date FROM `tabAttendance Request` ar
+                  WHERE ar.employee = %s AND ar.docstatus=1 AND ar.workflow_state='Approved'
+                    AND ar.from_date BETWEEN %s AND %s AND ar.reason='On Duty Working Day'
+                    AND ar.half_day = 0
+                    AND EXISTS (
+                        SELECT 1 FROM `tabAttendance` att
+                        WHERE att.attendance_request = ar.name AND att.in_time IS NOT NULL
                     )
-                )
+              )
+              AND a.attendance_date NOT IN (
+                  SELECT half_day_date FROM `tabLeave Application`
+                  WHERE employee = %s AND docstatus=1 AND half_day=1
+                    AND half_day_date BETWEEN %s AND %s AND custom_session='First Half'
+              )
+        """, (emp.name, cutoff, from_date, to_date, emp.name,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date,
+              emp.name, from_date, to_date), as_dict=True)[0].count or 0
 
-            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
-        else:
-            late_list = frappe.db.sql("""
-                SELECT count(a.name) as count
-                FROM `tabAttendance` a
+        attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
+        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and half_day_date between '%s' and '%s' and half_day=1 and custom_session='First Half'"""%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
 
-                WHERE a.employee = %s
-                AND time(a.in_time) > '09:30:00'
-                AND a.leave_application IS NULL
-                AND a.attendance_date BETWEEN %s AND %s
-
-                AND NOT EXISTS (
-                    SELECT 1
-                    FROM `tabHoliday` h
-                    WHERE h.holiday_date = a.attendance_date
-                    AND h.parent = (
-                        SELECT e.holiday_list
-                        FROM `tabEmployee` e
-                        WHERE e.name = %s
-                    )
-                )
-
-            """, (emp.name, from_date, to_date, emp.name), as_dict=True)[0].count or 0
-        attendance_perm = frappe.db.sql("""select count(*) as count from `tabAttendance Permission` where employee = '%s' and status in ('Approved','Open') and permission_date between '%s' and '%s' and session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        # on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        # leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and from_date between '%s' and '%s' and half_day = 0 """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        on_duty = frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and half_day_date between '%s' and '%s' and half_day=1 and custom_session='First Half'"""%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
-        on_duty_permission=frappe.db.sql("""select count(*) as count from `tabAttendance Request` where employee = '%s' and docstatus=1 and workflow_state="Approved" and from_date between '%s' and '%s' and reason="Permission" and custom_permission_session="First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0
-        on_duty_full_day = frappe.db.sql("""
-            SELECT count(*) as count
-            FROM `tabAttendance Request` ar
-
-            WHERE ar.employee = %s
-            AND ar.docstatus = 1
-            AND ar.from_date BETWEEN %s AND %s
-            AND ar.reason = 'On Duty Working Day'
-            AND ar.half_day = 0
-            AND ar.workflow_state="Approved"
-            AND EXISTS (
-                SELECT 1
-                FROM `tabAttendance` att
-                WHERE att.attendance_request = ar.name
-                AND att.in_time IS NOT NULL
-            )
-
-        """, (emp.name, from_date, to_date), as_dict=True)[0].count or 0
-
-        leave = frappe.db.sql("""select count(*) as count from `tabLeave Application` where employee = '%s' and docstatus=1 and half_day=1 and half_day_date between '%s' and '%s' and custom_session = "First Half" """%(emp.name,from_date,to_date),as_dict=True)[0].count or 0 
         allowed_late = 3
         late = 0
-        actual_late = late_list - (allowed_late + attendance_perm + on_duty + leave + on_duty_permission + on_duty_full_day)
-        
+        actual_late = late_list - allowed_late
         if actual_late >= 0:
             at = actual_late
         else:
@@ -423,7 +403,7 @@ def attendance_calc(from_date,to_date):
             elif at <= 23 :
                 late = 3.5
             elif at <= 26 :
-                late = 41
+                late = 4
             elif at <= 29 :
                 late = 4.5
         else:
@@ -438,7 +418,7 @@ def attendance_calc(from_date,to_date):
                     adsl.emp_name = emp.name
                     adsl.deduction_days = late
                     adsl.actual_late = at
-                    adsl.late_days = late_list 
+                    adsl.late_days = late_list
                     adsl.on_duty= on_duty
                     adsl.permissions = attendance_perm
                     adsl.from_date = from_date
@@ -450,7 +430,7 @@ def attendance_calc(from_date,to_date):
                     adsl.emp_name = emp.name
                     adsl.deduction_days = late
                     adsl.actual_late = at
-                    adsl.late_days = late_list 
+                    adsl.late_days = late_list
                     adsl.on_duty= on_duty
                     adsl.permissions = attendance_perm
                     adsl.from_date = from_date
@@ -707,7 +687,7 @@ def create_update_leave_allocation_new():
     )
 
     today = date.today()
-    # today=getdate("2026-06-15")
+    # today=getdate("2026-07-14")
     for emp in employees:
         doj = emp.date_of_joining
         if not doj:
@@ -748,6 +728,20 @@ def create_update_leave_allocation_new():
                 la.new_leaves_allocated += 1.25
                 la.save(ignore_permissions=True)
                 la.submit()
+
+
+
+@frappe.whitelist()
+def task_mail_notification_status ():
+    job = frappe.db.exists('Scheduled Job Type','create_update_leave_allocation_new')
+    if not job:
+        task = frappe.new_doc("Scheduled Job Type")
+        task.update({
+            "method": 'teampro.utility.create_update_leave_allocation_new',
+            "frequency": 'Cron',
+            "cron_format": '0 1 * * *'
+        })
+        task.save(ignore_permissions=True)
 
 
 from datetime import datetime
@@ -817,24 +811,6 @@ def update_sfp_details_customer(doc, method):
 
 import frappe
 @frappe.whitelist()
-def update_submitted_pi(doc, method):
-    frappe.db.set_value(
-        "Purchase Invoice",
-        doc.name,
-        "custom_document_status",
-        "Submitted"
-    )
-
-@frappe.whitelist()
-def update_canceled_pi(doc, method):
-    frappe.db.set_value(
-        "Purchase Invoice",
-        doc.name,
-        "custom_document_status",
-        "Cancelled"
-    )
-
-@frappe.whitelist()
 def update_submitted_si(doc, method):
     frappe.db.set_value(
         "Sales Invoice",
@@ -845,6 +821,8 @@ def update_submitted_si(doc, method):
 
 
 import frappe
+# Party Statement API
+from teampro.party_statement_api import get_party_statement, download_party_statement_pdf, download_party_statement_excel
 @frappe.whitelist()
 def update_canceled_si(doc, method):
     frappe.db.set_value(
@@ -855,3 +833,94 @@ def update_canceled_si(doc, method):
     )
 
 
+
+
+# ============================================================
+# Party Statement (with Settlements) - report update helper
+# ============================================================
+@frappe.whitelist()
+def update_party_statement_report():
+    """Read report_script and javascript from files on disk and update the report."""
+    import os
+    report_dir = os.path.join(
+        frappe.get_app_path("teampro"),
+        "teampro", "report", "party_statement_with_settlements"
+    )
+    script_file = os.path.join(report_dir, "report_script.py")
+    js_file = os.path.join(report_dir, "party_statement_with_settlements.js")
+
+    report_script = ""
+    javascript = ""
+
+    if os.path.exists(script_file):
+        with open(script_file, "r") as f:
+            report_script = f.read()
+
+    if os.path.exists(js_file):
+        with open(js_file, "r") as f:
+            javascript = f.read()
+
+    name = "Party Statement (with Settlements)"
+    doc = frappe.get_doc("Report", name)
+    doc.report_script = report_script
+    doc.javascript = javascript
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return "Updated report: " + name
+
+import frappe, json, os
+
+import frappe, os
+
+@frappe.whitelist()
+def update_client_scripts():
+    """Update Customer and Supplier client scripts from uploaded files."""
+    base = os.path.join(frappe.get_app_path("teampro"), "party_statement_report")
+    result = {}
+
+    # Update Customer client script
+    cs_path = os.path.join(base, "_new_customer_script.js")
+    if os.path.exists(cs_path):
+        with open(cs_path, "r") as f:
+            script = f.read()
+        if frappe.db.exists("Client Script", "Customer"):
+            doc = frappe.get_doc("Client Script", "Customer")
+            doc.script = script
+            doc.save(ignore_permissions=True)
+            result["Customer"] = "updated"
+        else:
+            doc = frappe.get_doc({
+                "doctype": "Client Script",
+                "name": "Customer",
+                "dt": "Customer",
+                "enabled": 1,
+                "view": "Form",
+                "script": script,
+            })
+            doc.insert(ignore_permissions=True)
+            result["Customer"] = "created"
+
+    # Create/Update Supplier client script
+    ss_path = os.path.join(base, "_new_supplier_script.js")
+    if os.path.exists(ss_path):
+        with open(ss_path, "r") as f:
+            script = f.read()
+        if frappe.db.exists("Client Script", "Supplier"):
+            doc = frappe.get_doc("Client Script", "Supplier")
+            doc.script = script
+            doc.save(ignore_permissions=True)
+            result["Supplier"] = "updated"
+        else:
+            doc = frappe.get_doc({
+                "doctype": "Client Script",
+                "name": "Supplier",
+                "dt": "Supplier",
+                "enabled": 1,
+                "view": "Form",
+                "script": script,
+            })
+            doc.insert(ignore_permissions=True)
+            result["Supplier"] = "created"
+
+    frappe.db.commit()
+    return result

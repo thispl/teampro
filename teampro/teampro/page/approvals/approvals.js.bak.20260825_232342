@@ -1,0 +1,3739 @@
+
+frappe.pages['approvals'].on_page_load = function (wrapper) {
+
+    let page = frappe.ui.make_app_page({
+        parent: wrapper,
+        title: 'Approvals',
+        single_column: true
+    });
+
+
+    $(page.body).html(`
+    <div class="approvals-container" style="background-color:#F8FAFC;margin-top:0px;">
+
+        
+
+        <div style="text-align:center; margin-bottom:5px; margin-top:0px;">
+            <h2 style="margin:0; font-weight:bold;">APPROVALS</h2>
+            <div style="font-size:16px; color:#555; margin-top:5px;" id="current-datetime"></div>
+
+            <!-- Main tabs: Approvals vs Transactions -->
+            <div style="margin-top:12px; display:flex; justify-content:center;gap:4px; flex-wrap:wrap;">
+                <button class="main-tab-btn active" data-tab="approvals">Approvals</button>
+                <button class="main-tab-btn" data-tab="transactions">Transactions</button>
+            </div>
+
+            <!-- Sub-nav for Approvals tab -->
+            <div id="approvals-subnav" style="margin-top:10px; display:flex; justify-content:center;gap:8px; flex-wrap:wrap;">
+                <button class="nav-btn" data-target="leave-section">Leave Application</button>
+                <button class="nav-btn" data-target="expense-section">Expense Claim</button>
+                <button class="nav-btn" data-target="att-section">Attendance Request</button>
+                <button class="nav-btn" data-target="pur-section">Purchase Order</button>
+                <button class="nav-btn" data-target="pur-inv-section">Purchase Invoice</button>
+                <button class="nav-btn" data-target="sal-inv-section">Sales Invoice</button>
+                <button class="payment-btn" type="button">Payment</button>
+            </div>
+        </div>
+
+        <div id="approvals-tab-content">
+        <br>
+        <div id="dashboard-cards" style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;border:1px solid #d1d5db;background:#f2f2f2;border-radius:8px;margin-top:5px;margin-bottom:10px;padding-top:8px;padding-bottom:8px;">
+
+            <div id="leave-card"></div>
+            <div id="expense-card"></div>
+            <div id="attendance-card"></div>
+            <div id="po-card"></div>
+            <div id="pi-card"></div>
+            <div id="si-card"></div>
+            
+
+        </div>
+
+        <br>
+        <!-- Leave Application -->
+        <div id="leave-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden;margin-top:5px; margin-bottom:10px;">  
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">LEAVE APPLICATION</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
+                <div id="leave-table"></div>
+            </div>
+        </div>
+
+        <!-- Expense Claim -->
+        <div id="expense-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">  
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0; font-size:16px; font-weight:700;">
+                    EXPENSE CLAIM
+                </h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;margin-top:2px;padding-top:0px !important;">
+                <div id="expense-table"></div>
+            </div>
+        </div> 
+
+        <!-- Attendance Request -->
+        <div id="att-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;"> 
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">ATTENDANCE REQUEST</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
+                <div id="att-table"></div>
+            </div>
+        </div> 
+
+
+        <!-- Purchase Order -->
+        <div id="pur-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">PURCHASE ORDER</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
+                <div id="pur-table"></div>
+            </div>
+        </div> 
+
+        <!-- Purchase Invoice -->
+        <div id="pur-inv-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">  
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">PURCHASE INVOICE</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
+                <div id="pur-inv-table"></div>
+            </div>
+        </div> 
+
+        <!-- Sales Invoice -->
+         <div id="sal-inv-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;"> 
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">SALES INVOICE</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; overflow-x:auto;padding-top:0px !important;">
+                <div id="sal-inv-table"></div>
+            </div>
+        </div> 
+
+        </div><!-- end approvals-tab-content -->
+
+        <div id="txn-tab-content" style="display:none;">
+
+        <!-- Sub-tabs within Transactions -->
+        <div style="text-align:center;margin-bottom:10px;">
+            <button class="txn-subtab-btn active" data-subtab="payments">Payment Transactions</button>
+            <button class="txn-subtab-btn" data-subtab="dtr">Daily Transaction Report</button>
+        </div>
+
+        <!-- Sub-tab 1: Payment Transactions (existing) -->
+        <div id="txn-subtab-payments" class="txn-subtab-content" style="display:block;">
+        <!-- Transactions -->
+        <div id="txn-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">TRANSACTIONS</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; padding-top:0px !important;">
+
+                <!-- Filters bar -->
+                <div id="txn-filters" style="background:#fff;border-radius:6px;padding:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">From Date</label>
+                        <input type="date" id="txn-from-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">To Date</label>
+                        <input type="date" id="txn-to-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Company</label>
+                        <input type="text" id="txn-company" class="form-control" placeholder="All" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Party Type</label>
+                        <select id="txn-party-type" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Customer">Customer</option>
+                            <option value="Supplier">Supplier</option>
+                            <option value="Employee">Employee</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Party</label>
+                        <input type="text" id="txn-party" class="form-control" placeholder="All" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <div style="flex:1;min-width:100px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Type</label>
+                        <select id="txn-payment-type" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Pay">Pay</option>
+                            <option value="Receive">Receive</option>
+                        </select>
+                    </div>
+                    <div style="flex:1;min-width:80px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Mode</label>
+                        <select id="txn-mode" class="form-control" style="height:30px;font-size:12px;">
+                            <option value="">All</option>
+                            <option value="Bank">Bank</option>
+                            <option value="Cash">Cash</option>
+                        </select>
+                    </div>
+                    <button id="txn-filter-btn" class="btn btn-primary btn-sm" style="background:#0F1568;border-color:#0F1568;height:30px;font-size:12px;font-weight:600;">Filter</button>
+                    <button id="txn-refresh-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Refresh</button>
+                </div>
+
+                <!-- Analytics cards -->
+                <div id="txn-cards" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+                <!-- Charts row -->
+                <div id="txn-charts" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+                    <div id="txn-chart-mode" style="flex:1;min-width:280px;background:#fff;border-radius:6px;padding:10px;min-height:200px;"></div>
+                    <div id="txn-chart-trend" style="flex:2;min-width:400px;background:#fff;border-radius:6px;padding:10px;min-height:200px;"></div>
+                </div>
+
+                <!-- Transaction table -->
+                <div id="txn-table" style="background:#fff;border-radius:6px;overflow:hidden;"></div>
+
+            </div>
+        </div>
+        </div><!-- end txn-subtab-payments -->
+
+        <!-- Sub-tab 2: Daily Transaction Report -->
+        <div id="txn-subtab-dtr" class="txn-subtab-content" style="display:none;">
+        <div id="dtr-section" style="border:1px solid #d1d5db;background:#f2f2f2; border-radius:8px; overflow:hidden; margin-bottom:10px;">
+            <div style="background:#fff;margin:10px;height:40px;display:flex;justify-content:center;align-items:center;border-radius:4px;padding:0 3px;">
+                <h2 style="margin:0;font-size:16px; font-weight:700;">DAILY TRANSACTION REPORT</h2>
+            </div>
+            <div style="background:#f2f2f2; padding:10px; padding-top:0px !important;">
+
+                <!-- DTR Controls -->
+                <div style="background:#fff;border-radius:6px;padding:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;">
+                    <div style="flex:1;min-width:120px;">
+                        <label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:2px;">Report Date</label>
+                        <input type="date" id="dtr-date" class="form-control" style="height:30px;font-size:12px;"/>
+                    </div>
+                    <button id="dtr-load-btn" class="btn btn-primary btn-sm" style="background:#0F1568;border-color:#0F1568;height:30px;font-size:12px;font-weight:600;">Load Report</button>
+                    <button id="dtr-print-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Print / PDF</button>
+                    <button id="dtr-csv-btn" class="btn btn-default btn-sm" style="height:30px;font-size:12px;">Download CSV</button>
+                </div>
+
+                <!-- DTR Summary Cards -->
+                <div id="dtr-cards" style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;"></div>
+
+                <!-- DTR Tab Navigation -->
+                <div id="dtr-tab-nav" style="display:flex;gap:2px;border-bottom:3px solid #1d4ed8;margin-bottom:0;flex-wrap:wrap;"></div>
+
+                <!-- DTR Tab Contents -->
+                <div id="dtr-tab-bankcash" class="dtr-tab-panel" style="display:block;padding-top:12px;"></div>
+                <div id="dtr-tab-sales" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+                <div id="dtr-tab-purchase" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+                <div id="dtr-tab-rp" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+                <div id="dtr-tab-summary" class="dtr-tab-panel" style="display:none;padding-top:12px;"></div>
+
+            </div>
+        </div>
+        </div><!-- end txn-subtab-dtr -->
+
+        </div><!-- end txn-tab-content -->
+
+    </div>
+`);
+
+    // ✅ Time format — match R&S style
+    function update_datetime() {
+        const now = new Date();
+        const date = now.toLocaleDateString('en-IN', {
+            year: 'numeric', month: 'long', day: 'numeric'
+        });
+        const time = now.toLocaleTimeString('en-IN', {
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: true
+        }).toUpperCase();
+        $('#current-datetime').text(`${date} | ${time}`);
+    }
+    update_datetime();
+    setInterval(update_datetime, 1000);
+
+    // Main tab switching: Approvals vs Transactions
+    $(document).off("click", ".main-tab-btn").on("click", ".main-tab-btn", function () {
+        const tab = $(this).data("tab");
+        // Update button states
+        $(".main-tab-btn").removeClass("active");
+        $(this).addClass("active");
+        // Show/hide tab content
+        if (tab === "approvals") {
+            $("#approvals-tab-content").show();
+            $("#txn-tab-content").hide();
+        } else if (tab === "transactions") {
+            $("#approvals-tab-content").hide();
+            $("#txn-tab-content").show();
+            console.log("[txn] switching to transactions tab, loading data");
+            load_transactions();
+        }
+    });
+
+    // Sub-nav: scroll to section within approvals tab
+    $(document).off("click", ".nav-btn").on("click", ".nav-btn", function () {
+        const target = $(this).data("target");
+        if (target) {
+            document.getElementById(target).scrollIntoView({
+                behavior: "smooth",
+                block: "start"
+            });
+        }
+    });
+
+    // ============================================================
+    // Payment button — opens dialog to create Payment/Journal Entry
+    // ============================================================
+    let _payment_dialog_open = false;
+    $(document).off("click", ".payment-btn").on("click", ".payment-btn", function () {
+        if (_payment_dialog_open) return;
+        _payment_dialog_open = true;
+        open_payment_dialog();
+    });
+
+    window.open_payment_dialog = open_payment_dialog;
+
+    function open_payment_dialog() {
+
+        const PARTY_TYPES_PAY = ["Supplier", "Employee"];
+        const PARTY_TYPES_RECEIVE = ["Customer"];
+
+        const dialog = new frappe.ui.Dialog({
+            title: __("Make Payment Entry"),
+                        fields: [
+                // --- Section 1: Payment Details ---
+                { fieldname: "sec1", fieldtype: "Section Break",
+                  label: __("Payment Details") },
+                { fieldname: "company", fieldtype: "Select", options: "",
+                  label: __("Company"), reqd: 1, default: frappe.defaults.get_user_default("Company"),
+                  onchange: () => { set_default_bank(); refresh_outstanding(); } },
+                { fieldname: "payment_type", fieldtype: "Select", options: "Pay\nReceive",
+                  label: __("Payment Type"), reqd: 1, default: "Pay",
+                  onchange: () => {
+                      const pt = dialog.get_value("payment_type") || "Pay";
+                      const opts = (pt === "Receive" ? PARTY_TYPES_RECEIVE : PARTY_TYPES_PAY).join("\n");
+                      dialog.get_field("party_type").df.options = opts;
+                      dialog.get_field("party_type").refresh();
+                      dialog.set_value("party_type", opts.split("\n")[0]);
+                      dialog.set_value("party", "");
+                      refresh_outstanding();
+                  } },
+                { fieldname: "col1", fieldtype: "Column Break" },
+                { fieldname: "party_type", fieldtype: "Select", options: PARTY_TYPES_PAY.join("\n"),
+                  label: __("Party Type"), reqd: 1, default: "Supplier",
+                  onchange: () => { dialog.set_value("party", ""); refresh_outstanding(); } },
+                { fieldname: "party", fieldtype: "Dynamic Link", options: "party_type",
+                  label: __("Party"), reqd: 1,
+                  onchange: () => {
+                      refresh_outstanding();
+                      // For Employee, show name + code in the description
+                      const pt = dialog.get_value("party_type");
+                      const pv = dialog.get_value("party");
+                      if (pt === "Employee" && pv) {
+                          frappe.db.get_value("Employee", pv, "employee_name")
+                              .then(r => {
+                                  if (r && r.message) {
+                                      const f = dialog.get_field("party");
+                                      f.set_description(pv + " - " + r.message.employee_name);
+                                  }
+                              });
+                      } else {
+                          dialog.get_field("party").set_description("");
+                      }
+                  },
+                  get_query: () => {
+                      const pt = dialog.get_value("party_type");
+                      if (pt === "Employee") {
+                          return { query: "erpnext.controllers.queries.employee_query", filters: { status: "Active" } };
+                      }
+                      return null;
+                  } },
+
+                // --- Section 2: Payment Mode ---
+                { fieldname: "sec2", fieldtype: "Section Break",
+                  label: __("Payment Mode") },
+                { fieldname: "payment_for", fieldtype: "Select", options: "Advance\nAgainst Bill/Claim",
+                  label: __("Payment For"), reqd: 1, default: "Against Bill/Claim",
+                  onchange: () => toggle_outstanding_section() },
+                { fieldname: "mode", fieldtype: "Select", options: "Bank\nCash",
+                  label: __("Mode"), reqd: 1, default: "Bank",
+                  onchange: () => {
+                      dialog.set_value("paid_from", "");
+                      set_default_bank();
+                      toggle_reference_fields();
+                  } },
+                { fieldname: "col2", fieldtype: "Column Break" },
+                { fieldname: "paid_from", fieldtype: "Link", options: "Account",
+                  label: __("Bank / Cash Account"), reqd: 1 },
+                { fieldname: "amount", fieldtype: "Currency", label: __("Amount"), reqd: 1,
+                  onchange: () => auto_allocate() },
+
+                // --- Section 3: Reference (Bank only) ---
+                { fieldname: "sec3", fieldtype: "Section Break",
+                  label: __("Reference"), depends_on: "eval:doc.mode == 'Bank'" },
+                { fieldname: "reference_no", fieldtype: "Data",
+                  label: __("Cheque / Ref No"), depends_on: "eval:doc.mode == 'Bank'" },
+                { fieldname: "col3", fieldtype: "Column Break",
+                  depends_on: "eval:doc.mode == 'Bank'" },
+                { fieldname: "reference_date", fieldtype: "Date",
+                  label: __("Cheque / Ref Date"), depends_on: "eval:doc.mode == 'Bank'",
+                  default: frappe.datetime.get_today() },
+
+                // --- Section 4: Outstanding ---
+                { fieldname: "outstanding_section", fieldtype: "Section Break",
+                  label: __("Outstanding Bills / Claims") },
+                { fieldname: "fetch_btn", fieldtype: "Button", label: __("Fetch Outstanding") },
+                { fieldname: "outstanding_html", fieldtype: "HTML" }
+            ],
+            primary_action_label: __("Create Entry"),
+            primary_action: (values) => create_payment(values, dialog)
+        });
+
+        let outstanding_rows = [];
+
+        // Style the dialog - ultra compact & professional
+        const $modal = dialog.$wrapper.find(".modal-dialog");
+        const $body = dialog.$wrapper.find(".modal-body");
+        $modal.css("max-width", "820px");
+        $body.css({ "padding": "12px 16px", "max-height": "70vh", "overflow-y": "auto" });
+        dialog.$wrapper.find(".modal-title").css({ "font-weight": "700", "color": "#0F1568", "font-size": "15px" });
+        dialog.$wrapper.find(".modal-header").css("padding", "10px 16px");
+        dialog.$wrapper.find(".modal-footer").css("padding", "8px 16px");
+        // Compact field spacing
+        dialog.$wrapper.find(".frappe-control").css("margin-bottom", "6px");
+        dialog.$wrapper.find(".control-label").css({ "font-size": "11px", "font-weight": "600", "margin-bottom": "2px" });
+        // Fix date field cutoff
+        dialog.$wrapper.find('input[data-fieldtype="Date"]').css({ "height": "28px", "padding": "4px 8px" });
+        dialog.$wrapper.find(".input-group-btn .date-picker").css("height", "28px");
+        // Section headers - blue line, professional
+        dialog.$wrapper.find(".section-head").css({
+            "font-weight": "700", "color": "#0F1568",
+            "border-bottom": "2px solid #0F1568",
+            "padding-bottom": "3px", "margin-bottom": "8px", "margin-top": "10px",
+            "font-size": "13px", "text-transform": "uppercase", "letter-spacing": "0.3px"
+        });
+        // Buttons
+        dialog.$wrapper.find(".modal-footer .btn-primary").css({
+            "background": "#0F1568", "border-color": "#0F1568",
+            "font-weight": "600", "padding": "5px 18px", "font-size": "12px"
+        });
+        dialog.$wrapper.find(".modal-footer .btn-default").css({ "padding": "5px 14px", "font-size": "12px" });
+        // Smaller inputs
+        dialog.$wrapper.find(".form-control").css({ "border-radius": "4px", "height": "28px", "font-size": "12px", "padding": "4px 8px" });
+        dialog.$wrapper.find(".input-sm").css("height", "26px");
+        // 2-column layout: make columns tighter
+        dialog.$wrapper.find(".form-column").css("padding", "0 4px");
+
+        // Paid-from account filter depends on mode
+        dialog.get_field("paid_from").get_query = function () {
+            const mode = dialog.get_value("mode") || "Bank";
+            const company = dialog.get_value("company");
+            const at = mode === "Bank" ? "Bank" : "Cash";
+            return {
+                filters: [
+                    ["Account", "account_type", "=", at],
+                    ["Account", "company", "=", company],
+                    ["Account", "is_group", "=", 0]
+                ]
+            };
+        };
+
+        // Set default bank account (ICICI for THIS company)
+        function set_default_bank() {
+            const mode = dialog.get_value("mode") || "Bank";
+            const company = dialog.get_value("company");
+            if (mode !== "Bank" || !company) return;
+            // Try ICICI first, fall back to first bank account
+            frappe.db.get_value("Account", { account_type: "Bank", company: company, is_group: 0, name: ["like", "%ICICI%"] }, "name")
+                .then(r => {
+                    if (r && r.message && r.message.name) {
+                        dialog.set_value("paid_from", r.message.name);
+                    } else {
+                        frappe.db.get_value("Account", { account_type: "Bank", company: company, is_group: 0 }, "name")
+                            .then(r2 => {
+                                if (r2 && r2.message && r2.message.name) {
+                                    dialog.set_value("paid_from", r2.message.name);
+                                }
+                            });
+                    }
+                });
+        }
+
+        function toggle_reference_fields() {
+            const show = dialog.get_value("mode") === "Bank";
+            ["sec3", "reference_no", "col3", "reference_date"].forEach(fn => {
+                const f = dialog.get_field(fn);
+                if (f) { f.df.hidden = !show; f.refresh(); }
+            });
+        }
+
+        dialog.get_field("fetch_btn").$input.on("click", () => refresh_outstanding(true));
+
+        function toggle_outstanding_section() {
+            const show = dialog.get_value("payment_for") === "Against Bill/Claim";
+            ["outstanding_section", "fetch_btn", "outstanding_html"].forEach(fn => {
+                const f = dialog.get_field(fn);
+                f.df.hidden = !show;
+                f.refresh();
+            });
+            if (!show) {
+                outstanding_rows = [];
+                render_outstanding();
+            }
+        }
+
+        function refresh_outstanding(force) {
+            const pf = dialog.get_value("payment_for");
+            if (pf !== "Against Bill/Claim" && !force) return;
+            const company = dialog.get_value("company");
+            const party_type = dialog.get_value("party_type");
+            const party = dialog.get_value("party");
+            if (!company || !party_type || !party) {
+                if (force) frappe.msgprint(__("Please select Company, Party Type and Party first."));
+                return;
+            }
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.get_outstanding_documents",
+                args: { company, party_type, party },
+                freeze: true,
+                callback: (r) => {
+                    if (r.message) {
+                        outstanding_rows = r.message.map(d => ({
+                            reference_doctype: d.reference_doctype,
+                            reference_name: d.reference_name,
+                            posting_date: d.posting_date,
+                            due_date: d.due_date,
+                            total_amount: d.total_amount,
+                            outstanding_amount: d.outstanding_amount,
+                            allocated: 0,
+                            selected: false
+                        }));
+                        auto_allocate();
+                        render_outstanding();
+                    }
+                }
+            });
+        }
+
+        function render_outstanding() {
+            const html = dialog.get_field("outstanding_html");
+            if (!outstanding_rows.length) {
+                html.$wrapper.html('<div style="padding:8px;text-align:center;color:#888;background:#f9fafb;border:1px dashed #d1d5db;border-radius:4px;font-size:12px;">No outstanding documents. Click "Fetch Outstanding".</div>');
+                return;
+            }
+            const rows = outstanding_rows.map((d, i) => `
+                <tr>
+                    <td style="text-align:center;vertical-align:middle;"><input type="checkbox" data-idx="${i}" class="out-chk" ${d.selected ? "checked" : ""}/></td>
+                    <td style="vertical-align:middle;font-size:11px;">${d.reference_doctype}</td>
+                    <td style="vertical-align:middle;font-size:11px;font-weight:600;color:#0F1568;">${d.reference_name}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:11px;">${frappe.format(d.total_amount, { fieldtype: "Currency" })}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:11px;font-weight:600;">${frappe.format(d.outstanding_amount, { fieldtype: "Currency" })}</td>
+                    <td><input type="number" step="0.01" min="0" max="${d.outstanding_amount}" class="form-control input-sm out-alloc" data-idx="${i}" value="${d.allocated || ""}" style="width:90px;height:24px;font-size:11px;"/></td>
+                </tr>
+            `).join("");
+            const total_alloc = outstanding_rows.reduce((s, d) => s + (d.selected ? d.allocated : 0), 0);
+            const amt = parseFloat(dialog.get_value("amount")) || 0;
+            const unallocated = amt - total_alloc;
+            const unalloc_color = unallocated > 0.01 ? "#dc2626" : (unallocated < -0.01 ? "#dc2626" : "#16a34a");
+            const unalloc_bg = unallocated > 0.01 ? "#fef2f2" : (unallocated < -0.01 ? "#fef2f2" : "#f0fdf4");
+
+            html.$wrapper.html(`
+                <div style="margin-bottom:6px;padding:5px 10px;background:${unalloc_bg};border-radius:4px;display:flex;justify-content:space-between;align-items:center;font-size:12px;white-space:nowrap;">
+                    <span style="font-weight:600;color:#555;white-space:nowrap;">Total Allocated: <span style="color:#0F1568;display:inline;">${format_cur(total_alloc)}</span></span>
+                    <span style="font-weight:700;color:${unalloc_color};white-space:nowrap;">Unallocated: <span class="txn-unallocated" style="display:inline;">${format_cur(unallocated)}</span></span>
+                </div>
+                <div style="max-height:180px;overflow-y:auto;border:1px solid #e5e7eb;border-radius:4px;">
+                    <table class="table table-bordered table-sm" style="margin:0;font-size:11px;">
+                        <thead style="background:#0F1568;color:white;position:sticky;top:0;z-index:10;">
+                            <tr>
+                                <th style="text-align:center;width:24px;"></th>
+                                <th>Type</th>
+                                <th>Document</th>
+                                <th style="text-align:right;">Total</th>
+                                <th style="text-align:right;">Outstanding</th>
+                                <th style="text-align:center;width:100px;">Allocate</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `);
+            html.$wrapper.find(".out-chk").on("change", function () {
+                const idx = +$(this).data("idx");
+                outstanding_rows[idx].selected = $(this).is(":checked");
+                if (outstanding_rows[idx].selected && !outstanding_rows[idx].allocated) {
+                    outstanding_rows[idx].allocated = parseFloat(outstanding_rows[idx].outstanding_amount) || 0;
+                    render_outstanding();
+                }
+            });
+            html.$wrapper.find(".out-alloc").on("change", function () {
+                const idx = +$(this).data("idx");
+                outstanding_rows[idx].allocated = parseFloat($(this).val()) || 0;
+                if (outstanding_rows[idx].allocated > 0) outstanding_rows[idx].selected = true;
+                render_outstanding();
+            });
+            html.$wrapper.find(".out-alloc").on("input", function () {
+                const idx = +$(this).data("idx");
+                outstanding_rows[idx].allocated = parseFloat($(this).val()) || 0;
+                if (outstanding_rows[idx].allocated > 0) outstanding_rows[idx].selected = true;
+                // Update unallocated display without full re-render
+                const ta = outstanding_rows.reduce((s, d) => s + (d.selected ? d.allocated : 0), 0);
+                const am = parseFloat(dialog.get_value("amount")) || 0;
+                const ua = am - ta;
+                html.$wrapper.find(".txn-unallocated").text(format_cur(ua));
+            });
+        }
+
+        function auto_allocate() {
+            const amt = parseFloat(dialog.get_value("amount")) || 0;
+            if (!amt) return;
+            let remaining = amt;
+            outstanding_rows.forEach(d => {
+                const out_amt = parseFloat(d.outstanding_amount) || 0;
+                if (remaining <= 0.01) { d.allocated = 0; d.selected = false; return; }
+                const alloc = Math.min(remaining, out_amt);
+                d.allocated = Math.round(alloc * 100) / 100;
+                d.selected = alloc > 0.01;
+                remaining = Math.round((remaining - alloc) * 100) / 100;
+            });
+            render_outstanding();
+        }
+
+        function create_payment(values, dlg) {
+            if (!values.company || !values.party_type || !values.party || !values.paid_from || !values.amount) {
+                frappe.msgprint(__("Please fill all required fields."));
+                return;
+            }
+            const references = outstanding_rows
+                .filter(d => d.selected && d.allocated > 0)
+                .map(d => ({
+                    reference_doctype: d.reference_doctype,
+                    reference_name: d.reference_name,
+                    allocated_amount: d.allocated
+                }));
+
+            if (values.mode === "Bank" && (!values.reference_no || !values.reference_date)) {
+                frappe.msgprint(__("Cheque/Reference No and Date are required for Bank mode."));
+                return;
+            }
+
+            if (values.payment_for === "Against Bill/Claim") {
+                if (!references.length) {
+                    frappe.msgprint(__("Please fetch and select at least one outstanding document to allocate."));
+                    return;
+                }
+                const total_alloc = references.reduce((s, d) => s + d.allocated_amount, 0);
+                const unallocated = values.amount - total_alloc;
+                if (Math.abs(unallocated) > 0.01) {
+                    // Ask user what to do with the balance
+                    ask_balance_action(values, references, unallocated, dlg);
+                    return;
+                }
+            }
+
+            submit_payment(values, references, null);
+        }
+
+        function ask_balance_action(values, references, unallocated, dlg) {
+            const bal_dialog = new frappe.ui.Dialog({
+                title: __("Unallocated Balance: " + format_cur(unallocated)),
+                fields: [
+                    { fieldname: "balance_action", fieldtype: "Select",
+                      label: __("Action for balance amount"),
+                      options: "Write Off\nForeign Exchange Gain/Loss\nTDS Receivable\nKeep as Unallocated",
+                      reqd: 1, default: "Keep as Unallocated" },
+                    { fieldname: "balance_remark", fieldtype: "Data",
+                      label: __("Remark"), }
+                ],
+                primary_action_label: __("Proceed"),
+                primary_action: (bvals) => {
+                    bal_dialog.hide();
+                    submit_payment(values, references, {
+                        action: bvals.balance_action,
+                        amount: unallocated,
+                        remark: bvals.balance_remark || ""
+                    });
+                }
+            });
+            bal_dialog.show();
+        }
+
+        function submit_payment(values, references, balance_action) {
+            frappe.call({
+                method: "teampro.teampro.page.approvals.approvals.make_payment",
+                args: {
+                    company: values.company,
+                    payment_type: values.payment_type,
+                    party_type: values.party_type,
+                    party: values.party,
+                    payment_for: values.payment_for,
+                    mode: values.mode,
+                    paid_from: values.paid_from,
+                    amount: values.amount,
+                    reference_no: values.reference_no,
+                    reference_date: values.reference_date,
+                    references: JSON.stringify(references),
+                    balance_action: balance_action ? JSON.stringify(balance_action) : null
+                },
+                freeze: true,
+                callback: (r) => {
+                    if (r && r.message) {
+                        frappe.show_alert({
+                            message: __("{0} {1} created & submitted", [r.message.doctype, r.message.name]),
+                            indicator: "green"
+                        });
+                        dialog.hide();
+                        setTimeout(() => {
+                            document.getElementById("txn-section").scrollIntoView({ behavior: "smooth", block: "start" });
+                            load_transactions(r.message.name);
+                        }, 300);
+                    }
+                }
+            });
+        }
+
+        dialog.onhide = function () { _payment_dialog_open = false; };
+        dialog.show();
+
+        // Populate company dropdown
+        frappe.db.get_list("Company", { fields: ["name"], limit: 100 }).then(res => {
+            const names = (res || []).map(d => d.name);
+            const f = dialog.get_field("company");
+            f.df.options = names.join("\n");
+            f.refresh();
+            const def = frappe.defaults.get_user_default("Company");
+            if (def && names.includes(def)) {
+                dialog.set_value("company", def);
+            } else if (names.length) {
+                dialog.set_value("company", names[0]);
+            }
+        });
+
+        toggle_outstanding_section();
+        toggle_reference_fields();
+        set_default_bank();
+    }
+
+    // ============================================================
+    // Transactions tab — load, filter, charts, highlight
+    // ============================================================
+    let _txn_data = [];
+    let _txn_highlight_name = null;
+
+    function load_transactions(highlight_name) {
+        _txn_highlight_name = highlight_name || null;
+        const from_date = $("#txn-from-date").val() || "";
+        const to_date = $("#txn-to-date").val() || "";
+        const company = $("#txn-company").val() || "";
+        const party_type = $("#txn-party-type").val() || "";
+        const party = $("#txn-party").val() || "";
+        const payment_type = $("#txn-payment-type").val() || "";
+        const mode = $("#txn-mode").val() || "";
+
+        frappe.call({
+            method: "teampro.teampro.page.approvals.approvals.get_transactions",
+            args: { from_date, to_date, company, party_type, party, payment_type, mode },
+            freeze: true,
+            callback: (r) => {
+                console.log("[txn] response:", r);
+                if (r.message) {
+                    _txn_data = r.message;
+                    render_txn_cards();
+                    render_txn_charts();
+                    render_txn_table();
+                } else {
+                    _txn_data = [];
+                    render_txn_cards();
+                    render_txn_table();
+                    $("#txn-chart-mode").html("<p style='text-align:center;color:#888;padding:20px;'>No data</p>");
+                    $("#txn-chart-trend").html("<p style='text-align:center;color:#888;padding:20px;'>No data</p>");
+                }
+            },
+            error: (err) => {
+                console.error("[txn] error:", err);
+                frappe.msgprint("Failed to load transactions. Check console for details.");
+            }
+        });
+    }
+
+    function render_txn_cards() {
+        const total_pay = _txn_data.filter(d => d.payment_type === "Pay").reduce((s, d) => s + d.paid_amount, 0);
+        const total_recv = _txn_data.filter(d => d.payment_type === "Receive").reduce((s, d) => s + d.paid_amount, 0);
+        const total_count = _txn_data.length;
+        const bank_total = _txn_data.filter(d => d.mode_of_payment_type === "Bank").reduce((s, d) => s + d.paid_amount, 0);
+        const cash_total = _txn_data.filter(d => d.mode_of_payment_type === "Cash").reduce((s, d) => s + d.paid_amount, 0);
+
+        const cards = [
+            { label: "Total Received", value: format_cur(total_recv), sub: _txn_data.filter(d => d.payment_type === "Receive").length + " entries", color: "#16a34a" },
+            { label: "Total Paid", value: format_cur(total_pay), sub: total_count + " entries", color: "#dc2626" },
+            { label: "Bank", value: format_cur(bank_total), sub: "Bank transactions", color: "#2563eb" },
+            { label: "Cash", value: format_cur(cash_total), sub: "Cash transactions", color: "#d97706" },
+        ];
+        $("#txn-cards").html(cards.map(c => `
+            <div class="txn-card" style="border-left-color:${c.color};">
+                <div class="txn-card-label">${c.label}</div>
+                <div class="txn-card-value" style="color:${c.color};">${c.value}</div>
+                <div class="txn-card-sub">${c.sub}</div>
+            </div>
+        `).join(""));
+    }
+
+    function render_txn_charts() {
+        try {
+        // Chart 1: Pay vs Receive by Mode (donut/pie)
+        const mode_data = {
+            labels: ["Bank Pay", "Cash Pay", "Bank Receive", "Cash Receive"],
+            datasets: [{
+                values: [
+                    _txn_data.filter(d => d.payment_type === "Pay" && d.mode_of_payment_type === "Bank").reduce((s, d) => s + d.paid_amount, 0),
+                    _txn_data.filter(d => d.payment_type === "Pay" && d.mode_of_payment_type === "Cash").reduce((s, d) => s + d.paid_amount, 0),
+                    _txn_data.filter(d => d.payment_type === "Receive" && d.mode_of_payment_type === "Bank").reduce((s, d) => s + d.paid_amount, 0),
+                    _txn_data.filter(d => d.payment_type === "Receive" && d.mode_of_payment_type === "Cash").reduce((s, d) => s + d.paid_amount, 0),
+                ]
+            }]
+        };
+        const chart1 = new frappe.Chart("#txn-chart-mode", {
+            title: "Pay / Receive by Mode",
+            data: { labels: mode_data.labels, datasets: mode_data.datasets },
+            type: "donut",
+            height: 180,
+            colors: ["#dc2626", "#f87171", "#16a34a", "#4ade80"],
+            truncateLegends: true,
+        });
+
+        // Chart 2: Daily trend (bar)
+        const by_date = {};
+        _txn_data.forEach(d => {
+            const dt = d.posting_date;
+            if (!by_date[dt]) by_date[dt] = { pay: 0, receive: 0 };
+            if (d.payment_type === "Pay") by_date[dt].pay += d.paid_amount;
+            else by_date[dt].receive += d.paid_amount;
+        });
+        const dates = Object.keys(by_date).sort();
+        const chart2 = new frappe.Chart("#txn-chart-trend", {
+            title: "Daily Trend",
+            data: {
+                labels: dates,
+                datasets: [
+                    { name: "Paid", values: dates.map(d => by_date[d].pay) },
+                    { name: "Received", values: dates.map(d => by_date[d].receive) },
+                ]
+            },
+            type: "line",
+            height: 180,
+            colors: ["#dc2626", "#16a34a"],
+            axisOptions: { xIsSeries: true },
+            tooltipOptions: { formatTooltipY: v => format_cur(v) },
+        });
+        } catch (e) {
+            console.error("[txn] chart error:", e);
+            $("#txn-chart-mode").html("<p style='text-align:center;color:#888;padding:20px;'>Chart unavailable</p>");
+            $("#txn-chart-trend").html("<p style='text-align:center;color:#888;padding:20px;'>Chart unavailable</p>");
+        }
+    }
+
+    function render_txn_table() {
+        if (!_txn_data.length) {
+            $("#txn-table").html('<div style="padding:20px;text-align:center;color:#888;font-size:13px;">No transactions found for the selected filters.</div>');
+            return;
+        }
+        const rows = _txn_data.map(d => {
+            const is_highlight = _txn_highlight_name === d.name;
+            const type_color = d.payment_type === "Pay" ? "#dc2626" : "#16a34a";
+            const type_bg = d.payment_type === "Pay" ? "#fef2f2" : "#f0fdf4";
+            return `
+                <tr class="txn-row" data-name="${d.name}" style="${is_highlight ? 'animation: txn-glow 1.5s ease-in-out 3;' : ''}">
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;white-space:nowrap;">${fmt_date_ddmmyyyy(d.posting_date)}</td>
+                    <td style="text-align:center;vertical-align:middle;">
+                        <span style="background:${type_bg};color:${type_color};padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600;">${d.payment_type}</span>
+                    </td>
+                    <td style="vertical-align:middle;font-size:12px;font-weight:600;"><a href="${get_txn_link(d)}" target="_blank" style="color:#0F1568;text-decoration:none;">${d.name}</a></td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.party_type || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.party_name || d.party || "-"}</td>
+                    <td style="vertical-align:middle;font-size:12px;">${d.company}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:12px;">${d.mode_of_payment || d.mode_of_payment_type || "-"}</td>
+                    <td style="text-align:right;vertical-align:middle;font-size:12px;font-weight:600;color:${type_color};">${format_cur(d.paid_amount)}</td>
+                    <td style="text-align:center;vertical-align:middle;font-size:11px;">${d.reference_no || "-"}</td>
+                </tr>
+            `;
+        }).join("");
+        $("#txn-table").html(`
+            <table class="table table-bordered table-sm" style="margin:0;font-size:12px;">
+                <thead style="background:#0F1568;color:white;">
+                    <tr>
+                        <th style="text-align:center;width:90px;">Date</th>
+                        <th style="text-align:center;width:70px;">Type</th>
+                        <th style="text-align:center;width:140px;">Entry No</th>
+                        <th>Party Type</th>
+                        <th>Party</th>
+                        <th>Company</th>
+                        <th style="text-align:center;width:80px;">Mode</th>
+                        <th style="text-align:right;width:110px;">Amount</th>
+                        <th style="text-align:center;width:80px;">Ref No</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        `);
+        // Clear highlight after animation
+        if (_txn_highlight_name) {
+            setTimeout(() => { _txn_highlight_name = null; }, 5000);
+        }
+    }
+
+    function format_cur(v) {
+        return frappe.format(v || 0, { fieldtype: "Currency" });
+    }
+
+    function fmt_date_ddmmyyyy(dt) {
+        if (!dt) return "";
+        const parts = dt.split("-");
+        if (parts.length === 3) return parts[2] + "-" + parts[1] + "-" + parts[0];
+        return dt;
+    }
+
+    function get_txn_link(d) {
+        if (d.doctype_source === "Journal Entry") return "/app/journal-entry/" + d.name;
+        return "/app/payment-entry/" + d.name;
+    }
+
+    // Wire up filter and refresh buttons
+    $(document).off("click", "#txn-filter-btn").on("click", "#txn-filter-btn", () => load_transactions());
+    $(document).off("click", "#txn-refresh-btn").on("click", "#txn-refresh-btn", () => load_transactions());
+
+    // Set default date range (last 30 days) and load on page load
+    function init_txn_filters() {
+        const today = frappe.datetime.get_today();
+        const from = today;
+        $("#txn-from-date").val(from);
+        $("#txn-to-date").val(today);
+        // Make company field a link picker
+        $("#txn-company").attr("data-doctype", "Company").attr("placeholder", "All Companies");
+        // Make party field a link picker based on party type
+        $("#txn-party").attr("placeholder", "All Parties");
+    }
+    init_txn_filters();
+    // Transactions load on tab click, not on page load
+
+    // ============ DTR (Daily Transaction Report) ============
+    var _dtr_data = null;
+    var _dtr_date = frappe.datetime.get_today();
+
+    // Sub-tab switching within Transactions
+    $(document).off("click", ".txn-subtab-btn").on("click", ".txn-subtab-btn", function() {
+        var subtab = $(this).data("subtab");
+        $(".txn-subtab-btn").removeClass("active");
+        $(this).addClass("active");
+        $(".txn-subtab-content").hide();
+        $("#txn-subtab-" + subtab).show();
+        if (subtab === "dtr" && !_dtr_data) {
+            $("#dtr-date").val(_dtr_date);
+            load_dtr();
+        }
+    });
+
+    // DTR load button
+    $(document).off("click", "#dtr-load-btn").on("click", "#dtr-load-btn", function() {
+        _dtr_date = $("#dtr-date").val() || frappe.datetime.get_today();
+        load_dtr();
+    });
+
+    // DTR print button
+    $(document).off("click", "#dtr-print-btn").on("click", "#dtr-print-btn", function() {
+        print_dtr();
+    });
+
+    // DTR CSV button
+    $(document).off("click", "#dtr-csv-btn").on("click", "#dtr-csv-btn", function() {
+        download_dtr_csv();
+    });
+
+    // DTR tab switching
+    $(document).off("click", ".dtr-tab-btn").on("click", ".dtr-tab-btn", function() {
+        var tab = $(this).data("tab");
+        $(".dtr-tab-btn").removeClass("active");
+        $(this).addClass("active");
+        $(".dtr-tab-panel").hide();
+        $("#dtr-tab-" + tab).show();
+    });
+
+    function load_dtr() {
+        $("#dtr-cards").html('<div style="padding:20px;text-align:center;color:#888;font-size:13px;">Loading Daily Transaction Report for ' + dtr_date(_dtr_date) + '...</div>');
+        $("#dtr-tab-bankcash").html("");
+        $("#dtr-tab-sales").html("");
+        $("#dtr-tab-purchase").html("");
+        $("#dtr-tab-rp").html("");
+        $("#dtr-tab-summary").html("");
+
+        frappe.call({
+            method: "get_dtr_data",
+            args: { date: _dtr_date },
+            callback: function(r) {
+                if (r.message) {
+                    _dtr_data = r.message;
+                    render_dtr();
+                } else {
+                    $("#dtr-cards").html('<div style="padding:20px;text-align:center;color:#dc2626;font-size:13px;">Failed to load DTR data.</div>');
+                }
+            },
+            error: function() {
+                $("#dtr-cards").html('<div style="padding:20px;text-align:center;color:#dc2626;font-size:13px;">Error loading DTR data. Check console.</div>');
+            }
+        });
+    }
+
+    function dtr_fmt(n) {
+        if (n === null || n === undefined || n === "") return "";
+        return parseFloat(n).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function dtr_date(dt) {
+        if (!dt) return "";
+        var parts = dt.split("-");
+        if (parts.length === 3) return parts[2] + "-" + parts[1] + "-" + parts[0];
+        return dt;
+    }
+
+    function dtr_co(company) {
+        if (!company) return "";
+        if (company.indexOf("Food") >= 0) return "TFP";
+        if (company.indexOf("HR") >= 0 || company.indexOf("IT Services") >= 0) return "THIS";
+        return company.substring(0, 4);
+    }
+
+    function dtr_status_pill(status) {
+        var cls = "dtr-pill-draft";
+        if (status === "Submitted" || status === "Paid" || status === "Unpaid") cls = "dtr-pill-submitted";
+        if (status === "Cancelled") cls = "dtr-pill-cancelled";
+        if (status === "Approved") cls = "dtr-pill-approved";
+        return '<span class="dtr-pill ' + cls + '">' + status + "</span>";
+    }
+
+    function dtr_docstatus_pill(ds) {
+        if (ds === 0) return '<span class="dtr-pill dtr-pill-draft">Draft</span>';
+        if (ds === 1) return '<span class="dtr-pill dtr-pill-submitted">Submitted</span>';
+        if (ds === 2) return '<span class="dtr-pill dtr-pill-cancelled">Cancelled</span>';
+        return "";
+    }
+
+    function dtr_find_rp(voucherName, rpList) {
+        for (var i = 0; i < rpList.length; i++) {
+            var rp = rpList[i];
+            if (!rp.references) continue;
+            for (var j = 0; j < rp.references.length; j++) {
+                var ref = rp.references[j];
+                if (ref.payment_entry === voucherName || ref.book_entry === voucherName || ref.journal_entry === voucherName) return rp;
+            }
+        }
+        return null;
+    }
+
+    function dtr_card(label, value, color) {
+        return '<div class="dtr-card" style="border-left:4px solid ' + color + '"><div class="dtr-card-label">' + label + '</div><div class="dtr-card-value" style="color:' + color + '">' + value + "</div></div>";
+    }
+
+    function render_dtr() {
+        if (!_dtr_data) return;
+        var d = _dtr_data;
+        var pe = d.pe, je = d.je, si = d.si, pi = d.pi, rp = d.rp, bal = d.balances || {};
+        var movements = [], totalDr = 0, totalCr = 0, postedDr = 0, postedCr = 0;
+
+        pe.forEach(function(p) {
+            var isReceive = p.payment_type === "Receive";
+            var isPay = p.payment_type === "Pay";
+            var bankCashAcct, acctType, amount, isDr, against;
+            if (isReceive) { bankCashAcct = p.paid_to; acctType = p.paid_to_account_type; amount = p.paid_amount; isDr = true; against = p.paid_from + " (Receivable)"; }
+            else if (isPay) { bankCashAcct = p.paid_from; acctType = p.paid_from_account_type; amount = p.paid_amount; isDr = false; against = p.paid_to + " (Payable)"; }
+            else { bankCashAcct = p.paid_from; acctType = p.paid_from_account_type; amount = p.paid_amount; isDr = false; against = p.paid_to; }
+            if (acctType !== "Bank" && acctType !== "Cash") return;
+            var rpMatch = dtr_find_rp(p.name, rp);
+            var isDraft = p.docstatus === 0;
+            var refStr = "";
+            if (p.references && p.references.length > 0) {
+                refStr = p.references.map(function(r) { return (r.reference_doctype || "").replace(" Invoice","I").replace("Sales ","S").replace("Purchase ","P") + " " + r.reference_name; }).join(", ");
+            }
+            movements.push({ voucher: p.name, co: dtr_co(p.company), type: "PE - " + p.payment_type, party: p.party_name || p.party || "", acct: bankCashAcct, acctType: acctType, against: against + (refStr ? " &middot; " + refStr : ""), dr: isDr ? amount : 0, cr: isDr ? 0 : amount, rp: rpMatch ? rpMatch.name : "", isDraft: isDraft, docstatus: p.docstatus });
+            if (isDr) { totalDr += amount; if (!isDraft) postedDr += amount; }
+            else { totalCr += amount; if (!isDraft) postedCr += amount; }
+        });
+
+        je.forEach(function(j) {
+            if (!j.accounts) return;
+            j.accounts.forEach(function(a) {
+                if (a.account_type !== "Bank" && a.account_type !== "Cash") return;
+                var rpMatch = dtr_find_rp(j.name, rp);
+                var isDraft = j.docstatus === 0;
+                var againstLeg = j.accounts.filter(function(x) { return x.account !== a.account; }).map(function(x) { return x.account + (x.party ? " (" + x.party + ")" : ""); }).join(", ");
+                movements.push({ voucher: j.name, co: dtr_co(j.company), type: "JE", party: j.pay_to_recd_from || "", acct: a.account, acctType: a.account_type, against: againstLeg, dr: a.debit || 0, cr: a.credit || 0, rp: rpMatch ? rpMatch.name : "", isDraft: isDraft, docstatus: j.docstatus });
+                totalDr += a.debit || 0; if (!isDraft) postedDr += a.debit || 0;
+                totalCr += a.credit || 0; if (!isDraft) postedCr += a.credit || 0;
+            });
+        });
+
+        var siTotal = si.reduce(function(s, x) { return s + (x.base_grand_total || 0); }, 0);
+        var siOutstanding = si.reduce(function(s, x) { return s + (x.outstanding_amount || 0); }, 0);
+        var piTotal = pi.reduce(function(s, x) { return s + (x.base_grand_total || 0); }, 0);
+        var piOutstanding = pi.reduce(function(s, x) { return s + (x.outstanding_amount || 0); }, 0);
+        var rpPending = rp.filter(function(r) { return r.status === "Approved"; }).reduce(function(s, r) { return s + (r.total_allocated_amount || 0); }, 0);
+
+        // Calculate per-account Dr/Cr from movements
+        var acctDrCr = {};
+        movements.forEach(function(m) {
+            var key = m.acct;
+            if (!key) return;
+            if (!acctDrCr[key]) acctDrCr[key] = { dr: 0, cr: 0, postedDr: 0, postedCr: 0 };
+            acctDrCr[key].dr += m.dr || 0;
+            acctDrCr[key].cr += m.cr || 0;
+            if (!m.isDraft) { acctDrCr[key].postedDr += m.dr || 0; acctDrCr[key].postedCr += m.cr || 0; }
+        });
+
+        // Sort accounts: THIS first, then TFP; Bank first, then Cash
+        var balKeys = Object.keys(bal).sort(function(a, b) {
+            var va = bal[a], vb = bal[b];
+            var ca = (va.company || "").indexOf("Food") >= 0 ? 1 : 0;
+            var cb = (vb.company || "").indexOf("Food") >= 0 ? 1 : 0;
+            if (ca !== cb) return ca - cb;
+            var ta = va.account_type === "Bank" ? 0 : 1;
+            var tb = vb.account_type === "Bank" ? 0 : 1;
+            if (ta !== tb) return ta - tb;
+            return (va.account_name || "").localeCompare(vb.account_name || "");
+        });
+
+        var totalOpening = 0, totalClosing = 0;
+        balKeys.forEach(function(k) {
+            totalOpening += Math.abs(bal[k].opening || 0);
+            totalClosing += Math.abs(bal[k].closing || 0);
+        });
+        var draftPending = totalDr - postedDr;
+        var netCash = totalDr - totalCr;
+        var netPosted = postedDr - postedCr;
+        var projectedClosing = totalClosing + draftPending;
+
+        // Summary cards
+        var cardsHtml = "";
+        cardsHtml += dtr_card("Payment Entries", pe.length, "#1d4ed8");
+        cardsHtml += dtr_card("Journal Entries", je.length, "#7c3aed");
+        cardsHtml += dtr_card("Sales Invoices", si.length, "#16a34a");
+        cardsHtml += dtr_card("Purchase Invoices", pi.length, "#d97706");
+        cardsHtml += dtr_card("Request Payments", rp.length, "#be185d");
+        cardsHtml += dtr_card("RP Matched", movements.filter(function(m){return m.rp;}).length, "#16a34a");
+        $("#dtr-cards").html(cardsHtml);
+
+        // Tab navigation
+        var tabNavHtml = "";
+        tabNavHtml += '<button class="dtr-tab-btn active" data-tab="bankcash">Bank &amp; Cash <span class="dtr-badge">' + movements.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="sales">Sales Invoices <span class="dtr-badge">' + si.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="purchase">Purchase Invoices <span class="dtr-badge">' + pi.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="rp">Request Payments <span class="dtr-badge">' + rp.length + "</span></button>";
+        tabNavHtml += '<button class="dtr-tab-btn" data-tab="summary">Day Summary</button>';
+        $("#dtr-tab-nav").html(tabNavHtml);
+
+        // Tab 1: Bank & Cash
+        var bcHtml = "";
+        // Balance table - all accounts
+        bcHtml += '<table class="dtr-table" style="margin-bottom:14px;border:1px solid #cbd5e1;"><thead><tr style="background:#1e293b;color:#fff;"><th>Account</th><th>Type</th><th>Co</th><th class="num">Opening</th><th class="num">Dr (In)</th><th class="num">Cr (Out)</th><th class="num">Net</th><th class="num">Closing</th></tr></thead><tbody>';
+        var prevCompany = "";
+        balKeys.forEach(function(k) {
+            var b = bal[k];
+            var co = dtr_co(b.company || "");
+            var acctName = b.account_name || k;
+            var acctType = b.account_type || "";
+            var openBal = b.opening || 0;
+            var closeBal = b.closing || 0;
+            var mvmt = acctDrCr[k] || { dr: 0, cr: 0, postedDr: 0, postedCr: 0 };
+            var net = (mvmt.dr || 0) - (mvmt.cr || 0);
+            var hasDraftMvmt = (mvmt.dr || 0) !== (mvmt.postedDr || 0) || (mvmt.cr || 0) !== (mvmt.postedCr || 0);
+            var openStr = Math.abs(openBal).toLocaleString("en-IN", {minimumFractionDigits:2,maximumFractionDigits:2}) + (openBal >= 0 ? " Dr" : " Cr");
+            var closeStr = Math.abs(closeBal).toLocaleString("en-IN", {minimumFractionDigits:2,maximumFractionDigits:2}) + (closeBal >= 0 ? " Dr" : " Cr");
+            var typePill = '<span class="dtr-pill dtr-pill-' + (acctType === "Bank" ? "bank" : "cash") + '">' + acctType + "</span>";
+            bcHtml += '<tr><td>' + acctName + '</td><td>' + typePill + '</td><td>' + co + '</td><td class="num">' + openStr + '</td><td class="num" style="color:#16a34a">' + dtr_fmt(mvmt.dr || 0) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(mvmt.cr || 0) + '</td><td class="num" style="color:' + (net >= 0 ? "#16a34a" : "#dc2626") + '">' + (net >= 0 ? "+" : "") + dtr_fmt(net) + '</td><td class="num" style="font-weight:700">' + closeStr + "</td></tr>";
+        });
+        // Total row
+        bcHtml += '<tr class="dtr-total"><td colspan="3">Total All Bank + Cash</td><td class="num">' + dtr_fmt(totalOpening) + ' Dr</td><td class="num" style="color:#16a34a">' + dtr_fmt(totalDr) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(totalCr) + '</td><td class="num">' + dtr_fmt(netCash) + '</td><td class="num">' + dtr_fmt(totalClosing) + ' Dr</td></tr>';
+        bcHtml += "</tbody></table>";
+
+        if (draftPending > 0) {
+            bcHtml += '<div class="dtr-alert dtr-alert-warn"><b>&#9888; ' + dtr_fmt(draftPending) + ' of inflows are in DRAFT</b> and not yet posted to GL. Projected closing: <b>' + dtr_fmt(projectedClosing) + ' Dr</b></div>';
+        }
+
+        // Movements table
+        bcHtml += '<table class="dtr-table"><thead><tr><th>Voucher #</th><th>Co</th><th>Type</th><th>Party</th><th>Bank/Cash Account</th><th>Acct Type</th><th>Against Leg</th><th class="num">Dr (Inflow)</th><th class="num">Cr (Outflow)</th><th>RP</th><th>Status</th></tr></thead><tbody>';
+        movements.forEach(function(m) {
+            var rowClass = m.isDraft ? ' class="dtr-draft-row"' : "";
+            var rpPill = m.rp ? '<span class="dtr-pill dtr-pill-match" title="Matched to ' + m.rp + '">&#10003; ' + m.rp + "</span>" : '<span class="dtr-pill dtr-pill-nomatch" title="No RP needed">&ndash;</span>';
+            var stPill = dtr_docstatus_pill(m.docstatus);
+            bcHtml += '<tr' + rowClass + '><td class="dtr-ref">' + m.voucher + "</td><td>" + m.co + "</td><td>" + m.type + "</td><td>" + m.party + "</td><td>" + (m.acct || "") + '</td><td><span class="dtr-pill dtr-pill-' + (m.acctType === "Bank" ? "bank" : "cash") + '">' + m.acctType + "</span></td><td>" + m.against + '</td><td class="num">' + (m.dr ? '<span style="color:#16a34a">' + dtr_fmt(m.dr) + "</span>" : "") + '</td><td class="num">' + (m.cr ? '<span style="color:#dc2626">' + dtr_fmt(m.cr) + "</span>" : "") + "</td><td>" + rpPill + "</td><td>" + stPill + "</td></tr>";
+        });
+        bcHtml += '<tr class="dtr-total"><td colspan="7">Total Bank &amp; Cash Movement</td><td class="num" style="color:#16a34a">' + dtr_fmt(totalDr) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(totalCr) + '</td><td colspan="2">' + movements.filter(function(m){return m.rp;}).length + " RP matched</td></tr>";
+        if (postedDr !== totalDr || postedCr !== totalCr) {
+            bcHtml += '<tr style="background:#fef3c7;font-style:italic;"><td colspan="7" style="color:#92400e;">&nbsp;&nbsp;of which Posted to GL</td><td class="num" style="color:#9ca3af">' + dtr_fmt(postedDr) + '</td><td class="num" style="color:#dc2626">' + dtr_fmt(postedCr) + '</td><td colspan="2" style="color:#92400e;">Net posted: ' + dtr_fmt(netPosted) + "</td></tr>";
+        }
+        bcHtml += "</tbody></table>";
+        bcHtml += '<div style="font-size:11px;color:#6b7280;margin:6px 0 0 2px;"><b>Dr</b> = money INTO bank/cash &middot; <b>Cr</b> = money OUT &middot; <span style="color:#9ca3af;font-style:italic;">Greyed rows = Draft (informational only)</span></div>';
+        $("#dtr-tab-bankcash").html(bcHtml);
+
+        // Tab 2: Sales Invoices
+        var siHtml = '<table class="dtr-table"><thead><tr><th>Invoice #</th><th>Co</th><th>Customer</th><th>Curr</th><th class="num">Grand Total</th><th class="num">Base (INR)</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>';
+        si.forEach(function(s) {
+            var rowClass = s.docstatus === 0 ? ' class="dtr-draft-row"' : "";
+            siHtml += '<tr' + rowClass + '><td class="dtr-ref">' + s.name + "</td><td>" + dtr_co(s.company) + "</td><td>" + (s.customer_name || s.customer || "") + "</td><td>" + (s.currency || "") + '</td><td class="num">' + dtr_fmt(s.grand_total) + '</td><td class="num">' + dtr_fmt(s.base_grand_total) + '</td><td class="num">' + dtr_fmt(s.outstanding_amount) + "</td><td>" + dtr_status_pill(s.status) + "</td></tr>";
+        });
+        siHtml += '<tr class="dtr-total"><td colspan="5">Total Sales (Base INR)</td><td class="num">' + dtr_fmt(siTotal) + '</td><td class="num">' + dtr_fmt(siOutstanding) + "</td><td>" + si.filter(function(s){return s.docstatus===1;}).length + " Submitted &middot; " + si.filter(function(s){return s.docstatus===0;}).length + " Draft</td></tr>";
+        siHtml += "</tbody></table>";
+        $("#dtr-tab-sales").html(siHtml);
+
+        // Tab 3: Purchase Invoices
+        var piHtml = '<table class="dtr-table"><thead><tr><th>Invoice #</th><th>Co</th><th>Supplier</th><th>Curr</th><th class="num">Grand Total</th><th class="num">Base (INR)</th><th class="num">Outstanding</th><th>Status</th></tr></thead><tbody>';
+        pi.forEach(function(p) {
+            var rowClass = p.docstatus === 0 ? ' class="dtr-draft-row"' : "";
+            piHtml += '<tr' + rowClass + '><td class="dtr-ref">' + p.name + "</td><td>" + dtr_co(p.company) + "</td><td>" + (p.supplier_name || p.supplier || "") + "</td><td>" + (p.currency || "") + '</td><td class="num">' + dtr_fmt(p.grand_total) + '</td><td class="num">' + dtr_fmt(p.base_grand_total) + '</td><td class="num">' + dtr_fmt(p.outstanding_amount) + "</td><td>" + dtr_status_pill(p.status) + "</td></tr>";
+        });
+        piHtml += '<tr class="dtr-total"><td colspan="5">Total Purchase (Base INR)</td><td class="num">' + dtr_fmt(piTotal) + '</td><td class="num">' + dtr_fmt(piOutstanding) + "</td><td>" + pi.filter(function(p){return p.docstatus===1;}).length + " Submitted &middot; " + pi.filter(function(p){return p.docstatus===0;}).length + " Draft</td></tr>";
+        piHtml += "</tbody></table>";
+        $("#dtr-tab-purchase").html(piHtml);
+
+        // Tab 4: Request Payments
+        var rpHtml = '<table class="dtr-table"><thead><tr><th>RP #</th><th>Req Date</th><th>Requested By</th><th>Co</th><th>Party</th><th>Against</th><th class="num">Amount</th><th>Linked Payment</th><th>Status</th></tr></thead><tbody>';
+        rp.forEach(function(r) {
+            if (!r.references || r.references.length === 0) {
+                rpHtml += '<tr><td class="dtr-ref">' + r.name + "</td><td>" + dtr_date(r.request_date || "") + "</td><td>" + (r.requested_by_name || "") + "</td><td>" + dtr_co(r.company) + '</td><td>-</td><td>-</td><td class="num">' + dtr_fmt(r.total_allocated_amount || 0) + '</td><td>-</td><td>' + dtr_status_pill(r.status) + "</td></tr>";
+            } else {
+                r.references.forEach(function(ref) {
+                    var linkedPay = ref.payment_entry || ref.journal_entry || ref.book_entry || "-";
+                    rpHtml += '<tr><td class="dtr-ref">' + r.name + "</td><td>" + dtr_date(r.request_date || "") + "</td><td>" + (r.requested_by_name || "") + "</td><td>" + dtr_co(r.company) + "</td><td>" + (ref.party || "-") + "</td><td>" + (ref.reference_type || "") + " " + (ref.reference_name || "") + '</td><td class="num">' + dtr_fmt(ref.allocated_amount || 0) + '</td><td class="dtr-ref">' + linkedPay + "</td><td>" + dtr_status_pill(r.status) + "</td></tr>";
+                });
+            }
+        });
+        rpHtml += "</tbody></table>";
+        $("#dtr-tab-rp").html(rpHtml);
+
+        // Tab 5: Day Summary
+        var sumHtml = "";
+        sumHtml += '<div class="dtr-alert dtr-alert-info"><b>Dr</b> = money into bank/cash &middot; <b>Cr</b> = money out. Cash Flow and Billing shown separately. Draft amounts not yet posted to GL.</div>';
+        // Cash flow cards
+        sumHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
+        sumHtml += dtr_card("Money In (Dr)", "+" + dtr_fmt(totalDr), "#16a34a");
+        sumHtml += dtr_card("Money Out (Cr)", "-" + dtr_fmt(totalCr), "#dc2626");
+        sumHtml += dtr_card("Net (All)", (netCash >= 0 ? "+" : "") + dtr_fmt(netCash), "#1d4ed8");
+        sumHtml += dtr_card("Net (Posted)", (netPosted >= 0 ? "+" : "") + dtr_fmt(netPosted), "#d97706");
+        sumHtml += "</div>";
+        // Billing cards
+        sumHtml += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;">';
+        sumHtml += dtr_card("Sales Billed", dtr_fmt(siTotal), "#16a34a");
+        sumHtml += dtr_card("Purchase Billed", dtr_fmt(piTotal), "#d97706");
+        sumHtml += dtr_card("Net New Billing", dtr_fmt(siTotal - piTotal), "#dc2626");
+        sumHtml += dtr_card("RP Pending Payout", dtr_fmt(rpPending), "#be185d");
+        sumHtml += "</div>";
+        // Real picture table
+        sumHtml += '<table class="dtr-table" style="margin-top:14px;"><thead><tr><th>The Real Picture</th><th class="num">Amount (INR)</th><th>Meaning</th></tr></thead><tbody>';
+        sumHtml += '<tr><td>Net Cash Movement (all, incl. draft)</td><td class="num" style="color:' + (netCash >= 0 ? "#16a34a" : "#dc2626") + '">' + (netCash >= 0 ? "+" : "") + dtr_fmt(netCash) + "</td><td>" + dtr_fmt(totalDr) + " in - " + dtr_fmt(totalCr) + " out</td></tr>";
+        sumHtml += '<tr><td>Net Cash Movement (posted to GL)</td><td class="num" style="color:' + (netPosted >= 0 ? "#16a34a" : "#dc2626") + '">' + (netPosted >= 0 ? "+" : "") + dtr_fmt(netPosted) + "</td><td>Drafts pending: " + dtr_fmt(draftPending) + "</td></tr>";
+        sumHtml += '<tr><td>Bank + Cash Closing (actual)</td><td class="num">' + dtr_fmt(totalClosing) + ' Dr</td><td>Posted balance</td></tr>';
+        sumHtml += '<tr><td>Bank + Cash Projected Closing</td><td class="num" style="color:#16a34a">' + dtr_fmt(projectedClosing) + ' Dr</td><td>If drafts submitted</td></tr>';
+        sumHtml += '<tr><td>New Receivables (Sales, unpaid)</td><td class="num">' + dtr_fmt(siOutstanding) + "</td><td>Will become cash when customers pay</td></tr>";
+        sumHtml += '<tr><td>New Payables (Purchase, outstanding)</td><td class="num" style="color:#dc2626">' + dtr_fmt(piOutstanding) + "</td><td>Will need payment</td></tr>";
+        sumHtml += '<tr><td>RP Approved - Awaiting Payout</td><td class="num" style="color:#d97706">' + dtr_fmt(rpPending) + "</td><td>Authorized but not disbursed</td></tr>";
+        sumHtml += '<tr class="dtr-grand"><td>Net Position (Projected Cash + Receivable - Payable)</td><td class="num">' + dtr_fmt(projectedClosing + siOutstanding - piOutstanding) + "</td><td>Projected cash + receivable - payable</td></tr>";
+        sumHtml += "</tbody></table>";
+
+        // Party-wise Receivables - overall outstanding as on date
+        var recvAll = d.recv_outstanding || [];
+        var recvTotalBilled = recvAll.reduce(function(s, r) { return s + (r.total_billed || 0); }, 0);
+        var recvTotalOut = recvAll.reduce(function(s, r) { return s + (r.total_outstanding || 0); }, 0);
+        if (recvAll.length > 0) {
+            sumHtml += '<table class="dtr-table" style="margin-top:14px;"><thead><tr><th colspan="5" style="background:#374151;">Party-wise Receivables (As on ' + dtr_date(_dtr_date) + ' - All Outstanding Sales Invoices)</th></tr><tr><th>Customer</th><th>Co</th><th class="num">Invoices</th><th class="num">Billed (INR)</th><th class="num">Outstanding (INR)</th></tr></thead><tbody>';
+            recvAll.forEach(function(r) {
+                sumHtml += '<tr><td>' + (r.customer_name || r.customer || "") + '</td><td>' + dtr_co(r.company) + '</td><td class="num">' + r.invoice_count + '</td><td class="num">' + dtr_fmt(r.total_billed) + '</td><td class="num" style="font-weight:600;">' + dtr_fmt(r.total_outstanding) + '</td></tr>';
+            });
+            sumHtml += '<tr class="dtr-total"><td colspan="3">Total Receivables (As on ' + dtr_date(_dtr_date) + ')</td><td class="num">' + dtr_fmt(recvTotalBilled) + '</td><td class="num">' + dtr_fmt(recvTotalOut) + '</td></tr>';
+            sumHtml += "</tbody></table>";
+        }
+
+        // Party-wise Payables - overall outstanding as on date
+        var payAll = d.pay_outstanding || [];
+        var payTotalBilled = payAll.reduce(function(s, p) { return s + (p.total_billed || 0); }, 0);
+        var payTotalOut = payAll.reduce(function(s, p) { return s + (p.total_outstanding || 0); }, 0);
+        if (payAll.length > 0) {
+            sumHtml += '<table class="dtr-table" style="margin-top:10px;"><thead><tr><th colspan="5" style="background:#374151;">Party-wise Payables (As on ' + dtr_date(_dtr_date) + ' - All Outstanding Purchase Invoices)</th></tr><tr><th>Supplier</th><th>Co</th><th class="num">Invoices</th><th class="num">Billed (INR)</th><th class="num">Outstanding (INR)</th></tr></thead><tbody>';
+            payAll.forEach(function(p) {
+                sumHtml += '<tr><td>' + (p.supplier_name || p.supplier || "") + '</td><td>' + dtr_co(p.company) + '</td><td class="num">' + p.invoice_count + '</td><td class="num">' + dtr_fmt(p.total_billed) + '</td><td class="num" style="font-weight:600;">' + dtr_fmt(p.total_outstanding) + '</td></tr>';
+            });
+            sumHtml += '<tr class="dtr-total"><td colspan="3">Total Payables (As on ' + dtr_date(_dtr_date) + ')</td><td class="num">' + dtr_fmt(payTotalBilled) + '</td><td class="num">' + dtr_fmt(payTotalOut) + '</td></tr>';
+            sumHtml += "</tbody></table>";
+        }
+
+        $("#dtr-tab-summary").html(sumHtml);
+    }
+
+    function print_dtr() {
+        if (!_dtr_data) { frappe.msgprint("Load the report first."); return; }
+        var win = window.open("", "_blank");
+        var css = "<style>" +
+            "@media print{body{padding:10px;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+            ".dtr-section-title{page-break-after:avoid;}" +
+            ".dtr-table{page-break-inside:auto;}" +
+            "tr{page-break-inside:avoid;}}" +
+            "body{font-family:Segoe UI,Arial,sans-serif;padding:20px;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact;}" +
+            ".dtr-doc-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #000;padding-bottom:12px;margin-bottom:16px;}" +
+            ".dtr-doc-header-left{flex:1;}" +
+            ".dtr-doc-header-right{text-align:right;}" +
+            ".dtr-doc-title{font-size:22px;font-weight:700;color:#000;margin:0;letter-spacing:0.5px;}" +
+            ".dtr-doc-subtitle{font-size:11px;color:#333;margin:2px 0 0;}" +
+            ".dtr-doc-meta{font-size:11px;color:#333;line-height:1.6;}" +
+            ".dtr-doc-meta b{color:#000;}" +
+            ".dtr-doc-date-box{border:2px solid #000;border-radius:6px;padding:6px 14px;display:inline-block;}" +
+            ".dtr-doc-date-label{font-size:9px;color:#333;text-transform:uppercase;letter-spacing:1px;}" +
+            ".dtr-doc-date-val{font-size:16px;font-weight:700;color:#000;}" +
+            ".dtr-section-title{font-size:14px;font-weight:700;color:#000;background:#d9d9d9;padding:6px 12px;border-bottom:2px solid #000;margin:20px 0 0;}" +
+            ".dtr-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:10px;border:1px solid #000;}" +
+            ".dtr-table th{background:#000;color:#fff;padding:6px 7px;text-align:left;border-bottom:1px solid #000;font-weight:600;}" +
+            ".dtr-table td{padding:4px 7px;border-bottom:1px solid #ccc;}" +
+            ".dtr-table tr:nth-child(even){background:#f2f2f2;}" +
+            ".dtr-table th.num,.dtr-table td.num{text-align:right;white-space:nowrap;}" +
+            ".dtr-total td{font-weight:700;background:#d9d9d9;border-top:2px solid #000;}" +
+            ".dtr-grand td{font-weight:700;background:#000;color:#fff;font-size:12px;}" +
+            ".dtr-draft-row{opacity:0.5;font-style:italic;color:#666;}" +
+            ".dtr-pill{display:inline-block;padding:1px 6px;border-radius:8px;font-size:8px;font-weight:600;border:1px solid #999;}" +
+            ".dtr-pill-draft{background:#eee;color:#333;border:1px solid #999;}" +
+            ".dtr-pill-submitted{background:#fff;color:#000;border:1px solid #000;}" +
+            ".dtr-pill-cancelled{background:#ccc;color:#000;text-decoration:line-through;}" +
+            ".dtr-pill-match{background:#fff;color:#000;border:1px solid #000;}" +
+            ".dtr-pill-nomatch{background:#fff;color:#999;border:1px solid #ccc;}" +
+            ".dtr-pill-bank{background:#eee;color:#000;border:1px solid #666;}" +
+            ".dtr-pill-cash{background:#fff;color:#000;border:1px solid #000;}" +
+            ".dtr-alert{border-radius:6px;padding:8px 12px;margin:8px 0;font-size:10px;border:1px solid #999;}" +
+            ".dtr-alert-info{background:#f2f2f2;border-left:4px solid #000;color:#000;}" +
+            ".dtr-alert-warn{background:#eee;border-left:4px solid #000;color:#000;}" +
+            ".dtr-ref{font-family:monospace;font-size:9px;color:#000;font-weight:600;}" +
+            ".dtr-card{border:1px solid #000;border-radius:4px;padding:6px 8px;background:#f2f2f2;display:inline-block;margin:2px;}" +
+            ".dtr-card-label{font-size:8px;color:#333;text-transform:uppercase;}" +
+            ".dtr-card-value{font-size:13px;font-weight:700;color:#000;}" +
+            ".dtr-cards-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px;}" +
+            ".dtr-footer{margin-top:20px;border-top:1px solid #000;padding-top:8px;font-size:9px;color:#333;text-align:center;}" +
+            "</style>";
+        win.document.write("<html><head><title>Daily Transaction Report - " + dtr_date(_dtr_date) + "</title>" + css + "</head><body>");
+
+        // Presentable document header
+        win.document.write("<div class='dtr-doc-header'>");
+        win.document.write("<div class='dtr-doc-header-left'>");
+        win.document.write("<div class='dtr-doc-title'>DAILY TRANSACTION REPORT</div>");
+        win.document.write("<div class='dtr-doc-subtitle'>TEAMPRO Group &middot; Consolidated Bank, Cash &amp; Billing Report</div>");
+        win.document.write("<div class='dtr-doc-meta' style='margin-top:8px;'>" +
+            "<b>Companies:</b> THIS (TEAMPRO HR &amp; IT Services) &middot; TFP (TEAMPRO Food Products)<br/>" +
+            "<b>Source:</b> ERPNext &middot; <b>Generated:</b> " + dtr_date(frappe.datetime.get_today()) + " " + frappe.datetime.now_time(true) +
+            "</div>");
+        win.document.write("</div>");
+        win.document.write("<div class='dtr-doc-header-right'>");
+        win.document.write("<div class='dtr-doc-date-box'>");
+        win.document.write("<div class='dtr-doc-date-label'>Report Date</div>");
+        win.document.write("<div class='dtr-doc-date-val'>" + dtr_date(_dtr_date) + "</div>");
+        win.document.write("</div>");
+        win.document.write("</div>");
+        win.document.write("</div>");
+
+        var panels = [
+            {sel: "#dtr-tab-bankcash", title: "1. Bank &amp; Cash Movements"},
+            {sel: "#dtr-tab-sales", title: "2. Sales Invoices"},
+            {sel: "#dtr-tab-purchase", title: "3. Purchase Invoices"},
+            {sel: "#dtr-tab-rp", title: "4. Request Payments"},
+            {sel: "#dtr-tab-summary", title: "5. Day Summary"}
+        ];
+        panels.forEach(function(p) {
+            var el = $(p.sel);
+            if (el.length && el.html().trim()) {
+                win.document.write("<div class='dtr-section-title'>" + p.title + "</div>");
+                win.document.write(el.html());
+            }
+        });
+
+        win.document.write("<div class='dtr-footer'>This is a system-generated report from ERPNext &middot; TEAMPRO Group &middot; Confidential</div>");
+        win.document.write("</body></html>");
+        win.document.close();
+        setTimeout(function() { win.print(); }, 500);
+    }
+
+    function download_dtr_csv() {
+        if (!_dtr_data) { frappe.msgprint("Load the report first."); return; }
+        var d = _dtr_data;
+        var csv = "Section,Voucher #,Company,Type,Party,Account,Dr (Inflow),Cr (Outflow),RP,Status\n";
+        d.pe.forEach(function(p) {
+            csv += "Bank & Cash," + p.name + "," + dtr_co(p.company) + ",PE-" + p.payment_type + "," + (p.party_name || "") + "," + (p.paid_to || p.paid_from || "") + "," + (p.payment_type === "Receive" ? p.paid_amount : "") + "," + (p.payment_type === "Pay" ? p.paid_amount : "") + ",," + p.status + "\n";
+        });
+        d.je.forEach(function(j) {
+            csv += "Bank & Cash," + j.name + "," + dtr_co(j.company) + ",JE," + (j.pay_to_recd_from || "") + ",,,," + (j.docstatus === 1 ? "Submitted" : "Draft") + "\n";
+        });
+        d.si.forEach(function(s) {
+            csv += "Sales Invoice," + s.name + "," + dtr_co(s.company) + ",Sales," + (s.customer_name || "") + ",,,," + s.status + "\n";
+        });
+        d.pi.forEach(function(p) {
+            csv += "Purchase Invoice," + p.name + "," + dtr_co(p.company) + ",Purchase," + (p.supplier_name || "") + ",,,," + p.status + "\n";
+        });
+        var blob = new Blob([csv], { type: "text/csv" });
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "Daily_Transaction_Report_" + dtr_date(_dtr_date) + ".csv";
+        a.click();
+        URL.revokeObjectURL(a.href);
+    }
+
+
+    $(`<style>
+
+        /* DTR Sub-tab buttons */
+        .txn-subtab-btn{
+            background:#e5e7eb;
+            color:#6b7280;
+            border:none;
+            padding:8px 16px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:13px;
+            margin:0 2px;
+        }
+        .txn-subtab-btn:hover{ background:#dbeafe; color:#1d4ed8; }
+        .txn-subtab-btn.active{ background:#0F1568; color:#fff; }
+
+        /* DTR Tab buttons */
+        .dtr-tab-btn{
+            background:#e5e7eb;
+            color:#6b7280;
+            border:none;
+            padding:7px 14px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:12px;
+        }
+        .dtr-tab-btn:hover{ background:#dbeafe; color:#1d4ed8; }
+        .dtr-tab-btn.active{ background:#1d4ed8; color:#fff; }
+        .dtr-badge{ background:rgba(255,255,255,0.3); padding:1px 6px; border-radius:8px; font-size:10px; margin-left:4px; }
+        .dtr-tab-btn:not(.active) .dtr-badge{ background:#f3f4f6; color:#6b7280; }
+
+        /* DTR Table */
+        .dtr-table{ width:100%; border-collapse:collapse; font-size:11.5px; margin-bottom:8px; }
+        .dtr-table th{ background:#f1f5f9; text-align:left; padding:6px 8px; font-weight:600; color:#334155; border-bottom:2px solid #cbd5e1; }
+        .dtr-table th.num, .dtr-table td.num{ text-align:right; white-space:nowrap; }
+        .dtr-table td{ padding:5px 8px; border-bottom:1px solid #eef2f7; vertical-align:top; }
+        .dtr-table tr:nth-child(even) td{ background:#fafbfc; }
+        .dtr-table tr:hover td{ background:#eff6ff; }
+        .dtr-total td{ font-weight:700; background:#e2e8f0 !important; border-top:2px solid #94a3b8; }
+        .dtr-grand td{ font-weight:700; background:#1d4ed8 !important; color:#fff !important; font-size:13px; }
+        .dtr-draft-row{ opacity:0.5; color:#9ca3af !important; font-style:italic; }
+        .dtr-draft-row td{ color:#9ca3af !important; }
+        .dtr-ref{ font-family:monospace; font-size:11px; color:#1e3a8a; }
+
+        /* DTR Pills */
+        .dtr-pill{ display:inline-block; padding:1px 7px; border-radius:10px; font-size:10px; font-weight:600; }
+        .dtr-pill-draft{ background:#fef3c7; color:#92400e; }
+        .dtr-pill-submitted{ background:#dcfce7; color:#166534; }
+        .dtr-pill-cancelled{ background:#fee2e2; color:#991b1b; }
+        .dtr-pill-approved{ background:#dbeafe; color:#1e40af; }
+        .dtr-pill-match{ background:#dcfce7; color:#166534; }
+        .dtr-pill-nomatch{ background:#fee2e2; color:#991b1b; }
+        .dtr-pill-bank{ background:#e0e7ff; color:#3730a3; }
+        .dtr-pill-cash{ background:#ffedd5; color:#9a3412; }
+
+        /* DTR Cards */
+        .dtr-card{ border:1px solid #e5e7eb; border-radius:6px; padding:8px 10px; background:#f9fafb; flex:1; min-width:120px; }
+        .dtr-card-label{ font-size:10px; color:#6b7280; text-transform:uppercase; letter-spacing:.3px; }
+        .dtr-card-value{ font-size:15px; font-weight:700; margin-top:2px; }
+
+        /* DTR Alerts */
+        .dtr-alert{ border-radius:6px; padding:10px 14px; margin:10px 0; font-size:12px; line-height:1.5; }
+        .dtr-alert-info{ background:#eff6ff; border:1px solid #bfdbfe; border-left:4px solid #3b82f6; color:#1e3a8a; }
+        .dtr-alert-warn{ background:#fffbeb; border:1px solid #fde68a; border-left:4px solid #f59e0b; color:#78350f; }
+
+        .nav-btn{
+            background:#0F1568;
+            color:white;
+            border:none;
+            padding:8px 14px;
+            border-radius:5px;
+            cursor:pointer;
+            font-weight:600;
+        }
+
+        .nav-btn:hover{
+            opacity:0.9;
+        }
+
+        .payment-btn{
+            background:#16a34a;
+            color:white;
+            border:none;
+            padding:8px 14px;
+            border-radius:5px;
+            cursor:pointer;
+            font-weight:600;
+        }
+        .payment-btn:hover{
+            opacity:0.9;
+        }
+
+        .main-tab-btn{
+            background:#e5e7eb;
+            color:#374151;
+            border:none;
+            padding:10px 28px;
+            border-radius:6px 6px 0 0;
+            cursor:pointer;
+            font-weight:600;
+            font-size:14px;
+            border-bottom:3px solid transparent;
+        }
+        .main-tab-btn.active{
+            background:#0F1568;
+            color:white;
+            border-bottom:3px solid #16a34a;
+        }
+        .main-tab-btn:hover{
+            opacity:0.9;
+        }
+
+        .txn-btn{
+            background:#7c3aed;
+            color:white;
+            border:none;
+            padding:8px 14px;
+            border-radius:5px;
+            cursor:pointer;
+            font-weight:600;
+        }
+        .txn-btn:hover{
+            opacity:0.9;
+        }
+
+        @keyframes txn-glow {
+            0%   { box-shadow: 0 0 5px #16a34a, 0 0 10px #16a34a; background:#dcfce7; }
+            50%  { box-shadow: 0 0 15px #16a34a, 0 0 25px #16a34a; background:#bbf7d0; }
+            100% { box-shadow: 0 0 5px #16a34a, 0 0 10px #16a34a; background:#dcfce7; }
+        }
+        .txn-row-glow {
+            animation: txn-glow 1.5s ease-in-out 3;
+        }
+
+        .txn-card {
+            flex: 1;
+            min-width: 160px;
+            background: #fff;
+            border-radius: 6px;
+            padding: 12px 16px;
+            border-left: 4px solid #0F1568;
+        }
+        .txn-card-label { font-size: 11px; color: #666; font-weight: 600; text-transform: uppercase; }
+        .txn-card-value { font-size: 22px; font-weight: 700; color: #0F1568; margin-top: 4px; }
+        .txn-card-sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+		.approvals-container{
+			padding-left:20px;
+			padding-right:20px;
+		}
+        .page-head.flex{
+            display:none !important;
+        }
+
+		/* Header */
+		.approval-table thead th{
+			background:#0F1568 !important;
+			color:white !important;
+			text-align:center;
+			vertical-align:middle;
+		}
+
+		/* Odd Rows */
+		.approval-table tbody tr:nth-child(odd){
+			background:#ffffff;
+		}
+
+		/* Even Rows */
+		.approval-table tbody tr:nth-child(even){
+			background:#E7E6EC;
+		}
+
+		/* Hover */
+		.approval-table tbody tr:hover{
+			background:#F3C98B !important;
+			cursor:pointer;
+			transition:0.2s;
+		}
+
+		/* Cell Alignment */
+		.approval-table td,
+		.approval-table th{
+			text-align:center;
+			vertical-align:middle;
+	}
+
+    .leave-section {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.leave-section-header {
+    background: #ffffff;
+    height: 40px;
+    
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 15px;
+    border-bottom: 1px solid #d1d5db;
+}
+
+.leave-section-body {
+    background: #f2f2f2;
+    padding: 10px;
+    overflow-x: auto;
+}
+
+.dashboard-card{
+    position: relative;
+    min-width: 100px;
+    width: auto;
+    background: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    overflow: hidden;
+    transition: .25s;
+    display: flex;
+    flex-direction: column;
+}
+
+.dashboard-card:hover{
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(0,0,0,.15);
+}
+	</style>`).appendTo("head");
+
+    load_leave_applications();
+    load_expense_claims();
+    load_att_table();
+    load_pur_table();
+    load_pur_inv_table();
+    load_sal_inv_table();
+};
+
+$(document).on("click", ".nav-btn", function () {
+
+    let target = $(this).data("target");
+
+    if (target === "leave-section") {
+
+        if ($("#leave-section").is(":hidden")) {
+            frappe.msgprint({
+                title: __("Information"),
+                message: __("No Leave Applications are pending for approval."),
+                indicator: "orange"
+            });
+            return;
+        }
+    }
+    else if (target === "expense-section") {
+
+        if ($("#expense-section").is(":hidden")) {
+            frappe.msgprint({
+                title: __("Information"),
+                message: __("No Expense Claims are pending for approval."),
+                indicator: "orange"
+            });
+            return;
+        }
+    }
+    else if (target === "att-section") {
+
+        if ($("#att-section").is(":hidden")) {
+            frappe.msgprint({
+                title: __("Information"),
+                message: __("No Attendance Requests are pending for approval."),
+                indicator: "orange"
+            });
+            return;
+        }
+    }
+    else if (target === "pur-section") {
+
+        if ($("#pur-section").is(":hidden")) {
+            frappe.msgprint({
+                title: __("Information"),
+                message: __("No Purchase Orders are pending for approval."),
+                indicator: "orange"
+            });
+            return;
+        }
+    }
+    else if (target === "pur-inv-section") {
+
+        if ($("#pur-inv-section").is(":hidden")) {
+            frappe.msgprint({
+                title: __("Information"),
+                message: __("No Purchase Invoices are pending for approval."),
+                indicator: "orange"
+            });
+            return;
+        }
+    }
+    else if (target === "sal-inv-section") {
+
+        if ($("#sal-inv-section").is(":hidden")) {
+            frappe.msgprint({
+                title: __("Information"),
+                message: __("No Sales Invoices are pending for approval."),
+                indicator: "orange"
+            });
+            return;
+        }
+    }
+
+    $("html, body").animate({
+        scrollTop: $("#" + target).offset().top
+    }, 500);
+});
+
+
+// function renderSimpleCard(selector, label, value, color = "#0d6efd", icon = "fa fa-chart-bar") {
+
+//     $(selector).html(`
+//         <div style="
+//             width:200px;
+//             background:#fff;
+//             border-radius:10px;
+//             box-shadow:0 2px 8px rgba(0,0,0,.1);
+//             overflow:hidden;">
+
+//             <div style="height:5px;background:${color};"></div>
+
+//             <div style="padding:20px;text-align:center;">
+
+//                 <i class="${icon}" style="font-size:30px;color:${color};"></i>
+
+//                 <div style="margin-top:10px;font-size:15px;font-weight:600;">
+//                     ${label}
+//                 </div>
+
+//                 <div style="margin-top:8px;font-size:28px;font-weight:bold;color:${color};">
+//                     ${value}
+//                 </div>
+
+//             </div>
+//         </div>
+//     `);
+// }
+
+function renderSimpleCard(selector, label, value, color = "#0d6efd", icon = "fa fa-chart-bar", subtitle = "") {
+
+    $(selector).html(`
+        <div style="
+            width:200px;
+            background:#fff;
+            border-radius:10px;
+            box-shadow:0 2px 8px rgba(0,0,0,.1);
+            overflow:hidden;">
+
+            <div style="height:5px;background:${color};"></div>
+
+            <div style="padding:20px;text-align:center;">
+
+
+                <div class="card-icon"
+                    style="background:${color}20;color:${color};width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;">
+                    <i class="${icon}"></i>
+                </div>
+
+                <div style="margin-top:10px;font-size:15px;font-weight:600;">
+                    ${label}
+                </div>
+
+                <div style="margin-top:8px;font-size:28px;font-weight:bold;color:${color};">
+                    ${value}
+                </div>
+
+                ${subtitle ? `
+                <div style="margin-top:4px;font-size:12px;color:#666;">
+                    ${subtitle}
+                </div>` : ''}
+
+            </div>
+        </div>
+    `);
+}
+
+function load_leave_applications() {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_leave_applications",
+        callback: function (r) {
+            let data = r.message || [];
+
+            // Leave Application
+            renderSimpleCard(
+                "#leave-card",
+                "Leave Applications",
+                data.length,
+                "#198754",
+                "fa fa-calendar-o",
+                "Pending Leave"
+            );
+
+            if (data.length === 0) {
+                $("#leave-section").hide();
+                return;
+            } else {
+                $("#leave-section").show();
+            }
+
+            let html = `
+                <table class="table table-bordered approval-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">ID</th>
+                            <th style="text-align:center;">Emp ID</th>
+                            <th style="text-align:center;">Emp Name</th>
+                            <th style="text-align:center;">From Date</th>
+                            <th style="text-align:center;">To Date</th>
+                            <th style="text-align:center;">Total</th>
+                            <th style="text-align:center;">Leave Type</th>
+                            <th style="text-align:center;">Reason</th>
+                            <th style="text-align:center;">Info</th>
+                            <th style="text-align:center;">Approve</th>
+                            <th style="text-align:center;">Reject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            function format_date(date) {
+                if (!date) return "-";
+                return frappe.datetime.str_to_user(date);
+            }
+
+            data.forEach((row, idx) => {
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/leave-application/${row.name}" target="_blank">
+                                ${row.name}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.employee || "-"}</td>
+                        <td style="text-align:left;">${row.employee_name || "-"}</td>
+                        <td style="text-align:center;">${format_date(row.from_date)}</td>
+                        <td style="text-align:center;">${format_date(row.to_date)}</td>
+                        <td style="text-align:center;">${row.total_leave_days || "-"}</td>
+                        <td style="text-align:left;">${row.leave_type || "-"}</td>
+                        <td style="text-align:left;">${row.description || "-"}</td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-xs btn-info"
+                                onclick="show_leave_details('${row.name}')">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-success btn-xs"
+                                onclick="approve_leave('${row.name}')">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-danger btn-xs"
+                                onclick="reject_leave('${row.name}')">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            $("#leave-table").html(html);
+        }
+    });
+}
+$(document).on("change", "#select_all", function () {
+
+    let checked = $(this).prop("checked");
+
+    $(".leave-check").prop("checked", checked);
+
+});
+// All ticed the top check auto tic
+$(document).on("change", ".leave-check", function () {
+
+    let total = $(".leave-check").length;
+    let checked = $(".leave-check:checked").length;
+
+    $("#select_all").prop("checked", total === checked);
+
+});
+
+window.bulk_approve = function () {
+
+    let selected = [];
+
+    $(".leave-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Documents Approved",
+                indicator: "green"
+            });
+
+            load_leave_applications();
+        }
+    });
+
+}
+
+window.bulk_reject = function () {
+
+    let selected = [];
+
+    $(".leave-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Documents Rejected",
+                indicator: "red"
+            });
+
+            load_leave_applications();
+        }
+    });
+
+}
+
+
+window.approve_leave = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve",
+        args: {
+            docs: [docname]
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Approved",
+                indicator: "green"
+            });
+
+            load_leave_applications();
+        }
+    });
+}
+
+window.reject_leave = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject",
+        args: {
+            docs: [docname]
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Rejected",
+                indicator: "red"
+            });
+
+            load_leave_applications();
+        }
+    });
+}
+
+window.show_leave_details = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_leave_details",
+        args: { docname: docname },
+        callback: function (r) {
+            if (!r.message) {
+                frappe.msgprint("No Details Found");
+                return;
+            }
+
+            let d = r.message;
+
+            let dialog = new frappe.ui.Dialog({
+                title: "Leave Application Details",
+                                fields: [
+                    { fieldtype: "HTML", fieldname: "details" }
+                ]
+            });
+
+            dialog.fields_dict.details.$wrapper.html(`
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width:25%;">Application ID</th>
+                        <td style="width:25%; text-align:left;">
+                            <a href="/app/leave-application/${d.name}" target="_blank">${d.name || "-"}</a>
+                        </td>
+                        <th style="width:25%;">Status</th>
+                        <td style="text-align:left;">${d.status || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Employee ID</th>
+                        <td style="text-align:left;">${d.employee || "-"}</td>
+                        <th>Employee Name</th>
+                        <td style="text-align:left;">${d.employee_name || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>From Date</th>
+                        <td style="text-align:center;">${d.from_date ? frappe.datetime.str_to_user(d.from_date) : "-"}</td>
+                        <th>To Date</th>
+                        <td style="text-align:center;">${d.to_date ? frappe.datetime.str_to_user(d.to_date) : "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Days</th>
+                        <td style="text-align:center;">${d.total_leave_days || "-"}</td>
+                        <th>Leave Type</th>
+                        <td style="text-align:left;">${d.leave_type || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Half Day</th>
+                        <td style="text-align:center;">${d.half_day ? "Yes" : "No"}</td>
+                        <th>Half Day Date</th>
+                        <td style="text-align:center;">${d.half_day_date ? frappe.datetime.str_to_user(d.half_day_date) : "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Session</th>
+                        <td style="text-align:left;">${d.custom_session || "-"}</td>
+                        <th>Reason</th>
+                        <td style="text-align:left;">${d.description || "-"}</td>
+                    </tr>
+                </table>
+            `);
+
+            dialog.show();
+        }
+    });
+}
+
+function load_expense_claims() {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_expense_claims",
+        callback: function (r) {
+
+            let data = r.message || [];
+            renderSimpleCard("#expense-card", "Expense Claims", data.length, "#fd7e14", "fa fa-money", "Pending Expense");
+
+            if (data.length === 0) {
+                $("#expense-section").hide();
+                return;
+            } else {
+                $("#expense-section").show();
+            }
+
+
+            let html = `
+        <table class="table table-bordered approval-table">
+            <thead>
+                <tr>
+                    <th style="text-align:center;">S#</th>
+                    <th style="text-align:center;">ID</th>
+                    <th style="text-align:center;">Emp ID</th>
+                    <th style="text-align:center;">Emp Name</th>
+                    <th style="text-align:center;">Status</th>
+                    <th style="text-align:center;">Grand Total</th>
+                    <th style="text-align:center;">Info</th>
+                    <th style="text-align:center;">Approve</th>
+                    <th style="text-align:center;">Reject</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+            data.forEach((row, idx) => {
+                html += `
+            <tr>
+                <td style="text-align:center;">${idx + 1}</td>
+                <td style="text-align:left;">
+                    <a href="/app/expense-claim/${row.name}" target="_blank">
+                        ${row.name}
+                    </a>
+                </td>
+                <td style="text-align:left;">${row.employee}</td>
+                <td style="text-align:left;">${row.employee_name}</td>
+                <td style="text-align:left;">${row.workflow_state}</td>
+                <td style="text-align:right;">₹${parseFloat(row.grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                <td style="text-align:center;">
+                    <button class="btn btn-xs btn-info"
+                        onclick="show_expense_details('${row.name}')">
+                        <i class="fa fa-info-circle"></i>
+                    </button>
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn btn-success btn-xs"
+                        onclick="approve_expense('${row.name}')">
+                        <i class="fa fa-check"></i>
+                    </button>
+                </td>
+                <td style="text-align:center;">
+                    <button class="btn btn-danger btn-xs"
+                        onclick="reject_expense('${row.name}')">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+            `;
+            });
+
+            html += `</tbody></table>`;
+
+            $("#expense-table").html(html);
+        }
+    });
+}
+
+$(document).on("change", "#expense_select_all", function () {
+
+    $(".expense-check").prop(
+        "checked",
+        $(this).prop("checked")
+    );
+
+});
+
+window.show_expense_details = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_expense_details",
+        args: { docname: docname },
+        callback: function (r) {
+            if (!r.message) {
+                frappe.msgprint("No Details Found");
+                return;
+            }
+
+            let d = r.message;
+
+            // Child table rows
+            let expenseRows = "";
+            (d.expenses || []).forEach((row, idx) => {
+                const meetLogLink = row.custom_meet_log
+                    ? `<a href="/app/meet-log/${row.custom_meet_log}" target="_blank">${row.custom_meet_log}</a>`
+                    : "-";
+
+                expenseRows += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${row.expense_date ? frappe.datetime.str_to_user(row.expense_date) : "-"}</td>
+                        <td>${row.expense_type || "-"}</td>
+                        <td>${row.description || "-"}</td>
+                        <td>${meetLogLink}</td>
+                        <td>${row.custom_meetlog_distance || "-"}</td>
+                        <td>${row.amount || "-"}</td>
+                    </tr>
+                `;
+            });
+
+            let dialog = new frappe.ui.Dialog({
+                title: "Expense Claim Details",
+                size: "extra-large",
+                fields: [
+                    { fieldtype: "HTML", fieldname: "details" }
+                ]
+            });
+
+            dialog.fields_dict.details.$wrapper.html(`
+                <!-- Main Info -->
+                <table class="table table-bordered" style="margin-bottom:16px;">
+                    <tr>
+                        <th style="width:30%;">Claim ID</th>
+                        <td>${d.name || "-"}</td>
+                        <th style="width:30%;">Status</th>
+                        <td>${d.workflow_state || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Employee ID</th>
+                        <td>${d.employee || "-"}</td>
+                        <th>Employee Name</th>
+                        <td>${d.employee_name || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Grand Total</th>
+                        <td colspan="3"><strong>₹${d.grand_total || 0}</strong></td>
+                    </tr>
+                </table>
+
+                <!-- Expense Lines -->
+                <h4 style="font-weight:bold; margin-bottom:8px;">Expense Claims</h4>
+                <table class="table table-bordered table-sm text-center">
+                    <thead style="background:#002060; color:white;">
+                        <tr>
+                            <th>S#</th>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                            <th>Meet Log</th>
+                            <th>Distance</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${expenseRows || '<tr><td colspan="7">No expense lines found</td></tr>'}
+                    </tbody>
+                </table>
+            `);
+
+            dialog.show();
+        }
+    });
+};
+
+$(document).on("change", ".expense-check", function () {
+
+    let total = $(".expense-check").length;
+    let checked = $(".expense-check:checked").length;
+
+    $("#expense_select_all").prop(
+        "checked",
+        total === checked
+    );
+
+});
+
+window.bulk_expense_approve = function () {
+
+    let selected = [];
+
+    $(".expense-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one Expense Claim."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.expense_approve",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Expense Claims Processed",
+                indicator: "green"
+            });
+
+            load_expense_claims();
+        }
+    });
+
+}
+
+window.bulk_expense_reject = function () {
+
+    let selected = [];
+
+    $(".expense-check:checked").each(function () {
+        selected.push($(this).val());
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one Expense Claim."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.expense_reject",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Expense Claims Rejected",
+                indicator: "red"
+            });
+
+            load_expense_claims();
+        }
+    });
+
+}
+
+window.approve_expense = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.expense_approve",
+        args: {
+            docs: [docname]
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Expense Claim Approved",
+                indicator: "green"
+            });
+
+            load_expense_claims();
+        }
+    });
+
+}
+
+window.reject_expense = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.expense_reject",
+        args: {
+            docs: [docname]
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Expense Claim Rejected",
+                indicator: "red"
+            });
+
+            load_expense_claims();
+        }
+    });
+
+}
+
+function load_att_table() {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_att_applications",
+        callback: function (r) {
+            let data = r.message || [];
+
+            renderSimpleCard(
+                "#attendance-card",
+                "Attendance Requests",
+                data.length,
+                "#0dcaf0",
+                "fa fa-calendar",
+                "Pending Att Request"
+            );
+
+            if (data.length === 0) {
+                $("#att-section").hide();
+                return;
+            } else {
+                $("#att-section").show();
+            }
+
+            let html = `
+                <table class="table table-bordered approval-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">ID</th>
+                            <th style="text-align:center;">Emp ID</th>
+                            <th style="text-align:center;">Emp Name</th>
+                            <th style="text-align:center;">From Date</th>
+                            <th style="text-align:center;">To Date</th>
+                            <th style="text-align:center;">Total</th>
+                            <th style="text-align:center;">Reason</th>
+                            <th style="text-align:center;">Status</th>
+                            <th style="text-align:center;">Info</th>
+                            <th style="text-align:center;">Approve</th>
+                            <th style="text-align:center;">Reject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            function format_date(date) {
+                if (!date) return "-";
+                return frappe.datetime.str_to_user(date);
+            }
+
+            data.forEach((row, idx) => {
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/attendance-request/${row.name}" target="_blank">
+                                ${row.name}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.employee || "-"}</td>
+                        <td style="text-align:left;">${row.employee_name || "-"}</td>
+                        <td style="text-align:center;">${format_date(row.from_date)}</td>
+                        <td style="text-align:center;">${format_date(row.to_date)}</td>
+                        <td style="text-align:center;">${row.total_days || "-"}</td>
+                        <td style="text-align:left;">${row.reason || "-"}</td>
+                        <td style="text-align:left;">${row.workflow_state || "-"}</td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-xs btn-info"
+                                onclick="show_att_details('${row.name}')">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-success btn-xs"
+                                onclick="approve_att('${row.name}')">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-danger btn-xs"
+                                onclick="reject_att('${row.name}')">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            $("#att-table").html(html);
+        }
+    });
+}
+$(document).on("change", "#att_select_all", function () {
+
+    let checked = $(this).prop("checked");
+
+
+
+    $(".att-check").prop("checked", checked);
+
+});
+// All ticed the top check auto tic
+$(document).on("change", ".att-check", function () {
+
+    let total = $(".att-check").length;
+    let checked = $(".att-check:checked").length;
+
+    $("#att_select_all").prop("checked", total === checked);
+
+});
+
+window.bulk_att_approve = function () {
+
+    let selected = [];
+
+    $(".att-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve_att",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Documents Approved",
+                indicator: "green"
+            });
+
+            load_att_table();
+        }
+    });
+
+}
+
+window.bulk_att_reject = function () {
+
+    let selected = [];
+
+    $(".att-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject_att",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Documents Rejected",
+                indicator: "red"
+            });
+
+            load_att_table();
+        }
+    });
+
+}
+
+window.approve_att = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.approve_att",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Approved",
+                indicator: "green"
+            });
+
+            load_att_table();
+        }
+    });
+}
+
+window.reject_att = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.reject_att",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Rejected",
+                indicator: "red"
+            });
+
+            load_att_table();
+        }
+    });
+}
+window.show_att_details = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_att_details",
+        args: { docname: docname },
+        callback: function (r) {
+            if (!r.message) {
+                frappe.msgprint("No Details Found");
+                return;
+            }
+
+            let d = r.message;
+
+            let dialog = new frappe.ui.Dialog({
+                title: "Attendance Request Details",
+                                fields: [
+                    { fieldtype: "HTML", fieldname: "details" }
+                ]
+            });
+
+            dialog.fields_dict.details.$wrapper.html(`
+                <table class="table table-bordered">
+                    <tr>
+                        <th style="width:25%;">Application ID</th>
+                            <td style="width:25%;">
+                                <a href="/app/attendance-request/${d.name}" target="_blank">${d.name || "-"}</a>
+                            </td>
+                        <th style="width:25%;">Status</th>
+                        <td>${d.status || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Employee ID</th>
+                        <td>${d.employee || "-"}</td>
+                        <th>Employee Name</th>
+                        <td>${d.employee_name || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>From Date</th>
+                        <td>${d.from_date ? frappe.datetime.str_to_user(d.from_date) : "-"}</td>
+                        <th>To Date</th>
+                        <td>${d.to_date ? frappe.datetime.str_to_user(d.to_date) : "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Days</th>
+                        <td>${d.total_days || "-"}</td>
+                        <th>Reason</th>
+                        <td>${d.reason || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Half Day</th>
+                        <td>${d.half_day ? "Yes" : "No"}</td>
+                        <th>Half Day Date</th>
+                        <td>${d.half_day_date ? frappe.datetime.str_to_user(d.half_day_date) : "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Session</th>
+                        <td>${d.custom_session || "-"}</td>
+                        <th>Explanation</th>
+                        <td>${d.explanation || "-"}</td>
+                    </tr>
+                </table>
+            `);
+
+            dialog.show();
+        }
+    });
+}
+
+function load_pur_table() {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_pur_applications",
+        callback: function (r) {
+            let data = r.message || [];
+
+            renderSimpleCard("#po-card", "Purchase Orders", data.length, "#6f42c1", "fa fa-shopping-cart", "Pending PO");
+
+            if (data.length === 0) {
+                $("#pur-section").hide();
+                return;
+            } else {
+                $("#pur-section").show();
+            }
+
+            let html = `
+                <table class="table table-bordered approval-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">ID</th>
+                            <th style="text-align:center;">Supplier</th>
+                            <th style="text-align:center;">Date</th>
+                            <th style="text-align:center;">Required Date</th>
+                            <th style="text-align:center;">Service</th>
+                            <th style="text-align:center;">Qty</th>
+                            <th style="text-align:center;">Total</th>
+                            <th style="text-align:center;">Status</th>
+                            <th style="text-align:center;">Info</th>
+                            <th style="text-align:center;">Approve</th>
+                            <th style="text-align:center;">Reject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            function format_date(date) {
+                if (!date) return "-";
+                return frappe.datetime.str_to_user(date);
+            }
+
+            data.forEach((row, idx) => {
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/purchase-order/${row.name}" target="_blank">
+                                ${row.name}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.supplier || "-"}</td>
+                        <td style="text-align:center;">${format_date(row.transaction_date)}</td>
+                        <td style="text-align:center;">${format_date(row.schedule_date)}</td>
+                        <td style="text-align:left;">${row.custom_service || "-"}</td>
+                        <td style="text-align:center;">${row.total_qty || "-"}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:left;">${row.status || "-"}</td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-xs btn-info"
+                                onclick="show_pur_details('${row.name}')">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-success btn-xs"
+                                onclick="approve_pur('${row.name}')">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-danger btn-xs"
+                                onclick="reject_pur('${row.name}')">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            $("#pur-table").html(html);
+        }
+    });
+}
+
+$(document).on("change", "#pur_select_all", function () {
+
+    let checked = $(this).prop("checked");
+
+
+
+
+    $(".pur-check").prop("checked", checked);
+
+});
+// All ticed the top check auto tic
+$(document).on("change", ".pur-check", function () {
+
+    let total = $(".pur-check").length;
+    let checked = $(".pur-check:checked").length;
+
+    $("#pur_select_all").prop("checked", total === checked);
+
+});
+
+window.bulk_pur_approve = function () {
+
+    let selected = [];
+
+    $(".pur-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_approve_pur",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Documents Approved",
+                indicator: "green"
+            });
+
+            load_pur_table();
+        }
+    });
+
+}
+
+window.bulk_pur_reject = function () {
+
+    let selected = [];
+
+    $(".pur-check:checked").each(function () {
+
+        selected.push($(this).val());
+
+    });
+
+    if (selected.length == 0) {
+
+        frappe.msgprint({
+            title: "Message",
+            indicator: "red",
+            message: "Please select at least one document."
+        });
+
+        return;
+    }
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.bulk_reject_pur",
+        args: {
+            docs: selected
+        },
+        freeze: true,
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Documents Rejected",
+                indicator: "red"
+            });
+
+            load_pur_table();
+        }
+    });
+
+}
+
+window.approve_pur = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.approve_pur",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Approved",
+                indicator: "green"
+            });
+
+            load_pur_table();
+        }
+    });
+}
+
+window.reject_pur = function (docname) {
+
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.reject_pur",
+        args: {
+            docname: docname
+        },
+        callback: function (r) {
+
+            frappe.show_alert({
+                message: "Rejected",
+                indicator: "red"
+            });
+
+            load_pur_table();
+        }
+    });
+}
+
+window.show_pur_details = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_pur_details",
+        args: { docname: docname },
+        callback: function (r) {
+            if (!r.message) {
+                frappe.msgprint("No Details Found");
+                return;
+            }
+
+            let d = r.message;
+
+            // ✅ Attachments
+            window._current_attachments = d.attachments || [];
+
+            let attachmentBadges = "-";
+            if (d.attachments && d.attachments.length > 0) {
+                attachmentBadges = d.attachments.map((att, i) => `
+                    <span
+                        onclick="open_attachment_preview(${i})"
+                        style="
+                            display:inline-block;
+                            background:#4f46e5;
+                            color:white;
+                            border-radius:50%;
+                            width:24px; height:24px;
+                            line-height:24px;
+                            text-align:center;
+                            font-size:11px;
+                            font-weight:bold;
+                            cursor:pointer;
+                            margin-right:4px;
+                        "
+                        title="${att.file_name}"
+                    >${i + 1}</span>
+                `).join('');
+            }
+
+            let itemRows = "";
+            (d.items || []).forEach((row, idx) => {
+                let imageCell = "-";
+                if (row.image_view) {
+                    imageCell = `
+                        <a href="${row.image_view}" target="_blank" title="View Image">
+                            <i class="fa fa-eye" style="font-size:15px; color:#4f46e5; cursor:pointer;"></i>
+                        </a>
+                    `;
+                }
+                itemRows += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/item/${row.item_code}" target="_blank">
+                                ${row.item_code || "-"}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.item_name || "-"}</td>
+                        <td style="text-align:left;">${row.schedule_date ? frappe.datetime.str_to_user(row.schedule_date) : "-"}</td>
+                        <td style="text-align:left;">${row.expected_delivery_date ? frappe.datetime.str_to_user(row.expected_delivery_date) : "-"}</td>
+                        <td style="text-align:center;">${row.qty || "-"}</td>
+                        <td style="text-align:left;">${row.uom || "-"}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.rate || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
+            let dialog = new frappe.ui.Dialog({
+                title: "Purchase Order Details",
+                size: "extra-large",
+                fields: [{ fieldtype: "HTML", fieldname: "details" }]
+            });
+
+            dialog.fields_dict.details.$wrapper.html(`
+                <table class="table table-bordered" style="margin-bottom:16px;">
+                    <tr>
+                        <th style="width:25%;">Application ID</th>
+                        <td style="width:25%; text-align:left;">
+                            <a href="/app/purchase-order/${d.name}" target="_blank">${d.name || "-"}</a>
+                        </td>
+                        <th style="width:25%;">Status</th>
+                        <td style="text-align:left;">${d.status || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Supplier</th>
+                        <td style="text-align:left;">${d.supplier || "-"}</td>
+                        <th>Workflow</th>
+                        <td style="text-align:left;">${d.workflow_state || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Purchase Type</th>
+                        <td style="text-align:left;">${d.purchase_type || "-"}</td>
+                        <th>Payment Type</th>
+                        <td style="text-align:left;">${d.payment_type || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Date</th>
+                        <td style="text-align:left;">${d.transaction_date ? frappe.datetime.str_to_user(d.transaction_date) : "-"}</td>
+                        <th>Required By</th>
+                        <td style="text-align:left;">${d.schedule_date ? frappe.datetime.str_to_user(d.schedule_date) : "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Service</th>
+                        <td style="text-align:left;">${d.custom_service || "-"}</td>
+                        <th>Total Qty</th>
+                        <td style="text-align:center;">${d.total_qty || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Total</th>
+                        <td><strong>₹${parseFloat(d.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
+                        <th>Attachments</th>
+                        <td>${d.custom_attach_bill ? `<a href="${d.custom_attach_bill}" target="_blank" class="btn btn-xs btn-primary" title="Attach: Bill" style="margin-right:4px;color:#fff;"><i class="fa fa-paperclip"></i></a>` : ''}${attachmentBadges}</td>
+                    </tr>
+                </table>
+
+                <h4 style="font-weight:bold; margin-bottom:8px;">Items</h4>
+                <table class="table table-bordered table-sm">
+                    <thead style="background:#002060; color:white;">
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">Item Code</th>
+                            <th style="text-align:center;">Item Name</th>
+                            <th style="text-align:center;">Schedule Date</th>
+                            <th style="text-align:center;">Expected Delivery</th>
+                            <th style="text-align:center;">Qty</th>
+                            <th style="text-align:center;">UOM</th>
+                            <th style="text-align:center;">Rate</th>
+                            <th style="text-align:center;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemRows || '<tr><td colspan="10" style="text-align:center;">No items found</td></tr>'}
+                    </tbody>
+                </table>
+            `);
+
+            dialog.show();
+        }
+    });
+}
+
+
+
+function load_pur_inv_table() {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_pur_inv_applications",
+        callback: function (r) {
+            let data = r.message || [];
+            renderSimpleCard("#pi-card", "Purchase Invoices", data.length, "#dc3545", "fa fa-file-text", "Penidng PI");
+
+            if (data.length === 0) {
+                $("#pur-inv-section").hide();
+                return;
+            } else {
+                $("#pur-inv-section").show();
+            }
+
+            let html = `
+                <table class="table table-bordered approval-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">ID</th>
+                            <th style="text-align:center;">Supplier</th>
+                            <th style="text-align:center;">Date</th>
+                            <th style="text-align:center;">Due Date</th>
+                            <th style="text-align:center;">Service</th>
+                            <th style="text-align:center;">Bill No</th>
+                            <th style="text-align:center;">Total</th>
+                            <th style="text-align:center;">Info</th>
+                            <th style="text-align:center;">Approve</th>
+                            <th style="text-align:center;">Reject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            function format_date(date) {
+                if (!date) return "-";
+                return frappe.datetime.str_to_user(date);
+            }
+
+            data.forEach((row, idx) => {
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/purchase-invoice/${row.name}" target="_blank">
+                                ${row.name}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.supplier || "-"}</td>
+                        <td style="text-align:center;">${format_date(row.posting_date)}</td>
+                        <td style="text-align:center;">${format_date(row.due_date)}</td>
+                        <td style="text-align:left;">${row.services || "-"}</td>
+                        <td style="text-align:left;">${row.bill_no || "-"}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-xs btn-info"
+                                onclick="show_pur_inv_details('${row.name}')">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-success btn-xs"
+                                onclick="approve_pur_inv('${row.name}')">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-danger btn-xs"
+                                onclick="reject_pur_inv('${row.name}')">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            $("#pur-inv-table").html(html);
+        }
+    });
+}
+
+
+window.show_pur_inv_details = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_pur_inv_details",
+        args: { docname: docname },
+        callback: function (r) {
+            if (!r.message) {
+                frappe.msgprint("No Details Found");
+                return;
+            }
+
+            let d = r.message;
+
+            // ✅ Once declare, no duplicate
+            window._current_attachments = d.attachments || [];
+
+            let attachmentBadges = "-";
+            if (d.attachments && d.attachments.length > 0) {
+                attachmentBadges = d.attachments.map((att, i) => `
+                    <span 
+                        onclick="open_attachment_preview(${i})"
+                        style="
+                            display:inline-block;
+                            background:#4f46e5;
+                            color:white;
+                            border-radius:50%;
+                            width:24px; height:24px;
+                            line-height:24px;
+                            text-align:center;
+                            font-size:11px;
+                            font-weight:bold;
+                            cursor:pointer;
+                            margin-right:4px;
+                        "
+                        title="${att.file_name}"
+                    >${i + 1}</span>
+                `).join('');
+            }
+
+            let itemRows = "";
+            (d.items || []).forEach((row, idx) => {
+                itemRows += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/item/${row.item_code}" target="_blank">
+                                ${row.item_code || "-"}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.item_name || "-"}</td>
+                        <td style="text-align:center;">${row.qty || "-"}</td>
+                        <td style="text-align:left;">${row.uom || "-"}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.rate || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
+            let taxRows = "";
+            (d.taxes || []).forEach((row, idx) => {
+                taxRows += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">${row.charge_type || "-"}</td>
+                        <td style="text-align:left;">${row.account_head || "-"}</td>
+                        <td style="text-align:left;">${row.description || "-"}</td>
+                        <td style="text-align:center;">${row.rate || "-"}%</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_tax_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
+            let dialog = new frappe.ui.Dialog({
+                title: "Purchase Invoice Details",
+                size: "extra-large",
+                fields: [{ fieldtype: "HTML", fieldname: "details" }]
+            });
+
+            dialog.fields_dict.details.$wrapper.html(`
+                <table class="table table-bordered" style="margin-bottom:16px;">
+                    <tr>
+                        <th style="width:25%;">Invoice ID</th>
+                        <td style="width:25%; text-align:left;">
+                            <a href="/app/purchase-invoice/${d.name}" target="_blank">${d.name || "-"}</a>
+                        </td>
+                        <th style="width:25%;">Workflow</th>
+                        <td style="text-align:left;">${d.workflow_state || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Supplier</th>
+                        <td style="text-align:left;">${d.supplier || "-"}</td>
+                        <th>Bill No</th>
+                        <td style="text-align:left;">${d.bill_no || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Posting Date</th>
+                        <td style="text-align:left;">${d.posting_date ? frappe.datetime.str_to_user(d.posting_date) : "-"}</td>
+                        <th>Posting Time</th>
+                        <td style="text-align:left;">${d.posting_time || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Due Date</th>
+                        <td style="text-align:left;">${d.due_date ? frappe.datetime.str_to_user(d.due_date) : "-"}</td>
+                        <th>Service</th>
+                        <td style="text-align:left;">${d.services || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Total (Company Currency)</th>
+                        <td><strong>₹${parseFloat(d.base_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
+                        <th>Attachments</th>
+                        <td>${d.custom_attach_bill ? `<a href="${d.custom_attach_bill}" target="_blank" class="btn btn-xs btn-primary" title="Attach: Bill" style="margin-right:4px;color:#fff;"><i class="fa fa-paperclip"></i></a>` : ''}${attachmentBadges}</td>
+                    </tr>
+                    <tr>
+                        <th>Total Taxes & Charges (Company Currency)</th>
+                        <td><strong>₹${parseFloat(d.base_total_taxes_and_charges || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
+                        <th>Grand Total (Company Currency)</th>
+                        <td><strong>₹${parseFloat(d.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong></td>
+                    </tr>
+                </table>
+
+                <h4 style="font-weight:bold; margin-bottom:8px;">Items</h4>
+                <table class="table table-bordered table-sm">
+                    <thead style="background:#002060; color:white;">
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">Item Code</th>
+                            <th style="text-align:center;">Item Name</th>
+                            <th style="text-align:center;">Qty</th>
+                            <th style="text-align:center;">UOM</th>
+                            <th style="text-align:center;">Rate</th>
+                            <th style="text-align:center;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemRows || '<tr><td colspan="7" style="text-align:center;">No items found</td></tr>'}
+                    </tbody>
+                </table>
+
+                <h4 style="font-weight:bold; margin-bottom:8px;">Taxes</h4>
+                <table class="table table-bordered table-sm">
+                    <thead style="background:#002060; color:white;">
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">Type</th>
+                            <th style="text-align:center;">Account Head</th>
+                            <th style="text-align:center;">Description</th>
+                            <th style="text-align:center;">Rate</th>
+                            <th style="text-align:center;">Amount (Company Currency)</th>
+                            <th style="text-align:center;">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${taxRows || '<tr><td colspan="7" style="text-align:center;">No taxes found</td></tr>'}
+                    </tbody>
+                </table>
+            `);
+
+            dialog.show();
+        }
+    });
+}
+
+window.open_attachment_preview = function (index) {
+    const att = window._current_attachments[index];
+    if (!att) return;
+
+    const file_url = att.file_url;
+    const full_url = file_url.startsWith('http') ? file_url : window.location.origin + file_url;
+
+    // ✅ Direct open — no dialog, no confirm
+    window.open(full_url, '_blank');
+}
+
+// opne pdf via , the pdf is open in new tab
+
+// window.open_attachment_preview = function(index) {
+//     const att = window._current_attachments[index];
+//     if (!att) return;
+
+//     const file_url = att.file_url;
+//     const file_name = att.file_name;
+//     const full_url = file_url.startsWith('http') ? file_url : window.location.origin + file_url;
+
+//     const isPdf = file_name.toLowerCase().endsWith('.pdf');
+//     const isImage = /\.(png|jpg|jpeg|gif|webp)$/i.test(file_name);
+
+//     let preview_html = "";
+
+//     if (isPdf) {
+//         preview_html = `
+//             <div style="text-align:center; padding:30px;">
+//                 <i class="fa fa-file-pdf-o" style="font-size:40px; color:#ef4444;"></i>
+//                 <p style="margin-top:10px; font-weight:bold;">${file_name}</p>
+//                 <a href="${full_url}" target="_blank" class="btn btn-primary btn-sm">
+//                     <i class="fa fa-external-link"></i> Open PDF
+//                 </a>
+//             </div>
+//         `;
+//     } else if (isImage) {
+//         preview_html = `
+//             <img src="${full_url}" style="max-width:100%; max-height:500px; display:block; margin:auto;">
+//         `;
+//     } else {
+//         preview_html = `
+//             <div style="text-align:center; padding:30px;">
+//                 <i class="fa fa-file" style="font-size:40px; color:#4f46e5;"></i>
+//                 <p style="margin-top:10px; font-weight:bold;">${file_name}</p>
+//                 <a href="${full_url}" target="_blank" class="btn btn-primary btn-sm">
+//                     <i class="fa fa-download"></i> Download
+//                 </a>
+//             </div>
+//         `;
+//     }
+
+//     let att_dialog = new frappe.ui.Dialog({
+//         title: "Attachment",
+//         //         fields: [{ fieldtype: "HTML", fieldname: "preview" }]
+//     });
+
+//     att_dialog.fields_dict.preview.$wrapper.html(preview_html);
+//     att_dialog.show();
+// }
+
+window.approve_pur_inv = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.approve_pur_inv",
+        args: { docname: docname },
+        callback: function (r) {
+            if (r.message === "ok") {
+                frappe.show_alert({
+                    message: `${docname} Approved`,
+                    indicator: "green"
+                });
+                load_pur_inv_table();
+            }
+        }
+    });
+}
+
+
+function load_sal_inv_table() {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_sal_inv_applications",
+        callback: function (r) {
+            let data = r.message || [];
+            renderSimpleCard("#si-card", "Sales Invoices", data.length, "#20c997", "fa fa-file", "Pending SI");
+
+            if (data.length === 0) {
+                $("#sal-inv-section").hide();
+                return;
+            } else {
+                $("#sal-inv-section").show();
+            }
+
+            let html = `
+                <table class="table table-bordered approval-table">
+                    <thead>
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">ID</th>
+                            <th style="text-align:center;">Customer</th>
+                            <th style="text-align:center;">Posting Date</th>
+                            <th style="text-align:center;">RC Invoice</th>
+                            <th style="text-align:center;">POS Profile</th>
+                            <th style="text-align:center;">Service</th>
+                            <th style="text-align:center;">Company</th>
+                            <th style="text-align:center;">Total Qty</th>
+                            <th style="text-align:center;">Total</th>
+                            <th style="text-align:center;">Info</th>
+                            <th style="text-align:center;">Approve</th>
+                            <th style="text-align:center;">Reject</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            function format_date(date) {
+                if (!date) return "-";
+                return frappe.datetime.str_to_user(date);
+            }
+
+            data.forEach((row, idx) => {
+                html += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/sales-invoice/${row.name}" target="_blank">
+                                ${row.name}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.customer || "-"}</td>
+                        <td style="text-align:center;">${format_date(row.posting_date)}</td>
+                        <td style="text-align:left;">${row.custom_rc_invoice_ || "-"}</td>
+                        <td style="text-align:left;">${row.pos_profile || "-"}</td>
+                        <td style="text-align:left;">${row.services || "-"}</td>
+                        <td style="text-align:left;">${row.company || "-"}</td>
+                        <td style="text-align:center;">${row.total_qty || "-"}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_grand_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-xs btn-info"
+                                onclick="show_sal_inv_details('${row.name}')">
+                                <i class="fa fa-info-circle"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-success btn-xs"
+                                onclick="approve_sal_inv('${row.name}')">
+                                <i class="fa fa-check"></i>
+                            </button>
+                        </td>
+                        <td style="text-align:center;">
+                            <button class="btn btn-danger btn-xs"
+                                onclick="reject_sal_inv('${row.name}')">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            $("#sal-inv-table").html(html);
+        }
+    });
+}
+
+window.approve_sal_inv = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.approve_sal_inv",
+        args: { docname: docname },
+        callback: function (r) {
+            if (r.message === "ok") {
+                frappe.show_alert({
+                    message: `${docname} Approved`,
+                    indicator: "green"
+                });
+                load_sal_inv_table();
+            }
+        }
+    });
+}
+
+
+// window.show_sal_inv_details = function(docname) {
+//     frappe.call({
+//         method: "teampro.teampro.page.approvals.approvals.get_sal_inv_details",
+//         args: { docname: docname },
+//         callback: function(r) {
+//             if (!r.message) {
+//                 frappe.msgprint("No Details Found");
+//                 return;
+//             }
+
+//             let d = r.message;
+
+//             function fmt_date(date) {
+//                 return date ? frappe.datetime.str_to_user(date) : "-";
+//             }
+
+//             // Items table
+//             let itemRows = "";
+//             (d.items || []).forEach((row, idx) => {
+
+//                 let imageCell = "-";
+//                 if (row.image_view) {
+//                     imageCell = `
+//                         <a href="${row.image_view}" target="_blank" title="View Image">
+//                             <i class="fa fa-eye" style="font-size:15px; color:#4f46e5; cursor:pointer;"></i>
+//                         </a>
+//                     `;
+//                 }
+
+//                 itemRows += `
+//                     <tr>
+//                         <td style="text-align:center;">${idx + 1}</td>
+//                         <td style="text-align:left;">
+//                             <a href="/app/item/${row.item_code}" target="_blank">
+//                                 ${row.item_code || "-"}
+//                             </a>
+//                         </td>
+//                         <td style="text-align:left;">${row.item_name || "-"}</td>
+//                         <td style="text-align:center;">${row.qty || "-"}</td>
+//                         <td style="text-align:left;">${row.uom || "-"}</td>
+//                         <td style="text-align:center;">${row.stock_qty || "-"}</td>
+//                         <td style="text-align:right;">₹${parseFloat(row.rate || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+//                     </tr>
+//                 `;
+//             });
+
+//             // Taxes table
+//             let taxRows = "";
+//             (d.taxes || []).forEach((row, idx) => {
+//                 taxRows += `
+//                     <tr>
+//                         <td style="text-align:center;">${idx + 1}</td>
+//                         <td style="text-align:left;">${row.charge_type || "-"}</td>
+//                         <td style="text-align:left;">${row.account_head || "-"}</td>
+//                         <td style="text-align:left;">${row.description || "-"}</td>
+//                         <td style="text-align:center;">${row.rate || "-"}%</td>
+//                         <td style="text-align:right;">₹${parseFloat(row.base_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+//                     </tr>
+//                 `;
+//             });
+
+//             let dialog = new frappe.ui.Dialog({
+//                 title: "Sales Invoice Details",
+//                 size: "extra-large",
+//                 fields: [
+//                     { fieldtype: "HTML", fieldname: "details" }
+//                 ]
+//             });
+
+//             dialog.fields_dict.details.$wrapper.html(`
+//                 <!-- Main Info -->
+//                 <table class="table table-bordered" style="margin-bottom:16px;">
+//                     <tr>
+//                         <th style="width:25%;">Invoice ID</th>
+//                         <td style="width:25%; text-align:left;">
+//                             <a href="/app/sales-invoice/${d.name}" target="_blank">${d.name || "-"}</a>
+//                         </td>
+//                         <th style="width:25%;">Workflow</th>
+//                         <td style="text-align:left;">${d.workflow_state || "-"}</td>
+//                     </tr>
+//                     <tr>
+//                         <th>Customer</th>
+//                         <td style="text-align:left;">${d.customer || "-"}</td>
+//                         <th>Company</th>
+//                         <td style="text-align:left;">${d.company || "-"}</td>
+//                     </tr>
+//                     <tr>
+//                         <th>Posting Date</th>
+//                         <td style="text-align:left;">${fmt_date(d.posting_date)}</td>
+//                         <th>RC Invoice</th>
+//                         <td style="text-align:left;">${d.custom_rc_invoice_ || "-"}</td>
+//                     </tr>
+//                     <tr>
+//                         <th>POS Profile</th>
+//                         <td style="text-align:left;">${d.pos_profile || "-"}</td>
+//                         <th>Service</th>
+//                         <td style="text-align:left;">${d.services || "-"}</td>
+//                     </tr>
+//                     <tr>
+//                         <th>Total Qty</th>
+//                         <td style="text-align:center;">${d.total_qty || "-"}</td>
+//                         <th>Total</th>
+//                         <td style="text-align:right;">
+//                             <strong>₹${parseFloat(d.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
+//                         </td>
+//                     </tr>
+//                 </table>
+
+//                 <!-- Items Table -->
+//                 <h4 style="font-weight:bold; margin-bottom:8px;">Items</h4>
+//                 <table class="table table-bordered table-sm" style="margin-bottom:16px;">
+//                     <thead style="background:#002060; color:white;">
+//                         <tr>
+//                             <th style="text-align:center;">S#</th>
+//                             <th style="text-align:center;">Item Code</th>
+//                             <th style="text-align:center;">Item Name</th>
+//                             <th style="text-align:center;">Qty</th>
+//                             <th style="text-align:center;">UOM</th>
+//                             <th style="text-align:center;">Stock Qty</th>
+//                             <th style="text-align:center;">Rate</th>
+//                         </tr>
+//                     </thead>
+//                     <tbody>
+//                         ${itemRows || '<tr><td colspan="8" style="text-align:center;">No items found</td></tr>'}
+//                     </tbody>
+//                 </table>
+
+
+//             `);
+
+//             dialog.show();
+//         }
+//     });
+// }
+
+
+window.show_sal_inv_details = function (docname) {
+    frappe.call({
+        method: "teampro.teampro.page.approvals.approvals.get_sal_inv_details",
+        args: { docname: docname },
+        callback: function (r) {
+            if (!r.message) {
+                frappe.msgprint("No Details Found");
+                return;
+            }
+
+            let d = r.message;
+
+            function fmt_date(date) {
+                return date ? frappe.datetime.str_to_user(date) : "-";
+            }
+
+            // ✅ Attachments
+            window._current_attachments = d.attachments || [];
+
+            let attachmentBadges = "-";
+            if (d.attachments && d.attachments.length > 0) {
+                attachmentBadges = d.attachments.map((att, i) => `
+                    <span
+                        onclick="open_attachment_preview(${i})"
+                        style="
+                            display:inline-block;
+                            background:#4f46e5;
+                            color:white;
+                            border-radius:50%;
+                            width:24px; height:24px;
+                            line-height:24px;
+                            text-align:center;
+                            font-size:11px;
+                            font-weight:bold;
+                            cursor:pointer;
+                            margin-right:4px;
+                        "
+                        title="${att.file_name}"
+                    >${i + 1}</span>
+                `).join('');
+            }
+
+            // Items table
+            let itemRows = "";
+            (d.items || []).forEach((row, idx) => {
+                let imageCell = "-";
+                if (row.image_view) {
+                    imageCell = `
+                        <a href="${row.image_view}" target="_blank" title="View Image">
+                            <i class="fa fa-eye" style="font-size:15px; color:#4f46e5; cursor:pointer;"></i>
+                        </a>
+                    `;
+                }
+                itemRows += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">
+                            <a href="/app/item/${row.item_code}" target="_blank">
+                                ${row.item_code || "-"}
+                            </a>
+                        </td>
+                        <td style="text-align:left;">${row.item_name || "-"}</td>
+                        <td style="text-align:center;">${row.qty || "-"}</td>
+                        <td style="text-align:left;">${row.uom || "-"}</td>
+                        <td style="text-align:center;">₹${row.mrp || "-"}</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_net_amount || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
+            // Taxes table
+            let taxRows = "";
+            (d.taxes || []).forEach((row, idx) => {
+                taxRows += `
+                    <tr>
+                        <td style="text-align:center;">${idx + 1}</td>
+                        <td style="text-align:left;">${row.charge_type || "-"}</td>
+                        <td style="text-align:left;">${row.account_head || "-"}</td>
+                        <td style="text-align:left;">${row.description || "-"}</td>
+                        <td style="text-align:center;">${row.rate || "-"}%</td>
+                        <td style="text-align:right;">₹${parseFloat(row.base_total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</td>
+                    </tr>
+                `;
+            });
+
+            let dialog = new frappe.ui.Dialog({
+                title: "Sales Invoice Details",
+                size: "extra-large",
+                fields: [{ fieldtype: "HTML", fieldname: "details" }]
+            });
+
+            dialog.fields_dict.details.$wrapper.html(`
+                <table class="table table-bordered" style="margin-bottom:16px;">
+                    <tr>
+                        <th style="width:25%;">Invoice ID</th>
+                        <td style="width:25%; text-align:left;">
+                            <a href="/app/sales-invoice/${d.name}" target="_blank">${d.name || "-"}</a>
+                        </td>
+                        <th style="width:25%;">Workflow</th>
+                        <td style="text-align:left;">${d.workflow_state || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Customer</th>
+                        <td style="text-align:left;">${d.customer || "-"}</td>
+                        <th>Company</th>
+                        <td style="text-align:left;">${d.company || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Posting Date</th>
+                        <td style="text-align:left;">${fmt_date(d.posting_date)}</td>
+                        <th>RC Invoice</th>
+                        <td style="text-align:left;">${d.custom_rc_invoice_ || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Service</th>
+                        <td style="text-align:left;">${d.services || "-"}</td>
+                        <th>Total Qty</th>
+                        <td style="text-align:center;">${d.total_qty || "-"}</td>
+                    </tr>
+                    <tr>
+                        <th>Total</th>
+                        <td style="text-align:right;">
+                            <strong>₹${parseFloat(d.total || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}</strong>
+                        </td>
+                        <th>Attachments</th>
+                        <td>${attachmentBadges}</td>
+                    </tr>
+                    
+                </table>
+
+                <h4 style="font-weight:bold; margin-bottom:8px;">Items</h4>
+                <table class="table table-bordered table-sm" style="margin-bottom:16px;">
+                    <thead style="background:#002060; color:white;">
+                        <tr>
+                            <th style="text-align:center;">S#</th>
+                            <th style="text-align:center;">Item Code</th>
+                            <th style="text-align:center;">Item Name</th>
+                            <th style="text-align:center;">Qty</th>
+                            <th style="text-align:center;">UOM</th>
+                            <th style="text-align:center;">MRP</th>
+                            <th style="text-align:center;">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemRows || '<tr><td colspan="8" style="text-align:center;">No items found</td></tr>'}
+                    </tbody>
+                </table>
+
+
+            `);
+
+            dialog.show();
+        }
+    });
+
+
+}
+

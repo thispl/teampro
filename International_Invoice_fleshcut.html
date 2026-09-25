@@ -1,0 +1,148 @@
+<style>
+.print-format {
+    margin-top: 38mm;
+    margin-bottom: 26mm;
+    margin-left: 0mm;
+    margin-right: 0mm;
+    padding: 0 !important;
+    font-size: 11px;
+    font-family: "InterVariable", "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: #1a1a1a;
+}
+html, body { margin: 0 !important; padding: 0 !important; }
+.print-format-gutter { padding: 0 !important; margin: 0 !important; background: #fff !important; }
+
+/* Override pdf_header_footer.html defaults for full-bleed */
+body { padding: 0 !important; margin: 0 !important; border: 0 !important; }
+.letter-head { margin-top: 0 !important; text-align: left; }
+.letter-head img { width: 100% !important; height: auto !important; display: block; }
+.letter-head-footer { margin-top: 0 !important; height: 26mm; overflow: hidden; position: relative; text-align: center; }
+.letter-head-footer img { position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; }
+
+.fc-body { padding: 2mm 10mm 2mm 10mm; }
+.fc-title-row { width: 100%; margin-bottom: 6px; }
+.fc-title-row td { vertical-align: top; }
+.fc-title {
+    font-size: 20px; font-weight: 700; color: #231B4E; letter-spacing: 1px;
+    text-align: right; line-height: 1.1; margin: 0;
+}
+.fc-inv-no { text-align: right; font-size: 13px; font-weight: 700; color: #231B4E; margin: 2px 0 0 0; }
+.fc-date { text-align: right; font-size: 11px; margin: 2px 0 0 0; }
+.fc-info { width: 100%; margin-top: 8px; border-collapse: collapse; }
+.fc-info td { vertical-align: top; width: 50%; padding: 0 8px 0 0; }
+.fc-info td:last-child { padding-right: 0; }
+.fc-label { font-size: 10px; font-weight: 700; color: #231B4E; text-transform: uppercase; letter-spacing: .5px; margin: 6px 0 1px 0; }
+.fc-value { font-size: 11px; line-height: 1.45; margin: 0; }
+.fc-value.addr { white-space: pre-line; }
+.fc-table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+.fc-table th {
+    background-color: #D7DEE4 !important;
+    color: #231B4E; font-size: 10px; font-weight: 700;
+    text-transform: uppercase; padding: 6px 8px; border: 1px solid #c4ccd3;
+    -webkit-print-color-adjust: exact;
+}
+.fc-table td { padding: 8px; border: 1px solid #c4ccd3; font-size: 11px; vertical-align: top; }
+.fc-table th.sr, .fc-table td.sr { width: 28px; text-align: center; }
+.fc-table th.qty, .fc-table td.qty { width: 70px; text-align: center; }
+.fc-table th.rate, .fc-table td.rate { width: 90px; text-align: right; }
+.fc-table th.amt, .fc-table td.amt { width: 100px; text-align: right; }
+.fc-table td.desc p { margin: 0 0 4px 0; }
+.fc-table td.desc ol { margin: 0 0 0 18px; padding: 0; }
+.fc-table td.desc li { margin: 0 0 2px 0; }
+.fc-totals-wrap { width: 100%; margin-top: 8px; border-collapse: collapse; }
+.fc-totals-wrap td { vertical-align: top; }
+.fc-in-words { font-size: 11px; line-height: 1.5; padding-right: 10px; }
+.fc-in-words .fc-label { margin-top: 0; }
+.fc-totals { width: 100%; border-collapse: collapse; }
+.fc-totals td { padding: 3px 8px; font-size: 11px; }
+.fc-totals td.lbl { text-align: left; color: #231B4E; font-weight: 700; }
+.fc-totals td.val { text-align: right; font-weight: 700; }
+.fc-totals tr.grand td { border-top: 1px solid #231B4E; font-size: 13px; }
+.fc-terms { font-size: 10px; margin-top: 8px; line-height: 1.5; }
+</style>
+
+<div id="header-html" class="hidden-pdf">
+<div class="letter-head">{{ letter_head }}</div>
+</div>
+
+<div>
+    <table class="fc-title-row"><tr>
+        <td style="width:50%"></td>
+        <td style="width:50%; text-align:right;">
+            <div class="fc-title">SALES INVOICE</div>
+            <div class="fc-inv-no">{{ doc.name }}</div>
+            <div class="fc-date">Date: {{ frappe.utils.formatdate(doc.posting_date, "dd-MM-yyyy") }}</div>
+        </td>
+    </tr></table>
+
+    <table class="fc-info">
+    <tr>
+        <td>
+            <div class="fc-label">Bill To</div>
+            <p class="fc-value"><b>{{ doc.customer_name }}</b></p>
+            <p class="fc-value addr">{{ doc.address_display }}</p>
+            {% if doc.po_no %}
+            <div class="fc-label" style="margin-top:8px;">Customer's Purchase Order</div>
+            <p class="fc-value">{{ doc.po_no }}</p>
+            {% endif %}
+        </td>
+        <td>
+            <div class="fc-label">{{ doc.company }}</div>
+            <p class="fc-value addr">{{ doc.company_address_display }}</p>
+            <div class="fc-label" style="margin-top:8px;">Company GSTIN</div>
+            <p class="fc-value">{{ doc.company_gstin or '' }}</p>
+            {% if doc.company_pan_number %}
+            <div class="fc-label" style="margin-top:8px;">Company PAN Number</div>
+            <p class="fc-value">{{ doc.company_pan_number }}</p>
+            {% endif %}
+        </td>
+    </tr>
+    </table>
+
+    <table class="fc-table">
+        <thead>
+            <tr>
+                <th class="sr">Sr</th>
+                <th class="desc">Description</th>
+                <th class="qty">Quantity</th>
+                <th class="rate">Rate</th>
+                <th class="amt">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in doc.items %}
+            <tr>
+                <td class="sr">{{ d.idx }}</td>
+                <td class="desc">{{ d.description }}</td>
+                <td class="qty">{{ d.get_formatted("qty") }} {{ d.uom or '' }}</td>
+                <td class="rate">{{ d.get_formatted("rate") }}</td>
+                <td class="amt">{{ d.get_formatted("amount") }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <table class="fc-totals-wrap">
+    <tr>
+        <td style="width:55%">
+            <div class="fc-label">In Words</div>
+            <p class="fc-in-words">{{ doc.in_words }}</p>
+        </td>
+        <td style="width:45%">
+            <table class="fc-totals">
+                <tr><td class="lbl">Total</td><td class="val">{{ doc.get_formatted("total") }}</td></tr>
+                <tr class="grand"><td class="lbl">Grand Total</td><td class="val">{{ doc.get_formatted("grand_total") }}</td></tr>
+                <tr><td class="lbl">Net Total</td><td class="val">{{ doc.get_formatted("net_total") }}</td></tr>
+            </table>
+        </td>
+    </tr>
+    </table>
+
+    {% if doc.terms %}
+    <div class="fc-terms">{{ doc.terms }}</div>
+    {% endif %}
+</div>
+
+<div id="footer-html" class="visible-pdf">
+<div class="letter-head-footer">{{ footer }}</div>
+</div>

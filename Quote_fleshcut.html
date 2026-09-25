@@ -1,0 +1,235 @@
+<style>
+.print-format {
+    margin-top: 38mm;
+    margin-bottom: 26mm;
+    margin-left: 0mm;
+    margin-right: 0mm;
+    padding: 0 !important;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    color: #1a1a1a;
+}
+html, body { margin: 0 !important; padding: 0 !important; }
+.print-format-gutter { padding: 0 !important; margin: 0 !important; background: #fff !important; }
+
+/* Override pdf_header_footer.html defaults for full-bleed */
+body { padding: 0 !important; margin: 0 !important; border: 0 !important; }
+.letter-head { margin-top: 0 !important; text-align: left; }
+.letter-head img { width: 100% !important; height: auto !important; display: block; }
+.letter-head-footer { margin-top: 0 !important; height: 26mm; overflow: hidden; position: relative; text-align: center; }
+.letter-head-footer img { position: absolute !important; bottom: 0 !important; left: 0 !important; width: 100% !important; height: auto !important; }
+
+.print-heading { border-bottom: 1px solid #aaa; margin-bottom: 10px; margin-top: 0; }
+.print-heading h2 { margin: 0; }
+.column { width: 100%; }
+</style>
+
+<div id="header-html" class="hidden-pdf">
+<div class="letter-head">{{ letter_head }}</div>
+</div>
+
+<div>
+<div class="print-heading">
+<h2><div>Quotation</div>
+<small>{{ doc.name }}</small>
+</h2>
+</div>
+
+<div class="row section-break">
+<div class="col-xs-6 column-break">
+<div class="column">
+<table>
+    <tr>
+        <td colspan=2 style="white-space:nowrap"><b>Customer Name :</b></td>
+        <td colspan=2 style='font-size:15px'> <b>{{ doc.customer_name or "" }}</b></td>
+    </tr>
+    <tr>
+        <td colspan=2 ><b>Address :</b></td>
+        <td colspan=2> {{ doc.address_display or '' }}</td>
+    </tr>
+    <tr>
+        <td colspan=2 style="white-space:nowrap"><b> Delivery By :</b></td>
+         <td colspan=2> {{ doc.delivery_by_days or '' }} Days</td>
+    </tr>
+</table>
+</div>
+</div>
+<div class="col-xs-6 column-break">
+<div class="column" style="text-align:left">
+<table>
+    <tr>
+        <td><b>Date:</b></td>
+        <td> {{ frappe.utils.format_date(doc.transaction_date or "") }}</td>
+    </tr>
+    <tr>
+        <td><b> Valid Till:</b></td>
+        <td> {{ frappe.utils.format_date(doc.valid_till or '') }}</td>
+    </tr>
+    <tr>
+        <td><b>Company Name :</b></td>
+        <td> {{ doc.company or '' }} </td>
+    </tr>
+    <tr> <td nowrap><b>Company Address :</b> <td>{{ doc.company_address_display }}</td> </tr>
+    <tr>
+        <td ><b>Service :</b></td>
+        <td> {{ doc.service_name or "" }}</td>
+    </tr>
+</table>
+</div>
+</div>
+</div>
+
+<div class="row section-break">
+<div class="col-xs-12 column-break">
+<table>
+<tr>
+      <td style='text-align:left; font-size:14px' colspan="10">Thank you for Giving as an Opportunity to be at your Service ! Please find below list of item with best Quote for a Kind Consideration.</td>
+</tr>
+</table>
+</div>
+</div>
+
+<div class="row section-break">
+<div class="col-xs-12 column-break">
+<br>
+<table width="100%" style="border:1px solid #d3d3d3; border-collapse:collapse;font-family:Arial, sans-serif;">
+    <thead>
+        <tr>
+            <td style="font-size:13.5px;text-align:center;width:2px;font-weight:bold;background-color:#e6e6e6;border:1px solid #d3d3d3;">S#</td>
+            <td style="text-align:left;font-size:13.5px;width:50%;font-weight:bold;background-color:#e6e6e6;border:1px solid #d3d3d3;">Description</td>
+            <td style="text-align:center;font-size:13.5px;font-weight:bold;background-color:#e6e6e6;border:1px solid #d3d3d3;">Qty</td>
+            <td style="text-align:center;font-size:13.5px;font-weight:bold;background-color:#e6e6e6;border:1px solid #d3d3d3;">Rate</td>
+            <td style="text-align:center;font-size:13.5px;font-weight:bold;background-color:#e6e6e6;border:1px solid #d3d3d3;">Amount</td>
+        </tr>
+    </thead>
+    {% for i in doc.items %}
+    <tr>
+        <td style="font-size:13.5px;text-align:center;border:1px solid #d3d3d3;">{{ i.idx }}</td>
+        <td style="text-align:left;font-size:13.5px;border:1px solid #d3d3d3;">
+            <b>{{ i.item_code or "" }}</b><br>
+            {{ i.description or "" }}
+        </td>
+        <td style="text-align:right;font-size:13.5px;border:1px solid #d3d3d3;">
+            {% if i.qty == i.qty|int %}{{ i.qty|int }}{% else %}{{ i.qty }}{% endif %}
+            <br>{{ i.uom or '' }}
+        </td>
+        <td style="text-align:right;font-size:13.5px;border:1px solid #d3d3d3;white-space:nowrap;">{{ i.get_formatted("rate") }}</td>
+        <td style="text-align:right;font-size:13.5px;border:1px solid #d3d3d3;white-space:nowrap;">{{ i.get_formatted("amount") }}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br>
+</div>
+</div>
+
+{% if doc.pricing_rules %}
+<div class="row section-break" data-label="Pricing Rules">
+<div class="col-xs-12 column-break">
+<h4>Pricing Rule Detail</h4>
+<table class="table table-bordered table-condensed">
+    <thead>
+        <tr>
+            <th>Pricing Rule</th>
+            <th>Item Code</th>
+            <th>Margin Type</th>
+            <th>Rate Or Discount</th>
+            <th>Rule Applied</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for p in doc.pricing_rules %}
+        <tr>
+            <td>{{ p.pricing_rule or '' }}</td>
+            <td>{{ p.item_code or '' }}</td>
+            <td>{{ p.margin_type or '' }}</td>
+            <td>{{ p.rate_or_discount or '' }}</td>
+            <td>{{ p.rule_applied or '' }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div>
+</div>
+{% endif %}
+
+<div class="row section-break">
+<div class="col-xs-6 column-break">
+<label>In Words</label>
+<div class="value">{{ doc.in_words or '' }}</div>
+</div>
+<div class="col-xs-6 column-break">
+{% if doc.discount_amount %}
+<p><b>Discount Amount : </b> &nbsp; &nbsp; &nbsp;&nbsp; &nbsp; &nbsp; &nbsp;  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ₹ {{ doc.discount_amount + doc.rounding_adjustment }}</p>
+{% endif %}
+<div style="width: 100%; max-width: 400px;">
+    <p style="margin: 10px;margin-top:5px;">
+        <span style="display: inline-block; width: 180px;"><b>Total</b></span>:
+        <span style="display: inline-block; text-align: right; min-width: 100px;">{{ doc.get_formatted("total") }}</span>
+    </p>
+    {% for i in doc.taxes %}
+    <p style="margin: 10px;">
+        <span style="display: inline-block; width: 180px;"><b>{{ i.account_head }}</b></span>:
+        <span style="display: inline-block; text-align: right; min-width: 100px;">{{ i.get_formatted('tax_amount') }}</span>
+    </p>
+    {% endfor %}
+    <p style="margin: 10px;">
+        <span style="display: inline-block; width: 180px;"><b>Grand Total</b></span>:
+        <span style="display: inline-block; text-align: right; min-width: 100px;">{{ doc.get_formatted("grand_total") }}</span>
+    </p>
+</div>
+</div>
+</div>
+
+{% if doc.coupon_code or doc.referral_sales_partner %}
+<div class="row section-break" data-label="Additional Discount and Coupon Code">
+<div class="col-xs-6 column-break">
+{% if doc.coupon_code %}<div class="row data-field"><div class="col-xs-5"><label>Coupon Code: </label></div><div class="col-xs-7 value">{{ doc.coupon_code }}</div></div>{% endif %}
+</div>
+<div class="col-xs-6 column-break">
+{% if doc.referral_sales_partner %}<div class="row data-field"><div class="col-xs-5"><label>Referral Sales Partner: </label></div><div class="col-xs-7 value">{{ doc.referral_sales_partner }}</div></div>{% endif %}
+</div>
+</div>
+{% endif %}
+
+{% if doc.terms %}
+<div class="row section-break" data-label="Terms and Conditions">
+<div class="col-xs-12 column-break">
+{% set terms_html = doc.terms or '' %}
+{% set paragraphs = terms_html.split('</p>') %}
+<h4>Terms and Conditions</h4>
+<div class="terms-block">
+  {% for para in paragraphs %}
+    {% if para.strip() %}
+      <div style="page-break-inside:auto; page-break-after:auto; margin:2px 0;">
+        {{ para | safe }}
+      </div>
+    {% endif %}
+  {% endfor %}
+</div>
+{% endif %}
+</div>
+</div>
+
+<div class="row section-break">
+<div class="col-xs-12 column-break">
+<div class="terms-section" style='text-align:right;'>
+    <div class="info-card mt-40">
+        <div>With regards, </div>
+        <div>{{ doc.company }}</div>
+        {% if doc.service_name in ['IT-SW', 'IT-IS'] %}
+        <div>it.sw@groupteampro.com</div>
+        {% elif doc.service_name == 'TFP' %}
+        <div>tfp@groupteampro.com</div>
+        {% else %}
+        <div>hr@groupteampro.com</div>
+        {% endif %}
+    </div>
+</div>
+</div>
+</div>
+
+</div>
+
+<div id="footer-html" class="visible-pdf">
+<div class="letter-head-footer">{{ footer }}</div>
+</div>

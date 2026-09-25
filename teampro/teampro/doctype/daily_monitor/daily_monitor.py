@@ -1421,7 +1421,7 @@ def update_sprint_avl_time(doc, method):
 
     for row in doc.task_details:
         if row.cb:
-            grouped[row.cb]["allocated_hours"] += float(row.today_rt or 0)
+            grouped[row.cb]["allocated_hours"] += float(row.rt or 0)
             grouped[row.cb]["at_taken"] += float(row.at_taken or 0)
 
     # Clear and rebuild sprint_avl_time

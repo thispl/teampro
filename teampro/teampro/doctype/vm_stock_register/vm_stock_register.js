@@ -218,7 +218,8 @@ frappe.ui.form.on("VM Stock Register", {
                     doctype: "Stock Entry",
                     filters: {
                         custom_vm_stock_register: frm.doc.name,
-						docstatus:["in",[0,1]]
+						docstatus:["in",[0,1]],
+						// docstatus: 1
                     },
                     fields: ["name"],
                     limit_page_length: 1

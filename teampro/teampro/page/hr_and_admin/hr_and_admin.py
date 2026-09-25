@@ -758,3 +758,522 @@ def get_attendance_requests(request_type="Permission"):
             row.approver_code = "-"
 
     return data
+
+
+@frappe.whitelist()
+def get_leave_balance_table():
+    """Returns an HTML table showing the leave balance (remaining leaves)
+    of every active employee for Casual Leave and Compensatory Off,
+    along with Date of Joining and Leave Expiry Date."""
+
+    from frappe.utils import today, escape_html, formatdate
+
+    # Only these two leave types are shown
+    leave_types = ["Casual Leave", "Compensatory Off"]
+
+    active_emps = frappe.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        fields=["name", "employee_name", "department", "date_of_joining"],
+        order_by="employee_name"
+    )
+
+    if not active_emps:
+        return "<p style='text-align:center;padding:20px;'>No active employees found.</p>"
+
+    try:
+        from hrms.hr.doctype.leave_application.leave_application import get_leave_details
+    except Exception:
+        return "<p style='text-align:center;padding:20px;color:red;'>HRMS module not available.</p>"
+
+    today_str = today()
+
+    # Pre-fetch latest leave allocation to_date (expiry) per employee per leave type
+    expiry_map = {}
+    alloc_rows = frappe.db.sql("""
+        SELECT employee, leave_type, MAX(to_date) AS expiry_date
+        FROM `tabLeave Allocation`
+        WHERE docstatus = 1
+            AND leave_type IN %(lts)s
+            AND employee IN %(emps)s
+        GROUP BY employee, leave_type
+    """, {
+        "lts": tuple(leave_types),
+        "emps": tuple([e.name for e in active_emps])
+    }, as_dict=True)
+
+    for r in alloc_rows:
+        expiry_map.setdefault(r.employee, {})[r.leave_type] = r.expiry_date
+
+    # Build header cells — one column per leave type
+    header_cells = "".join([
+        f'<th style="position:sticky;top:0;background:#002060;color:white;text-align:center;white-space:nowrap;z-index:10;">{escape_html(lt)}</th>'
+        for lt in leave_types
+    ])
+
+    # First pass: compute leave details for each employee
+    emp_rows = []
+    for emp in active_emps:
+        try:
+            details = get_leave_details(emp.name, today_str)
+        except Exception:
+            details = {"leave_allocation": {}}
+
+        allocation = details.get("leave_allocation", {}) if isinstance(details, dict) else {}
+        emp_expiry = expiry_map.get(emp.name, {})
+
+        casual_alloc = allocation.get("Casual Leave", {})
+        casual_total = casual_alloc.get("total_leaves", 0) or 0
+        casual_remaining = casual_alloc.get("remaining_leaves", 0) or 0
+
+        emp_rows.append({
+            "emp": emp,
+            "allocation": allocation,
+            "emp_expiry": emp_expiry,
+            "casual_total": casual_total,
+            "casual_remaining": casual_remaining,
+        })
+
+    # Sort: Casual Leave applicable (total > 0) AND remaining > 0 first,
+    # then applicable but zero remaining, then not-applicable (total = 0).
+    # Within each group, sort by employee_name.
+    def sort_key(r):
+        if r["casual_total"] > 0 and r["casual_remaining"] > 0:
+            tier = 0  # applicable with balance
+        elif r["casual_total"] > 0:
+            tier = 1  # applicable but zero remaining
+        else:
+            tier = 2  # not applicable
+        return (tier, (r["emp"].employee_name or "").lower())
+
+    emp_rows.sort(key=sort_key)
+
+    rows_html = ""
+    for i, r in enumerate(emp_rows, start=1):
+        emp = r["emp"]
+        allocation = r["allocation"]
+        emp_expiry = r["emp_expiry"]
+
+        # Date of Joining
+        doj = emp.date_of_joining
+        doj_html = f'<td style="text-align:center;">{formatdate(doj) if doj else "-"}</td>'
+
+        # Leave balance cells
+        cells = ""
+        expiry_dates = []
+        for lt in leave_types:
+            alloc = allocation.get(lt, {})
+            remaining = alloc.get("remaining_leaves", 0) or 0
+            total = alloc.get("total_leaves", 0) or 0
+
+            if total > 0:
+                disp_remaining = int(remaining) if float(remaining).is_integer() else round(float(remaining), 1)
+                disp_total = int(total) if float(total).is_integer() else round(float(total), 1)
+                color = "#16a34a" if remaining > 0 else "#dc2626"
+                cells += (
+                    f'<td style="text-align:center;color:{color};font-weight:600;" '
+                    f'title="Remaining {disp_remaining} / Total {disp_total}">{disp_remaining}</td>'
+                )
+            else:
+                cells += '<td style="text-align:center;color:#9ca3af;">-</td>'
+
+            # Collect expiry date for this leave type
+            exp = emp_expiry.get(lt)
+            if exp:
+                expiry_dates.append((lt, exp))
+
+        # Leave Expiry Date — show the earliest upcoming expiry among the leave types
+        if expiry_dates:
+            expiry_dates.sort(key=lambda x: x[1])
+            expiry_label = formatdate(expiry_dates[0][1])
+            expiry_title = "; ".join([f"{lt}: {formatdate(d)}" for lt, d in expiry_dates])
+            expiry_html = f'<td style="text-align:center;" title="{escape_html(expiry_title)}">{expiry_label}</td>'
+        else:
+            expiry_html = '<td style="text-align:center;color:#9ca3af;">-</td>'
+
+        row_bg = "#ffffff" if i % 2 == 1 else "#e7e6ec"
+        rows_html += f"""
+            <tr style="background:{row_bg};">
+                <td style="text-align:center;">{i}</td>
+                <td style="text-align:center;">{escape_html(emp.name or "")}</td>
+                <td style="text-align:left;">{escape_html(emp.employee_name or "")}</td>
+                <td style="text-align:left;">{escape_html(emp.department or "-")}</td>
+                {doj_html}
+                {cells}
+                {expiry_html}
+            </tr>
+        """
+
+    html = f"""
+    <div style='max-height: 500px; overflow-y: auto; overflow-x: auto;'>
+        <div style='min-width: 900px;'>
+            <table class='table table-bordered' style='width: 100%; border-collapse: collapse; margin-bottom:0;'>
+                <thead>
+                    <tr>
+                        <th style="position:sticky;top:0;background:#002060;color:white;text-align:center;z-index:10;">S.No</th>
+                        <th style="position:sticky;top:0;background:#002060;color:white;text-align:center;white-space:nowrap;z-index:10;">Employee ID</th>
+                        <th style="position:sticky;top:0;background:#002060;color:white;text-align:center;z-index:10;">Employee Name</th>
+                        <th style="position:sticky;top:0;background:#002060;color:white;text-align:center;z-index:10;">Department</th>
+                        <th style="position:sticky;top:0;background:#002060;color:white;text-align:center;white-space:nowrap;z-index:10;">Date of Joining</th>
+                        {header_cells}
+                        <th style="position:sticky;top:0;background:#002060;color:white;text-align:center;white-space:nowrap;z-index:10;">Leave Expiry Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_html}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div style='text-align:right;font-size:11px;color:#6b7280;padding:6px 10px;'>
+        Values shown are remaining leaves as of {today_str}. Hover a balance cell to see remaining / total. Hover expiry date to see per leave type.
+    </div>
+    """
+
+    return html
+
+
+# ============================================================
+# DASHBOARD v2 — PR Scoring, Target Manager, EPNC, HR extras
+# ============================================================
+
+FISCAL_YEAR_MONTHS = [
+    "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+    "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"
+]
+
+MONTH_MAP = {
+    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+    "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+}
+
+
+def _current_fiscal_year():
+    """Return the Fiscal Year doc name covering today."""
+    fy = frappe.db.sql("""
+        SELECT name FROM `tabFiscal Year`
+        WHERE year_start_date <= CURDATE() AND year_end_date >= CURDATE()
+        ORDER BY year_start_date DESC LIMIT 1
+    """)
+    return fy[0][0] if fy else None
+
+
+@frappe.whitelist()
+def get_pr_scoring():
+    """Latest PR (Appraisal) scores — leaderboard for the most recent
+    submitted appraisal month, plus department averages and YTD totals."""
+    from frappe.utils import getdate
+
+    # Latest appraisal month that has submitted records
+    latest = frappe.db.sql("""
+        SELECT start_date, end_date
+        FROM `tabAppraisal`
+        WHERE docstatus = 1
+        ORDER BY start_date DESC
+        LIMIT 1
+    """, as_dict=True)
+
+    if not latest:
+        return {"month_label": None, "rows": [], "dept_avg": [], "summary": {}}
+
+    start_date = latest[0].start_date
+    end_date = latest[0].end_date
+    month_label = getdate(start_date).strftime("%B %Y")
+
+    rows = frappe.db.sql("""
+        SELECT
+            a.name, a.employee, a.employee_name, a.department, a.designation,
+            a.total_score, a.final_score, a.custom_grade, a.custom_total_ens,
+            a.appraisal_cycle, a.start_date, a.end_date
+        FROM `tabAppraisal` a
+        WHERE a.docstatus = 1
+            AND a.start_date = %(start)s
+            AND a.end_date = %(end)s
+        ORDER BY a.total_score DESC, a.employee_name
+    """, {"start": start_date, "end": end_date}, as_dict=True)
+
+    # Rank + PRS%
+    for i, r in enumerate(rows, start=1):
+        r["rank"] = i
+        r["prs"] = round((float(r.total_score or 0) / 5) * 100, 1)
+
+    # Pending (draft) appraisals for the same month
+    pending = frappe.db.sql("""
+        SELECT COUNT(*) AS cnt FROM `tabAppraisal`
+        WHERE docstatus = 0 AND start_date = %(start)s AND end_date = %(end)s
+    """, {"start": start_date, "end": end_date}, as_dict=True)[0].cnt
+
+    # Department averages
+    dept_avg = frappe.db.sql("""
+        SELECT department, ROUND(AVG(total_score), 2) AS avg_pr,
+               COUNT(*) AS emp_count
+        FROM `tabAppraisal`
+        WHERE docstatus = 1 AND start_date = %(start)s AND end_date = %(end)s
+        GROUP BY department
+        ORDER BY avg_pr DESC
+    """, {"start": start_date, "end": end_date}, as_dict=True)
+
+    # YTD totals per employee (all submitted appraisals this fiscal year)
+    fy_name = _current_fiscal_year()
+    ytd_map = {}
+    if fy_name:
+        fy = frappe.get_doc("Fiscal Year", fy_name)
+        ytd = frappe.db.sql("""
+            SELECT employee, SUM(total_score) AS ytd_pr, COUNT(*) AS cycles
+            FROM `tabAppraisal`
+            WHERE docstatus = 1
+                AND start_date >= %(start)s AND start_date <= %(end)s
+            GROUP BY employee
+        """, {"start": fy.year_start_date, "end": fy.year_end_date}, as_dict=True)
+        ytd_map = {r.employee: r for r in ytd}
+
+    for r in rows:
+        y = ytd_map.get(r.employee)
+        r["ytd_pr"] = round(float(y.ytd_pr), 2) if y else 0
+        r["cycles"] = y.cycles if y else 0
+
+    scores = [float(r.total_score or 0) for r in rows]
+    summary = {
+        "month_label": month_label,
+        "scored": len(rows),
+        "pending": pending,
+        "avg_pr": round(sum(scores) / len(scores), 2) if scores else 0,
+        "top_score": max(scores) if scores else 0,
+        "top_employee": rows[0].employee_name if rows else None,
+    }
+
+    return {"month_label": month_label, "rows": rows, "dept_avg": dept_avg, "summary": summary}
+
+
+@frappe.whitelist()
+def get_pr_employee_history(employee):
+    """Last 8 submitted appraisals for one employee — drill-down."""
+    rows = frappe.db.sql("""
+        SELECT name, employee, employee_name, department, designation,
+               total_score, final_score, custom_grade, custom_total_ens,
+               appraisal_cycle, custom_appraisal_cycle_month,
+               start_date, end_date, custom_reviewer_remark
+        FROM `tabAppraisal`
+        WHERE docstatus = 1 AND employee = %(emp)s
+        ORDER BY start_date DESC
+        LIMIT 8
+    """, {"emp": employee}, as_dict=True)
+
+    for r in rows:
+        r["prs"] = round((float(r.total_score or 0) / 5) * 100, 1)
+
+    return rows
+
+
+@frappe.whitelist()
+def get_manager_leaderboard():
+    """Target Manager leaderboard — committed target vs achieved,
+    SR%, reportees, MTD/YTD for the current fiscal year."""
+    from frappe.utils import today
+    from datetime import datetime
+
+    fy_name = _current_fiscal_year()
+    if not fy_name:
+        return []
+
+    fy = frappe.get_doc("Fiscal Year", fy_name)
+    from_date, to_date = fy.year_start_date, fy.year_end_date
+
+    current_month = datetime.strftime(datetime.strptime(today(), "%Y-%m-%d"), "%b")
+    if current_month not in FISCAL_YEAR_MONTHS:
+        current_month = "Apr"
+    months_to_include = FISCAL_YEAR_MONTHS[:FISCAL_YEAR_MONTHS.index(current_month) + 1]
+
+    managers = frappe.db.sql("""
+        SELECT tm.name, tm.employee, tm.employee_name, tm.designation,
+               tm.department, tm.service, tm.has_reportees, tm.annual_ct,
+               tm.annual_ft, tm.total_ct, tm.total_ct_achieved, tm.custom_sr,
+               tm.target_based_unit,
+               e.image AS employee_image,
+               (SELECT COUNT(*) FROM `tabTarget Manager Reportee` r
+                WHERE r.parent = tm.name) AS reportee_count
+        FROM `tabTarget Manager` tm
+        INNER JOIN `tabEmployee` e ON e.name = tm.employee AND e.status = 'Active'
+        WHERE tm.custom_fiscal_year = %(fy)s
+        ORDER BY tm.employee_name
+    """, {"fy": fy_name}, as_dict=True)
+
+    if not managers:
+        return []
+
+    names = [m.name for m in managers]
+
+    # MTD aggregates from Target Child
+    mtd_rows = frappe.db.sql("""
+        SELECT parent, SUM(revised_ct) AS target, SUM(achieved) AS achieved,
+               SUM(ct_yta) AS yta
+        FROM `tabTarget Child`
+        WHERE parent IN %(parents)s AND month = %(month)s
+        GROUP BY parent
+    """, {"parents": tuple(names), "month": current_month}, as_dict=True)
+    mtd_map = {r.parent: r for r in mtd_rows}
+
+    # YTD aggregates
+    ytd_rows = frappe.db.sql("""
+        SELECT parent, SUM(revised_ct) AS target, SUM(achieved) AS achieved,
+               SUM(ct_yta) AS yta
+        FROM `tabTarget Child`
+        WHERE parent IN %(parents)s AND month IN %(months)s
+        GROUP BY parent
+    """, {"parents": tuple(names), "months": tuple(months_to_include)}, as_dict=True)
+    ytd_map = {r.parent: r for r in ytd_rows}
+
+    # Month EP / NC per employee
+    epnc_rows = frappe.db.sql("""
+        SELECT emp, SUM(energy_score) AS ep, SUM(nc_score) AS nc
+        FROM `tabEnergy Point And Non Conformity`
+        WHERE docstatus = 1
+            AND MONTH(creation) = %(mn)s
+            AND DATE(creation) BETWEEN %(start)s AND %(end)s
+        GROUP BY emp
+    """, {"mn": MONTH_MAP[current_month], "start": from_date, "end": to_date}, as_dict=True)
+    epnc_map = {r.emp: r for r in epnc_rows}
+
+    out = []
+    for m in managers:
+        mtd = mtd_map.get(m.name)
+        ytd = ytd_map.get(m.name)
+        epnc = epnc_map.get(m.employee)
+
+        mtd_target = float(mtd.target or 0) if mtd else 0
+        mtd_ach = float(mtd.achieved or 0) if mtd else 0
+        ytd_target = float(ytd.target or 0) if ytd else 0
+        ytd_ach = float(ytd.achieved or 0) if ytd else 0
+
+        out.append({
+            "name": m.name,
+            "employee": m.employee,
+            "employee_name": m.employee_name,
+            "designation": m.designation,
+            "department": m.department,
+            "service": m.service,
+            "employee_image": m.employee_image,
+            "has_reportees": m.has_reportees,
+            "reportee_count": m.reportee_count,
+            "annual_ct": float(m.annual_ct or 0),
+            "total_ct": float(m.total_ct or 0),
+            "total_ct_achieved": float(m.total_ct_achieved or 0),
+            "sr": float(m.custom_sr or 0),
+            "target_based_unit": m.target_based_unit,
+            "mtd_target": mtd_target,
+            "mtd_achieved": mtd_ach,
+            "mtd_sr": round((mtd_ach / mtd_target) * 100, 1) if mtd_target else 0,
+            "ytd_target": ytd_target,
+            "ytd_achieved": ytd_ach,
+            "ytd_sr": round((ytd_ach / ytd_target) * 100, 1) if ytd_target else 0,
+            "ep": float(epnc.ep or 0) if epnc else 0,
+            "nc": float(epnc.nc or 0) if epnc else 0,
+        })
+
+    out.sort(key=lambda x: x["mtd_sr"], reverse=True)
+    for i, m in enumerate(out, start=1):
+        m["rank"] = i
+
+    return out
+
+
+@frappe.whitelist()
+def get_epnc_summary():
+    """Current-month EP/NC summary tiles + top performers."""
+    from frappe.utils import get_first_day, get_last_day, today
+
+    start = get_first_day(today())
+    end = get_last_day(today())
+
+    totals = frappe.db.sql("""
+        SELECT
+            IFNULL(SUM(energy_score), 0) AS total_ep,
+            IFNULL(SUM(nc_score), 0) AS total_nc,
+            SUM(CASE WHEN action = 'Energy Point(EP)' THEN 1 ELSE 0 END) AS ep_entries,
+            SUM(CASE WHEN action = 'Non Conformity(NC)' THEN 1 ELSE 0 END) AS nc_entries,
+            COUNT(DISTINCT emp) AS employees_scored
+        FROM `tabEnergy Point And Non Conformity`
+        WHERE docstatus = 1 AND DATE(creation) BETWEEN %(start)s AND %(end)s
+    """, {"start": start, "end": end}, as_dict=True)[0]
+
+    top_ep = frappe.db.sql("""
+        SELECT emp, MAX(emp_name) AS emp_name, MAX(department) AS department,
+               SUM(energy_score) AS score
+        FROM `tabEnergy Point And Non Conformity`
+        WHERE docstatus = 1 AND DATE(creation) BETWEEN %(start)s AND %(end)s
+            AND energy_score IS NOT NULL AND energy_score != ''
+        GROUP BY emp ORDER BY score DESC LIMIT 3
+    """, {"start": start, "end": end}, as_dict=True)
+
+    top_nc = frappe.db.sql("""
+        SELECT emp, MAX(emp_name) AS emp_name, MAX(department) AS department,
+               SUM(nc_score) AS score
+        FROM `tabEnergy Point And Non Conformity`
+        WHERE docstatus = 1 AND DATE(creation) BETWEEN %(start)s AND %(end)s
+            AND nc_score IS NOT NULL AND nc_score != ''
+        GROUP BY emp ORDER BY score ASC LIMIT 3
+    """, {"start": start, "end": end}, as_dict=True)
+
+    totals["net"] = float(totals.total_ep or 0) + float(totals.total_nc or 0)
+    return {"totals": totals, "top_ep": top_ep, "top_nc": top_nc}
+
+
+@frappe.whitelist()
+def get_extended_hr_stats():
+    """Extra HR KPIs — joiners, exits, on-leave today, pending approvals,
+    birthdays this month, open job openings."""
+    from frappe.utils import get_first_day, get_last_day, today
+
+    today_str = today()
+    first_day = get_first_day(today_str)
+    last_day = get_last_day(today_str)
+
+    joiners = frappe.db.sql("""
+        SELECT COUNT(*) AS c FROM `tabEmployee`
+        WHERE status = 'Active'
+            AND date_of_joining BETWEEN %(s)s AND %(e)s
+    """, {"s": first_day, "e": last_day}, as_dict=True)[0].c
+
+    exits = frappe.db.sql("""
+        SELECT COUNT(*) AS c FROM `tabEmployee`
+        WHERE status = 'Left'
+            AND relieving_date BETWEEN %(s)s AND %(e)s
+    """, {"s": first_day, "e": last_day}, as_dict=True)[0].c
+
+    on_leave_today = frappe.db.sql("""
+        SELECT COUNT(DISTINCT employee) AS c FROM `tabLeave Application`
+        WHERE docstatus = 1 AND %(t)s BETWEEN from_date AND to_date
+    """, {"t": today_str}, as_dict=True)[0].c
+
+    pending_leaves = frappe.db.sql("""
+        SELECT COUNT(*) AS c FROM `tabLeave Application`
+        WHERE docstatus = 0
+    """, as_dict=True)[0].c
+
+    pending_att_req = frappe.db.sql("""
+        SELECT COUNT(*) AS c FROM `tabAttendance Request`
+        WHERE docstatus = 0
+    """, as_dict=True)[0].c
+
+    birthdays = frappe.db.sql("""
+        SELECT COUNT(*) AS c FROM `tabEmployee`
+        WHERE status = 'Active' AND date_of_birth IS NOT NULL
+            AND MONTH(date_of_birth) = MONTH(%(t)s)
+    """, {"t": today_str}, as_dict=True)[0].c
+
+    try:
+        open_positions = frappe.db.sql("""
+            SELECT COUNT(*) AS c FROM `tabJob Opening` WHERE status = 'Open'
+        """, as_dict=True)[0].c
+    except Exception:
+        open_positions = 0
+
+    return {
+        "joiners": joiners,
+        "exits": exits,
+        "on_leave_today": on_leave_today,
+        "pending_leaves": pending_leaves,
+        "pending_att_req": pending_att_req,
+        "birthdays": birthdays,
+        "open_positions": open_positions,
+    }

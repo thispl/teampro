@@ -1,0 +1,153 @@
+{
+ "actions": [],
+ "autoname": "LAL-.YYYYMMDD-.#####",
+ "creation": "2026-07-25 12:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee",
+  "employee_name",
+  "mobile_number",
+  "column_break_date",
+  "date",
+  "response",
+  "responded_at",
+  "section_break_meta",
+  "whatsapp_message_id",
+  "template_sent",
+  "error_log",
+  "column_break_status",
+  "lunch_entry_ref_doctype",
+  "lunch_entry_ref_name"
+ ],
+ "fields": [
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Mobile Number",
+   "search_index": 1
+  },
+  {
+   "fieldname": "column_break_date",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Date",
+   "reqd": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Response",
+   "options": "Yes\nNo\nPending\nExpired",
+   "default": "Pending",
+   "reqd": 1
+  },
+  {
+   "fieldname": "responded_at",
+   "fieldtype": "Datetime",
+   "label": "Responded At",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_meta",
+   "fieldtype": "Section Break",
+   "label": "Meta"
+  },
+  {
+   "fieldname": "whatsapp_message_id",
+   "fieldtype": "Data",
+   "label": "WhatsApp Message ID",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "template_sent",
+   "fieldtype": "Check",
+   "label": "Template Sent",
+   "default": "0",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_log",
+   "fieldtype": "Small Text",
+   "label": "Error Log",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_status",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lunch_entry_ref_doctype",
+   "fieldtype": "Link",
+   "label": "Lunch Entry DocType",
+   "options": "DocType",
+   "read_only": 1
+  },
+  {
+   "fieldname": "lunch_entry_ref_name",
+   "fieldtype": "Dynamic Link",
+   "label": "Lunch Entry",
+   "options": "lunch_entry_ref_doctype",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "module": "Teampro",
+ "name": "Lunch Attendance Log",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "HR User"
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "title_field": "employee_name",
+ "track_changes": 1
+}

@@ -1,4 +1,4 @@
-frappe.pages['in-finance'].on_page_load = function(wrapper) {
+frappe.pages['in-finance'].on_page_load = function (wrapper) {
 	var page = frappe.ui.make_app_page({
 		parent: wrapper,
 		title: (frappe.boot.lang || 'ar') === 'ar' ? 'لوحة التدقيق المالي' : 'Financial Audit Dashboard',
@@ -8,7 +8,7 @@ frappe.pages['in-finance'].on_page_load = function(wrapper) {
 	wrapper.financial_audit = new FinancialAuditDashboard(page);
 }
 
-frappe.pages['in-finance'].on_page_show = function(wrapper) {
+frappe.pages['in-finance'].on_page_show = function (wrapper) {
 	if (wrapper.financial_audit) {
 		wrapper.financial_audit.load_data();
 	}
@@ -544,7 +544,7 @@ class FinancialAuditDashboard {
 			<div class="${cls}" data-section-key="${section_key}"${hidden}>
 				<div class="section-header" data-target="${body_cls}">
 					<span class="section-title">
-						<span class="section-icon" style="background:${icon_bg};color:${icon_color};"><i class="fa ${icon}"></i></span>
+						<span class="section-icon" style="background:${icon_bg};color:${icon_color};"><i class="fa-solid ${icon}"></i></span>
 						${title}
 					</span>
 					<span class="toggle-chevron">&#9660;</span>
@@ -561,7 +561,7 @@ class FinancialAuditDashboard {
 			<div class="chart-section" data-section-key="${section_key}"${hidden}>
 				<div class="section-header" data-target="${chart_cls}">
 					<span class="section-title">
-						<span class="section-icon" style="background:${icon_bg};color:${icon_color};"><i class="fa ${icon}"></i></span>
+						<span class="section-icon" style="background:${icon_bg};color:${icon_color};"><i class="fa-solid ${icon}"></i></span>
 						${title}
 					</span>
 					<span class="toggle-chevron">&#9660;</span>
@@ -849,6 +849,14 @@ class FinancialAuditDashboard {
 	// }
 
 	setup_page() {
+
+		if (!$('link[href*="font-awesome"]').length) {
+			$('head').append(`
+				<link rel="stylesheet"
+				href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+			`);
+		}
+
 		const dir = this.is_rtl ? 'rtl' : 'ltr';
 		const icon_margin = this.is_rtl ? 'margin-left:8px' : 'margin-right:8px';
 		this.page.add_inner_button(this.lang === 'ar' ? 'الرسم البياني' : 'Graph', () => this.switch_view('graph'));
@@ -856,7 +864,7 @@ class FinancialAuditDashboard {
 
 		const graph_label = this.lang === 'ar' ? 'الرسم البياني' : 'Graph';
 		const data_label = this.lang === 'ar' ? 'البيانات' : 'Data';
-		this.page.inner_toolbar.find('button').each(function() {
+		this.page.inner_toolbar.find('button').each(function () {
 			const txt = $(this).text().trim();
 			if (txt === graph_label) $(this).addClass('fa-view-btn fa-graph-btn');
 			if (txt === data_label) $(this).addClass('fa-view-btn fa-data-btn');
@@ -874,7 +882,46 @@ class FinancialAuditDashboard {
 				.fa-page-header .fa-current-datetime{ font-size:16px; color:#666; margin-top:5px; }
 				.fa-view-btn{ background:#fff !important; color:#111 !important; border:1px solid #ccc !important; }
 				.fa-view-btn.fa-view-active{ background:#000 !important; color:#fff !important; border-color:#000 !important; }
+				
+				/* Skeletons */
+				.skeleton {
+					background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+					background-size: 200% 100%;
+					animation: shimmer 1.5s infinite;
+					border-radius: 4px;
+				}
+				@keyframes shimmer {
+					0% { background-position: 200% 0; }
+					100% { background-position: -200% 0; }
+				}
+				.kpi-card.skeleton-card {
+					pointer-events: none;
+					box-shadow: none !important;
+					border-top: 3px solid #e2e8f0 !important;
+				}
+				.kpi-card.skeleton-card .skeleton-icon {
+					width: 42px; height: 42px;
+					border-radius: 10px;
+					margin: 0 auto 10px;
+				}
+				.kpi-card.skeleton-card .skeleton-title {
+					width: 60%; height: 13px;
+					margin: 0 auto 8px;
+				}
+				.kpi-card.skeleton-card .skeleton-value {
+					width: 50%; height: 22px;
+					margin: 0 auto;
+				}
+				.kpi-card.skeleton-card .skeleton-desc {
+					width: 80%; height: 12px;
+					margin: 8px auto 0;
+				}
 			</style>`).appendTo('head');
+		}
+
+		// Load Font Awesome for icons
+		if (!document.getElementById('font-awesome-css')) {
+			$('<link id="font-awesome-css" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">').appendTo('head');
 		}
 		this.page.main.html(`
 			<div class="financial-audit-page ${this.is_rtl ? '' : 'ltr-mode'}" dir="${dir}">
@@ -897,23 +944,23 @@ class FinancialAuditDashboard {
 				<div class="graph-view-wrapper">
 
 					<div class="sections-row">
-						${this.make_section('data-section', 'fa-balance-scale', '#eef1ff', '#4361ee',
-							this.t('sec_balance_sheet'), 'balance-sheet-body',
-							this.t('sec_balance_sheet_desc'))}
+						${this.make_section('data-section', 'fa-scale-balanced', '#eef1ff', '#4361ee',
+			this.t('sec_balance_sheet'), 'balance-sheet-body',
+			this.t('sec_balance_sheet_desc'))}
 
-						${this.make_chart_section('fa-line-chart', '#f0fdfa', '#14b8a6',
-							this.t('sec_performance_summary'), 'performance-summary-chart', 'performance-summary-stats',
-							this.t('sec_performance_summary_desc'))}
+						${this.make_chart_section('fa-chart-line', '#f0fdfa', '#14b8a6',
+				this.t('sec_performance_summary'), 'performance-summary-chart', 'performance-summary-stats',
+				this.t('sec_performance_summary_desc'))}
 					</div>
 
 					<div class="sections-row">
-						${this.make_chart_section('fa-bar-chart', '#ecfdf5', '#10b981',
-							this.t('sec_monthly_trends'), 'monthly-chart', 'monthly-chart-stats',
-							this.t('sec_monthly_trends_desc'))}
+						${this.make_chart_section('fa-chart-column', '#ecfdf5', '#10b981',
+					this.t('sec_monthly_trends'), 'monthly-chart', 'monthly-chart-stats',
+					this.t('sec_monthly_trends_desc'))}
 
-						${this.make_chart_section('fa-line-chart', '#f5f3ff', '#8b5cf6',
-							this.t('sec_daily_sales'), 'daily-sales-chart', 'daily-chart-stats',
-							this.t('sec_daily_sales_desc'))}
+						${this.make_chart_section('fa-chart-line', '#f5f3ff', '#8b5cf6',
+						this.t('sec_daily_sales'), 'daily-sales-chart', 'daily-chart-stats',
+						this.t('sec_daily_sales_desc'))}
 					</div>
 
 					<div class="sections-row">
@@ -922,155 +969,155 @@ class FinancialAuditDashboard {
 							this.t('sec_expense_dist_desc'))}
 
 						${this.make_chart_section('fa-exchange', '#f0fdfa', '#14b8a6',
-							this.t('sec_cash_flow'), 'cash-flow-chart', 'cash-flow-stats',
-							this.t('sec_cash_flow_desc'))}
+								this.t('sec_cash_flow'), 'cash-flow-chart', 'cash-flow-stats',
+								this.t('sec_cash_flow_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section pnl-section', 'fa-file-text-o', '#fff7ed', '#f97316',
-							this.t('sec_income_stmt'), 'pnl-body',
-							this.t('sec_income_stmt_desc'))}
+									this.t('sec_income_stmt'), 'pnl-body',
+									this.t('sec_income_stmt_desc'))}
 
 						${this.make_section('data-section', 'fa-book', '#eef1ff', '#4361ee',
-							this.t('sec_gl_voucher'), 'gl-voucher-body',
-							this.t('sec_gl_voucher_desc'))}
+										this.t('sec_gl_voucher'), 'gl-voucher-body',
+										this.t('sec_gl_voucher_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-cubes', '#fff7ed', '#f97316',
-							this.t('sec_stock_voucher'), 'stock-voucher-body',
-							this.t('sec_stock_voucher_desc'))}
+											this.t('sec_stock_voucher'), 'stock-voucher-body',
+											this.t('sec_stock_voucher_desc'))}
 
 						${this.make_section('data-section', 'fa-users', '#fdf2f8', '#ec4899',
-							this.t('sec_top_customers'), 'top-customers-body',
-							this.t('sec_top_customers_desc'))}
+												this.t('sec_top_customers'), 'top-customers-body',
+												this.t('sec_top_customers_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-shopping-bag', '#ecfdf5', '#10b981',
-							this.t('sec_top_products'), 'top-products-body',
-							this.t('sec_top_products_desc'))}
+													this.t('sec_top_products'), 'top-products-body',
+													this.t('sec_top_products_desc'))}
 
 						${this.make_section('data-section', 'fa-truck', '#fff7ed', '#f97316',
-							this.t('sec_top_suppliers'), 'top-suppliers-body',
-							this.t('sec_top_suppliers_desc'))}
+														this.t('sec_top_suppliers'), 'top-suppliers-body',
+														this.t('sec_top_suppliers_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-undo', '#fef2f2', '#ef4444',
-							this.t('sec_sales_returns'), 'sales-returns-body',
-							this.t('sec_sales_returns_desc'))}
+															this.t('sec_sales_returns'), 'sales-returns-body',
+															this.t('sec_sales_returns_desc'))}
 
 						${this.make_section('data-section', 'fa-reply', '#fffbeb', '#f59e0b',
-							this.t('sec_purchase_returns'), 'purchase-returns-body',
-							this.t('sec_purchase_returns_desc'))}
+																this.t('sec_purchase_returns'), 'purchase-returns-body',
+																this.t('sec_purchase_returns_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-clock-o', '#fdf2f8', '#ec4899',
-							this.t('sec_ar_aging'), 'ar-aging-body',
-							this.t('sec_ar_aging_desc'))}
+																	this.t('sec_ar_aging'), 'ar-aging-body',
+																	this.t('sec_ar_aging_desc'))}
 
 						${this.make_section('data-section', 'fa-clock-o', '#fffbeb', '#f59e0b',
-							this.t('sec_ap_aging'), 'ap-aging-body',
-							this.t('sec_ap_aging_desc'))}
+																		this.t('sec_ap_aging'), 'ap-aging-body',
+																		this.t('sec_ap_aging_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-university', '#f0fdfa', '#14b8a6',
-							this.t('sec_bank_balances'), 'bank-balances-body',
-							this.t('sec_bank_balances_desc'))}
+																			this.t('sec_bank_balances'), 'bank-balances-body',
+																			this.t('sec_bank_balances_desc'))}
 
 						${this.make_section('data-section', 'fa-credit-card', '#f5f3ff', '#8b5cf6',
-							this.t('sec_payment_modes'), 'payment-modes-body',
-							this.t('sec_payment_modes_desc'))}
+																				this.t('sec_payment_modes'), 'payment-modes-body',
+																				this.t('sec_payment_modes_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-pencil-square-o', '#eef1ff', '#4361ee',
-							this.t('sec_journal_entries'), 'journal-entries-body',
-							this.t('sec_journal_entries_desc'))}
+																					this.t('sec_journal_entries'), 'journal-entries-body',
+																					this.t('sec_journal_entries_desc'))}
 
 						${this.make_section('data-section', 'fa-archive', '#f8fafc', '#64748b',
-							this.t('sec_inventory'), 'inventory-body',
-							this.t('sec_inventory_desc'))}
+																						this.t('sec_inventory'), 'inventory-body',
+																						this.t('sec_inventory_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-arrows-v', '#fff7ed', '#f97316',
-							this.t('sec_stock_movement'), 'stock-movement-body',
-							this.t('sec_stock_movement_desc'))}
+																							this.t('sec_stock_movement'), 'stock-movement-body',
+																							this.t('sec_stock_movement_desc'))}
 
 						${this.make_section('data-section', 'fa-hourglass-half', '#fef2f2', '#ef4444',
-							this.t('sec_stock_ageing'), 'stock-ageing-body',
-							this.t('sec_stock_ageing_desc'))}
+																								this.t('sec_stock_ageing'), 'stock-ageing-body',
+																								this.t('sec_stock_ageing_desc'))}
 					</div>
 
 					<div class="audit-divider"><span><i class="fa fa-shield"></i> ${this.t('sec_advanced_divider')}</span></div>
 
 					<div class="sections-row">
-						${this.make_section('data-section', 'fa-line-chart', '#ecfdf5', '#047857',
-							this.t('sec_working_capital'), 'working-capital-body',
-							this.t('sec_working_capital_desc'))}
+						${this.make_section('data-section', 'fa-chart-line', '#ecfdf5', '#047857',
+																									this.t('sec_working_capital'), 'working-capital-body',
+																									this.t('sec_working_capital_desc'))}
 
 						${this.make_section('data-section', 'fa-calendar-check-o', '#eef1ff', '#4361ee',
-							this.t('sec_yoy_growth'), 'yoy-growth-body',
-							this.t('sec_yoy_growth_desc'))}
+																										this.t('sec_yoy_growth'), 'yoy-growth-body',
+																										this.t('sec_yoy_growth_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_chart_section('fa-bar-chart-o', '#fdf2f8', '#ec4899',
-							this.t('sec_benford'), 'benford-chart', '',
-							this.t('sec_benford_desc'))}
+																											this.t('sec_benford'), 'benford-chart', '',
+																											this.t('sec_benford_desc'))}
 
 						${this.make_section('data-section', 'fa-copy', '#fef2f2', '#b91c1c',
-							this.t('sec_duplicate_payments'), 'duplicate-payments-body',
-							this.t('sec_duplicate_payments_desc'))}
+																												this.t('sec_duplicate_payments'), 'duplicate-payments-body',
+																												this.t('sec_duplicate_payments_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-bullseye', '#fffbeb', '#b45309',
-							this.t('sec_concentration'), 'concentration-body',
-							this.t('sec_concentration_desc'))}
+																													this.t('sec_concentration'), 'concentration-body',
+																													this.t('sec_concentration_desc'))}
 
 						${this.make_section('data-section', 'fa-calendar-times-o', '#f5f3ff', '#6d28d9',
-							this.t('sec_weekend_txn'), 'weekend-txn-body',
-							this.t('sec_weekend_txn_desc'))}
+																														this.t('sec_weekend_txn'), 'weekend-txn-body',
+																														this.t('sec_weekend_txn_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-chain-broken', '#fef2f2', '#dc2626',
-							this.t('sec_payment_recon'), 'payment-recon-body',
-							this.t('sec_payment_recon_desc'))}
+																															this.t('sec_payment_recon'), 'payment-recon-body',
+																															this.t('sec_payment_recon_desc'))}
 
 						${this.make_section('data-section', 'fa-sitemap', '#ecfdf5', '#059669',
-							this.t('sec_cost_center_pl'), 'cost-center-pl-body',
-							this.t('sec_cost_center_pl_desc'))}
+																																this.t('sec_cost_center_pl'), 'cost-center-pl-body',
+																																this.t('sec_cost_center_pl_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-building', '#fff7ed', '#ea580c',
-							this.t('sec_depreciation'), 'depreciation-body',
-							this.t('sec_depreciation_desc'))}
+																																	this.t('sec_depreciation'), 'depreciation-body',
+																																	this.t('sec_depreciation_desc'))}
 
-						${this.make_chart_section('fa-area-chart', '#fdf2f8', '#be185d',
-							this.t('sec_aging_trend'), 'aging-trend', 'aging-trend-stats',
-							this.t('sec_aging_trend_desc'))}
+						${this.make_chart_section('fa-chart-area', '#fdf2f8', '#be185d',
+																																		this.t('sec_aging_trend'), 'aging-trend', 'aging-trend-stats',
+																																		this.t('sec_aging_trend_desc'))}
 					</div>
 
 					<div class="sections-row">
 						${this.make_section('data-section', 'fa-refresh', '#f0fdfa', '#0d9488',
-							this.t('sec_inv_turnover'), 'inv-turnover-body',
-							this.t('sec_inv_turnover_desc'))}
+																																			this.t('sec_inv_turnover'), 'inv-turnover-body',
+																																			this.t('sec_inv_turnover_desc'))}
 
 						${this.make_section('data-section', 'fa-calculator', '#eef1ff', '#4338ca',
-							this.t('sec_trial_balance'), 'trial-balance-body',
-							this.t('sec_trial_balance_desc'))}
+																																				this.t('sec_trial_balance'), 'trial-balance-body',
+																																				this.t('sec_trial_balance_desc'))}
 					</div>
 
-					${this.make_chart_section('fa-line-chart', '#f5f3ff', '#7c3aed',
-						this.t('sec_ratio_trend'), 'ratio-trend', 'ratio-trend-stats',
-						this.t('sec_ratio_trend_desc'))}
+					${this.make_chart_section('fa-chart-line', '#f5f3ff', '#7c3aed',
+																																					this.t('sec_ratio_trend'), 'ratio-trend', 'ratio-trend-stats',
+																																					this.t('sec_ratio_trend_desc'))}
 
 				</div>
 				<!-- /graph-view-wrapper -->
@@ -1131,7 +1178,7 @@ class FinancialAuditDashboard {
 		this.$ratio_trend_chart = this.page.main.find('.ratio-trend-chart');
 		this.$ratio_trend_stats = this.page.main.find('.ratio-trend-stats');
 
-		this.page.main.on('click', '.section-header', function(e) {
+		this.page.main.on('click', '.section-header', function (e) {
 			const target = $(this).data('target');
 			if (!target) return;
 			const $parent = $(this).closest('.data-section, .chart-section, .ai-analysis-section');
@@ -1186,7 +1233,7 @@ class FinancialAuditDashboard {
 				this.data_view_loaded = true;
 			}
 		}
-		this.update_view_btn_state(); 
+		this.update_view_btn_state();
 	}
 
 	update_view_btn_state() {
@@ -1198,17 +1245,32 @@ class FinancialAuditDashboard {
 	load_data_view() {
 		const $mount = this.page.main.find('#finance-new-mount');
 
+		const getCardSkeleton = () => `
+			<div class="skeleton-card-inner">
+				<div class="skeleton skeleton-title" style="width: 50%; height: 16px; margin: 0 auto 15px auto;"></div>
+				<div class="skeleton skeleton-total" style="width: 70%; height: 30px; border-radius: 15px; margin: 0 auto 20px auto;"></div>
+				<div class="skeleton-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; border-top: 1px solid #eee; padding-top: 12px;">
+					<div class="skeleton skeleton-item" style="height: 12px; width: 80%;"></div>
+					<div class="skeleton skeleton-item" style="height: 12px; width: 80%;"></div>
+					<div class="skeleton skeleton-item" style="height: 12px; width: 80%;"></div>
+					<div class="skeleton skeleton-item" style="height: 12px; width: 80%;"></div>
+					<div class="skeleton skeleton-item" style="height: 12px; width: 80%;"></div>
+					<div class="skeleton skeleton-item" style="height: 12px; width: 80%;"></div>
+				</div>
+			</div>
+		`;
+
 		// Build the HTML exactly as in your finance-new.js (minus filters/header — those already exist in this page)
 		$mount.html(`
 			<div style="background-color:#f5f5f5;margin-left:0px;margin-right:0px;max-height:400px;overflow-y:auto;border:1px solid #ddd;border-radius:8px;padding:15px;box-sizing:border-box;">
 				<div class="dashboard-cards-finaince">
-					<div class="dashboard-card turnover-card1"></div>
-					<div class="dashboard-card order-booking-card1"></div>
-					<div class="dashboard-card order-booking-card"></div>
-					<div class="dashboard-card turnover-card"></div>
-					<div class="po_out"></div>
-					<div class="po"></div>
-					<div class="amount"></div>
+					<div class="dashboard-card turnover-card1">${getCardSkeleton()}</div>
+					<div class="dashboard-card order-booking-card1">${getCardSkeleton()}</div>
+					<div class="dashboard-card order-booking-card">${getCardSkeleton()}</div>
+					<div class="dashboard-card turnover-card">${getCardSkeleton()}</div>
+					<div class="po_out">${getCardSkeleton()}</div>
+					<div class="po">${getCardSkeleton()}</div>
+					<div class="amount">${getCardSkeleton()}</div>
 				</div>
 			</div>
 
@@ -1348,6 +1410,12 @@ class FinancialAuditDashboard {
 
 		// ✅ Apply the dashboard-card CSS scoped to data-view-wrapper
 		$(`<style>
+			.data-view-wrapper .skeleton {
+				background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+				background-size: 200% 100%;
+				animation: shimmer 1.5s infinite;
+				border-radius: 4px;
+			}
 			.data-view-wrapper .dashboard-cards-finaince{
 				display:flex; gap:20px; flex-wrap:nowrap; overflow-x:auto; padding:10px;
 			}
@@ -1423,11 +1491,11 @@ class FinancialAuditDashboard {
 		const $scope = this.page.main.find('.data-view-wrapper');
 		const me = this;
 
-		function formatToLakhs(val){
+		function formatToLakhs(val) {
 			return '₹' + (val / 100000).toFixed(2) + 'L';
 		}
 
-		function buildServiceGrid(groups, order){
+		function buildServiceGrid(groups, order) {
 			const rows = order
 				.filter(key => (groups[key] || 0) > 0)
 				.map(key => `
@@ -1439,7 +1507,7 @@ class FinancialAuditDashboard {
 			return rows.join('');
 		}
 
-		function renderCard(selector, title, total, groups, order){
+		function renderCard(selector, title, total, groups, order) {
 			const gridHtml = buildServiceGrid(groups, order);
 			$scope.find(selector).html(`
 				<div class="card-title">${title}</div>
@@ -1474,65 +1542,44 @@ class FinancialAuditDashboard {
 
 		// Cards
 		frappe.call({
-			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_turnover_overall",
-			callback: function(r) {
+			method: "teampro.teampro.page.in_finance.in_finance.get_finance_cards_data",
+			callback: function (r) {
 				const data = r.message || {};
-				renderCard('.turnover-card1', 'Turnover', data.total || 0, data.groups || {}, ["HRS","ITS","CMN","TFP","HRIT"]);
-			}
-		});
 
-		frappe.call({
-			method: "teampro.teampro.page.finance_details.tfp_dashboard.get_order_booking_overall",
-			callback: function(r) {
-				const data = r.message || {};
-				renderCard('.order-booking-card1', 'Order Booking', data.total || 0, data.groups || {}, ["HRS","ITS","CMN","TFP","HRIT"]);
-			}
-		});
+				// 1. Turnover Card
+				const turnoverData = data.turnover || {};
+				renderCard('.turnover-card1', 'Turnover', turnoverData.total || 0, turnoverData.groups || {}, ["HRS", "ITS", "CMN", "TFP", "HRIT"]);
 
-		frappe.call({
-			method: "teampro.teampro.page.finance.finance_dashboard.card",
-			callback: function(r) {
-				const data = r.message || {};
-				renderCard('.order-booking-card', 'Receivable', data.total || 0, data.groups || {}, ["HRS","ITS","CMN","TFP","HRIT"]);
-			}
-		});
+				// 2. Order Booking Card
+				const obData = data.order_booking || {};
+				renderCard('.order-booking-card1', 'Order Booking', obData.total || 0, obData.groups || {}, ["HRS", "ITS", "CMN", "TFP", "HRIT"]);
 
-		frappe.call({
-			method: "teampro.teampro.page.finance.finance_dashboard.card_1",
-			callback: function(r) {
-				const data = r.message || {};
-				let groups = data.groups || {};
-				groups.CLR = data.clr || 0;
-				groups.CLN = data.cln || 0;
-				renderCard('.turnover-card', 'To Bill', data.total || 0, groups, ["HRS","ITS","CMN","TFP","HRIT","CLR","CLN"]);
-			}
-		});
+				// 3. Receivable Card
+				const recData = data.receivable || {};
+				renderCard('.order-booking-card', 'Receivable', recData.total || 0, recData.groups || {}, ["HRS", "ITS", "CMN", "TFP", "HRIT"]);
 
-		frappe.call({
-			method: "teampro.teampro.page.finance.finance_dashboard.po_out",
-			callback: function(r) {
-				const data = r.message || {};
-				renderCard('.po_out', 'Payable', data.total || 0, data.groups || {}, ["HRS","ITS","CMN","TFP","HRIT"]);
-			}
-		});
+				// 4. To Bill Card
+				const toBillData = data.to_bill || {};
+				let toBillGroups = toBillData.groups || {};
+				toBillGroups.CLR = toBillData.clr || 0;
+				toBillGroups.CLN = toBillData.cln || 0;
+				renderCard('.turnover-card', 'To Bill', toBillData.total || 0, toBillGroups, ["HRS", "ITS", "CMN", "TFP", "HRIT", "CLR", "CLN"]);
 
-		frappe.call({
-			method: "teampro.teampro.page.finance.finance_dashboard.po",
-			callback: function(r) {
-				const data = r.message || {};
-				let groups = data.groups || {};
-				groups.CLN = data.cln || 0;
-				renderCard('.po', 'To Book', data.total || 0, groups, ["HRS","ITS","CMN","TFP","HRIT","CLN"]);
-			}
-		});
+				// 5. Payable Card
+				const payableData = data.payable || {};
+				renderCard('.po_out', 'Payable', payableData.total || 0, payableData.groups || {}, ["HRS", "ITS", "CMN", "TFP", "HRIT"]);
 
-		frappe.call({
-			method: "teampro.teampro.page.finance.finance_dashboard.fund_card",
-			callback: function(r) {
-				const data = r.message || {};
-				renderCard('.amount', 'Fund', data.total || 0, {
-					BANK: data.bank || 0, CASH: data.cash || 0, SFD: data.sfd || 0, LFD: data.lfd || 0
-				}, ["BANK","CASH","SFD","LFD"]);
+				// 6. To Book Card
+				const toBookData = data.to_book || {};
+				let toBookGroups = toBookData.groups || {};
+				toBookGroups.CLN = toBookData.cln || 0;
+				renderCard('.po', 'To Book', toBookData.total || 0, toBookGroups, ["HRS", "ITS", "CMN", "TFP", "HRIT", "CLN"]);
+
+				// 7. Fund Card
+				const fundData = data.fund || {};
+				renderCard('.amount', 'Fund', fundData.total || 0, {
+					BANK: fundData.bank || 0, CASH: fundData.cash || 0, SFD: fundData.sfd || 0, LFD: fundData.lfd || 0
+				}, ["BANK", "CASH", "SFD", "LFD"]);
 			}
 		});
 
@@ -1569,7 +1616,7 @@ class FinancialAuditDashboard {
 			frappe.call({
 				method: "teampro.teampro.page.finance_details.tfp_dashboard.to_book_table_overall",
 				args: { overall_service: tb_service_filter.get_value(), account_manager: tb_am_filter.get_value(), project_manager: tb_pm_filter.get_value() },
-				callback: function(r) {
+				callback: function (r) {
 					$scope.find("#tb-table-dv").html(r.message ? r.message.html : `<div style="padding:10px;text-align:center">No data found</div>`);
 				}
 			});
@@ -1579,7 +1626,7 @@ class FinancialAuditDashboard {
 			frappe.call({
 				method: "teampro.teampro.page.finance_details.tfp_dashboard.download_to_table_overall",
 				args: { overall_service: to_service_filter.get_value(), account_manager: to_am_filter.get_value(), project_manager: to_pm_filter.get_value() },
-				callback: function(r) {
+				callback: function (r) {
 					$scope.find("#to-table-content1-dv").html(r.message ? r.message.html : `<div style="padding:10px;text-align:center">No data found</div>`);
 				}
 			});
@@ -1589,7 +1636,7 @@ class FinancialAuditDashboard {
 			frappe.call({
 				method: "teampro.teampro.page.finance_details.tfp_dashboard.ob_table_overall",
 				args: { overall_service: ob_service_filter.get_value(), account_manager: ob_am_filter.get_value(), project_manager: ob_pm_filter.get_value() },
-				callback: function(r) {
+				callback: function (r) {
 					$scope.find("#ob-table-dv").html(r.message ? r.message.html : `<div style="padding:10px;text-align:center">No data found</div>`);
 				}
 			});
@@ -1599,11 +1646,11 @@ class FinancialAuditDashboard {
 			frappe.call({
 				method: 'teampro.teampro.page.finance_details.tfp_dashboard.receivable_table_overall',
 				args: { service: rec_service_filter.get_value() || null, am: rec_am_filter.get_value() || null, pm: rec_pm_filter.get_value() || null },
-				callback: function(r) {
+				callback: function (r) {
 					$scope.find('#receivable-so-table-content1-dv').html(r.message || `<div style="padding:10px;text-align:center">No data found</div>`);
 					frappe.dom.unfreeze();
 				},
-				error: function() { frappe.dom.unfreeze(); }
+				error: function () { frappe.dom.unfreeze(); }
 			});
 		}
 
@@ -1611,7 +1658,7 @@ class FinancialAuditDashboard {
 			frappe.call({
 				method: "teampro.teampro.page.finance_details.tfp_dashboard.tobill_table_overall",
 				args: { overall_service: bill_service_filter.get_value(), account_manager: bill_am_filter.get_value(), project_manager: bill_pm_filter.get_value() },
-				callback: function(r) {
+				callback: function (r) {
 					$scope.find("#tobill-so-table-content1-dv").html(r.message ? r.message.html : `<div style="padding:10px;text-align:center">No data found</div>`);
 				}
 			});
@@ -1621,7 +1668,7 @@ class FinancialAuditDashboard {
 			frappe.call({
 				method: "teampro.teampro.page.finance_details.tfp_dashboard.payable_table_overall",
 				args: { overall_service: pay_service_filter.get_value(), account_manager: pay_am_filter.get_value(), project_manager: pay_pm_filter.get_value() },
-				callback: function(r) {
+				callback: function (r) {
 					$scope.find("#payable-so-table-content-dv").html(r.message || `<div style="padding:10px;text-align:center">No data found</div>`);
 				}
 			});
@@ -1715,7 +1762,7 @@ class FinancialAuditDashboard {
 
 		frappe.call({
 			method: "teampro.teampro.page.finance.finance_dashboard.target_vs_achievement",
-			callback: function(r) {
+			callback: function (r) {
 				$scope.find('#target-vs-achievement-body-dv').html(r.message || `<tr><td colspan="10" style="text-align:center">No data found</td></tr>`);
 			}
 		});
@@ -1723,9 +1770,9 @@ class FinancialAuditDashboard {
 
 	render_filters() {
 		const today = frappe.datetime.get_today();
-		
+
 		let year_start = frappe.datetime.year_start();
-		
+
 		frappe.call({
 			method: 'frappe.client.get_list',
 			args: {
@@ -1737,7 +1784,7 @@ class FinancialAuditDashboard {
 				fields: ['year_start_date', 'year_end_date'],
 				limit: 1
 			},
-			async: false, 
+			async: false,
 			callback: (r) => {
 				if (r && r.message && r.message.length) {
 					year_start = r.message[0].year_start_date;
@@ -1753,18 +1800,66 @@ class FinancialAuditDashboard {
 			</div>
 		`);
 
+		// this.company_field = frappe.ui.form.make_control({
+		// 	df: {
+		// 		fieldtype: 'Link', options: 'Company', fieldname: 'company',
+		// 		placeholder: this.t('select_company'),
+		// 		default: frappe.defaults.get_user_default("Company"),
+		// 		change: () => { this.filters.company = this.company_field.get_value(); this.load_data(); }
+		// 	},
+		// 	parent: this.$filters.find('.company-field'),
+		// 	render_input: true
+		// });
+		// this.company_field.set_value(frappe.defaults.get_user_default("Company"));
+		// this.filters.company = frappe.defaults.get_user_default("Company");
+
+		// 1. First fetch list of companies
+		frappe.call({
+			method: "frappe.client.get_list",
+			args: {
+				doctype: "Company",
+				fields: ["name"],
+				limit_page_length: 0
+			},
+			async: false,
+			callback: (r) => {
+				this.company_list = (r.message || []).map(c => c.name);
+			}
+		});
+
+		// 2. MultiSelect control
 		this.company_field = frappe.ui.form.make_control({
 			df: {
-				fieldtype: 'Link', options: 'Company', fieldname: 'company',
+				fieldtype: 'MultiSelect',
+				fieldname: 'company',
+				options: this.company_list || [],
 				placeholder: this.t('select_company'),
-				default: frappe.defaults.get_user_default("Company"),
-				change: () => { this.filters.company = this.company_field.get_value(); this.load_data(); }
+				change: () => {
+					this.filters.company = normalize_ms(this.company_field.get_value());
+					this.load_data();
+				}
 			},
 			parent: this.$filters.find('.company-field'),
 			render_input: true
 		});
-		this.company_field.set_value(frappe.defaults.get_user_default("Company"));
-		this.filters.company = frappe.defaults.get_user_default("Company");
+		this.company_field.make();
+		this.company_field.set_data(this.company_list || []);
+
+		// 3. Default value (current user default company)
+		const default_company = frappe.defaults.get_user_default("Company");
+		if (default_company) {
+			this.company_field.set_value(default_company);
+			this.filters.company = [default_company];
+		} else {
+			this.filters.company = [];
+		}
+
+		// Helper — MultiSelect returns comma-separated string
+		function normalize_ms(val) {
+			if (!val) return [];
+			if (Array.isArray(val)) return val;
+			return val.split(",").map(v => v.trim()).filter(Boolean);
+		}
 
 		this.from_date_field = frappe.ui.form.make_control({
 			df: {
@@ -1774,7 +1869,7 @@ class FinancialAuditDashboard {
 			parent: this.$filters.find('.from-date-field'),
 			render_input: true
 		});
-		this.from_date_field.set_value(year_start);  
+		this.from_date_field.set_value(year_start);
 		this.filters.from_date = year_start;
 
 		this.to_date_field = frappe.ui.form.make_control({
@@ -1790,20 +1885,45 @@ class FinancialAuditDashboard {
 	}
 
 	load_data() {
-		this.$kpi.html(`<div class="loading-state"><i class="fa fa-spinner fa-spin"></i> ${this.t('loading_data')}</div>`);
+		const skeletons = Array(12).fill(0).map(() => `
+			<div class="kpi-card skeleton-card">
+				<div class="skeleton skeleton-icon"></div>
+				<div class="skeleton skeleton-title"></div>
+				<div class="skeleton skeleton-value"></div>
+				<div class="skeleton skeleton-desc"></div>
+			</div>
+		`).join('');
+		this.$kpi.html(skeletons);
 
-		frappe.call({	
-			method: 'finance_dashboard.finance_dashboard.page.finance_dashboard.financial_audit.get_financial_audit_data',
+		// 1. Fetch only KPI card data first for instant loading
+		frappe.call({
+			method: 'teampro.teampro.page.in_finance.in_finance.get_kpi_data',
 			args: { filters: this.filters },
 			callback: (r) => {
 				if (r.message) {
-					this.data = r.message;
+					this.data = this.data || {};
+					this.data.kpis = r.message.kpis;
+					this.currency = r.message.currency || 'EGP';
+					this.render_kpi_cards();
+				}
+			}
+		});
+
+		// 2. Fetch the full heavy financial audit data
+		frappe.call({
+			method: 'teampro.teampro.page.in_finance.in_finance.get_financial_audit_data',
+			args: { filters: this.filters },
+			callback: (r) => {
+				if (r.message) {
+					this.data = Object.assign({}, this.data, r.message);
 					this.currency = r.message.currency || 'EGP';
 					this.render_all();
 				}
 			},
 			error: () => {
-				this.$kpi.html(`<div class="empty-state"><div class="empty-icon"><i class="fa fa-exclamation-triangle"></i></div><p>${this.t('error_loading')}</p></div>`);
+				if (!this.data || !this.data.kpis) {
+					this.$kpi.html(`<div class="empty-state"><div class="empty-icon"><i class="fa fa-exclamation-triangle"></i></div><p>${this.t('error_loading')}</p></div>`);
+				}
 			}
 		});
 	}
@@ -1871,7 +1991,7 @@ class FinancialAuditDashboard {
 		const cards = [
 			{ title: this.t('revenue'), desc: this.t('revenue_desc'), value: this.fc(k.revenue), css: 'revenue', icon: 'fa-money' },
 			{ title: this.t('cogs'), desc: this.t('cogs_desc'), value: this.fc(k.cogs), css: 'cogs', icon: 'fa-shopping-cart' },
-			{ title: this.t('gross_profit'), desc: this.t('gross_profit_desc'), value: this.fc(k.gross_profit), css: k.gross_profit >= 0 ? 'profit' : 'loss', icon: 'fa-line-chart' },
+			{ title: this.t('gross_profit'), desc: this.t('gross_profit_desc'), value: this.fc(k.gross_profit), css: k.gross_profit >= 0 ? 'profit' : 'loss', icon: 'fa-chart-line' },
 			{ title: this.t('gross_margin'), desc: this.t('gross_margin_desc'), value: k.gross_margin.toFixed(1) + '%', css: 'margin', icon: 'fa-percent' },
 			{ title: this.t('net_profit'), desc: this.t('net_profit_desc'), value: this.fc(k.net_profit), css: k.net_profit >= 0 ? 'profit' : 'loss', icon: 'fa-trophy' },
 			{ title: this.t('net_margin'), desc: this.t('net_margin_desc'), value: k.net_margin.toFixed(1) + '%', css: 'margin', icon: 'fa-percent' },
@@ -1929,14 +2049,19 @@ class FinancialAuditDashboard {
 	// ─── Performance Summary Chart ───────────────────────────
 
 	render_performance_summary_chart() {
+		console.log(this.filters.company);
+		console.log(typeof this.filters.company);
 		$.ajax({
+
 			url: '/api/method/teampro.teampro.page.in_finance.in_finance.get_performance_summary_data',
 			type: 'POST',
 			data: {
 				from_date: this.filters.from_date,
 				to_date: this.filters.to_date,
-				company: this.filters.company
+				// company: this.filters.company
+				company: JSON.stringify(this.filters.company)
 			},
+
 			headers: {
 				'X-Frappe-CSRF-Token': frappe.csrf_token
 			},
@@ -2659,7 +2784,7 @@ class FinancialAuditDashboard {
 					<div class="metric-card">
 						<div class="metric-icon" style="background:#ecfdf5;color:#047857"><i class="fa fa-clock-o"></i></div>
 						<div class="metric-label">${this.t('wc_dso')}</div>
-						<div class="metric-value" style="color:${ratio_color(90-wc.dso, 45, 0)}">${wc.dso} <small>${this.t('days')}</small></div>
+						<div class="metric-value" style="color:${ratio_color(90 - wc.dso, 45, 0)}">${wc.dso} <small>${this.t('days')}</small></div>
 						<div class="metric-sub">${dso_rate}</div>
 					</div>
 					<div class="metric-card">
@@ -2671,13 +2796,13 @@ class FinancialAuditDashboard {
 					<div class="metric-card">
 						<div class="metric-icon" style="background:#fff7ed;color:#f97316"><i class="fa fa-cubes"></i></div>
 						<div class="metric-label">${this.t('wc_dio')}</div>
-						<div class="metric-value" style="color:${ratio_color(90-wc.dio, 30, 0)}">${wc.dio} <small>${this.t('days')}</small></div>
+						<div class="metric-value" style="color:${ratio_color(90 - wc.dio, 30, 0)}">${wc.dio} <small>${this.t('days')}</small></div>
 						<div class="metric-sub">${dio_rate}</div>
 					</div>
 					<div class="metric-card highlight">
 						<div class="metric-icon" style="background:#eef1ff;color:#4361ee"><i class="fa fa-refresh"></i></div>
 						<div class="metric-label">${this.t('wc_ccc')}</div>
-						<div class="metric-value" style="color:${ratio_color(60-wc.ccc, 0, -30)}">${wc.ccc} <small>${this.t('days')}</small></div>
+						<div class="metric-value" style="color:${ratio_color(60 - wc.ccc, 0, -30)}">${wc.ccc} <small>${this.t('days')}</small></div>
 						<div class="metric-sub">DSO + DIO - DPO</div>
 					</div>
 				</div>
@@ -2701,7 +2826,7 @@ class FinancialAuditDashboard {
 						<div class="metric-sub">${cash_rate}</div>
 					</div>
 					<div class="metric-card">
-						<div class="metric-icon" style="background:#f5f3ff;color:#6d28d9"><i class="fa fa-line-chart"></i></div>
+						<div class="metric-icon" style="background:#f5f3ff;color:#6d28d9"><i class="fa fa-chart-line"></i></div>
 						<div class="metric-label">${this.t('wc_roe')}</div>
 						<div class="metric-value" style="color:${ratio_color(wc.roe, 15, 5)}">${wc.roe}%</div>
 						<div class="metric-sub">${roe_rate}</div>
@@ -2742,7 +2867,7 @@ class FinancialAuditDashboard {
 				<td>${arrow(yoy.revenue_growth)}</td>
 			</tr>
 			<tr>
-				<td><i class="fa fa-line-chart" style="${im};color:#4361ee"></i> ${this.t('yoy_gross')}</td>
+				<td><i class="fa fa-chart-line" style="${im};color:#4361ee"></i> ${this.t('yoy_gross')}</td>
 				<td class="currency">${this.fc(yoy.current_gross)}</td>
 				<td class="currency">${this.fc(yoy.prior_gross)}</td>
 				<td>${arrow(yoy.gross_growth)}</td>
@@ -2815,13 +2940,13 @@ class FinancialAuditDashboard {
 				{
 					name: this.t('chart_benford_sales'), type: 'bar',
 					data: si.data.map(d => d.observed_pct),
-					itemStyle: { color: si.conforms ? '#10b981' : '#ef4444', borderRadius: [4,4,0,0] },
+					itemStyle: { color: si.conforms ? '#10b981' : '#ef4444', borderRadius: [4, 4, 0, 0] },
 					barMaxWidth: 28
 				},
 				{
 					name: this.t('chart_benford_purchases'), type: 'bar',
 					data: pi.data.map(d => d.observed_pct),
-					itemStyle: { color: pi.conforms ? '#3b82f6' : '#f97316', borderRadius: [4,4,0,0] },
+					itemStyle: { color: pi.conforms ? '#3b82f6' : '#f97316', borderRadius: [4, 4, 0, 0] },
 					barMaxWidth: 28
 				}
 			]
@@ -2843,9 +2968,8 @@ class FinancialAuditDashboard {
 			</div>
 			<div style="text-align:center">
 				<div style="font-size:11px;font-weight:800;color:var(--fa-text-muted);text-transform:uppercase">${this.t('benford_risk_level')}</div>
-				<div><span class="ai-risk-badge ${si.risk === 'low' && pi.risk === 'low' ? 'low' : (si.risk === 'high' || pi.risk === 'high' ? 'high' : 'medium')}">${
-					si.risk === 'low' && pi.risk === 'low' ? this.t('risk_low') : (si.risk === 'high' || pi.risk === 'high' ? this.t('risk_high') : this.t('risk_medium'))
-				}</span></div>
+				<div><span class="ai-risk-badge ${si.risk === 'low' && pi.risk === 'low' ? 'low' : (si.risk === 'high' || pi.risk === 'high' ? 'high' : 'medium')}">${si.risk === 'low' && pi.risk === 'low' ? this.t('risk_low') : (si.risk === 'high' || pi.risk === 'high' ? this.t('risk_high') : this.t('risk_medium'))
+			}</span></div>
 				<div style="font-size:10px;color:var(--fa-text-muted);margin-top:2px">${this.t('benford_threshold')}</div>
 			</div>
 		</div>`);
@@ -3553,7 +3677,7 @@ ${lang_instruction}`;
 					arr.forEach(k => this.hidden_sections.add(k));
 				}
 			}
-		} catch(e) { /* ignore */ }
+		} catch (e) { /* ignore */ }
 	}
 
 	save_layout_prefs() {
@@ -3631,21 +3755,21 @@ ${lang_instruction}`;
 		dlg.show();
 
 		// Bulk actions
-		dlg.$wrapper.find('.layout-show-all').on('click', function() {
+		dlg.$wrapper.find('.layout-show-all').on('click', function () {
 			me.section_registry.forEach(sec => {
 				const fname = `sec_${sec.key.replace(/-/g, '_')}`;
 				dlg.set_value(fname, 1);
 			});
 		});
 
-		dlg.$wrapper.find('.layout-hide-all').on('click', function() {
+		dlg.$wrapper.find('.layout-hide-all').on('click', function () {
 			me.section_registry.forEach(sec => {
 				const fname = `sec_${sec.key.replace(/-/g, '_')}`;
 				dlg.set_value(fname, 0);
 			});
 		});
 
-		dlg.$wrapper.find('.layout-reset').on('click', function() {
+		dlg.$wrapper.find('.layout-reset').on('click', function () {
 			me.section_registry.forEach(sec => {
 				const fname = `sec_${sec.key.replace(/-/g, '_')}`;
 				dlg.set_value(fname, 1);
@@ -3681,7 +3805,7 @@ ${lang_instruction}`;
 			<th>${this.t('th_count')}</th><th>${this.t('th_oldest')}</th><th>${this.t('th_age')}</th>
 		</tr></thead><tbody>`;
 		d.items.forEach((r, i) => {
-			html += `<tr><td>${i+1}</td><td class="link-cell"><a href="/app/${(r.party_type||'').toLowerCase().replace(/ /g,'-')}/${encodeURIComponent(r.party)}" target="_blank">${r.party_name || r.party}</a></td>
+			html += `<tr><td>${i + 1}</td><td class="link-cell"><a href="/app/${(r.party_type || '').toLowerCase().replace(/ /g, '-')}/${encodeURIComponent(r.party)}" target="_blank">${r.party_name || r.party}</a></td>
 			<td>${r.party_type || ''}</td>
 			<td class="currency-cell danger-text">${this.fc(r.unallocated_amount)}</td>
 			<td class="currency-cell">${this.fc(r.total_paid)}</td>
@@ -3747,7 +3871,7 @@ ${lang_instruction}`;
 			d.anomalies.forEach(a => {
 				const issue_label = a.issue === 'no_depreciation' ? this.t('lbl_no_depreciation')
 					: a.issue === 'value_exceeds_cost' ? this.t('lbl_value_exceeds')
-					: this.t('lbl_negative_value');
+						: this.t('lbl_negative_value');
 				html += `<li class="anomaly-item"><a href="/app/asset/${encodeURIComponent(a.asset)}" target="_blank">${a.asset_name || a.asset}</a> — <span class="anomaly-badge">${issue_label}</span> (${this.fc(a.detail)})</li>`;
 			});
 			html += `</ul></div>`;
@@ -3761,10 +3885,10 @@ ${lang_instruction}`;
 		</tr></thead><tbody>`;
 		d.items.forEach((r, i) => {
 			const dep_pct = r.purchase_amount ? ((r.total_depreciated / r.purchase_amount) * 100).toFixed(1) : '0';
-			html += `<tr><td>${i+1}</td>
+			html += `<tr><td>${i + 1}</td>
 				<td class="link-cell"><a href="/app/asset/${encodeURIComponent(r.name)}" target="_blank">${r.asset_name || r.name}</a></td>
 				<td>${r.asset_category || ''}</td>
-				<td><span class="status-badge status-${(r.status||'').toLowerCase().replace(/ /g,'-')}">${r.status || ''}</span></td>
+				<td><span class="status-badge status-${(r.status || '').toLowerCase().replace(/ /g, '-')}">${r.status || ''}</span></td>
 				<td class="currency-cell">${this.fc(r.purchase_amount)}</td>
 				<td class="currency-cell">${this.fc(r.total_depreciated)} <small>(${dep_pct}%)</small></td>
 				<td class="currency-cell">${this.fc(r.current_value)}</td>
@@ -3789,8 +3913,9 @@ ${lang_instruction}`;
 		const me = this;
 
 		const options = {
-			tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' },
-				formatter: function(params) {
+			tooltip: {
+				trigger: 'axis', axisPointer: { type: 'shadow' },
+				formatter: function (params) {
 					let s = `<strong>${params[0].axisValue}</strong><br/>`;
 					params.forEach(p => { s += `${p.marker} ${p.seriesName}: ${me.fc(p.value)}<br/>`; });
 					return s;
@@ -3836,8 +3961,8 @@ ${lang_instruction}`;
 		d.items.forEach((r, i) => {
 			const status = r.days_on_hand > 90 ? { label: this.t('lbl_slow_moving'), cls: 'risk-badge-high' }
 				: r.days_on_hand > 30 ? { label: this.t('lbl_normal'), cls: 'risk-badge-medium' }
-				: { label: this.t('lbl_fast'), cls: 'risk-badge-low' };
-			html += `<tr><td>${i+1}</td>
+					: { label: this.t('lbl_fast'), cls: 'risk-badge-low' };
+			html += `<tr><td>${i + 1}</td>
 				<td class="link-cell"><a href="/app/item/${encodeURIComponent(r.item_code)}" target="_blank">${r.item_name || r.item_code}</a></td>
 				<td>${r.item_group || ''}</td>
 				<td>${(r.current_qty || 0).toLocaleString()}</td>
@@ -3906,8 +4031,9 @@ ${lang_instruction}`;
 		const me = this;
 
 		const options = {
-			tooltip: { trigger: 'axis',
-				formatter: function(params) {
+			tooltip: {
+				trigger: 'axis',
+				formatter: function (params) {
 					let s = `<strong>${params[0].axisValue}</strong><br/>`;
 					params.forEach(p => {
 						const unit = p.seriesName.includes('Margin') || p.seriesName.includes('هامش') ? '%' : (p.seriesName.includes('Ratio') || p.seriesName.includes('نسبة') ? 'x' : '');

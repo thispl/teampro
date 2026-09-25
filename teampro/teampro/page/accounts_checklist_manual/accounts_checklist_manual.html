@@ -1,0 +1,377 @@
+<div class="acc-manual">
+  <style>
+    .acc-manual { font-family: 'Inter', sans-serif; color: #333; }
+    .acc-manual-body { max-width: 900px; margin: 0 auto; padding: 20px 30px; }
+    .acc-manual h1 { font-size: 26px; color: #2490ef; border-bottom: 2px solid #e8e8e8; padding-bottom: 10px; margin-bottom: 20px; }
+    .acc-manual h2 { font-size: 20px; color: #1a1a1a; margin-top: 35px; margin-bottom: 12px; border-left: 4px solid #2490ef; padding-left: 10px; }
+    .acc-manual h3 { font-size: 16px; color: #444; margin-top: 22px; margin-bottom: 8px; }
+    .acc-manual p { line-height: 1.7; margin-bottom: 12px; }
+    .acc-manual ul, .acc-manual ol { margin-bottom: 14px; padding-left: 24px; }
+    .acc-manual li { line-height: 1.7; margin-bottom: 6px; }
+    .acc-manual table { width: 100%; border-collapse: collapse; margin: 14px 0; }
+    .acc-manual th { background: #f4f6f9; padding: 10px 12px; text-align: left; border: 1px solid #e0e0e0; font-weight: 600; }
+    .acc-manual td { padding: 10px 12px; border: 1px solid #e0e0e0; }
+    .acc-manual .acc-manual-toc { background: #f9fbff; border: 1px solid #dce8f8; border-radius: 8px; padding: 18px 24px; margin-bottom: 30px; }
+    .acc-manual .acc-manual-toc h3 { margin-top: 0; color: #2490ef; }
+    .acc-manual .acc-manual-toc ol { margin-bottom: 0; }
+    .acc-manual .acc-manual-toc a { color: #2490ef; text-decoration: none; }
+    .acc-manual .acc-manual-toc a:hover { text-decoration: underline; }
+    .acc-manual .note { background: #fff8e1; border-left: 4px solid #ffc107; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+    .acc-manual .tip { background: #e8f5e9; border-left: 4px solid #4caf50; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+    .acc-manual .warn { background: #ffebee; border-left: 4px solid #f44336; padding: 12px 16px; margin: 14px 0; border-radius: 4px; }
+    .acc-manual code { background: #f4f6f9; padding: 2px 6px; border-radius: 3px; font-size: 13px; }
+    .acc-manual .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+    .acc-manual .badge-daily { background: #e3f2fd; color: #1565c0; }
+    .acc-manual .badge-weekly { background: #f3e5f5; color: #7b1fa2; }
+    .acc-manual .badge-monthly { background: #e8f5e9; color: #2e7d32; }
+    .acc-manual .badge-quarterly { background: #fff3e0; color: #e65100; }
+    .acc-manual .badge-yearly { background: #fce4ec; color: #c62828; }
+    @media print {
+      .navbar, .page-head, .acc-manual-toc { display: none !important; }
+      .acc-manual-body { max-width: 100%; }
+    }
+  </style>
+
+  <div class="acc-manual-body">
+
+    <h1>Accounts Checklist &mdash; User Manual</h1>
+    <p style="color:#888; font-size:13px;">Version 1.0 &middot; Module: Teampro &middot; Site: erp.teamproit.com</p>
+
+    <!-- Table of Contents -->
+    <div class="acc-manual-toc">
+      <h3>Contents</h3>
+      <ol>
+        <li><a href="#overview">Overview</a></li>
+        <li><a href="#doctypes">DocTypes &amp; Structure</a></li>
+        <li><a href="#template">Accounts Checklist Template</a></li>
+        <li><a href="#settings">Accounts Checklist Settings</a></li>
+        <li><a href="#checklist">Accounts Checklist (Generated Instances)</a></li>
+        <li><a href="#generation">Generation &mdash; Auto &amp; Manual</a></li>
+        <li><a href="#statuses">Item Statuses &amp; Workflow</a></li>
+        <li><a href="#dpr">DPR &mdash; Daily Progress Report</a></li>
+        <li><a href="#dsr">DSR &mdash; Daily Status Report</a></li>
+        <li><a href="#checklist-items">Default Checklist Items</a></li>
+        <li><a href="#permissions">Roles &amp; Permissions</a></li>
+        <li><a href="#faq">FAQ &amp; Troubleshooting</a></li>
+      </ol>
+    </div>
+
+    <!-- 1. Overview -->
+    <h2 id="overview">1. Overview</h2>
+    <p>
+      The <strong>Accounts Checklist</strong> tool helps the accounts team track
+      <strong>daily, weekly, monthly, quarterly, and yearly</strong> accounting tasks
+      &mdash; both <strong>internal</strong> (bookkeeping, reconciliation, MIS) and
+      <strong>statutory</strong> (GSTR, TDS, EPF, ESI, PT, ITR, audit).
+    </p>
+    <p>
+      Each period, the system auto-generates a checklist from a master template.
+      Users update item statuses as they complete tasks. Progress is monitored via
+      two reports:
+    </p>
+    <ul>
+      <li><strong>DPR (Daily Progress Report)</strong> &mdash; per-task detail across a date range</li>
+      <li><strong>DSR (Daily Status Report)</strong> &mdash; daily rollup with completion % and category breakdown</li>
+    </ul>
+
+    <div class="tip">
+      <strong>Quick start:</strong> Open the <strong>Accounts Checklist</strong> list &rarr;
+      click the checklist for the current period &rarr; update each item's <strong>Status</strong> &rarr;
+      attach proof (challan/return PDF) &rarr; check <strong>DPR</strong> or <strong>DSR</strong> for monitoring.
+    </div>
+
+    <!-- 2. DocTypes -->
+    <h2 id="doctypes">2. DocTypes &amp; Structure</h2>
+    <table>
+      <tr><th>DocType</th><th>Type</th><th>Purpose</th></tr>
+      <tr><td>Accounts Checklist Settings</td><td>Single</td><td>Global config: auto-generation toggle, default company/owner, notifications</td></tr>
+      <tr><td>Accounts Checklist Template</td><td>Master</td><td>Library of checklist items by frequency &amp; category</td></tr>
+      <tr><td>Accounts Checklist Template Item</td><td>Child</td><td>One row in a template (title, category, frequency, statutory flag, due day)</td></tr>
+      <tr><td>Accounts Checklist</td><td>Transaction</td><td>Generated instance for a period (e.g. "Aug 2026", "Q3 2026", "FY2026-2027")</td></tr>
+      <tr><td>Accounts Checklist Item</td><td>Child</td><td>One row in a generated checklist (status, assignee, completion, attachment)</td></tr>
+    </table>
+
+    <!-- 3. Template -->
+    <h2 id="template">3. Accounts Checklist Template</h2>
+    <p>
+      The template is the <strong>master list</strong> of all checklist items. A default
+      template <code>ACT-00001</code> ("Default Accounts Checklist") is pre-loaded with
+      34 items.
+    </p>
+
+    <h3>How to edit the template</h3>
+    <ol>
+      <li>Go to <strong>Accounts Checklist Template</strong> list</li>
+      <li>Click <code>ACT-00001</code> to open it</li>
+      <li>Add / edit / remove rows in the <strong>Items</strong> table</li>
+      <li>For each item set:
+        <ul>
+          <li><strong>Item Title</strong> &mdash; the task name</li>
+          <li><strong>Category</strong> &mdash; Internal Accounts / Statutory / Management MIS / Audit Year-end</li>
+          <li><strong>Frequency</strong> &mdash; Daily / Weekly / Monthly / Quarterly / Yearly</li>
+          <li><strong>Is Statutory</strong> &mdash; tick if this is a legal compliance item</li>
+          <li><strong>Compliance Reference</strong> &mdash; e.g. GSTR-1, TDS, EPF</li>
+          <li><strong>Priority</strong> &mdash; High / Medium / Low</li>
+          <li><strong>Statutory Due Day</strong> &mdash; day of month the item is due (e.g. 11 for GSTR-1). 0 = use period end.</li>
+          <li><strong>Applicable Months</strong> &mdash; "All" or comma-separated (e.g. "Jun,Oct" for Form 16 / ITR)</li>
+          <li><strong>Assigned To Role / User</strong> &mdash; who is responsible</li>
+        </ul>
+      </li>
+      <li>Click <strong>Save</strong></li>
+    </ol>
+
+    <div class="note">
+      <strong>Note:</strong> Changes to the template affect <em>future</em> generated checklists only.
+      Already-generated checklists keep their original items.
+    </div>
+
+    <h3>Generate a checklist from the template</h3>
+    <p>Click the <strong>Generate Checklist for Period</strong> button on the template. This creates an Accounts Checklist for the selected frequency and current date.</p>
+
+    <!-- 4. Settings -->
+    <h2 id="settings">4. Accounts Checklist Settings</h2>
+    <p>Go to <strong>Accounts Checklist Settings</strong> (Single doctype) to configure:</p>
+    <table>
+      <tr><th>Field</th><th>Description</th></tr>
+      <tr><td>Enable Auto Generation</td><td>Tick to let the scheduler auto-create checklists daily/weekly/monthly/quarterly/yearly</td></tr>
+      <tr><td>Default Company</td><td>Company used when generating checklists</td></tr>
+      <tr><td>Default Owner</td><td>User assigned as default for items without a specific assignee</td></tr>
+      <tr><td>Default Template</td><td>Template used for auto-generation (usually ACT-00001)</td></tr>
+      <tr><td>Notify Pending Items Daily</td><td>Tick to send daily reminders for pending items</td></tr>
+      <tr><td>Notification Time</td><td>Time of day to send reminders (default 18:00)</td></tr>
+      <tr><td>Reminder Role</td><td>Role that receives reminder emails</td></tr>
+      <tr><td>Notify Overdue Items</td><td>Tick to send alerts for overdue items</td></tr>
+      <tr><td>Overdue Grace (hours)</td><td>Grace period before an item is marked overdue (default 24)</td></tr>
+    </table>
+
+    <h3>Generate all of today's checklists</h3>
+    <p>Click the <strong>Generate Today's Checklists</strong> button on Settings to manually create all applicable checklists for the current date (Daily + Weekly + Monthly + Quarterly + Yearly).</p>
+
+    <!-- 5. Checklist -->
+    <h2 id="checklist">5. Accounts Checklist (Generated Instances)</h2>
+    <p>
+      Each generated checklist is a transaction document covering one period.
+      Examples:
+    </p>
+    <table>
+      <tr><th>Name</th><th>Frequency</th><th>Period</th></tr>
+      <tr><td>ACC-Daily-04-Aug-2026-#####</td><td><span class="badge badge-daily">Daily</span></td><td>04-Aug-2026</td></tr>
+      <tr><td>ACC-Weekly-Week 03-Aug-2026-#####</td><td><span class="badge badge-weekly">Weekly</span></td><td>Week 03-Aug-2026</td></tr>
+      <tr><td>ACC-Monthly-Aug 2026-#####</td><td><span class="badge badge-monthly">Monthly</span></td><td>Aug 2026</td></tr>
+      <tr><td>ACC-Quarterly-Q3 2026-#####</td><td><span class="badge badge-quarterly">Quarterly</span></td><td>Q3 2026</td></tr>
+      <tr><td>ACC-Yearly-FY2026-2027-#####</td><td><span class="badge badge-yearly">Yearly</span></td><td>FY2026-2027 (Apr&ndash;Mar)</td></tr>
+    </table>
+
+    <h3>Header fields (auto-computed)</h3>
+    <ul>
+      <li><strong>Total Items</strong> &mdash; count of all items</li>
+      <li><strong>Completed</strong> &mdash; items marked Completed</li>
+      <li><strong>Pending</strong> &mdash; items in Pending or In Progress</li>
+      <li><strong>Overdue</strong> &mdash; items past due date and not completed</li>
+      <li><strong>Not Applicable</strong> &mdash; items marked N/A</li>
+      <li><strong>Completion %</strong> &mdash; completed / (total &minus; N/A) &times; 100</li>
+      <li><strong>Status</strong> &mdash; Open / In Progress / Completed / Overdue (auto)</li>
+    </ul>
+
+    <h3>Working with items</h3>
+    <ol>
+      <li>Open the checklist for the current period</li>
+      <li>Scroll to the <strong>Checklist Items</strong> table</li>
+      <li>For each item, update:
+        <ul>
+          <li><strong>Status</strong> &mdash; Pending / In Progress / Completed / Not Applicable / Overdue</li>
+          <li><strong>Attachment / Proof</strong> &mdash; upload the challan, return PDF, or screenshot</li>
+          <li><strong>Remarks</strong> &mdash; any notes (e.g. "Filed via portal, ARN: 12345")</li>
+        </ul>
+      </li>
+      <li><strong>Completed By</strong> and <strong>Completed On</strong> are auto-stamped when status = Completed</li>
+      <li>Click <strong>Save</strong></li>
+    </ol>
+
+    <div class="tip">
+      <strong>Tip:</strong> Use the <strong>Mark All In Progress</strong> button to bulk-update
+      all pending items to "In Progress" at the start of the day.
+    </div>
+
+    <!-- 6. Generation -->
+    <h2 id="generation">6. Generation &mdash; Auto &amp; Manual</h2>
+
+    <h3>Auto Generation (Scheduler)</h3>
+    <p>When <strong>Enable Auto Generation</strong> is ticked in Settings, the scheduler creates checklists automatically:</p>
+    <table>
+      <tr><th>Frequency</th><th>Schedule</th></tr>
+      <tr><td>Daily</td><td>Every day at 06:00</td></tr>
+      <tr><td>Weekly</td><td>Every week (Monday)</td></tr>
+      <tr><td>Monthly</td><td>1st of each month</td></tr>
+      <tr><td>Quarterly</td><td>1st of Jan / Apr / Jul / Oct at 06:30</td></tr>
+      <tr><td>Yearly</td><td>1st April at 07:00 (Indian FY start)</td></tr>
+      <tr><td>Overdue sweep</td><td>Daily at 23:00 &mdash; marks past-due items as Overdue</td></tr>
+    </table>
+    <p>If a checklist already exists for a period, it is <strong>not</strong> duplicated.</p>
+
+    <h3>Manual Generation</h3>
+    <ul>
+      <li><strong>From Settings:</strong> Click "Generate Today's Checklists" &rarr; creates all frequencies for today</li>
+      <li><strong>From Template:</strong> Click "Generate Checklist for Period" &rarr; creates one frequency for today</li>
+      <li><strong>Via bench:</strong> <code>bench --site &lt;site&gt; execute teampro.teampro.doctype.accounts_checklist.accounts_checklist.generate_manual --kwargs '{"frequency":"Monthly","ref_date":"2026-08-01"}'</code></li>
+    </ul>
+
+    <!-- 7. Statuses -->
+    <h2 id="statuses">7. Item Statuses &amp; Workflow</h2>
+    <table>
+      <tr><th>Status</th><th>Meaning</th><th>Auto-set?</th></tr>
+      <tr><td>Pending</td><td>Not yet started (default on generation)</td><td>Yes (on generation)</td></tr>
+      <tr><td>In Progress</td><td>Work started but not finished</td><td>Manual or via "Mark All In Progress"</td></tr>
+      <tr><td>Completed</td><td>Task done; completed_by and completed_on auto-stamped</td><td>Manual (auto-stamps user/time)</td></tr>
+      <tr><td>Not Applicable</td><td>Item does not apply this period</td><td>Manual</td></tr>
+      <tr><td>Overdue</td><td>Due date passed and not completed</td><td>Yes (by nightly sweep at 23:00)</td></tr>
+    </table>
+
+    <div class="warn">
+      <strong>Important:</strong> Overdue status is set by the nightly scheduler. If the scheduler
+      is paused, items will not auto-mark overdue. You can also manually set a status to Overdue.
+    </div>
+
+    <!-- 8. DPR -->
+    <h2 id="dpr">8. DPR &mdash; Daily Progress Report</h2>
+    <p><strong>Path:</strong> Search "Daily Progress Report" or go to <code>/app/query-report/Daily Progress Report</code></p>
+    <p>The DPR shows <strong>per-item detail</strong> across a date range. Use this to see exactly which tasks are done, pending, or overdue, and by whom.</p>
+
+    <h3>Filters</h3>
+    <table>
+      <tr><th>Filter</th><th>Description</th></tr>
+      <tr><td>From Date</td><td>Start of the date range</td></tr>
+      <tr><td>To Date</td><td>End of the date range</td></tr>
+      <tr><td>Frequency</td><td>Filter to Daily / Weekly / Monthly / Quarterly / Yearly</td></tr>
+      <tr><td>Category</td><td>Filter to Internal Accounts / Statutory / Management MIS / Audit Year-end</td></tr>
+      <tr><td>Status</td><td>Filter to Pending / In Progress / Completed / Not Applicable / Overdue</td></tr>
+      <tr><td>Is Statutory</td><td>Tick to show only statutory items</td></tr>
+      <tr><td>Assigned To</td><td>Filter to a specific user</td></tr>
+    </table>
+
+    <h3>Columns</h3>
+    <p>Checklist, Date, Frequency, Period, Category, Item, Statutory, Compliance Ref, Priority, Due Date, Status, Assigned To, Completed By, Completed On, Remarks</p>
+
+    <!-- 9. DSR -->
+    <h2 id="dsr">9. DSR &mdash; Daily Status Report</h2>
+    <p><strong>Path:</strong> Search "Daily Status Report" or go to <code>/app/query-report/Daily Status Report</code></p>
+    <p>The DSR shows a <strong>daily rollup</strong> &mdash; one row per checklist with summary counts, completion %, and per-category breakdown. Includes a bar chart of Completed / Pending / Overdue by period.</p>
+
+    <h3>Filters</h3>
+    <table>
+      <tr><th>Filter</th><th>Description</th></tr>
+      <tr><td>From Date</td><td>Start of the date range</td></tr>
+      <tr><td>To Date</td><td>End of the date range</td></tr>
+      <tr><td>Frequency</td><td>Filter to a specific frequency</td></tr>
+    </table>
+
+    <h3>Columns</h3>
+    <p>Date, Frequency, Period, Checklists, Total Items, Completed, Pending, Overdue, N/A, Completion %, then per-category (Internal Accounts, Statutory, Management MIS, Audit Year-end) counts and done counts.</p>
+
+    <div class="tip">
+      <strong>Tip:</strong> The DSR is ideal for management review &mdash; it shows at a glance
+      how many statutory items are pending and the overall completion percentage for each period.
+    </div>
+
+    <!-- 10. Default Items -->
+    <h2 id="checklist-items">10. Default Checklist Items</h2>
+
+    <h3>Daily <span class="badge badge-daily">5 items</span></h3>
+    <ul>
+      <li>Bank balance &amp; movement review</li>
+      <li>Petty cash reconciliation</li>
+      <li>Voucher posting &amp; verification</li>
+      <li>Sales &amp; purchase register review</li>
+      <li>Receipt &amp; payment entry checking</li>
+    </ul>
+
+    <h3>Weekly <span class="badge badge-weekly">5 items</span></h3>
+    <ul>
+      <li>Bank reconciliation (BRS) update</li>
+      <li>Debtor aging review</li>
+      <li>Creditor aging review</li>
+      <li>Cash flow summary to management</li>
+      <li>Pending invoice / GRN matching</li>
+    </ul>
+
+    <h3>Monthly <span class="badge badge-monthly">13 items</span></h3>
+    <ul>
+      <li>Books finalization &amp; ledger review</li>
+      <li>Fixed asset depreciation posting</li>
+      <li>Prepaid &amp; accrual entries</li>
+      <li>Stock ledger &amp; valuation check</li>
+      <li><strong>GSTR-1 filing</strong> (due 11th) &mdash; Statutory</li>
+      <li><strong>GSTR-3B filing</strong> (due 20th) &mdash; Statutory</li>
+      <li><strong>TDS return (24Q/26Q)</strong> (due 7th) &mdash; Statutory</li>
+      <li><strong>EPF challan &amp; return</strong> (due 15th) &mdash; Statutory</li>
+      <li><strong>ESI challan &amp; return</strong> (due 15th) &mdash; Statutory</li>
+      <li><strong>Professional Tax return</strong> (due 20th) &mdash; Statutory</li>
+      <li><strong>Advance tax computation</strong> (due 15th) &mdash; Statutory</li>
+      <li>MIS &mdash; P&amp;L and Balance Sheet snapshot</li>
+      <li>Budget vs Actual &mdash; monthly review</li>
+    </ul>
+
+    <h3>Quarterly <span class="badge badge-quarterly">4 items</span></h3>
+    <ul>
+      <li>Quarterly GSTR-9 / 9C preparation &mdash; Statutory</li>
+      <li>TDS quarterly return filing &mdash; Statutory</li>
+      <li>Quarterly board pack / financials</li>
+      <li>GST reconciliation with books</li>
+    </ul>
+
+    <h3>Yearly <span class="badge badge-yearly">7 items</span></h3>
+    <ul>
+      <li>Annual books closure</li>
+      <li>Fixed asset register &amp; physical verification &mdash; Statutory</li>
+      <li>Stock taking / physical inventory</li>
+      <li><strong>Form 16 issuance</strong> (Jun) &mdash; Statutory</li>
+      <li><strong>Form 26AS / AIS reconciliation</strong> &mdash; Statutory</li>
+      <li><strong>Income Tax Return filing</strong> (Oct) &mdash; Statutory</li>
+      <li><strong>GSTR-9 / 9C annual return</strong> (Dec) &mdash; Statutory</li>
+      <li>Statutory audit coordination</li>
+      <li>Tax audit (Form 3CD) preparation &mdash; Statutory</li>
+      <li>Year-end MIS &amp; annual report</li>
+    </ul>
+
+    <div class="note">
+      <strong>Note:</strong> These are defaults. Edit the template (ACT-00001) to add,
+      remove, or customise items for your organisation.
+    </div>
+
+    <!-- 11. Permissions -->
+    <h2 id="permissions">11. Roles &amp; Permissions</h2>
+    <table>
+      <tr><th>Role</th><th>Settings</th><th>Template</th><th>Checklist</th><th>Reports</th></tr>
+      <tr><td>System Manager</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+      <tr><td>Accounts Manager</td><td>Full</td><td>Full</td><td>Full</td><td>Full</td></tr>
+      <tr><td>Accounts User</td><td>&mdash;</td><td>Read</td><td>Create / Read / Write</td><td>Full</td></tr>
+    </table>
+
+    <!-- 12. FAQ -->
+    <h2 id="faq">12. FAQ &amp; Troubleshooting</h2>
+
+    <h3>Q: Checklists are not auto-generating. Why?</h3>
+    <p>A: Check that <strong>Enable Auto Generation</strong> is ticked in Accounts Checklist Settings, and that the Frappe scheduler is running (<code>bench schedule</code> or supervisor). Also verify a <strong>Default Template</strong> is set.</p>
+
+    <h3>Q: How do I backfill a checklist for a past period?</h3>
+    <p>A: Use manual generation via bench: <code>bench --site &lt;site&gt; execute teampro.teampro.doctype.accounts_checklist.accounts_checklist.generate_manual --kwargs '{"frequency":"Monthly","ref_date":"2026-07-01"}'</code></p>
+
+    <h3>Q: An item shows Overdue but I already completed it. Why?</h3>
+    <p>A: The overdue sweep runs at 23:00 nightly. If you completed the item after the sweep ran, simply set the status back to Completed and save.</p>
+
+    <h3>Q: How do I add a new statutory compliance item?</h3>
+    <p>A: Open the template (ACT-00001) &rarr; add a new row in the Items table &rarr; set Category = Statutory, Is Statutory = ticked, Compliance Reference, Frequency, and Statutory Due Day &rarr; Save. The next generated checklist will include it.</p>
+
+    <h3>Q: Can I have different templates for different companies?</h3>
+    <p>A: Yes. Create multiple Accounts Checklist Template records, each with a different Company. Then set the appropriate one as Default Template in Settings, or pass the template name when generating manually.</p>
+
+    <h3>Q: The DPR/DSR report shows no data. Why?</h3>
+    <p>A: Make sure checklists have been generated for the date range you're filtering on. Generate them first (manually or via the Settings button), then re-run the report.</p>
+
+    <hr style="margin-top:40px; border:none; border-top:1px solid #e8e8e8;">
+    <p style="color:#aaa; font-size:12px; text-align:center;">
+      Accounts Checklist v1.0 &middot; Teampro Module &middot; Generated 2026-08-11
+    </p>
+
+  </div>
+</div>

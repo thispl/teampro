@@ -3,8 +3,8 @@
  "creation": "2025-05-22 16:06:15.213302",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 32,
- "modified": "2026-05-18 10:06:52.765675",
+ "idx": 38,
+ "modified": "2026-07-09 12:36:05.799174",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "finance-details",
@@ -16,6 +16,9 @@
   },
   {
    "role": "Accounts Manager"
+  },
+  {
+   "role": "Sales Manager"
   }
  ],
  "script": null,

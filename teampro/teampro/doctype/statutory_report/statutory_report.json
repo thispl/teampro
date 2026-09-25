@@ -1,0 +1,62 @@
+{
+ "actions": [],
+ "creation": "2026-07-26 15:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "download_return",
+  "upload_challan",
+  "upload_payment",
+  "status"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Title",
+   "options": "\nBank - BTS\nEPF\nESI",
+   "reqd": 1
+  },
+  {
+   "fieldname": "download_return",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Download Return"
+  },
+  {
+   "fieldname": "upload_challan",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Upload Challan"
+  },
+  {
+   "fieldname": "upload_payment",
+   "fieldtype": "Attach",
+   "in_list_view": 1,
+   "label": "Upload Payment"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Pending\nIn Process\nCompleted",
+   "default": "Pending"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-26 15:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Statutory Report",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

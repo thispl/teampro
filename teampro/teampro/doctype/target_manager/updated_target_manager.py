@@ -573,11 +573,12 @@ def calculate_target_for_manager_inso_test():
 		"Fiscal Year",
 		{
 			"year_start_date": ("<=", today),
-			"year_end_date": (">=", today)
+			"year_end_date": (">=", today),
+			"disabled": 0
 		},
 		"name"
 	)
-
+	print(current_fy)
 	tps = frappe.get_all('Target Manager',filters={'custom_fiscal_year': current_fy},fields=['*'])
 	def get_month_range(start_date, end_date):
 		current = start_date.replace(day=1)

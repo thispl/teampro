@@ -1,0 +1,116 @@
+/* Modern Experience / Relieving Letter - WeasyPrint */
+body {
+    font-family: "InterVariable", "Inter", -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color: #1a1a1a;
+    font-size: 14px;
+    line-height: 1.8;
+    padding-left: 20mm;
+    padding-right: 20mm;
+    box-sizing: border-box;
+}
+
+/* Letterhead images full-bleed */
+header img, footer img {
+    width: 100% !important;
+    max-width: 210mm !important;
+    height: auto !important;
+    display: block;
+}
+header, footer {
+    width: 210mm !important;
+}
+
+/* Fix: WeasyPrint can't break content inside flex containers. */
+.section:not(:has(.column ~ .column)) .section-columns.row {
+    display: block !important;
+}
+.section:not(:has(.column ~ .column)) .section-columns.row .column {
+    display: block !important;
+    max-width: none !important;
+}
+
+/* Section spacing */
+.section {
+    margin-bottom: 2px;
+}
+.section-columns {
+    gap: 8px;
+}
+.column {
+    padding: 0 5px;
+}
+.custom-html {
+    margin-bottom: 2px;
+}
+
+/* Allow content to break across pages */
+.field, .ql-snow, .ql-editor, .value {
+    page-break-inside: auto !important;
+}
+
+/* Letter content */
+.rl-letter {
+    margin-top: 5mm;
+}
+
+.rl-meta {
+    text-align: right;
+    font-size: 13px;
+    color: #555;
+    margin-bottom: 12mm;
+}
+.rl-meta div {
+    margin: 1px 0;
+}
+
+.rl-title {
+    text-align: center;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin: 0 0 12mm;
+    text-transform: uppercase;
+    color: #231B4E;
+}
+
+.rl-body {
+    margin: 0;
+    text-align: justify;
+}
+.rl-body p {
+    margin: 0 0 8mm;
+    line-height: 2;
+}
+.rl-name {
+    font-weight: 700;
+    color: #231B4E;
+}
+
+.rl-sign {
+    margin-top: 15mm;
+    text-align: left;
+}
+.rl-sign .for {
+    font-size: 14px;
+    margin-bottom: 20mm;
+    color: #555;
+}
+.rl-sign .company {
+    font-weight: 700;
+    font-size: 16px;
+    color: #231B4E;
+}
+.rl-sign .dept {
+    font-size: 13px;
+    color: #555;
+    margin-top: 2px;
+}
+
+.rl-footer {
+    margin-top: 15mm;
+    border-top: 1px solid #e0e0e0;
+    padding-top: 6px;
+    font-size: 11px;
+    color: #999;
+    text-align: center;
+}

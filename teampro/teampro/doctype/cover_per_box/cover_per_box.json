@@ -1,0 +1,41 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-07-04 13:01:57.388273",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "box",
+  "cover"
+ ],
+ "fields": [
+  {
+   "fieldname": "box",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Box"
+  },
+  {
+   "fieldname": "cover",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Cover Per Box"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-07-04 14:06:34.513327",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Cover Per Box",
+ "owner": "systems@groupteampro.com",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -5,5 +5,5 @@
 from frappe.tests.utils import FrappeTestCase
 
 
-class TestDailyStatusMeeting-DSM(FrappeTestCase):
+class TestDailyStatusMeetingDSM(FrappeTestCase):
 	pass

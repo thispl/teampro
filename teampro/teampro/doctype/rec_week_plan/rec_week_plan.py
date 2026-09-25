@@ -2,6 +2,7 @@
 # For license information, please see license.txt
 
 import frappe
+import json
 from frappe.model.document import Document
 from frappe import _
 from collections import defaultdict
@@ -605,8 +606,8 @@ def update_dsr_data(name):
     date_today = getdate(today())
 
     for row in doc.allocation:
-        if getdate(row.date) != date_today:
-            continue 
+        # if getdate(row.date) != date_today:
+        #     continue 
         candidate_count = frappe.db.sql("""
             SELECT COUNT(DISTINCT c.name)
             FROM `tabCandidate` c
@@ -1239,7 +1240,8 @@ def get_rec_task_data():
             t.name as task,
             t.custom_task_sourcing_status as src_s,
             t.custom_sourcing_method as src,
-            t.mode_of_interview as moi
+            t.mode_of_interview as moi,
+            t.status
         FROM `tabTask` t
         INNER JOIN `tabProject` p ON p.name = t.project
         WHERE t.status IN ('Open','Working','Pending Review','Overdue')
@@ -1248,13 +1250,67 @@ def get_rec_task_data():
         ORDER BY p.project_name ASC,t.custom_task_sourcing_status ASC
     """, as_dict=True)
 
+    # for row in task_data:
+    #     if row.get("spoc"):
+    #         row["spoc_short_code"] = frappe.db.get_value(
+    #             "Employee",
+    #             {"user_id": row.get("spoc")},
+    #             "short_code"
+    #         ) or ""
+
     for row in task_data:
+        # SPOC Short Code
         if row.get("spoc"):
             row["spoc_short_code"] = frappe.db.get_value(
                 "Employee",
                 {"user_id": row.get("spoc")},
                 "short_code"
             ) or ""
+
+        # Account Manager
+        if row.get("customer"):
+
+            account_manager = frappe.db.get_value(
+                "Customer",
+                row.get("customer"),
+                "account_manager"
+            )
+
+            row["account_manager"] = account_manager or ""
+
+            if account_manager:
+                row["account_manager_short_code"] = frappe.db.get_value(
+                    "Employee",
+                    {"user_id": account_manager},
+                    "short_code"
+                ) or ""
+            else:
+                row["account_manager_short_code"] = ""
+        # Project Manager
+        if row.get("project"):
+
+            project_manager = frappe.db.get_value(
+                "Project",
+                row.get("project"),
+                "project_manager"
+            )
+
+            row["project_manager"] = project_manager or ""
+
+            if project_manager:
+                row["project_manager_short_code"] = frappe.db.get_value(
+                    "Employee",
+                    {"user_id": project_manager},
+                    "short_code"
+                ) or ""
+            else:
+                row["project_manager_short_code"] = ""
+    frappe.errprint({
+        "customer": row.get("customer"),
+        "account_manager": account_manager,
+        "short_code": row.get("account_manager_short_code"),
+        "short_code": row.get("project_manager_short_code")
+    })
 
     return task_data
 
@@ -1300,24 +1356,155 @@ def enqueue_update_task_det_rec(name):
         task.save(ignore_permissions=True)
     frappe.db.commit()
 
+# @frappe.whitelist()
+# def update_task_src(tasks):
+#     """
+#     Update SRC and SRC_S in Task
+#     """
+#     import json
+
+#     if isinstance(tasks, str):
+#         tasks = json.loads(tasks)
+
+#     for row in tasks:
+#         if not row.get("task_id"):
+#             continue
+#         frappe.db.set_value("Task",row["task_id"],"custom_sourcing_method",row.get("src"))
+#         frappe.db.set_value("Task",row["task_id"],"custom_task_sourcing_status",row.get("src_s"))
+#         # frappe.db.set_value("Task",row["task_id"],{"custom_sourcing_method": row.get("src"),"custom_task_sourcing_status": row.get("src_s")},update_modified=False)
+
+#     frappe.db.commit()
+
+# @frappe.whitelist()
+# def update_task_src(tasks):
+
+#     if isinstance(tasks, str):
+#         tasks = json.loads(tasks)
+
+#     for row in tasks:
+
+#         if not row.get("task_id"):
+#             continue
+
+#         update_dict = {
+#             "custom_task_sourcing_status": row.get("src_s")
+#         }
+
+#         if row.get("src_s") == "FP":
+
+#             update_dict["custom_fp_date"] = row.get("efd") or None
+#             # update_dict["custom_value"] = 0
+
+#         else:
+
+#             update_dict["custom_value"] = row.get("cc") or 0
+#             # update_dict["custom_fp_date"] = None
+
+#         frappe.db.set_value(
+#             "Task",
+#             row["task_id"],
+#             update_dict
+#         )
+
+#     frappe.db.commit()
+
+#     return "Success"
+
+@frappe.whitelist()
+def get_task_sources(task_ids):
+    """Return a mapping of task_id -> comma-joined sourcing methods.
+
+    custom_sourcing_method_multi on Task is a Table MultiSelect (Source Method
+    Child). End users typically lack read permission on that child DocType, so
+    this server-side helper reads the child rows with ignore_permissions and
+    returns the values for use in the REC Week Plan UI.
+    """
+    if isinstance(task_ids, str):
+        task_ids = json.loads(task_ids)
+
+    if not task_ids:
+        return {}
+
+    rows = frappe.db.get_all(
+        "Source Method Child",
+        filters={
+            "parent": ["in", task_ids],
+            "parentfield": "custom_sourcing_method_multi",
+        },
+        fields=["parent", "sourcing_method"],
+    )
+
+    sources = {}
+    for r in rows:
+        if not r.sourcing_method:
+            continue
+        sources.setdefault(r.parent, []).append(r.sourcing_method)
+
+    return {tid: ",".join(sources.get(tid, [])) for tid in task_ids}
+
+
 @frappe.whitelist()
 def update_task_src(tasks):
-    """
-    Update SRC and SRC_S in Task
-    """
-    import json
 
     if isinstance(tasks, str):
         tasks = json.loads(tasks)
 
     for row in tasks:
+
         if not row.get("task_id"):
             continue
-        frappe.db.set_value("Task",row["task_id"],"custom_sourcing_method",row.get("src"))
-        frappe.db.set_value("Task",row["task_id"],"custom_task_sourcing_status",row.get("src_s"))
-        # frappe.db.set_value("Task",row["task_id"],{"custom_sourcing_method": row.get("src"),"custom_task_sourcing_status": row.get("src_s")},update_modified=False)
+        value = row.get("cc") or 0
+        fp_date = row.get("efd")
+        if fp_date == "":
+            fp_date = None
+        frappe.db.set_value(
+            "Task",
+            row["task_id"],
+            {
+                "custom_task_sourcing_status": row.get("src_s"),
+                "custom_value": value,
+                "custom_fp_date": fp_date,
+                "status": row.get("status") or None,
+            }
+        )
 
-    frappe.db.commit()
+        # custom_sourcing_method_multi is a Table MultiSelect (Source Method Child)
+        # on the Task doctype. It has no column on tabTask, so it cannot be set via
+        # db.set_value. Update the child rows on the related Task document instead.
+        sources_raw = row.get("custom_sourcing_method_multi") or ""
+        selected = [s.strip() for s in sources_raw.split(",") if s.strip()]
+        task_doc = frappe.get_doc("Task", row["task_id"])
+        task_doc.set("custom_sourcing_method_multi", [])
+        for s in selected:
+            task_doc.append("custom_sourcing_method_multi", {"sourcing_method": s})
+        task_doc.save(ignore_permissions=True)
+
+    # frappe.db.commit()
+
+    return "Success"
+
+
+@frappe.whitelist()
+def get_holidays(start_date, end_date):
+
+    # holiday_list = frappe.db.get_value(
+    #     "Company",
+    #     "TEAMPRO HR & IT Services Pvt. Ltd.",
+    #     "default_holiday_list"
+    # )
+
+    # if not holiday_list:
+    #     return []
+
+    return frappe.get_all(
+        "Holiday",
+        filters={
+            "parent": "TEAMPRO-2025",
+            "holiday_date": ["between", [start_date, end_date]]
+        },
+        fields=["holiday_date"]
+    )
+
 
 import frappe
 from openpyxl import Workbook
@@ -1841,3 +2028,187 @@ def download_dsr_excel(name, start_date=None, end_date=None, executive=None, tea
 #     frappe.local.response.filename = "DSR_Report.xlsx"
 #     frappe.local.response.filecontent = output.getvalue()
 #     frappe.local.response.type = "download"
+
+
+
+import frappe
+from frappe.utils import getdate
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
+
+
+@frappe.whitelist()
+def download_team_wise_excel(docname, team=None, date=None, date_to=None):
+    doc = frappe.get_doc("REC Week Plan", docname)
+
+    rows = doc.get("team_wise") or []
+
+    from_date = getdate(date) if date else None
+    to_date = getdate(date_to) if date_to else None
+
+    filtered = []
+    for r in rows:
+        if team and r.team != team:
+            continue
+
+        row_date = getdate(r.date) if r.date else None
+
+        if from_date and to_date:
+            if not row_date or not (from_date <= row_date <= to_date):
+                continue
+        elif from_date:
+            if not row_date or row_date < from_date:
+                continue
+        elif to_date:
+            if not row_date or row_date > to_date:
+                continue
+
+        filtered.append(r)
+
+    # Preload Project -> project_name mapping (avoids N+1 queries)
+    project_ids = {r.project for r in filtered if r.project}
+    project_name_map = {}
+    if project_ids:
+        project_name_map = frappe._dict(
+            frappe.get_all(
+                "Project",
+                filters={"name": ["in", list(project_ids)]},
+                fields=["name", "project_name"],
+                as_list=True,
+            )
+        )
+
+    # Build Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Team Wise Allocation"
+
+    headers = ["No.", "Project", "Task", "Subject", "Team", "EXE", "Date", "RC", "AC"]
+
+    header_fill = PatternFill("solid", fgColor="1F4E79")
+    header_font = Font(bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin")
+    )
+
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    for idx, r in enumerate(filtered, start=1):
+        project_name = project_name_map.get(r.project, r.project) if r.project else ""
+        ws.append([
+            idx,
+            project_name,
+            r.task,
+            r.subject,
+            r.team,
+            r.exe,
+            getdate(r.date).strftime("%d-%m-%Y") if r.date else "",
+            r.rc or 0,
+            r.ac or 0,
+        ])
+
+    for rr in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(headers)):
+        for cell in rr:
+            cell.border = thin_border
+
+    for col in ws.columns:
+        max_len = max(len(str(c.value or "")) for c in col)
+        col_letter = get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    xlsx_file = BytesIO()
+    wb.save(xlsx_file)
+    xlsx_file.seek(0)
+
+    frappe.response["filename"] = f"Team_Wise_{docname}.xlsx"
+    frappe.response["filecontent"] = xlsx_file.getvalue()
+    frappe.response["type"] = "binary"
+
+
+@frappe.whitelist()
+def download_allocation_internal_excel(docname):
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+    from frappe.utils import getdate
+
+    doc = frappe.get_doc("REC Week Plan", docname)
+    rows = doc.get("allocation") or []
+
+    meta = frappe.get_meta("Week Plan Details")
+
+    excluded_types = {"Column Break", "Section Break", "Tab Break", "HTML", "Button", "Table", "Table MultiSelect"}
+    excluded_fields = {"name", "owner", "creation", "modified", "modified_by", "docstatus",
+                       "_comments", "_assign", "_liked_by", "parent", "parentfield", "parenttype"}
+
+    date_fieldtypes = {"Date", "Datetime"}
+    fields = []
+    for f in meta.fields:
+        if f.hidden or f.fieldtype in excluded_types:
+            continue
+        if f.fieldname in excluded_fields:
+            continue
+        fields.append(f)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Allocation - Internal"
+
+    header_fill = PatternFill("solid", fgColor="2B177A")
+    header_font = Font(bold=True, color="FFFFFF")
+    thin_border = Border(
+        left=Side(style="thin"), right=Side(style="thin"),
+        top=Side(style="thin"), bottom=Side(style="thin")
+    )
+
+    headers = ["No."] + [f.label or f.fieldname for f in fields]
+    ws.append(headers)
+    for col in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+        cell.border = thin_border
+
+    for r in rows:
+        data_row = [r.idx or ""]
+        for f in fields:
+            val = r.get(f.fieldname)
+            if val is None:
+                val = ""
+            elif f.fieldtype in date_fieldtypes:
+                val = getdate(val).strftime("%d-%m-%Y")
+            data_row.append(val)
+        ws.append(data_row)
+
+    for rr in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=1, max_col=len(headers)):
+        for cell in rr:
+            cell.border = thin_border
+
+    for col in ws.columns:
+        col_letter = get_column_letter(col[0].column)
+        if col_letter == "A":
+            ws.column_dimensions[col_letter].width = 6
+        else:
+            max_len = max(len(str(c.value or "")) for c in col)
+            ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    xlsx_file = BytesIO()
+    wb.save(xlsx_file)
+    xlsx_file.seek(0)
+
+    frappe.response["filename"] = f"Allocation_Internal_{docname}.xlsx"
+    frappe.response["filecontent"] = xlsx_file.getvalue()
+    frappe.response["type"] = "binary"
+
+

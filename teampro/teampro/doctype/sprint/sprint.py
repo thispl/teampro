@@ -1474,7 +1474,7 @@ from frappe.utils import flt
 @frappe.whitelist()
 def update_spr_table(name):
 # def update_spr_table():
-#     name="SPM00076"
+#     name="SPM00194"
     spr = frappe.get_doc('Sprint', name)
     tasks = []  
     # Update existing rows
@@ -1489,8 +1489,8 @@ def update_spr_table(name):
                 cr_status = frappe.db.get_value('Task', {'name': i.task}, ['status'])
                 task_at = frappe.db.get_value("Task",{'name': i.task},['actual_time'])
                 task_rt = frappe.db.get_value('Task', i.task, 'rt') or 0
-                if flt(i.rt) != flt(task_rt):
-                    i.rt = task_rt
+                # if flt(i.rt) != flt(task_rt):
+                #     i.rt = task_rt
                 tot_at = frappe.db.sql("""
                     SELECT SUM(cs.hours) as total
                     FROM `tabTimesheet` c
@@ -1611,10 +1611,10 @@ def update_spr_table(name):
                 expected_time, rt, actual_time, priority,
                 custom_remarks, custom_dev_team, custom_sprint
             FROM `tabTask`
-            WHERE custom_allocated_to = %s AND custom_production_date =%s
+            WHERE custom_allocated_to = %s AND custom_sprint =%s AND date(creation) >= %s AND kt_confirmed = 1
             ORDER BY custom_allocated_to, project, priority
         """
-        task_data = frappe.db.sql(query, (e.user_id,today_date), as_dict=1)
+        task_data = frappe.db.sql(query, (e.user_id,spr.sprint_id,spr.from_date), as_dict=1)
 
         for task in task_data:
             task_id = task.name
@@ -2186,3 +2186,8 @@ def update_task_sprint(task_id, production_date):
 
     return "Sprint Updated"
 
+
+# @frappe.whitelist()
+# def update_rt_on_timesheet_submission(doc,method):
+#     for i in doc.timesheet_summary:
+#         task_doc = frappe.db.get

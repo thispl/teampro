@@ -1,7 +1,7 @@
 import frappe
 from frappe.utils.csvutils import read_csv_content
 from frappe.utils import get_first_day, get_last_day, format_datetime, get_url_to_form
-from frappe.utils import cint
+from frappe.utils import cint, flt
 from frappe.utils.data import date_diff, now_datetime, nowdate, today, add_days
 import datetime
 from frappe import _
@@ -208,33 +208,67 @@ def update_dm(doc, method=None):
         {"parent": dm_name, "id": doc.name}
     )
 
-    task = frappe.get_doc("Task", doc.name)
+    # # doc IS the Task — no need to re-fetch it
+    # if exists:
+    #     frappe.db.set_value(
+    #         "Allocated Tasks",
+    #         exists,
+    #         {
+    #             "project_name": doc.project,
+    #             "subject": doc.subject,
+    #             "cb": doc.cb,
+    #             "status": doc.status,
+    #             "revisions": doc.revisions,
+    #             "at": doc.actual_time,
+    #             "rt": doc.rt,
+    #             "et": doc.expected_time,
+    #             "priority": doc.priority,
+    #             "allocated_on": doc.custom_allocated_on,
+    #             "current_status": doc.status,
+    #             "spot_task": doc.custom_spot_task,
+    #             "remark": doc.custom_remarks,
+    #             "et_vs_at_remark": doc.custom_et_vs_at_remark,
+    #             "allocated_to": doc.custom_allocated_to,
+    #             "kt_confirmed": doc.kt_confirmed,
+    #             "is_confirmed": doc.is_confirmed,
+    #             "production_date_count": doc.custom_production_date_count
+    #         }
+    #     )
+    #     return
+
+    allocated_task = frappe.db.get_value(
+        "Allocated Tasks",
+        exists,
+        ["rt"],
+        as_dict=True
+    )
+
+    values = {
+        "project_name": doc.project,
+        "subject": doc.subject,
+        "cb": doc.cb,
+        "status": doc.status,
+        "revisions": doc.revisions,
+        "at": doc.actual_time,
+        "et": doc.expected_time,
+        "priority": doc.priority,
+        "allocated_on": doc.custom_allocated_on,
+        "current_status": doc.status,
+        "spot_task": doc.custom_spot_task,
+        "remark": doc.custom_remarks,
+        "et_vs_at_remark": doc.custom_et_vs_at_remark,
+        "allocated_to": doc.custom_allocated_to,
+        "kt_confirmed": doc.kt_confirmed,
+        "is_confirmed": doc.is_confirmed,
+        "production_date_count": doc.custom_production_date_count
+    }
+
+    if allocated_task and flt(allocated_task.rt) < flt(doc.rt):
+        values["rt"] = doc.rt
+
+    frappe.db.set_value("Allocated Tasks", exists, values)
 
     if exists:
-        frappe.db.set_value(
-            "Allocated Tasks",
-            exists,
-            {
-                "project_name": task.project,
-                "subject": task.subject,
-                "cb": task.cb,
-                "status": task.status,
-                "revisions": task.revisions,
-                "at": task.actual_time,
-                "rt": task.rt,
-                "et": task.expected_time,
-                "priority": task.priority,
-                "allocated_on": task.custom_allocated_on,
-                "current_status": task.status,
-                "spot_task": task.custom_spot_task,
-                "remark": task.custom_remarks,
-                "et_vs_at_remark": task.custom_et_vs_at_remark,
-                "allocated_to": task.custom_allocated_to,
-                "kt_confirmed": task.kt_confirmed,
-                "is_confirmed": task.is_confirmed,
-                "production_date_count": task.custom_production_date_count
-            }
-        )
         return
 
     # Insert the child table row directly via SQL to avoid triggering Daily Monitor's
@@ -245,13 +279,12 @@ def update_dm(doc, method=None):
     )[0][0]
 
     row_name = frappe.generate_hash("Allocated Tasks", 10)
-    task = frappe.get_doc("Task", doc.name)
     frappe.db.sql("""
         INSERT INTO `tabAllocated Tasks`
         (
             name, parent, parenttype, parentfield, idx, docstatus,
             creation, modified, modified_by, owner,
-            id, today_rt, project_name, subject, cb, status,
+            id, project_name, subject, cb, status,
             revisions, at, rt, et, priority,
             allocated_on, current_status, spot_task,
             remark, et_vs_at_remark,
@@ -263,7 +296,7 @@ def update_dm(doc, method=None):
             %s, %s, %s, %s, %s, 0,
             NOW(), NOW(), %s, %s,
             %s, %s, %s, %s, %s, %s,
-            %s, %s, %s, %s, %s,
+            %s, %s, %s, %s,
             %s, %s, %s,
             %s, %s,
             %s, %s,
@@ -280,26 +313,25 @@ def update_dm(doc, method=None):
         frappe.session.user,
         frappe.session.user,
         doc.name,
-        doc.rt,
-        task.project,
-        task.subject,
-        task.cb,
+        doc.project,
+        doc.subject,
+        doc.cb,
         doc.status,
-        task.revisions,
-        task.actual_time,
-        task.rt,
-        task.expected_time,
-        task.priority,
-        task.custom_allocated_on,
-        task.status,
-        task.custom_spot_task,
-        task.custom_remarks,
-        task.custom_et_vs_at_remark,
-        task.custom_allocated_to,
-        task.cb,
-        task.kt_confirmed,
-        task.is_confirmed,
-        task.custom_production_date_count
+        doc.revisions,
+        doc.actual_time,
+        doc.rt,
+        doc.expected_time,
+        doc.priority,
+        doc.custom_allocated_on,
+        doc.status,
+        doc.custom_spot_task,
+        doc.custom_remarks,
+        doc.custom_et_vs_at_remark,
+        doc.custom_allocated_to,
+        doc.cb,
+        doc.kt_confirmed,
+        doc.is_confirmed,
+        doc.custom_production_date_count
     ))
 
 
@@ -418,16 +450,32 @@ def update_country_flag(doc, method):
 # method to update the criteria table during the task creation
 @frappe.whitelist()
 def update_criteria_table(doc, method):
-    # pass
-    if doc.service == 'REC-I':
-        proj = frappe.get_doc("Project", doc.project)
-        doc.set("custom_criteria_table", [])
-        for row in proj.custom_criteria_table:
-            doc.append("custom_criteria_table", {
-                "scheduling_criteria": row.scheduling_criteria,
-                "scheduling_parameter": row.scheduling_parameter
-            })
-        doc.save()
+    if doc.service != 'REC-I':
+        return
+    criteria_rows = frappe.db.get_all(
+        "Criteria",
+        filters={"parent": doc.project, "parenttype": "Project"},
+        fields=["scheduling_criteria", "scheduling_parameter"],
+        order_by="idx asc",
+    )
+    if not criteria_rows:
+        return
+    # Write child rows directly to avoid re-triggering doc.save() and its full hook chain
+    for idx, row in enumerate(criteria_rows, start=1):
+        row_name = frappe.generate_hash("Criteria", 10)
+        frappe.db.sql(
+            """INSERT INTO `tabCriteria`
+               (name, parent, parenttype, parentfield, idx, docstatus,
+                creation, modified, modified_by, owner,
+                scheduling_criteria, scheduling_parameter)
+               VALUES (%s, %s, %s, %s, %s, 0,
+                       NOW(), NOW(), %s, %s, %s, %s)""",
+            (
+                row_name, doc.name, "Task", "custom_criteria_table", idx,
+                frappe.session.user, frappe.session.user,
+                row.scheduling_criteria, row.scheduling_parameter,
+            ),
+        )
 
 @frappe.whitelist()
 def update_project_issue(doc,method):
@@ -733,11 +781,6 @@ def update_wh_att(doc,method):
             frappe.db.set_value("Attendance",att,'attendance_request','')
 
 @frappe.whitelist()
-def update_workflow_state(doc,method):
-    if doc.workflow_state:
-        frappe.db.sql("""update `tabPurchase Invoice` set custom_status = %s where name = %s""",(doc.workflow_state,doc.name))
-
-@frappe.whitelist()
 def calc_cost_prize(doc,method):
     if doc.workflow_state!="Approved":
         for f in doc.items:
@@ -804,6 +847,64 @@ def update_employer_pf(doc, method):
         for i in doc.earnings:
             if i.salary_component=='Provident Fund-Employer':
                 doc.custom_employer_pf=i.amount
+
+
+@frappe.whitelist()
+def override_payment_days_from_attendance(doc, method):
+    """Override salary slip payment_days with the attendance summary value.
+
+    The attendance summary in payroll_workbench applies custom rules that HRMS
+    does not (late penalty deduction, prefix/suffix holiday rule, half-day
+    absent handling). This hook runs after HRMS's validate() has calculated
+    payment_days and component amounts. It overrides payment_days with the
+    attendance summary value and recalculates all amounts.
+    """
+    if doc.doctype != "Salary Slip":
+        return
+    # Only apply for attendance-based payroll
+    if not doc.start_date or not doc.end_date or not doc.employee:
+        return
+    # Allow skipping the override via flag (e.g. manual adjustments)
+    if frappe.flags.skip_payment_days_override:
+        return
+
+    try:
+        from teampro.api.payroll_workbench import get_attendance_summary
+
+        result = get_attendance_summary(
+            [doc.employee], doc.start_date, doc.end_date, doc.company
+        )
+        if not result or not result.get("rows"):
+            return
+
+        att_pd = result["rows"][0].get("payment_days")
+        if att_pd is None:
+            return
+
+        att_pd = flt(att_pd)
+        slip_pd = flt(doc.payment_days)
+
+        if abs(att_pd - slip_pd) < 0.01:
+            return  # already matches
+
+        # Override payment_days and recalculate
+        doc.payment_days = att_pd
+
+        # Recalculate all component amounts based on new payment_days
+        if hasattr(doc, "calculate_net_pay"):
+            doc.calculate_net_pay()
+        if hasattr(doc, "compute_year_to_date"):
+            doc.compute_year_to_date()
+        if hasattr(doc, "compute_month_to_date"):
+            doc.compute_month_to_date()
+        if hasattr(doc, "compute_component_wise_year_to_date"):
+            doc.compute_component_wise_year_to_date()
+
+    except Exception:
+        frappe.log_error(
+            title="override_payment_days_from_attendance failed",
+            message=frappe.get_traceback(),
+        )
 
 @frappe.whitelist()
 def update_month_cycle(doc,method):
@@ -1512,3 +1613,68 @@ def _get_access_token():
 	request = google.auth.transport.requests.Request()
 	credentials.refresh(request)
 	return credentials.token
+
+
+def propagate_parent_remarks_to_items(doc, method=None):
+	"""Copy the parent ``custom_remarks`` value to every line item.
+
+	Wired on the ``validate`` event of Sales Order, Delivery Note and Sales
+	Invoice. When the parent has a non-empty ``custom_remarks`` value, it is
+	pushed down to all child rows (``items``) so that the same remark is
+	available on each line item. Empty parent value leaves existing child
+	values untouched.
+
+	The same ``custom_remarks`` fieldname is used on the parent and child
+	tables of all three doctypes, so ERPNext's standard mapper automatically
+	carries the value forward when a Delivery Note / Sales Invoice is created
+	from a Sales Order / Delivery Note.
+	"""
+	parent_remarks = (doc.get("custom_remarks") or "").strip()
+	if not parent_remarks:
+		return
+
+	items = doc.get("items") or []
+	for item in items:
+		item.custom_remarks = parent_remarks
+
+
+@frappe.whitelist()
+def cascade_status_to_tasks_and_candidates(doc, method):
+    """When a REC-I/REC-D project is marked Completed or Cancelled,
+    set all linked Tasks to Completed and update linked Candidates
+    (except Proposed PSL) to IDB status."""
+    if doc.service not in ("REC-I", "REC-D"):
+        return
+
+    if doc.status not in ("Completed", "Cancelled"):
+        return
+
+    # Only trigger when the status actually changed to Completed/Cancelled
+    if not doc.has_value_changed("status"):
+        return
+
+    # Get all tasks linked to this project
+    tasks = frappe.get_all("Task", filters={"project": doc.name}, fields=["name"])
+
+    for task in tasks:
+        task_name = task["name"]
+
+        # Set task status to Completed (skip if already Completed/Cancelled)
+        current_task_status = frappe.db.get_value("Task", task_name, "status")
+        if current_task_status not in ("Completed", "Cancelled"):
+            frappe.db.set_value("Task", task_name, "status", "Completed")
+
+        # Update candidates linked to this task to IDB, except Proposed PSL
+        candidates = frappe.get_all(
+            "Candidate",
+            filters={
+                "task": task_name,
+                "pending_for": ("!=", "Proposed PSL"),
+            },
+            fields=["name"],
+        )
+        for cand in candidates:
+            frappe.db.set_value("Candidate", cand["name"], "pending_for", "IDB")
+
+    frappe.db.commit()
+

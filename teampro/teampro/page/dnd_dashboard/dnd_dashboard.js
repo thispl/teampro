@@ -60,18 +60,21 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
     min-width: 150px;
     flex-shrink: 0;
     }
-    .dashboard-card {
-        position: relative;
-        width: 190px;
-        min-width: 190px;
-        background: #fff;
-        border: 1px solid #dcdcdc;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,.08);
-        transition: .25s;
-        flex-shrink: 0;
-        overflow: hidden;
-    }
+    
+    
+.dashboard-card{
+    position: relative;
+    min-width: 120px;
+    width: auto;
+    background: #fff;
+    border: 1px solid #dcdcdc;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    overflow: hidden;
+    transition: .25s;
+    display: flex;
+    flex-direction: column;
+}
     .dashboard-card:hover {
         transform: translateY(-3px);
         box-shadow: 0 8px 18px rgba(0,0,0,.15);
@@ -155,6 +158,17 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
         border-color: red !important;
         font-weight: bold;
     }
+
+    #rec-i-metrics-cards {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    margin: 30px 20px 0;
+    padding: 20px;
+    border: 1px solid #ebebeb;
+    border-radius: 12px;
+    box-sizing: border-box;
+}
         
 `;
     $(wrapper).html(`
@@ -163,12 +177,13 @@ frappe.pages['dnd-dashboard'].on_page_load = function (wrapper) {
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-        <div class="dashboard-wrapper" style="margin-bottom:100px;">
+        <div class="dashboard-wrapper" style="margin-bottom:100px;background-color: #F8FAFC;" >
             <div style="position: relative; padding: 10px;">
                 <h2 style="text-align: center; font-weight: bold; margin: 0;">DND DASHBOARD</h2>
                 <div id="current-datetime" style="font-size: 16px; color: #666; text-align: center; margin-top: 5px;"></div>
             </div>
-            <div id="rec-i-metrics-cards" style="display: flex; justify-content:flex-start; gap: 15px; margin: 30px 20px 0; flex-wrap: wrap;background-color: #f5f5f5;border: 1px solid #ddd; border-radius: 8px; padding: 15px; box-sizing: border-box;">
+            <div id="rec-i-metrics-cards" style="display:grid;grid-template-columns:repeat(6, 1fr);gap:10px;margin:30px 20px 0;padding:20px;border:1px solid #ebebeb;border-radius:12px;
+                box-sizing:border-box;">
                 <div class="dashboard-card teampro-closure-count-card"></div>
                 <div class="dashboard-card candidate-agent-closure-count-card"></div>
                 <div class="dashboard-card agent-closure-count-card"></div>
@@ -9637,7 +9652,7 @@ table td {
 
     //             // });
 
-                
+
 
     //             // =========================================
     //             // COUNTS
@@ -10041,77 +10056,77 @@ table td {
     // }
     function buildInternalTable(data) {
 
-    let grouped = groupByCustomer(data);
-    let html = "";
-    let customerIndex = 1;
+        let grouped = groupByCustomer(data);
+        let html = "";
+        let customerIndex = 1;
 
-    Object.keys(grouped)
-        .sort((a, b) => a.localeCompare(b))
-        .forEach(customer => {
+        Object.keys(grouped)
+            .sort((a, b) => a.localeCompare(b))
+            .forEach(customer => {
 
-            let customerKey =
-                "C_" + btoa(unescape(encodeURIComponent(customer))).replace(/=/g, "");
+                let customerKey =
+                    "C_" + btoa(unescape(encodeURIComponent(customer))).replace(/=/g, "");
 
-            let rows = grouped[customer];
+                let rows = grouped[customer];
 
-            // =========================
-            // TOTALS (FIXED STRUCTURE)
-            // =========================
-            let totals = {
-                psl: 0,
-                col: 0,
-                sol: 0,
-                visa: 0,
-                pm: 0,
-                pcc: 0,
-                ca: 0,
-                fm: 0,
-                bio: 0,
-                qvp: 0,
-                tt: 0,
-                vs: 0,
-                poe: 0,
-                tkt: 0,
-                ob: 0,
-                od: 0
-            };
+                // =========================
+                // TOTALS (FIXED STRUCTURE)
+                // =========================
+                let totals = {
+                    psl: 0,
+                    col: 0,
+                    sol: 0,
+                    visa: 0,
+                    pm: 0,
+                    pcc: 0,
+                    ca: 0,
+                    fm: 0,
+                    bio: 0,
+                    qvp: 0,
+                    tt: 0,
+                    vs: 0,
+                    poe: 0,
+                    tkt: 0,
+                    ob: 0,
+                    od: 0
+                };
 
-            // fast count map (better than repeated loops)
-            let statusMap = {};
+                // fast count map (better than repeated loops)
+                let statusMap = {};
 
-            rows.forEach(r => {
-                let s = (r.status || "").trim();
-                statusMap[s] = (statusMap[s] || 0) + 1;
-            });
+                rows.forEach(r => {
+                    let s = (r.status || "").trim();
+                    statusMap[s] = (statusMap[s] || 0) + 1;
+                });
 
-            // map to totals
-            totals.psl  = statusMap["PSL"] || 0;
-            totals.col  = statusMap["Client Offer Letter"] || 0;
-            totals.sol  = statusMap["Signed Offer Letter"] || 0;
-            totals.visa = statusMap["Visa"] || 0;
+                // map to totals
+                totals.psl = statusMap["PSL"] || 0;
+                totals.col = statusMap["Client Offer Letter"] || 0;
+                totals.sol = statusMap["Signed Offer Letter"] || 0;
+                totals.visa = statusMap["Visa"] || 0;
 
-            totals.pm   = statusMap["Premedical"] || 0;
-            totals.pcc  = statusMap["PCC"] || 0;
-            totals.ca   = statusMap["Certificate Attestation"] || 0;
+                totals.pm = statusMap["Premedical"] || 0;
+                totals.pcc = statusMap["PCC"] || 0;
+                totals.ca = statusMap["Certificate Attestation"] || 0;
 
-            totals.fm   = statusMap["Final Medical"] || 0;
-            totals.bio  = statusMap["Biometric"] || 0;
-            totals.qvp  = statusMap["QVP"] || 0;
+                totals.fm = statusMap["Final Medical"] || 0;
+                totals.bio = statusMap["Biometric"] || 0;
+                totals.qvp = statusMap["QVP"] || 0;
 
-            totals.tt   = statusMap["Trade Test"] || 0;
-            totals.vs   = statusMap["Visa Stamping"] || 0;
-            totals.poe  = statusMap["Emigration"] || 0;
+                totals.tt = statusMap["Trade Test"] || 0;
+                totals.vs = statusMap["Visa Stamping"] || 0;
+                totals.poe = statusMap["Emigration"] || 0;
 
-            totals.tkt  = statusMap["Ticket"] || 0;
-            totals.ob   = statusMap["Onboarding"] || 0;
-            totals.od   = statusMap["Onboarded"] || 0;
+                totals.tkt = statusMap["Ticket"] || 0;
+                totals.ob = statusMap["Onboarding"] || 0;
+                totals.od = statusMap["Onboarded"] || 0;
 
-            let totalTaskCount = rows.length;
+                let totalTaskCount = rows.length;
 
-            // =========================
-            // CUSTOMER ROW
-            // =========================
-            html += `
+                // =========================
+                // CUSTOMER ROW
+                // =========================
+                html += `
             <tr style="background:#85819e;color:white;font-weight:bold;">
                 <td>${customerIndex++}</td>
 
@@ -10153,10 +10168,10 @@ table td {
             </tr>
             `;
 
-            // =========================
-            // TASK TABLE
-            // =========================
-            html += `
+                // =========================
+                // TASK TABLE
+                // =========================
+                html += `
             <tr class="task-table-row customer-task-${customerKey}" style="display:none;">
                 <td colspan="19">
                     <div class="ptsr-horizontal-scroll">
@@ -10165,31 +10180,31 @@ table td {
                             <tbody>
             `;
 
-            let taskGrouped = {};
-            rows.forEach(r => {
-                let key = (r.project_name || "") + "##" + (r.task_subject || "");
-                if (!taskGrouped[key]) taskGrouped[key] = [];
-                taskGrouped[key].push(r);
-            });
+                let taskGrouped = {};
+                rows.forEach(r => {
+                    let key = (r.project_name || "") + "##" + (r.task_subject || "");
+                    if (!taskGrouped[key]) taskGrouped[key] = [];
+                    taskGrouped[key].push(r);
+                });
 
-            let taskIndex = 1;
+                let taskIndex = 1;
 
-            Object.keys(taskGrouped).forEach(key => {
+                Object.keys(taskGrouped).forEach(key => {
 
-                let taskRows = taskGrouped[key];
-                let first = taskRows[0];
+                    let taskRows = taskGrouped[key];
+                    let first = taskRows[0];
 
-                function getCount(statusName) {
-                    return taskRows.filter(r => (r.status || "").trim() === statusName).length;
-                }
+                    function getCount(statusName) {
+                        return taskRows.filter(r => (r.status || "").trim() === statusName).length;
+                    }
 
-                function statusCell(value) {
-                    return value > 0
-                        ? `<span style="color:green;font-weight:bold;">${value}</span>`
-                        : "-";
-                }
+                    function statusCell(value) {
+                        return value > 0
+                            ? `<span style="color:green;font-weight:bold;">${value}</span>`
+                            : "-";
+                    }
 
-                html += `
+                    html += `
                 <tr>
                     <td>${taskIndex++}</td>
                     <td>
@@ -10219,9 +10234,9 @@ table td {
                     <td style="width:42px;">${statusCell(getCount("Onboarded"))}</td>
                 </tr>
                 `;
-            });
+                });
 
-            html += `
+                html += `
                             </tbody>
                         </table>
                     </div>
@@ -10229,10 +10244,10 @@ table td {
             </tr>
             `;
 
-            // =========================
-            // CLOSURE TABLE
-            // =========================
-            html += `
+                // =========================
+                // CLOSURE TABLE
+                // =========================
+                html += `
             <tr class="closure-table-row customer-closure-${customerKey}" style="display:none;">
                 <td colspan="19">
                     <div class="ptsr-horizontal-scroll">
@@ -10256,10 +10271,10 @@ table td {
                             <tbody>
             `;
 
-            let subIndex = 1;
+                let subIndex = 1;
 
-            rows.forEach(row => {
-                html += `
+                rows.forEach(row => {
+                    html += `
                 <tr>
                     <td>${subIndex++}</td>
                     <td>${row.project_name || '-'}</td>
@@ -10281,19 +10296,19 @@ table td {
                     <td>${row.remark || '-'}</td>
                 </tr>
                 `;
-            });
+                });
 
-            html += `
+                html += `
                             </tbody>
                         </table>
                     </div>
                 </td>
             </tr>
             `;
-        });
+            });
 
-    return html;
-}
+        return html;
+    }
 
     // =========================================
     // CUSTOMER EXPAND
@@ -10690,39 +10705,66 @@ table td {
     }
     updateDateTime();
     setInterval(updateDateTime, 1000);
-    function renderSimpleCard(selector, label, value, curr = null, color = '#4f46e5', icon = 'ti ti-chart-bar') {
+    // function renderSimpleCard(selector, label, value, curr = null, color = '#4f46e5', icon = 'ti ti-chart-bar') {
 
-        if (curr) {
-            const formattedTotal = formatMoney(curr);
+    //     if (curr) {
+    //         const formattedTotal = formatMoney(curr);
 
-            $(wrapper).find(selector).html(`
-        <div class="card-top-line" style="background-color: ${color};"></div>
-        <div class="card-body">
-            <div class="card-icon" style="color: ${color};">
+    //         $(wrapper).find(selector).html(`
+    //     <div class="card-top-line" style="background-color: ${color};"></div>
+    //     <div class="card-body">
+    //         <div class="card-icon" style="color: ${color};">
+    //             <i class="${icon}"></i>
+    //         </div>
+    //         <div class="card-title">${label}</div>
+    //         <div class="card-value" style="color: ${color};">${value}</div>
+    //         <div style="font-size: 14px; color: #666; margin-top: 5px;">(${formattedTotal})</div>
+    //     </div>
+    // `);
+    //     }
+    //     else {
+
+    //         $(wrapper).find(selector).html(`
+    //     <div class="card-top-line" style="background-color: ${color};"></div>
+    //     <div class="card-body">
+    //         <div class="card-icon" style="color: ${color};">
+    //             <i class="${icon}"></i>
+    //         </div>
+    //         <div class="card-title">${label}</div>
+    //         <div class="card-value" style="color: ${color};">${value}</div>
+    //     </div>
+    // `);
+
+    //     }
+    // }
+
+
+    function renderSimpleCard(selector, label, value, curr = null, color = '#4f46e5', icon = 'ti ti-chart-bar', subtitle = '') {
+
+        const currHtml = curr !== null
+            ? `<div style="font-size:14px;color:#666;margin-top:4px;">(${formatMoney(curr)})</div>`
+            : '';
+
+        $(wrapper).find(selector).html(`
+        <div class="card-top-line" style="background:${color};"></div>
+        <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center;padding:18px 15px;box-sizing:border-box;">
+            <div class="card-icon"
+                style="background:${color}20;color:${color};width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px;font-size:22px;">
                 <i class="${icon}"></i>
             </div>
-            <div class="card-title">${label}</div>
-            <div class="card-value" style="color: ${color};">${value}</div>
-            <div style="font-size: 14px; color: #666; margin-top: 5px;">(${formattedTotal})</div>
-        </div>
-    `);
-        }
-        else {
-
-            $(wrapper).find(selector).html(`
-        <div class="card-top-line" style="background-color: ${color};"></div>
-        <div class="card-body">
-            <div class="card-icon" style="color: ${color};">
-                <i class="${icon}"></i>
+            <div class="card-title">
+                ${label}
             </div>
-            <div class="card-title">${label}</div>
-            <div class="card-value" style="color: ${color};">${value}</div>
+            <div class="card-value" style="color:${color};line-height:1;margin:0;">
+                ${value}
+            </div>
+            ${currHtml}
+            <div style="font-size:12px;color:#7a7a7a;margin-top:8px;line-height:1.2;text-align:center;display:flex;align-items:center;justify-content:center;width:100%;padding:0 10px;">
+                ${subtitle}
+            </div>
         </div>
     `);
-
-        }
     }
-
 
     function formatMoney(value) {
         if (value >= 10000000) {
@@ -10736,45 +10778,83 @@ table td {
         }
     }
 
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_teampro_closure_count",
+    //     callback: r => renderSimpleCard('.teampro-closure-count-card', 'Internal', r.message || 0, null, '#007BFF', 'ti ti-building')
+    // });
+
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_candidate_agent_closure_count",
+    //     callback: r => renderSimpleCard('.candidate-agent-closure-count-card', 'Candidate', r.message || 0, null, '#6C757D', 'ti ti-user')
+    // });
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_agent_closure_count",
+    //     callback: r => renderSimpleCard('.agent-closure-count-card', 'Agent', r.message || 0, null, '#8c7bf4ff', 'ti ti-users')
+    // });
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_supp_agent_closure_count",
+    //     callback: r => renderSimpleCard('.supp-closure-count-card', 'Supplier', r.message || 0, null, '#5ee274ff', 'ti ti-truck')
+    // });
+
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_client_closure_count",
+    //     callback: r => renderSimpleCard('.client-closure-count-card', 'Client', r.message || 0, null, '#17A2B8', 'ti ti-building-arch')
+    // });
+
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_so_pending_count",
+    //     callback: r => renderSimpleCard('.so_pending', 'SO Pending', r.message.count || 0, r.message.total || 0, '#171fb8ff', 'ti ti-file-invoice')
+    // });
+
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_nepal_closure_count",
+    //     callback: r => renderSimpleCard('.nepal-closure-count-card', 'Nepal', r.message || 0, null, '#e9ff40ff', 'ti ti-flag')
+    // });
+    // frappe.call({
+    //     method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_srilanka_closure_count",
+    //     callback: r => renderSimpleCard('.srilanka-closure-count-card', 'Srilanka', r.message || 0, null, '#f079f9ff', 'ti ti-flag-2')
+    // });
+
+
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_teampro_closure_count",
-        callback: r => renderSimpleCard('.teampro-closure-count-card', 'Internal', r.message || 0, null, '#007BFF', 'ti ti-building')
+        callback: r => renderSimpleCard('.teampro-closure-count-card', 'Internal', r.message || 0, null, '#007BFF', 'ti ti-building', 'Internal team closures')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_candidate_agent_closure_count",
-        callback: r => renderSimpleCard('.candidate-agent-closure-count-card', 'Candidate', r.message || 0, null, '#6C757D', 'ti ti-user')
+        callback: r => renderSimpleCard('.candidate-agent-closure-count-card', 'Candidate', r.message || 0, null, '#6C757D', 'ti ti-user', 'Candidate closures')
     });
+
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_agent_closure_count",
-        callback: r => renderSimpleCard('.agent-closure-count-card', 'Agent', r.message || 0, null, '#8c7bf4ff', 'ti ti-users')
+        callback: r => renderSimpleCard('.agent-closure-count-card', 'Agent', r.message || 0, null, '#8c7bf4', 'ti ti-users', 'Agent closures')
     });
+
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_supp_agent_closure_count",
-        callback: r => renderSimpleCard('.supp-closure-count-card', 'Supplier', r.message || 0, null, '#5ee274ff', 'ti ti-truck')
+        callback: r => renderSimpleCard('.supp-closure-count-card', 'Supplier', r.message || 0, null, '#5ee274', 'ti ti-truck', 'Supplier closures')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_client_closure_count",
-        callback: r => renderSimpleCard('.client-closure-count-card', 'Client', r.message || 0, null, '#17A2B8', 'ti ti-building-arch')
+        callback: r => renderSimpleCard('.client-closure-count-card', 'Client', r.message || 0, null, '#17A2B8', 'ti ti-building-arch', 'Client closures')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_so_pending_count",
-        callback: r => renderSimpleCard('.so_pending', 'SO Pending', r.message.count || 0, r.message.total || 0, '#171fb8ff', 'ti ti-file-invoice')
+        callback: r => renderSimpleCard('.so_pending', 'SO Pending', r.message.count || 0, r.message.total || 0, '#171fb8', 'ti ti-file-invoice', 'Sales orders pending')
     });
 
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_nepal_closure_count",
-        callback: r => renderSimpleCard('.nepal-closure-count-card', 'Nepal', r.message || 0, null, '#e9ff40ff', 'ti ti-flag')
+        callback: r => renderSimpleCard('.nepal-closure-count-card', 'Nepal', r.message || 0, null, '#c9b800', 'ti ti-flag', 'Nepal closures')
     });
+
     frappe.call({
         method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_srilanka_closure_count",
-        callback: r => renderSimpleCard('.srilanka-closure-count-card', 'Srilanka', r.message || 0, null, '#f079f9ff', 'ti ti-flag-2')
+        callback: r => renderSimpleCard('.srilanka-closure-count-card', 'Srilanka', r.message || 0, null, '#f079f9', 'ti ti-flag-2', 'Srilanka closures')
     });
-
-
-
 
 
 
@@ -10921,9 +11001,9 @@ table td {
         margin-top: 3px;
     }
     
-    /* When the Javascript adds 'expanded' class, flip it upside down */
+    /* When the Javascript adds 'expanded' class, rotate to point right (play button) */
     .expanded .triangle-icon {
-        transform: rotate(180deg); 
+        transform: rotate(-90deg); 
     }
 
 
@@ -11036,21 +11116,19 @@ table td {
             const $cell = $(this);
             const $row = $cell.closest("tr");
             const territory = $cell.data("territory");
-            const $icon = $cell.find(".toggle-icon");
 
             // Collapse if open
             if ($row.next().hasClass("project-row")) {
                 while ($row.next().hasClass("project-row")) {
                     $row.next().remove();
                 }
-                $icon.text("[+]");
+                $cell.removeClass("expanded");
                 return;
             }
 
+            $(".territory-cell").removeClass("expanded");
             $(".project-row").remove();
-            $(".toggle-icon").text("[+]");
-
-            $icon.text("[−]");
+            $cell.addClass("expanded");
 
             frappe.call({
                 method: "jobpro.jobpro.page.rec_i_dashboard.rec_i_dashboard.get_project_details_for_territory",

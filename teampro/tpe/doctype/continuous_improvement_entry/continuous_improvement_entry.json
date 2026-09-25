@@ -1,0 +1,35 @@
+{
+ "actions": [],
+ "autoname": "CIE-.#####",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["employee", "employee_name", "type", "date", "column_break_1", "points", "description", "approved"],
+ "fields": [
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "read_only": 1, "in_list_view": 1, "fetch_from": "employee.employee_name"},
+  {"fieldname": "type", "fieldtype": "Select", "label": "Type", "options": "Energy Point\nNon Conformity\nApproved Suggestion\nAward\nTraining\nKnowledge Sharing\nAttendance Discipline", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "date", "fieldtype": "Date", "label": "Date", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1, "default": "Today"},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "points", "fieldtype": "Float", "label": "Points", "in_list_view": 1, "description": "Positive for EP/Award/Training; penalty value for NC."},
+  {"fieldname": "description", "fieldtype": "Small Text", "label": "Description", "in_list_view": 1},
+  {"fieldname": "approved", "fieldtype": "Check", "label": "Approved", "default": "0", "in_list_view": 1, "in_standard_filter": 1}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "Continuous Improvement Entry",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "import": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR User", "read": 1, "write": 1, "create": 1, "delete": 0, "report": 1, "export": 1},
+  {"role": "Employee", "read": 1, "write": 1, "create": 1, "if_owner": 1, "report": 1, "export": 1}
+ ],
+ "sort_field": "date desc",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

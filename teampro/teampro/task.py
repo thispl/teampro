@@ -11,7 +11,6 @@ from frappe.desk.form.assign_to import clear, close_all_assignments
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import add_days, cstr, date_diff, get_link_to_form, getdate, today, flt
 from frappe.utils.nestedset import NestedSet
-from teampro.custom import on_task_save
 
 
 class CircularReferenceError(frappe.ValidationError): pass

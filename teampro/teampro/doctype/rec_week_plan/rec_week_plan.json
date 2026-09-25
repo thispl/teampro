@@ -77,6 +77,13 @@
   "task_allocation",
   "task_allocation_agent",
   "allocation_tab",
+  "rec_team",
+  "download",
+  "column_break_8orn",
+  "date",
+  "column_break_mf5n",
+  "date_to",
+  "section_break_0sgc",
   "team_wise",
   "allocation",
   "allocation_agent",
@@ -309,7 +316,6 @@
   {
    "fieldname": "rec_task_planner",
    "fieldtype": "Table",
-   "hidden": 1,
    "label": "REC Task Planner",
    "options": "REC Task Planner"
   },
@@ -582,7 +588,7 @@
    "fieldname": "src_s",
    "fieldtype": "Select",
    "label": "SRC_S",
-   "options": "\nSP\nFP\nSP/FP\nPND"
+   "options": "\nSP\nFP\nSP/FP\nHLD\nJP"
   },
   {
    "fieldname": "download_button",
@@ -604,13 +610,46 @@
   {
    "fieldname": "section_break_dadw",
    "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "rec_team",
+   "fieldtype": "Link",
+   "label": "Team ",
+   "options": "Dev Team"
+  },
+  {
+   "fieldname": "download",
+   "fieldtype": "Button",
+   "label": "Download "
+  },
+  {
+   "fieldname": "section_break_0sgc",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_8orn",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date",
+   "fieldtype": "Date",
+   "label": "From Date"
+  },
+  {
+   "fieldname": "column_break_mf5n",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "date_to",
+   "fieldtype": "Date",
+   "label": "To Date"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-06-12 15:51:44.433079",
- "modified_by": "bhuvaneswari.a@groupteampro.com",
+ "modified": "2026-08-06 12:26:49.529072",
+ "modified_by": "jeniba.a@groupteampro.com",
  "module": "Teampro",
  "name": "REC Week Plan",
  "naming_rule": "Expression",

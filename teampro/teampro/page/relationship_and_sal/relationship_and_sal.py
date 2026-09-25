@@ -171,9 +171,9 @@ def get_turnover(from_date=None, to_date=None, employee_ids=None, services=None)
     conditions = [
         "account_manager IN %(employee_ids)s",
         "docstatus = 1",
-        "status NOT IN ('Return', 'Credit Note Issued', 'Cancelled')",
-        # "posting_date >= %(from_date)s",
-        # "posting_date <= %(to_date)s"
+        "status NOT IN ('Cancelled')",
+        "posting_date >= %(from_date)s",
+        "posting_date <= %(to_date)s"
     ]
 
     if services:
@@ -362,6 +362,7 @@ def rs_receivable(from_date=None, to_date=None, employee_ids=None, services=None
         "account_manager IN %(rs_emails)s",
         "docstatus = 1",
         "outstanding_amount > 0",
+        "status != 'Cancelled'"
         # "posting_date >= %(from_date)s",
         # "posting_date <= %(to_date)s"
     ]
@@ -501,7 +502,7 @@ def rs_to_bill_value(from_date=None, to_date=None, employee_ids=None, services=N
     # QUERY
     # -------------------------
     query = f"""
-        SELECT SUM(base_grand_total)
+        SELECT SUM(base_net_total)
         FROM `tabSales Order`
         WHERE {' AND '.join(conditions)}
     """
@@ -946,36 +947,81 @@ def rs_receivable_table(from_date=None, to_date=None):
 
 
 
+# @frappe.whitelist()
+# def get_service_card_data():
+
+#     import frappe
+
+#     data = frappe.db.sql("""
+
+#         SELECT
+#             custom_sales_follow_up AS sales_follow_up,
+#             service,
+#             COUNT(name) AS total
+
+#         FROM `tabOpportunity`
+
+#         WHERE
+#             custom_sales_follow_up IS NOT NULL
+#             AND custom_sales_follow_up != ''
+#             AND service IS NOT NULL
+#             AND service != ''
+#             AND status NOT IN ('Lost', 'Closed')
+
+#         GROUP BY service
+
+#         ORDER BY service
+
+#     """, as_dict=True)
+
+#     return data
+
 @frappe.whitelist()
 def get_service_card_data():
 
-    import frappe
-
     data = frappe.db.sql("""
-
         SELECT
-            custom_sales_follow_up AS sales_follow_up,
             service,
             COUNT(name) AS total
-
         FROM `tabOpportunity`
-
         WHERE
             custom_sales_follow_up IS NOT NULL
             AND custom_sales_follow_up != ''
             AND service IS NOT NULL
             AND service != ''
             AND status NOT IN ('Lost', 'Closed')
-
         GROUP BY service
-
-        ORDER BY service
-
     """, as_dict=True)
 
-    return data
+    group_map = {
+        "BCS": "HRS",
+        "REC-I": "HRS",
+        "Payroll": "HRS",
+        "SCP": "HRS",
+        "REC-D": "HRS",
+        "IT-SW": "ITS",
+        "IT-IS": "ITS",
+        "R&S": "CMN",
+        "TGT": "CMN",
+        "EMS": "CMN",
+        "CMN": "CMN",
+        "NL": "CMN",
+        "TFP": "TFP"
+    }
 
+    totals = {
+        "HRS": 0,
+        "ITS": 0,
+        "CMN": 0,
+        "TFP": 0
+    }
 
+    for row in data:
+        group = group_map.get(row.service)
+        if group:
+            totals[group] += row.total
+
+    return totals
 
 @frappe.whitelist()
 def get_sfp_status_cards():
@@ -2619,6 +2665,55 @@ def fup_details(call_status=None,
             "user_id": row.next_contact_by
         }
 
+    # -----------------------------
+    # APPOINTMENT COUNTS (per user)
+    # E = Appointments fixed/created today (appointment_created_on = today)
+    # F = Appointments scheduled for today (appointment_fixed_on = today)
+    # G = Appointments visited today (visted_date = today)
+    # -----------------------------
+    app_query = """
+        SELECT
+            f.next_contact_by,
+            emp.short_code,
+            SUM(CASE WHEN DATE(f.appointment_created_on) = %(today)s THEN 1 ELSE 0 END) AS E,
+            SUM(CASE WHEN DATE(f.appointment_fixed_on) = %(today)s THEN 1 ELSE 0 END) AS F,
+            SUM(CASE WHEN DATE(f.visted_date) = %(today)s THEN 1 ELSE 0 END) AS G
+        FROM `tabSales Follow Up` f
+        LEFT JOIN `tabEmployee` emp
+            ON emp.user_id = f.next_contact_by
+        WHERE f.docstatus != 2
+        AND f.status IN ('Lead', 'Open', 'Opportunity', 'Converted', 'Interested', 'Replied')
+        AND f.next_contact_by IS NOT NULL
+        AND f.next_contact_by != ''
+        GROUP BY f.next_contact_by, emp.short_code
+    """
+
+    app_data = frappe.db.sql(app_query, {"today": today}, as_dict=True)
+
+    for row in app_data:
+        short = row.short_code or "NA"
+        if short not in result:
+            result[short] = {
+                "lead": {}, "open": {}, "replied": {},
+                "opportunity": {}, "interested": {}, "converted": {}
+            }
+        result[short]["appointments"] = {
+            "E": int(row.E or 0),
+            "F": int(row.F or 0),
+            "G": int(row.G or 0),
+            "user_id": row.next_contact_by
+        }
+
+    # Ensure every user has an appointments entry
+    for short in result:
+        if "appointments" not in result[short]:
+            user_id = None
+            for status_data in result[short].values():
+                if isinstance(status_data, dict) and status_data.get("user_id"):
+                    user_id = status_data.get("user_id")
+                    break
+            result[short]["appointments"] = {"E": 0, "F": 0, "G": 0, "user_id": user_id}
+
     result = dict(sorted(result.items(), key=lambda x: str(x[0] or "").lower()))
 
     totals = {
@@ -2631,6 +2726,7 @@ def fup_details(call_status=None,
     }
 
     totals_all = {"A":0,"B":0,"C":0,"D":0}
+    totals_app = {"E":0,"F":0,"G":0}
 
     
     def cell(val, user=None, status=None):
@@ -2766,6 +2862,43 @@ def fup_details(call_status=None,
         <td>{all_val}</td>
         """
 
+    def app_cell(val):
+        """Render a single appointment count cell with a link."""
+        if not val:
+            return "<td>-</td>"
+
+        count = int(val.get('E', 0)) if 'E' in val else int(val.get('F', 0)) if 'F' in val else int(val.get('G', 0))
+        color = val.get('color', '#7c3aed')
+        key = val.get('key', 'E')
+        user_id = val.get("user_id")
+
+        if count == 0:
+            return f'<td><span style="color:{color};">-</span></td>'
+
+        base_url = "/app/sales-follow-up?"
+        params = {
+            "status": json.dumps(["in", ["Lead", "Open", "Opportunity", "Converted", "Interested", "Replied"]])
+        }
+
+        if user_id:
+            params["next_contact_by"] = user_id
+
+        if key == "E":
+            params["appointment_created_on"] = today
+        elif key == "F":
+            params["appointment_fixed_on"] = today
+        elif key == "G":
+            params["visted_date"] = today
+
+        url = base_url + urllib.parse.urlencode(params)
+
+        return f"""<td>
+            <a href="{url}" target="_blank"
+                style="color:{color}; text-decoration:none; font-weight:bold;">
+                {count}
+            </a>
+        </td>"""
+
     html = """
 
     <style>
@@ -2794,6 +2927,22 @@ def fup_details(call_status=None,
             z-index: 3;
         }
     </style>
+
+    <!-- LEGEND -->
+    <div style="display:flex; flex-wrap:wrap; gap:12px 20px; padding:8px 12px; margin-bottom:6px;
+                background:#f8f9fa; border:1px solid #e0e0e0; border-radius:6px; font-size:12px;">
+        <div style="font-weight:bold; color:#333;">Legend:</div>
+        <div><span style="color:orange; font-weight:bold;">Orange</span> = To follow today (next_contact_date = today)</div>
+        <div><span style="color:green; font-weight:bold;">Green</span> = Contacted today (last_contacted_on = today)</div>
+        <div><span style="color:blue; font-weight:bold;">Blue</span> = Total leads (all active)</div>
+        <div><span style="color:red; font-weight:bold;">Red</span> = Overdue / pending follow-up (next_contact_date &lt; today)</div>
+        <div style="border-left:1px solid #ccc; padding-left:12px;">
+            <span style="color:#7c3aed; font-weight:bold;">Purple</span> = Appointments fixed today
+        </div>
+        <div><span style="color:#2563eb; font-weight:bold;">Dark Blue</span> = Appointments scheduled today</div>
+        <div><span style="color:#059669; font-weight:bold;">Emerald</span> = Appointments visited today</div>
+        <div style="color:#666; font-style:italic;">DSM = Today's follow-up / contacted &nbsp;|&nbsp; ALL = Total / overdue</div>
+    </div>
 
     <div style="width:100%; max-height:70vh; overflow:auto;">
 
@@ -2824,6 +2973,8 @@ def fup_details(call_status=None,
         <th colspan="2">Converted</th>
 
         <th colspan="2">Total</th>
+
+        <th colspan="3" style="background:#4b0082;">Appointments Today</th>
     </tr>
 
     <tr>
@@ -2846,6 +2997,12 @@ def fup_details(call_status=None,
         html += "<th>DSM</th><th>ALL</th>"
 
     html += "<th>DSM</th><th>ALL</th>"
+
+    html += """
+    <th style="background:#4b0082; white-space:nowrap;" title="Appointments fixed/created today">Fixed</th>
+    <th style="background:#4b0082; white-space:nowrap;" title="Appointments scheduled for today">Sched.</th>
+    <th style="background:#4b0082; white-space:nowrap;" title="Appointments visited today">Visited</th>
+    """
 
     html += "</tr></thead><tbody>"
 
@@ -2927,6 +3084,22 @@ def fup_details(call_status=None,
         totals_all["C"] += row_total["C"]
         totals_all["D"] += row_total["D"]
 
+        # APPOINTMENT CELLS (E / F / G)
+        app_data = val.get("appointments") or {}
+        app_user_id = app_data.get("user_id") or user_id
+
+        E = int(app_data.get("E", 0))
+        F = int(app_data.get("F", 0))
+        G = int(app_data.get("G", 0))
+
+        html += app_cell({"E": E, "user_id": app_user_id, "color": "#7c3aed", "key": "E"})
+        html += app_cell({"F": F, "user_id": app_user_id, "color": "#2563eb", "key": "F"})
+        html += app_cell({"G": G, "user_id": app_user_id, "color": "#059669", "key": "G"})
+
+        totals_app["E"] += E
+        totals_app["F"] += F
+        totals_app["G"] += G
+
         html += "</tr>"
 
     # -----------------------------
@@ -2958,6 +3131,11 @@ def fup_details(call_status=None,
             "D": totals_all["D"]
         })
 
+    # APPOINTMENT TOTAL CELLS
+    html += app_cell({"E": totals_app["E"], "color": "#7c3aed", "key": "E"})
+    html += app_cell({"F": totals_app["F"], "color": "#2563eb", "key": "F"})
+    html += app_cell({"G": totals_app["G"], "color": "#059669", "key": "G"})
+
     html += "</tr>"
 
     html += "</tbody></table>"
@@ -2965,6 +3143,413 @@ def fup_details(call_status=None,
     return html
 
 
+
+
+
+def _get_accessible_image_url(image_path):
+    """Return the Employee image URL as-is. The /file/HASH/filename format
+    works in the browser when the user is authenticated (same-domain, session cookie)."""
+    return image_path or ""
+
+
+@frappe.whitelist()
+def fup_lead_list(user_id=None, status=None, filter_type=None, today=None,
+                  owner=None, service=None):
+    """Return a list of Sales Follow Up leads for the drill-down view.
+    
+    filter_type: 'A' = to follow today, 'B' = contacted today, 'C' = total active,
+                 'D' = overdue, 'E' = appt fixed today, 'F' = appt scheduled today,
+                 'G' = appt visited today
+    """
+    import json
+    from datetime import datetime, date
+    
+    owner = json.loads(owner) if owner else []
+    service = json.loads(service) if service else []
+    
+    if not today:
+        today = date.today().isoformat()
+    
+    conditions = ["f.status IN ('Lead', 'Open', 'Opportunity', 'Converted', 'Interested', 'Replied')"]
+    params = {}
+    
+    if user_id:
+        conditions.append("f.next_contact_by = %(user_id)s")
+        params["user_id"] = user_id
+    
+    if status:
+        conditions.append("f.status = %(status)s")
+        params["status"] = status
+    
+    if owner:
+        placeholders = ", ".join(["%(o{0})s".format(i) for i in range(len(owner))])
+        conditions.append("f.next_contact_by IN ({0})".format(placeholders))
+        for i, o in enumerate(owner):
+            params["o{0}".format(i)] = o
+    
+    if service:
+        placeholders = ", ".join(["%(s{0})s".format(i) for i in range(len(service))])
+        conditions.append("f.service IN ({0})".format(placeholders))
+        for i, s in enumerate(service):
+            params["s{0}".format(i)] = s
+    
+    if filter_type == 'A':
+        conditions.append("f.next_contact_date = %(today)s")
+        params["today"] = today
+    elif filter_type == 'B':
+        conditions.append("f.last_contacted_on = %(today)s")
+        params["today"] = today
+    elif filter_type == 'D':
+        conditions.append("f.next_contact_date < %(today)s")
+        params["today"] = today
+    elif filter_type == 'E':
+        conditions.append("f.appointment_created_on = %(today)s")
+        params["today"] = today
+    elif filter_type == 'F':
+        conditions.append("f.appointment_fixed_on = %(today)s")
+        params["today"] = today
+    elif filter_type == 'G':
+        conditions.append("f.visted_date = %(today)s")
+        params["today"] = today
+    elif filter_type == 'H':
+        conditions.append("f.call_status = 'Effective'")
+        conditions.append("f.last_contacted_on = %(today)s")
+        params["today"] = today
+    
+    where_clause = " AND ".join(conditions)
+    
+    query = """
+        SELECT f.name, f.lead, f.customer, f.status, f.next_contact_by,
+               f.next_contact_date, f.last_contacted_on, f.service,
+               f.app_status, f.appointment_fixed_on, f.visted_date,
+               f.appointment_created_on, f.sfp_territory,
+               f.account_manager_lead_owner,
+               f.organization_name, f.qualification_status, f.call_status,
+               (SELECT short_code FROM `tabEmployee` e WHERE e.user_id = f.next_contact_by LIMIT 1) as short_code,
+               (SELECT employee_name FROM `tabEmployee` e WHERE e.user_id = f.next_contact_by LIMIT 1) as employee_name
+        FROM `tabSales Follow Up` f
+        WHERE {0}
+        ORDER BY f.next_contact_date ASC, f.name ASC
+        LIMIT 500
+    """.format(where_clause)
+    
+    records = frappe.db.sql(query, params, as_dict=True)
+    
+    # Get remarks/comments for each lead from the Communication or _UserTags
+    result = []
+    for r in records:
+        # Get the latest comment/remark
+        remarks = ""
+        try:
+            comments = frappe.get_all("Comment",
+                filters={"reference_doctype": "Sales Follow Up", "reference_name": r.name,
+                         "comment_type": "Comment"},
+                fields=["content", "creation", "owner"],
+                order_by="creation DESC",
+                limit=1
+            )
+            if comments:
+                remarks = comments[0].content or ""
+        except Exception:
+            pass
+        
+        result.append({
+            "name": r.name,
+            "lead": r.lead or "",
+            "customer": r.customer or "",
+            "organization_name": r.organization_name or "",
+            "status": r.status or "",
+            "qualification_status": r.qualification_status or "",
+            "call_status": r.call_status or "",
+            "next_contact_by": r.next_contact_by or "",
+            "employee_name": r.employee_name or "",
+            "short_code": r.short_code or "",
+            "next_contact_date": str(r.next_contact_date) if r.next_contact_date else "",
+            "last_contacted_on": str(r.last_contacted_on) if r.last_contacted_on else "",
+            "service": r.service or "",
+            "app_status": r.app_status or "",
+            "appointment_fixed_on": str(r.appointment_fixed_on) if r.appointment_fixed_on else "",
+            "visted_date": str(r.visted_date) if r.visted_date else "",
+            "sfp_territory": r.sfp_territory or "",
+            "remarks": remarks,
+        })
+    
+    return {"records": result, "count": len(result), "today": today}
+
+
+@frappe.whitelist()
+def fup_details_v2(owner=None, service=None, view_type="person"):
+    """
+    Enhanced Sales Follow Up details â€” returns structured JSON for the
+    new presentable "Sales Follow Up" tab on the RS Dashboard Pro.
+
+    For each sales person (or territory, when view_type='territory'):
+      - status breakdown: Lead, Open, Replied, Opportunity, Interested, Converted
+        with A = to follow today, B = contacted today, C = total, D = overdue
+      - appointments: E = fixed today, F = scheduled today, G = visited today
+      - full employee name (when view_type='person')
+
+    Returns: { "rows": [...], "totals": {...}, "summary": {...}, "today": "YYYY-MM-DD" }
+    """
+
+    import frappe
+    import json
+    from frappe.utils import nowdate, add_days
+
+    today = nowdate()
+    yesterday = add_days(today, -1)
+
+    owner = json.loads(owner) if owner else []
+    service = json.loads(service) if service else []
+
+    rs_employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        fields=["user_id", "employee_name", "short_code", "image"],
+    )
+    default_user_ids = [emp.user_id for emp in rs_employees if emp.user_id]
+    user_ids = owner if owner else default_user_ids
+
+    # Map user_id -> employee info
+    emp_map = {}
+    for emp in rs_employees:
+        if emp.user_id:
+            emp_map[emp.user_id] = {
+                "employee_name": emp.employee_name or emp.user_id,
+                "short_code": emp.short_code or "",
+                "image": _get_accessible_image_url(emp.image) if emp.image else "",
+            }
+
+    active_statuses = ("Lead", "Open", "Opportunity", "Converted", "Interested", "Replied")
+    status_list_sql = ", ".join(["%(s{0})s".format(i) for i in range(len(active_statuses))])
+    status_params = {"s{0}".format(i): s for i, s in enumerate(active_statuses)}
+
+    if view_type == "territory":
+        group_col = "f.sfp_territory"
+        join_emp = ""
+        where_emp = ""
+        label_field = "f.sfp_territory"
+    else:
+        group_col = "f.next_contact_by"
+        join_emp = "LEFT JOIN `tabEmployee` emp ON emp.user_id = f.next_contact_by"
+        where_emp = "AND f.next_contact_by IS NOT NULL AND f.next_contact_by != ''"
+        label_field = "emp.short_code"
+
+    owner_filter = ""
+    if user_ids:
+        owner_filter = "AND f.next_contact_by IN ({0})".format(
+            ", ".join(["%(u{0})s".format(i) for i in range(len(user_ids))])
+        )
+        for i, u in enumerate(user_ids):
+            status_params["u{0}".format(i)] = u
+
+    service_filter = ""
+    if service:
+        service_filter = "AND f.service IN ({0})".format(
+            ", ".join(["%(sv{0})s".format(i) for i in range(len(service))])
+        )
+        for i, s in enumerate(service):
+            status_params["sv{0}".format(i)] = s
+
+    query = """
+        SELECT
+            {group_col} AS group_key,
+            {label_field} AS label,
+            f.next_contact_by AS user_id,
+            f.status,
+            SUM(CASE WHEN DATE(f.next_contact_date) = %(today)s THEN 1 ELSE 0 END) AS A,
+            SUM(CASE WHEN DATE(f.last_contacted_on) = %(today)s THEN 1 ELSE 0 END) AS B,
+            COUNT(*) AS C,
+            SUM(CASE WHEN DATE(f.next_contact_date) < %(today)s THEN 1 ELSE 0 END) AS D,
+            SUM(CASE WHEN DATE(f.last_contacted_on) = %(today)s AND f.call_status = 'Effective' THEN 1 ELSE 0 END) AS H
+        FROM `tabSales Follow Up` f
+        {join_emp}
+        WHERE f.docstatus != 2
+        AND f.status IN ({status_list_sql})
+        {where_emp}
+        {owner_filter}
+        {service_filter}
+        GROUP BY {group_col}, {label_field}, f.next_contact_by, f.status
+    """.format(
+        group_col=group_col,
+        label_field=label_field,
+        join_emp=join_emp,
+        where_emp=where_emp,
+        owner_filter=owner_filter,
+        service_filter=service_filter,
+        status_list_sql=status_list_sql,
+    )
+
+    params = {"today": today}
+    params.update(status_params)
+
+    raw_data = frappe.db.sql(query, params, as_dict=True)
+
+    result = {}
+    user_id_lookup = {}
+
+    for row in raw_data:
+        status = (row.status or "").lower()
+        key = row.group_key or "NA"
+        label = row.label or (row.group_key or "NA")
+
+        if key not in result:
+            result[key] = {
+                "label": label,
+                "user_id": row.user_id,
+                "employee_name": "",
+                "short_code": label,
+                "image": "",
+                "lead": None, "open": None, "replied": None,
+                "opportunity": None, "interested": None, "converted": None,
+                "appointments": None,
+            }
+            if row.user_id and row.user_id in emp_map:
+                result[key]["employee_name"] = emp_map[row.user_id]["employee_name"]
+                result[key]["short_code"] = emp_map[row.user_id]["short_code"] or label
+                result[key]["image"] = emp_map[row.user_id].get("image", "")
+
+        result[key][status] = {
+            "A": int(row.A or 0),
+            "B": int(row.B or 0),
+            "C": int(row.C or 0),
+            "D": int(row.D or 0),
+            "H": int(row.H or 0),
+            "user_id": row.user_id,
+        }
+
+    # Appointment counts per group
+    app_query = """
+        SELECT
+            {group_col} AS group_key,
+            {label_field} AS label,
+            f.next_contact_by AS user_id,
+            SUM(CASE WHEN DATE(f.appointment_created_on) = %(today)s THEN 1 ELSE 0 END) AS E,
+            SUM(CASE WHEN DATE(f.appointment_fixed_on) = %(today)s THEN 1 ELSE 0 END) AS F,
+            SUM(CASE WHEN DATE(f.visted_date) = %(today)s THEN 1 ELSE 0 END) AS G
+        FROM `tabSales Follow Up` f
+        {join_emp}
+        WHERE f.docstatus != 2
+        AND f.status IN ({status_list_sql})
+        {where_emp}
+        {owner_filter}
+        {service_filter}
+        GROUP BY {group_col}, {label_field}, f.next_contact_by
+    """.format(
+        group_col=group_col,
+        label_field=label_field,
+        join_emp=join_emp,
+        where_emp=where_emp,
+        owner_filter=owner_filter,
+        service_filter=service_filter,
+        status_list_sql=status_list_sql,
+    )
+
+    app_data = frappe.db.sql(app_query, params, as_dict=True)
+
+    for row in app_data:
+        key = row.group_key or "NA"
+        if key not in result:
+            result[key] = {
+                "label": row.label or (row.group_key or "NA"),
+                "user_id": row.user_id,
+                "employee_name": emp_map.get(row.user_id, {}).get("employee_name", ""),
+                "short_code": row.label or "NA",
+                "image": emp_map.get(row.user_id, {}).get("image", ""),
+                "lead": None, "open": None, "replied": None,
+                "opportunity": None, "interested": None, "converted": None,
+                "appointments": None,
+            }
+        result[key]["appointments"] = {
+            "E": int(row.E or 0),
+            "F": int(row.F or 0),
+            "G": int(row.G or 0),
+            "user_id": row.user_id,
+        }
+
+    # Ensure every group has an appointments entry
+    for key in result:
+        if not result[key].get("appointments"):
+            result[key]["appointments"] = {
+                "E": 0, "F": 0, "G": 0,
+                "user_id": result[key].get("user_id"),
+            }
+
+    # Build rows (sorted by label)
+    status_keys = ["lead", "open", "replied", "opportunity", "interested", "converted"]
+    rows = []
+    for key in sorted(result.keys(), key=lambda k: (result[k].get("label") or "").lower()):
+        val = result[key]
+        row_total = {"A": 0, "B": 0, "C": 0, "D": 0, "H": 0}
+        for sk in status_keys:
+            sd = val.get(sk)
+            if sd:
+                row_total["A"] += sd["A"]
+                row_total["B"] += sd["B"]
+                row_total["C"] += sd["C"]
+                row_total["D"] += sd["D"]
+                row_total["H"] += sd.get("H", 0)
+        app = val.get("appointments") or {"E": 0, "F": 0, "G": 0}
+
+        # Follow-up progress: how many of today's to-follow have been contacted
+        follow_rate = 0
+        if row_total["A"] > 0:
+            follow_rate = round((row_total["B"] / row_total["A"]) * 100, 0)
+
+        rows.append({
+            "label": val.get("label"),
+            "employee_name": val.get("employee_name") or val.get("label"),
+            "short_code": val.get("short_code") or val.get("label"),
+            "user_id": val.get("user_id"),
+            "image": val.get("image") or "",
+            "statuses": {sk: val.get(sk) for sk in status_keys},
+            "total": row_total,
+            "appointments": app,
+            "follow_rate": follow_rate,
+        })
+
+    # Grand totals
+    totals = {
+        "statuses": {sk: {"A": 0, "B": 0, "C": 0, "D": 0, "H": 0} for sk in status_keys},
+        "total": {"A": 0, "B": 0, "C": 0, "D": 0, "H": 0},
+        "appointments": {"E": 0, "F": 0, "G": 0},
+        "follow_rate": 0,
+    }
+    for row in rows:
+        for sk in status_keys:
+            sd = row["statuses"][sk]
+            if sd:
+                for k in ("A", "B", "C", "D", "H"):
+                    totals["statuses"][sk][k] += sd.get(k, 0)
+        for k in ("A", "B", "C", "D", "H"):
+            totals["total"][k] += row["total"].get(k, 0)
+        for k in ("E", "F", "G"):
+            totals["appointments"][k] += row["appointments"][k]
+
+    if totals["total"]["A"] > 0:
+        totals["follow_rate"] = round((totals["total"]["B"] / totals["total"]["A"]) * 100, 0)
+
+    # Summary KPIs
+    summary = {
+        "to_follow_today": totals["total"]["A"],
+        "contacted_today": totals["total"]["B"],
+        "effective_calls": totals["total"].get("H", 0),
+        "total_active": totals["total"]["C"],
+        "overdue": totals["total"]["D"],
+        "appt_fixed_today": totals["appointments"]["E"],
+        "appt_scheduled_today": totals["appointments"]["F"],
+        "appt_visited_today": totals["appointments"]["G"],
+        "follow_rate": totals["follow_rate"],
+        "pending_followups": max(totals["total"]["A"] - totals["total"]["B"], 0),
+    }
+
+    return {
+        "rows": rows,
+        "totals": totals,
+        "summary": summary,
+        "today": today,
+        "view_type": view_type,
+    }
 
 
 @frappe.whitelist()

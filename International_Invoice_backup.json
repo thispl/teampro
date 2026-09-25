@@ -1,0 +1,16 @@
+{
+  "name": "International Invoice",
+  "custom_format": 0,
+  "print_format_type": "Jinja",
+  "pdf_generator": "wkhtmltopdf",
+  "html": null,
+  "css": null,
+  "margin_top": 5.0,
+  "margin_bottom": 5.0,
+  "margin_left": 5.0,
+  "margin_right": 5.0,
+  "font_size": 14,
+  "font": "Default",
+  "page_number": "Hide",
+  "format_data": "[{\"fieldname\": \"print_heading_template\", \"fieldtype\": \"Custom HTML\", \"options\": \"<div class=\\\"print-heading\\\" style='margin-top:110px;'>\\n\\t<h2>\\n\\t    \\n\\t    <b>SALES INVOICE</b>\\n\\t</h2>\\n\\t\\t<h2><b>{{ doc.name }}</b></h2>\\n\\t\\n</div>\\n\"}, {\"fieldtype\": \"Section Break\", \"label\": \"\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"customer_name\", \"print_hide\": 0, \"label\": \"Customer Name\"}, {\"fieldname\": \"address_display\", \"print_hide\": 0, \"label\": \"Address\"}, {\"fieldname\": \"billing_address_gstin\", \"print_hide\": 0, \"align\": \"left\", \"label\": \"Billing Address GSTIN\"}, {\"fieldname\": \"po_no\", \"print_hide\": 0, \"label\": \"Customer's Purchase Order\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"posting_date\", \"print_hide\": 0, \"label\": \"Date\"}, {\"fieldname\": \"company\", \"print_hide\": 0, \"label\": \"Company\"}, {\"fieldname\": \"company_gstin\", \"print_hide\": 0, \"label\": \"Company GSTIN\"}, {\"fieldname\": \"company_pan_number\", \"print_hide\": 0, \"align\": \"left\", \"label\": \"Company PAN Number\"}, {\"fieldname\": \"company_address_display\", \"print_hide\": 0, \"label\": \"Company Address\"}, {\"fieldtype\": \"Section Break\", \"label\": \"\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"items\", \"print_hide\": 0, \"label\": \"Items\", \"visible_columns\": [{\"fieldname\": \"description\", \"print_width\": \"400px\", \"print_hide\": 0}, {\"fieldname\": \"serial_no\", \"print_width\": \"\", \"print_hide\": 0}, {\"fieldname\": \"qty\", \"print_width\": \"10px\", \"print_hide\": 0}, {\"fieldname\": \"rate\", \"print_width\": \"100px\", \"print_hide\": 0}, {\"fieldname\": \"amount\", \"print_width\": \"100px\", \"print_hide\": 0}]}, {\"fieldtype\": \"Section Break\", \"label\": \"\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"in_words\", \"print_hide\": 0, \"align\": \"left\", \"label\": \"In Words\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"total\", \"print_hide\": 0, \"label\": \"Total\"}, {\"fieldname\": \"grand_total\", \"print_hide\": 0, \"label\": \"Grand Total\"}, {\"fieldname\": \"net_total\", \"print_hide\": 0, \"align\": \"right\", \"label\": \"Net Total\"}, {\"fieldtype\": \"Section Break\", \"label\": \"Terms\"}, {\"fieldtype\": \"Column Break\"}, {\"fieldname\": \"_custom_html\", \"print_hide\": 0, \"label\": \"Custom HTML\", \"fieldtype\": \"HTML\", \"options\": \"<div style=\\\"margin-bottom:200px;\\\"></div>\"}, {\"fieldname\": \"terms\", \"print_hide\": 0, \"align\": \"left\", \"label\": \"Terms and Conditions Details\"}]"
+}

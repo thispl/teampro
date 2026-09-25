@@ -1,0 +1,37 @@
+{
+ "actions": [],
+ "autoname": "TB-.#####",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["module", "feature", "complexity", "column_break_1", "completed_count", "total_rt", "total_at", "avg_rt", "avg_at", "last_updated"],
+ "fields": [
+  {"fieldname": "module", "fieldtype": "Data", "label": "Module", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "feature", "fieldtype": "Data", "label": "Feature", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "complexity", "fieldtype": "Select", "label": "Complexity", "options": "\nLow\nMedium\nHigh\nCritical", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "completed_count", "fieldtype": "Int", "label": "Completed Count", "read_only": 1, "in_list_view": 1, "default": "0"},
+  {"fieldname": "total_rt", "fieldtype": "Float", "label": "Total RT", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "total_at", "fieldtype": "Float", "label": "Total AT", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "avg_rt", "fieldtype": "Float", "label": "Average RT", "read_only": 1, "in_list_view": 1, "in_preview": 1},
+  {"fieldname": "avg_at", "fieldtype": "Float", "label": "Average AT", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "last_updated", "fieldtype": "Date", "label": "Last Updated", "read_only": 1, "in_list_view": 1}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "Task Benchmark",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "import": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 1},
+  {"role": "Projects Manager", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 1},
+  {"role": "Employee", "read": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

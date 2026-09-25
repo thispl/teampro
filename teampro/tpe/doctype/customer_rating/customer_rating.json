@@ -1,0 +1,40 @@
+{
+ "actions": [],
+ "autoname": "CR-.#####",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": ["customer", "customer_name", "employee", "employee_name", "tpe_task", "column_break_1", "rating_date", "overall_rating", "parameters_section", "parameters", "remarks"],
+ "fields": [
+  {"fieldname": "customer", "fieldtype": "Link", "label": "Customer", "options": "Customer", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "customer_name", "fieldtype": "Data", "label": "Customer Name", "read_only": 1, "in_list_view": 1, "fetch_from": "customer.customer_name"},
+  {"fieldname": "employee", "fieldtype": "Link", "label": "Employee", "options": "Employee", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "employee_name", "fieldtype": "Data", "label": "Employee Name", "read_only": 1, "in_list_view": 1, "fetch_from": "employee.employee_name"},
+  {"fieldname": "tpe_task", "fieldtype": "Link", "label": "TPE Task", "options": "TPE Task", "in_list_view": 1, "in_standard_filter": 1},
+  {"fieldname": "column_break_1", "fieldtype": "Column Break"},
+  {"fieldname": "rating_date", "fieldtype": "Date", "label": "Rating Date", "reqd": 1, "in_list_view": 1, "in_standard_filter": 1, "default": "Today"},
+  {"fieldname": "overall_rating", "fieldtype": "Float", "label": "Overall Rating (1-5)", "read_only": 1, "in_list_view": 1, "in_preview": 1},
+  {"fieldname": "parameters_section", "fieldtype": "Section Break", "label": "Parameters"},
+  {"fieldname": "parameters", "fieldtype": "Table", "label": "Parameters", "options": "Customer Rating Parameter", "reqd": 1},
+  {"fieldname": "remarks", "fieldtype": "Text", "label": "Remarks"}
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "Customer Rating",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "import": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "report": 1, "export": 1, "print": 1, "email": 1, "share": 1},
+  {"role": "Sales Manager", "read": 1, "write": 1, "create": 1, "report": 1, "export": 1, "print": 1, "email": 1},
+  {"role": "Customer", "read": 1, "write": 1, "create": 1, "if_owner": 1},
+  {"role": "Employee", "read": 0}
+ ],
+ "sort_field": "rating_date desc",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "customer_name",
+ "track_changes": 1
+}

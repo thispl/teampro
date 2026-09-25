@@ -333,47 +333,105 @@ def task_age_calculation():
     frappe.db.commit()
 
 
+# @frappe.whitelist()
+# def update_candidate_tcount():
+#     tasks = frappe.get_all('Task',{'service':('in',('REC-I', 'REC-D')),"status":("in", ['Working', 'Open', 'Overdue', 'Pending Review'])},["name"])
+#     # tasks = frappe.get_all("Task",filters={"name": "TS20362"},fields=["name"])
+#     for task in tasks:
+#         # task = task.name
+# #         print(task)
+#         submit_spoc = frappe.db.count(
+#             'Candidate', {'task': task.name, 'pending_for': 'Submit(SPOC)'}) or 0
+#         submit_client = frappe.db.count(
+#             'Candidate', {'task': task.name, 'pending_for': 'Submitted(Client)'}) or 0
+#         psl = frappe.db.count('Candidate', {'task': task.name, 'pending_for': (
+#             'in', ('Client Offered', 'Proposed PSL'))}) or 0
+#         shortlisted = frappe.db.count(
+#             'Candidate', {'task': task.name, 'pending_for':'Shortlisted'}) or 0
+#         linedup = frappe.db.count(
+#             'Candidate', {'task': task.name, 'pending_for':('in', ('Linedup','Linedup Confirmed'))}) or 0
+#         interviewed = frappe.db.count(
+#             'Candidate', {'task': task.name, 'pending_for': 'Interviewed'}) or 0
+#         result_pending =frappe.db.count('Candidate',{'task':task.name,'pending_for':'Result Pending'}) or 0
+
+#         frappe.db.set_value('Task', task.name, 'psl', psl)
+#         frappe.db.set_value('Task', task.name, 'fp',(submit_spoc + interviewed + submit_client))
+#         frappe.db.set_value('Task',task.name,'custom_rp',result_pending)
+#         frappe.db.set_value('Task', task.name, 'sl', shortlisted)
+#         frappe.db.set_value('Task', task.name, 'custom_lp',linedup)
+
+#         task_status = frappe.db.get_value('Task', task.name, 'status')
+
+#         if task_status in ('Completed', 'Cancelled'):
+#             frappe.db.set_value('Task', task.name, 'sp', 0)
+#             frappe.db.set_value('Task', task.name, 'custom_lp', 0)
+#         else:
+#             vac = frappe.db.get_value('Task', task.name, 'vac')
+#             prop = frappe.db.get_value('Task', task.name, 'prop')
+#             pps = (vac - psl) * prop - (submit_spoc + submit_client+
+#                                         interviewed + shortlisted +linedup)
+#             frappe.db.set_value('Task', task.name, 'sp', pps)
+
+
+import frappe
+from collections import defaultdict
+
 @frappe.whitelist()
 def update_candidate_tcount():
-    tasks = frappe.get_all('Task',{'service':('in',('REC-I', 'REC-D')),"status":("in", ['Working', 'Open', 'Overdue', 'Pending Review'])},["name"])
-    # tasks = frappe.get_all("Task",filters={"name": "TS20840"},fields=["name"])
-    for task in tasks:
-        # task = task.name
-#         print(task)
-        submit_spoc = frappe.db.count(
-            'Candidate', {'task': task.name, 'pending_for': 'Submit(SPOC)'}) or 0
-        submit_client = frappe.db.count(
-            'Candidate', {'task': task.name, 'pending_for': 'Submitted(Client)'}) or 0
-        psl = frappe.db.count('Candidate', {'task': task.name, 'pending_for': (
-            'in', ('Client Offered', 'Proposed PSL'))}) or 0
-        shortlisted = frappe.db.count(
-            'Candidate', {'task': task.name, 'pending_for':'Shortlisted'}) or 0
-        linedup = frappe.db.count(
-            'Candidate', {'task': task.name, 'pending_for':('in', ('Linedup','Linedup Confirmed'))}) or 0
-        interviewed = frappe.db.count(
-            'Candidate', {'task': task.name, 'pending_for': 'Interviewed'}) or 0
-        result_pending =frappe.db.count('Candidate',{'task':task.name,'pending_for':'Result Pending'}) or 0
+    # 1. Get all matching tasks in one query
+    tasks = frappe.get_all(
+        "Task",
+        filters={
+            "service": ("in", ("REC-I", "REC-D")),
+            "status": ("in", ["Working", "Open", "Overdue", "Pending Review"])
+        },
+        fields=["name", "status", "vac", "prop"]
+    )
+    if not tasks:
+        return
 
-        frappe.db.set_value('Task', task.name, 'psl', psl)
-        frappe.db.set_value('Task', task.name, 'fp',(submit_spoc + interviewed + submit_client))
-        frappe.db.set_value('Task',task.name,'custom_rp',result_pending)
-        frappe.db.set_value('Task', task.name, 'sl', shortlisted)
-        frappe.db.set_value('Task', task.name, 'custom_lp',linedup)
+    task_names = [t.name for t in tasks]
 
-        task_status = frappe.db.get_value('Task', task.name, 'status')
+    # 2. Get ALL candidates for these tasks in one query (instead of 7 queries per task)
+    candidates = frappe.get_all(
+        "Candidate",
+        filters={"task": ("in", task_names)},
+        fields=["task", "pending_for"]
+    )
 
-        if task_status in ('Completed', 'Cancelled'):
-            frappe.db.set_value('Task', task.name, 'sp', 0)
-            frappe.db.set_value('Task', task.name, 'custom_lp', 0)
+    # 3. Group counts per task in Python (no DB calls)
+    counts = defaultdict(lambda: defaultdict(int))
+    for c in candidates:
+        counts[c.task][c.pending_for] += 1
+
+    # 4. Loop through tasks and update (same as before, but counts already in memory)
+    for t in tasks:
+        c = counts.get(t.name, {})
+
+        submit_spoc = c.get('Submit(SPOC)', 0)
+        submit_client = c.get('Submitted(Client)', 0)
+        psl = c.get('Client Offered', 0) + c.get('Proposed PSL', 0)
+        shortlisted = c.get('Shortlisted', 0)
+        linedup = c.get('Linedup', 0) + c.get('Linedup Confirmed', 0)
+        interviewed = c.get('Interviewed', 0)
+        result_pending = c.get('Result Pending', 0)
+
+        frappe.db.set_value('Task', t.name, 'psl', psl)
+        frappe.db.set_value('Task', t.name, 'fp', submit_spoc + interviewed + submit_client)
+        frappe.db.set_value('Task', t.name, 'custom_rp', result_pending)
+        frappe.db.set_value('Task', t.name, 'sl', shortlisted)
+        frappe.db.set_value('Task', t.name, 'custom_lp', linedup)
+
+        if t.status in ('Completed', 'Cancelled'):
+            frappe.db.set_value('Task', t.name, 'sp', 0)
+            frappe.db.set_value('Task', t.name, 'custom_lp', 0)
         else:
-            vac = frappe.db.get_value('Task', task.name, 'vac')
-            prop = frappe.db.get_value('Task', task.name, 'prop')
-            pps = (vac - psl) * prop - (submit_spoc + submit_client+
-                                        interviewed + shortlisted +linedup)
-            frappe.db.set_value('Task', task.name, 'sp', pps)
+            vac = t.vac or 0
+            prop = t.prop or 0
+            pps = (vac - psl) * prop - (submit_spoc + submit_client + interviewed + shortlisted + linedup)
+            frappe.db.set_value('Task', t.name, 'sp', pps)
 
-
-
+    frappe.db.commit()
 
 
 @frappe.whitelist()
@@ -388,6 +446,17 @@ def update_task_positions_count_hourly():
         enqueue_after_commit=False,
     )
 
+@frappe.whitelist()
+def update_task_positions_count_min():
+    frappe.enqueue(
+        update_candidate_tcount,
+        queue="long",
+        timeout=36000,
+        is_async=True,
+        now=False,
+        job_name='Task Update',
+        enqueue_after_commit=False,
+    )
 
 
 @frappe.whitelist()
@@ -402,6 +471,19 @@ def update_task_from_candidate1():
         })
         task.save(ignore_permissions=True)
 
+
+
+@frappe.whitelist()
+def update_task_from_min():
+    job = frappe.db.exists('Scheduled Job Type','update_task_positions_count_min')
+    if not job:
+        task = frappe.new_doc("Scheduled Job Type")
+        task.update({
+            "method": 'teampro.teampro_py.task.update_task_positions_count_min',
+            "frequency": 'Cron',
+            "cron_format": '*/5 * * * *'
+        })
+        task.save(ignore_permissions=True)
 
 @frappe.whitelist()
 def update_sprint_task(task_id,dev_team=None,sprint=None,project=None):
@@ -443,47 +525,6 @@ def update_sprint_task(task_id,dev_team=None,sprint=None,project=None):
 
 import frappe
 from frappe.utils import flt
-
-def update_prd_sprint_task(doc, method):
-    if not doc.custom_production_date:
-        return
-
-    if not doc.custom_sprint or not doc.custom_dev_team:
-        return
-
-    if doc.kt_confirmed == 0:
-        return
-
-    sprint_doc = frappe.get_doc(
-        "Sprint",
-        {
-            "team": doc.custom_dev_team,
-            "sprint_id": doc.custom_sprint
-        }
-    )
-
-    for row in sprint_doc.sprint_task:
-        if row.task == doc.name:
-            if flt(row.rt) != flt(doc.rt):
-                row.rt = doc.rt
-                sprint_doc.save(ignore_permissions=True)
-
-            return
-
-    sprint_doc.append("sprint_task", {
-        "task": doc.name,
-        "project": doc.project,
-        "status": doc.status,
-        "created_on": doc.creation,
-        "rt": doc.rt
-    })
-
-    sprint_doc.save(ignore_permissions=True)
-
-
-
-import frappe
-from frappe.utils import flt
 @frappe.whitelist()
 def update_prd_sprint_task(doc, method):
 
@@ -508,5 +549,44 @@ def update_prd_sprint_task(doc, method):
         as_dict=True,
     )
 
-    if child_row and flt(child_row.rt) != flt(doc.rt):
+    if child_row and flt(doc.rt) > flt(child_row.rt):
         frappe.db.set_value("Sprint Task", child_row.name, "rt", doc.rt)
+
+import frappe
+
+def validate_et(doc, method):
+    if doc.is_new():
+        return
+    previous = doc.get_doc_before_save()
+    if not (previous and previous.status == 'Working' and doc.status == 'Pending Review'):
+        return
+    if not doc.custom_allocated_to:
+        return
+    if doc.service == "IT-SW":
+        employee = frappe.get_value("Employee", {"user_id": doc.custom_allocated_to}, "name")
+
+        if not employee:
+            frappe.throw(f"Employee record for the user ({doc.custom_allocated_to}) not found.")
+
+        timesheet_data = frappe.db.sql("""
+            SELECT SUM(td.hours) AS total_hours
+            FROM `tabTimesheet Detail` td
+            INNER JOIN `tabTimesheet` ti ON td.parent = ti.name
+            WHERE td.task = %s AND ti.employee = %s
+        """, (doc.name, employee), as_dict=True)
+
+        actual_time = timesheet_data[0].total_hours if timesheet_data and timesheet_data[0].total_hours else 0.0
+        estimated_time = frappe.db.get_value(
+            "Task",
+            {"name": doc.name},
+            "expected_time"
+        ) or 0.0
+
+        if not isinstance(actual_time, (int, float)) or not isinstance(estimated_time, (int, float)):
+            frappe.throw("Invalid time values detected.")
+
+        if actual_time > estimated_time and not doc.custom_et_vs_at_remark:
+            frappe.throw(
+                f"ET vs AT Remark field is mandatory when Actual Time ({round(actual_time, 2)}) "
+                f"exceeds Estimated Time hours ({round(estimated_time, 2)})."
+            )

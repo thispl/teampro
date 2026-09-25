@@ -3,8 +3,8 @@
  "creation": "2026-03-31 10:16:27.311353",
  "docstatus": 0,
  "doctype": "Page",
- "idx": 3,
- "modified": "2026-04-24 14:17:05.764367",
+ "idx": 10,
+ "modified": "2026-07-04 10:10:38.811978",
  "modified_by": "Administrator",
  "module": "Teampro",
  "name": "new-it-dashboard",
@@ -13,6 +13,9 @@
  "roles": [
   {
    "role": "HR Manager"
+  },
+  {
+   "role": "Developer"
   }
  ],
  "script": null,

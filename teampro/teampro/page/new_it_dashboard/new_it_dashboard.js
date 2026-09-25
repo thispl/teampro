@@ -1,14 +1,21 @@
 frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
-    frappe.require([
-        "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js",
-        "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"
+    // Vue rebuild mounts by default; the legacy implementation below is kept
+    // as a fallback via ?legacy=1 until the new dashboard is fully verified.
+    if (!new URLSearchParams(window.location.search).has('legacy')) {
+        frappe.require(['it_dashboard.bundle.js', 'it_dashboard.bundle.css']).then(() => {
+            const page = frappe.ui.make_app_page({
+                parent: wrapper,
+                title: 'IT-SW Dashboard',
+                single_column: true
+            });
+            frappe.it_dashboard.mount(page.main.get(0));
+        });
+        return;
+    }
 
-    ]);
     let currentNonAllocatedView = "overall";
 
-    
+
     $(document).off("click", ".toggle-btn").on("click", ".toggle-btn", function () {
         $(".toggle-btn").removeClass("active");
         $(this).addClass("active");
@@ -17,8 +24,8 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
     });
     // KT filter change
     $(document).off("change", "#kt_confirmed_filter").on("change", "#kt_confirmed_filter", function () {
-    loadNonAllocatedTable();   // same function, view stays as currentNonAllocatedView
-});
+        loadNonAllocatedTable();   // same function, view stays as currentNonAllocatedView
+    });
     var page = frappe.ui.make_app_page({
         parent: wrapper,
         title: 'IT-SW Dashboard',
@@ -26,7 +33,40 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
     });
     const style = document.createElement('style');
     style.innerHTML = `
-    
+
+    /* ---- Tabs ---- */
+    .it-tab-bar {
+        display: flex;
+        justify-content: center;
+        gap: 0;
+        margin: 20px 0 0 0;
+        border-bottom: 3px solid #0F1568;
+    }
+    .it-tab {
+        padding: 10px 40px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #666;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -3px;
+        transition: color 0.2s, border-bottom-color 0.2s, background 0.2s;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+    }
+    .it-tab:hover {
+        color: #0F1568;
+        background: rgba(15, 21, 104, 0.05);
+    }
+    .it-tab.active {
+        color: #fff;
+        background: #0F1568;
+        border-bottom-color: #0F1568;
+        border-radius: 8px 8px 0 0;
+    }
+
     .top-actions { display: flex; gap: 10px; justify-content: flex-end; align-items: center; margin-top: -40px; margin-right: 20px; }
     .dashboard-cards-finaince { display: flex; gap: 25px; flex-wrap: nowrap; overflow-x: auto; padding-bottom: 20px; }
     .dashboard-card { width: 190px; border-radius: 12px; padding: 10px; text-align: center; flex-shrink: 0; }
@@ -158,7 +198,7 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
     document.head.appendChild(style);
 
     $(wrapper).html(`
-    <div class="dashboard-wrapper" style="padding: 0 30px;">
+    <div class="dashboard-wrapper" style="padding: 0 30px;background-color: #F8FAFC">
       <div style="position: relative; padding: 10px;">
         <h2 style="text-align: center; font-weight: bold; margin: 0;">IT SERVICES</h2>
 		
@@ -169,6 +209,12 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
       </div>
 
       
+      <div class="it-tab-bar">
+        <div class="it-tab active" data-tab="dashboard">Dashboard</div>
+        <div class="it-tab" data-tab="analytics">Sprint</div>
+      </div>
+
+      <div id="dashboard-content">
       <div id="dashboard-summary-row" 
         style="display:flex; gap:20px; margin-top:40px; background:#f5f5f5;">
 
@@ -446,22 +492,148 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
 
     </div>
 
+    <div class="card-container equal-height"
+        style="margin-top:40px; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
 
-    <div class="card-container equal-height" style="margin-top:40px; margin-right:0px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 8px; padding: 10px;display: none;">
-        <div style="position: relative; background: white; padding: 10px; border-radius: 6px; text-align: center;">
-            <h4 style="margin: 0;">OPPORTUNITY TABLE</h4>
+        <div style="position:relative;background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
 
-    </div>
+            <!-- Center Heading -->
+            <h4 style="margin:0;font-weight:600;">DPR SUMMARY</h4>
+
+        </div>
 
         <br>
-        <div id="opp_table" class="table-scrollable">Loading...</div>
+
+        <div id="dpr_table" class="table-scrollable">
+            Loading...
+        </div>
+
     </div>
 
 	  <div id ="filters" style="margin-top: -20px;"></div><br>
       <div id="retro-summary-html" style="overflow-x:auto;overflow-y:auto; margin-top: -30px; margin-left: -30px; margin-right: -30px;"></div>
+
+    </div><!-- end dashboard-content -->
+
+    <div id="analytics-content" style="display:none;">
+
+    <!-- 1. Sprint Progress -->
+    <div id="sprint-chart-section" class="card-container equal-height"
+        style="margin-top:0px; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
+
+        <div style="position:relative;background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:space-between;">
+
+            <h4 style="margin:0;font-weight:600;">SPRINT PROGRESS</h4>
+
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div id="sprint_filter" style="min-width:200px;"></div>
+                <div id="sprint_team_filter" style="min-width:200px;"></div>
+            </div>
+
+        </div>
+
+        <br>
+
+        <div id="sprint_chart_container" style="background:white;padding:15px;border-radius:6px;min-height:450px;position:relative;">
+            Loading...
+        </div>
+
     </div>
+
+    <!-- 2. Overall Team Summary (with drill-down CB details) -->
+    <div id="sprint-overall-section" class="card-container equal-height"
+        style="margin-top:40px; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
+        <div style="position:relative;background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+            <h4 style="margin:0;font-weight:600;">OVERALL TEAM SUMMARY</h4>
+        </div>
+        <br>
+        <div id="sprint_overall_container" style="background:white;padding:15px;border-radius:6px;overflow-x:auto;">
+            Loading...
+        </div>
+    </div>
+
+    <!-- 4 & 5. RT Vs AT % > 150% (Completed & Working) side by side -->
+    <div style="display:flex; gap:15px; margin-top:40px; flex-wrap:wrap;">
+        <!-- 4. RT Vs AT % (Completed Tasks) > 150% -->
+        <div id="sprint-rtat-completed-section" class="card-container equal-height"
+            style="flex:1; min-width:48%; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
+            <div style="background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                <h4 style="margin:0;font-weight:600;">RT Vs AT %(Completed Tasks) &gt; 150%</h4>
+            </div>
+            <br>
+            <div id="rtat_completed_container" style="background:white;padding:15px;border-radius:6px;overflow-x:auto;">
+                Loading...
+            </div>
+        </div>
+
+        <!-- 5. RT Vs AT % (Working) > 150% -->
+        <div id="sprint-rtat-working-section" class="card-container equal-height"
+            style="flex:1; min-width:48%; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
+            <div style="background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                <h4 style="margin:0;font-weight:600;">RT Vs AT % (Working) &gt; 150%</h4>
+            </div>
+            <br>
+            <div id="rtat_working_container" style="background:white;padding:15px;border-radius:6px;overflow-x:auto;">
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    <!-- 6 & 7. NT Tasks with Priority High/Urgent side by side -->
+    <div style="display:flex; gap:15px; margin-top:40px; flex-wrap:wrap;">
+        <!-- 6. NT Tasks with Priority High/Urgent (AT Zero - Any Sprint) -->
+        <div id="sprint-nt-any-section" class="card-container equal-height"
+            style="flex:1; min-width:48%; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
+            <div style="background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                <h4 style="margin:0;font-weight:600;">NT Tasks with Priority High/Urgent in any sprint</h4>
+            </div>
+            <br>
+            <div id="nt_any_container" style="background:white;padding:15px;border-radius:6px;overflow-x:auto;">
+                Loading...
+            </div>
+        </div>
+
+        <!-- 7. NT Tasks with Priority High/Urgent (AT Period Zero, Previous AT Exists) -->
+        <div id="sprint-nt-current-section" class="card-container equal-height"
+            style="flex:1; min-width:48%; margin-right:0px; background:#f5f5f5; border:1px solid #ddd; border-radius:8px; padding:10px;">
+            <div style="background:white;padding:10px;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+                <h4 style="margin:0;font-weight:600;">NT Tasks with Priority High/Urgent</h4>
+            </div>
+            <br>
+            <div id="nt_current_container" style="background:white;padding:15px;border-radius:6px;overflow-x:auto;">
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    </div><!-- end analytics-content -->
+
   `);
 
+
+    // Tab setup — Dashboard and Sprint tabs
+    let sprintTabLoaded = false;
+    $(document).off('click', '.it-tab').on('click', '.it-tab', function () {
+        $('.it-tab').removeClass('active');
+        $(this).addClass('active');
+        let tab = $(this).data('tab');
+        if (tab === 'dashboard') {
+            $('#dashboard-content').show();
+            $('#analytics-content').hide();
+        } else {
+            $('#dashboard-content').hide();
+            $('#analytics-content').show();
+            // Lazy-load Sprint tab content on first visit
+            if (!sprintTabLoaded) {
+                sprintTabLoaded = true;
+                load_sprint_chart();
+                load_sprint_overall_summary();
+                load_rtat_exception();
+                load_nt_priority_any();
+                load_nt_priority_current();
+            }
+        }
+    });
 
     get_today_task_data1();
     // load_opportunity_table();
@@ -494,41 +666,41 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
     });
     to_date_filter.$wrapper.hide();
     function loadNonAllocatedTable() {
-    const view = currentNonAllocatedView;           // "overall" | "na" | "sprint"
-    const kt_confirmed = $("#kt_confirmed_filter").val(); // "" | "Yes" | "No"
+        const view = currentNonAllocatedView;           // "overall" | "na" | "sprint"
+        const kt_confirmed = $("#kt_confirmed_filter").val(); // "" | "Yes" | "No"
 
-    $("#non_allocated_task_table_new").html(`
+        $("#non_allocated_task_table_new").html(`
         <div style="padding:20px; text-align:center;">Loading...</div>
     `);
 
-    frappe.call({
-        method: "teampro.teampro.page.new_it_dashboard.new_it.get_non_allocated_tasks_test",
-        args: {
-            view: view,           // pass to backend
-            kt_confirmed: kt_confirmed
-        },
-        callback: function (r) {
-            let $container = $("#non_allocated_task_table_new");
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_non_allocated_tasks_test",
+            args: {
+                view: view,           // pass to backend
+                kt_confirmed: kt_confirmed
+            },
+            callback: function (r) {
+                let $container = $("#non_allocated_task_table_new");
 
-            if (!(r.message && r.message.data && r.message.data.length)) {
-                $container.html("<p style='padding:20px;text-align:center;'>No tasks found.</p>");
-                return;
-            }
+                if (!(r.message && r.message.data && r.message.data.length)) {
+                    $container.html("<p style='padding:20px;text-align:center;'>No tasks found.</p>");
+                    return;
+                }
 
-            const tasks = r.message.data;
+                const tasks = r.message.data;
 
-            // Group by project
-            grouped = {};
-            tasks.forEach(task => {
-                const project = task.project || "No Project";
-                if (!grouped[project]) grouped[project] = [];
-                grouped[project].push(task);
-            });
+                // Group by project
+                grouped = {};
+                tasks.forEach(task => {
+                    const project = task.project || "No Project";
+                    if (!grouped[project]) grouped[project] = [];
+                    grouped[project].push(task);
+                });
 
-            // Build table
-            let grandET = 0, grandRT = 0, grandAT = 0;
+                // Build table
+                let grandET = 0, grandRT = 0, grandAT = 0;
 
-            let html = `
+                let html = `
             <table class="table table-bordered" style="width:100%; text-align:center; border-collapse:collapse;">
                 <thead style="background:#0F1568; color:white;">
                     <tr>
@@ -547,20 +719,20 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
                 </thead>
                 <tbody>`;
 
-            Object.keys(grouped).sort().forEach(project => {
-                const projectTasks = grouped[project];
-                const projectRowId = "proj-" + project.replace(/[^a-zA-Z0-9]/g, "_");
+                Object.keys(grouped).sort().forEach(project => {
+                    const projectTasks = grouped[project];
+                    const projectRowId = "proj-" + project.replace(/[^a-zA-Z0-9]/g, "_");
 
-                const totalET = projectTasks.reduce((s, t) => s + (parseFloat(t.expected_time) || 0), 0);
-                const totalRT = projectTasks.reduce((s, t) => s + (parseFloat(t.rt) || 0), 0);
-                const totalAT = projectTasks.reduce((s, t) => s + (parseFloat(t.actual_time) || 0), 0);
+                    const totalET = projectTasks.reduce((s, t) => s + (parseFloat(t.expected_time) || 0), 0);
+                    const totalRT = projectTasks.reduce((s, t) => s + (parseFloat(t.rt) || 0), 0);
+                    const totalAT = projectTasks.reduce((s, t) => s + (parseFloat(t.actual_time) || 0), 0);
 
-                grandET += totalET;
-                grandRT += totalRT;
-                grandAT += totalAT;
+                    grandET += totalET;
+                    grandRT += totalRT;
+                    grandAT += totalAT;
 
-                // Project header row
-                html += `
+                    // Project header row
+                    html += `
                 <tr class="na-project-row" data-target="${projectRowId}"
                     style="cursor:pointer; font-weight:bold; background:#85819e; color:#fff;">
                     <td colspan="4" style="text-align:left; padding-left:10px;">
@@ -572,13 +744,13 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
                     <td colspan="4"></td>
                 </tr>`;
 
-                // Task rows
-                projectTasks.forEach((task, idx) => {
-                    const bg = idx % 2 === 0 ? "#ffffff" : "#e7e6ec";
-                    const age = parseFloat(task.custom_age) || 0;
-                    const textColor = age > 3 ? "#f54545" : "#000000";
+                    // Task rows
+                    projectTasks.forEach((task, idx) => {
+                        const bg = idx % 2 === 0 ? "#ffffff" : "#e7e6ec";
+                        const age = parseFloat(task.custom_age) || 0;
+                        const textColor = age > 3 ? "#f54545" : "#000000";
 
-                    html += `
+                        html += `
                     <tr class="na-task-row" data-parent="${projectRowId}"
                         style="display:none; background:${bg}; color:${textColor};">
                         <td>${task.cb || ""}</td>
@@ -598,11 +770,11 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
                         <td>${task.priority || ""}</td>
                         <td>${task.status || ""}</td>
                     </tr>`;
+                    });
                 });
-            });
 
-            // Grand total row
-            html += `
+                // Grand total row
+                html += `
             <tr style="font-weight:bold; background:#0F1568; color:white;">
                 <td colspan="4" style="text-align:right;">GRAND TOTAL</td>
                 <td>${grandET.toFixed(2)}</td>
@@ -611,33 +783,33 @@ frappe.pages['new-it-dashboard'].on_page_load = function (wrapper) {
                 <td colspan="4"></td>
             </tr>`;
 
-            html += `</tbody></table>`;
-            $container.html(html);
+                html += `</tbody></table>`;
+                $container.html(html);
 
-            // ---- Bind toggle events ----
-            let allExpanded = false;
+                // ---- Bind toggle events ----
+                let allExpanded = false;
 
-            $("#toggle-all-na").off("click").on("click", function () {
-                allExpanded = !allExpanded;
-                $(".na-task-row").toggle(allExpanded);
-                $(".na-toggle-sign").text(allExpanded ? "-" : "+");
-                $(this).text(allExpanded ? "- ALL" : "+ ALL");
-            });
+                $("#toggle-all-na").off("click").on("click", function () {
+                    allExpanded = !allExpanded;
+                    $(".na-task-row").toggle(allExpanded);
+                    $(".na-toggle-sign").text(allExpanded ? "-" : "+");
+                    $(this).text(allExpanded ? "- ALL" : "+ ALL");
+                });
 
-            $(".na-project-row").off("click").on("click", function () {
-                const target = $(this).data("target");
-                const $rows = $(`.na-task-row[data-parent="${target}"]`);
-                const $sign = $(this).find(".na-toggle-sign");
-                const isVisible = $rows.is(":visible");
-                $rows.toggle(!isVisible);
-                $sign.text(isVisible ? "+" : "-");
-            });
-        }
-    });
-}
+                $(".na-project-row").off("click").on("click", function () {
+                    const target = $(this).data("target");
+                    const $rows = $(`.na-task-row[data-parent="${target}"]`);
+                    const $sign = $(this).find(".na-toggle-sign");
+                    const isVisible = $rows.is(":visible");
+                    $rows.toggle(!isVisible);
+                    $sign.text(isVisible ? "+" : "-");
+                });
+            }
+        });
+    }
 
-// Initial load
-loadNonAllocatedTable();
+    // Initial load
+    loadNonAllocatedTable();
     // ---- Function to fetch data ----
     function load_dashboard_data(from_date, to_date) {
         get_today_task_data11(from_date, to_date);
@@ -864,89 +1036,89 @@ loadNonAllocatedTable();
     // });
 
     $(document).on('click', '#download-task-table', function () {
-            const table = document.getElementById('task-report-table');
+        const table = document.getElementById('task-report-table');
 
-            if (!table) {
-                frappe.msgprint("No Data found.");
-                return;
-            }
+        if (!table) {
+            frappe.msgprint("No Data found.");
+            return;
+        }
 
-            // Clone table for Excel export
-            const exportTable = table.cloneNode(true);
-            const $exportTable = $(exportTable);
+        // Clone table for Excel export
+        const exportTable = table.cloneNode(true);
+        const $exportTable = $(exportTable);
 
-            // Show hidden rows in cloned table
-            $exportTable.find('tr:hidden').show();
+        // Show hidden rows in cloned table
+        $exportTable.find('tr:hidden').show();
 
-            // Style headers
-            $exportTable.find('thead th').each(function () {
+        // Style headers
+        $exportTable.find('thead th').each(function () {
+            $(this).css({
+                'background-color': '#0F1568',
+                'color': 'white',
+                'text-align': 'center',
+                'font-size': '14px',
+                'border': '1px solid black'
+            });
+        });
+
+        // Style body rows
+        $exportTable.find('tbody tr').each(function () {
+
+            const $row = $(this);
+            const isTeamRow = $row.hasClass('toggle-team');
+            const isCBRow = $row.hasClass('toggle-cb');
+
+            $row.find('td').each(function (index) {
+
+                let backgroundColor = '#ffffff';
+
+                if (index <= 13) {
+                    if (isTeamRow) {
+                        backgroundColor = '#eaf0f6';
+                    } else if (isCBRow) {
+                        backgroundColor = '#85819e';
+                    }
+                }
+
+                if (index === 3 && !isCBRow && !isTeamRow) {
+                    const match = $(this).text().trim().match(/TS\d+/);
+
+                    if (match) {
+                        $(this).text(match[0]);
+                    }
+                }
+
+
+                if (index === 4 || index == 2 && !isCBRow && !isTeamRow) {
+                    const anchor = $(this).find('a');
+
+                    if (anchor.length) {
+                        anchor.replaceWith(anchor.text());
+                    }
+                }
+
+                // M/N Columns - tick symbol cleanup
+                if (index === 12 || index === 13) {
+                    let text = $(this).text().trim();
+
+                    text = text.replace(/✔/g, '✓');
+                    text = text.replace(/âœ“/g, '✓');
+
+                    $(this).text(text);
+                }
+
                 $(this).css({
-                    'background-color': '#0F1568',
-                    'color': 'white',
-                    'text-align': 'center',
-                    'font-size': '14px',
-                    'border': '1px solid black'
+                    'background-color': backgroundColor,
+                    'border': '1px solid black',
+                    'font-size': '12px',
+                    'text-align': $(this).hasClass('left-align') ? 'left' : 'center'
                 });
+
             });
+        });
 
-            // Style body rows
-            $exportTable.find('tbody tr').each(function () {
-
-                const $row = $(this);
-                const isTeamRow = $row.hasClass('toggle-team');
-                const isCBRow = $row.hasClass('toggle-cb');
-
-                $row.find('td').each(function (index) {
-
-                    let backgroundColor = '#ffffff';
-
-                    if (index <= 13) {
-                        if (isTeamRow) {
-                            backgroundColor = '#eaf0f6';
-                        } else if (isCBRow) {
-                            backgroundColor = '#85819e';
-                        }
-                    }
-
-                    if (index === 3 && !isCBRow && !isTeamRow) {
-                        const match = $(this).text().trim().match(/TS\d+/);
-
-                        if (match) {
-                            $(this).text(match[0]);
-                        }
-                    }
-
-
-                    if (index === 4 || index == 2  && !isCBRow && !isTeamRow) {
-                        const anchor = $(this).find('a');
-
-                        if (anchor.length) {
-                            anchor.replaceWith(anchor.text());
-                        }
-                    }
-
-                    // M/N Columns - tick symbol cleanup
-                    if (index === 12 || index === 13) {
-                        let text = $(this).text().trim();
-
-                        text = text.replace(/✔/g, '✓');
-                        text = text.replace(/âœ“/g, '✓');
-
-                        $(this).text(text);
-                    }
-
-                    $(this).css({
-                        'background-color': backgroundColor,
-                        'border': '1px solid black',
-                        'font-size': '12px',
-                        'text-align': $(this).hasClass('left-align') ? 'left' : 'center'
-                    });
-
-                });
-            });
-
-            // Excel HTML
-            const html = `
+        // Excel HTML
+        const html = `
             <html xmlns:o="urn:schemas-microsoft-com:office:office"
                 xmlns:x="urn:schemas-microsoft-com:office:excel"
                 xmlns="http://www.w3.org/TR/REC-html40">
@@ -972,23 +1144,23 @@ loadNonAllocatedTable();
             </body>
             </html>`;
 
-            const blob = new Blob(
-                ['\ufeff', html],   // UTF-8 BOM for Excel encoding
-                { type: 'application/vnd.ms-excel;charset=utf-8;' }
-            );
+        const blob = new Blob(
+            ['\ufeff', html],   // UTF-8 BOM for Excel encoding
+            { type: 'application/vnd.ms-excel;charset=utf-8;' }
+        );
 
-            const url = URL.createObjectURL(blob);
+        const url = URL.createObjectURL(blob);
 
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Production_Tasks_${frappe.datetime.now_date()}.xls`;
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Production_Tasks_${frappe.datetime.now_date()}.xls`;
 
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
 
-            URL.revokeObjectURL(url);
-        });
+        URL.revokeObjectURL(url);
+    });
 
     // PDF Download
     // $(document).on('click', '#download-task-table-pdf', function () {
@@ -1172,29 +1344,29 @@ loadNonAllocatedTable();
 
 
     $(document)
-    .off("click", "#download-task-table-all")
-    .on("click", "#download-task-table-all", function () {
+        .off("click", "#download-task-table-all")
+        .on("click", "#download-task-table-all", function () {
 
-        const table = document.getElementById('task-report-table');
-        if (!table) {
-            frappe.msgprint("No Data found.");
-            return;
-        }
+            const table = document.getElementById('task-report-table');
+            if (!table) {
+                frappe.msgprint("No Data found.");
+                return;
+            }
 
-        let btn = $(this);
+            let btn = $(this);
 
-        let rows3 = $("#today-task-table-container")
-            .find(".toggle-cb, .task-row");
+            let rows3 = $("#today-task-table-container")
+                .find(".toggle-cb, .task-row");
 
-        if (rows3.is(":visible")) {
-            rows3.hide();
-            btn.text("+ ALL");
-        } else {
-            rows3.show();
-            btn.text("- ALL");
-        }
+            if (rows3.is(":visible")) {
+                rows3.hide();
+                btn.text("+ ALL");
+            } else {
+                rows3.show();
+                btn.text("- ALL");
+            }
 
-    });
+        });
 
 
     function add_filter(df) {
@@ -1267,6 +1439,12 @@ loadNonAllocatedTable();
     margin-right: 50px;
     }
 
+    #analytics-content .card-container.equal-height {
+        max-height: none;
+        height: auto;
+        justify-content: flex-start;
+    }
+
 .table-scrollable {
   overflow-y: auto;
   width: 100%;
@@ -1282,7 +1460,7 @@ loadNonAllocatedTable();
 
 
 </style>`).appendTo("head");
-let current_view = "hrs";
+    let current_view = "hrs";
 
     // Create Dev Team button
     function createDevTeamButton(name) {
@@ -1357,7 +1535,7 @@ let current_view = "hrs";
         });
         $('#filter-row').append($button);
     }
-    
+
 
 
     // Add "ALL" first
@@ -1421,24 +1599,24 @@ let current_view = "hrs";
 
     $(document).on("click", ".view-btn", function () {
 
-            $('.view-btn')
-                .removeClass('btn-primary active')
-                .addClass('btn-outline-primary');
+        $('.view-btn')
+            .removeClass('btn-primary active')
+            .addClass('btn-outline-primary');
 
-            $(this)
-                .removeClass('btn-outline-primary')
-                .addClass('btn-primary active');
+        $(this)
+            .removeClass('btn-outline-primary')
+            .addClass('btn-primary active');
 
-            current_view = $(this).data("view");
+        current_view = $(this).data("view");
 
-            if (current_view === "hrs") {
-                $('.hrs-col').show();
-                $('.count-col').hide();
-            } else {
-                $('.hrs-col').hide();
-                $('.count-col').show();
-            }
-        });
+        if (current_view === "hrs") {
+            $('.hrs-col').show();
+            $('.count-col').hide();
+        } else {
+            $('.hrs-col').hide();
+            $('.count-col').show();
+        }
+    });
 
 
 
@@ -2001,6 +2179,158 @@ let current_view = "hrs";
         }
     });
 
+    function renderSimpleCard(wrapperSelector, containerCls, headerTitle, cards) {
+        // cards = [{ key, title, value, color, icon, hours }]
+        let html = `
+            <div class="${containerCls}">
+                <table>
+                <br>
+                    <h4 class="sticky-top" style="margin:0;padding:0px 0;text-align:center;background:white;">
+                        ${headerTitle}
+                    </h4>
+                    <br>
+                </table>
+                <div class="${containerCls}-row" style="display:flex;flex-wrap:wrap;gap:10px;padding:15px;justify-content:space-between;">`;
+
+        cards.forEach(c => {
+            html += `
+                <div class="dashboard-card ${containerCls}-item" data-key="${c.key}">
+                    <div class="card-top-line" style="background:${c.color};"></div>
+                    <div class="card-body">
+                        <div class="card-icon">
+                            <i class="${c.icon}" style="color:${c.color};"></i>
+                        </div>
+                        <div class="card-title">${c.title}</div>
+                        <div class="card-value" style="color:${c.color};">${c.value}</div>
+                        ${c.hours !== undefined ? `<div style="font-size:12px;color:#666;">${c.hours.toFixed(2)} hr</div>` : ''}
+                    </div>
+                </div>`;
+        });
+
+        html += `</div></div>`;
+        $(wrapperSelector).html(html);
+    }
+
+    function injectDashboardCardStyles() {
+        if ($('#common-dashboard-card-style').length) return;
+        $(`<style id="common-dashboard-card-style">
+        .card-group-container {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .card-group-container h4 {
+            margin: 0;
+            padding: 12px 0;
+            text-align: center;
+            background: white;
+        }
+        .card-group-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 15px;
+            justify-content: flex-start;
+        }
+        .dashboard-card {
+            background: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            padding: 0 !important;
+            width: 105px;
+            min-width: 105px;
+            max-width: 105px;
+            flex-shrink: 0;
+            cursor: pointer;
+            transition: transform .18s ease, box-shadow .18s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0,0,0,.12);
+        }
+        .card-top-line {
+            width: 100%;
+            height: 3px;
+            display: block;
+        }
+        .card-body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 18px 10px;
+        }
+        .card-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+        }
+        .card-subtitle {
+            font-size: 10.5px;
+            color: #888;
+            margin-top: 4px;
+            line-height: 1.3;
+        }
+        .card-icon i { font-size: 18px; }
+        .card-title {
+            font-size: 13px;
+            font-weight: 700 !important;
+            color: #24344d;
+            margin-bottom: 8px;
+        }
+        .card-value {
+            font-size: 22px;
+            font-weight: 800;
+        }
+        .card-hours {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+    </style>`).appendTo('head');
+    }
+
+    function renderCardGroup(wrapperSelector, headerTitle, cards, onCardClick) {
+        injectDashboardCardStyles();
+
+        let html = `
+        <div class="card-group-container">
+            <h4>${headerTitle}</h4>
+            <div class="card-group-row">`;
+
+        cards.forEach(c => {
+            html += `
+            <div class="dashboard-card" data-key="${c.key}">
+                <div class="card-top-line" style="background:${c.color};"></div>
+                <div class="card-body">
+                    <div class="card-icon" style="background:${c.color}20;">
+                        <i class="${c.icon}" style="color:${c.color};"></i>
+                    </div>
+                    <div class="card-title">${c.title}</div>
+                    <div class="card-value" style="color:${c.color};">${c.value}</div>
+                    ${c.hours !== undefined ? `<div class="card-hours">${c.hours.toFixed(2)} hr</div>` : ''}
+                    ${c.subtitle ? `<div class="card-subtitle">${c.subtitle}</div>` : ''}
+                </div>
+            </div>`;
+        });
+
+        html += `</div></div>`;
+        $(wrapperSelector).html(html);
+
+        $(wrapperSelector).off('click', '.dashboard-card').on('click', '.dashboard-card', function () {
+            const key = $(this).data('key');
+            if (onCardClick) onCardClick(key);
+        });
+    }
+
+
     function loadDashboardData(from_date = null, to_date = null) {
         const container = $('.dashboard-wrapper');
         renderCardFromMethod('.order-booking-card', 'Order Booking', "teampro.teampro.page.it_sw_dashboard.it_sw_dashboard.get_order_booking_it", from_date, to_date);
@@ -2030,338 +2360,447 @@ let current_view = "hrs";
                 $('#tobill-so-table-content').html(r.message || `<div style="padding: 10px;text-align:center">No data found</div>`);
             }
         });
-        // Ensure only one set of summary cards is shown
         if (!container.find('#project-summary-wrapper').length) {
             container.append('<div id="project-summary-wrapper"></div>');
         }
         if (!container.find('#task-summary-wrapper').length) {
             container.append('<div id="task-summary-wrapper"></div>');
         }
-        // if (!container.find('#sprint-summary-wrapper').length) {
-        // 	container.append('<div id="sprint-summary-wrapper"></div>');
-        // }
 
 
+
+
+        //         Promise.all([
+        //             frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_project_counts" }),
+        //             frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_task_summary" }),
+        //             frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_sprint_counts" })
+        //         ]).then(([projRes, taskRes, sprintRes]) => {
+        //             if (projRes.message) {
+        //                 const { projects = [], total = 0 } = projRes.message;
+
+        //                 const projectColors = [
+        //                     "#2F8F46", "#C29100", "#540D6E",
+        //                     "#006D77", "#4169e1", "#8B0000",
+        //                     "#f9844a", "#bc5090", "#003f5c"
+        //                 ];
+
+        //                 let html = `
+        //     <style>
+        //         .project-cards-container {
+        //             border: 1px solid #ccc;
+        //             border-radius: 5px;
+        //             margin-top: 10px;
+        //         }
+
+        //         .project-cards-container table {
+        //             width: 100%;
+        //             border-collapse: collapse;
+        //         }
+
+        //         .project-cards-container th {
+        //             background-color: white;
+        //             text-align: center;
+        //             font-weight: bold;
+        //             font-size: 16px;
+        //             padding: 10px;
+        //             border-bottom: 20px solid #ccc;
+        //         }
+
+        //         .project-cards-row {
+        // 			display: flex;
+        // 			overflow-x: auto;
+        // 			padding: 10px;
+        // 			gap: 40px;
+        // 			justify-content: center;
+        // 		}
+
+
+
+        //         .project-card span {
+        //             font-size: 18px;
+        //             display: block;
+        //             margin-top: 5px;
+        //         }
+
+        //         .card-top-line{
+        //             width:100%;
+        //             height:3px;
+        //             display:block;
+        //             margin:0;
+        //         }
+        //         .card-title{
+        //             font-size:13px;
+        //             font-weight:700 !important;   /* Bold */
+        //             color:#24344d;
+        //             text-align:center;
+        //             margin-top:8px;
+        //             margin-bottom:10px;
+        //         }
+
+        //     </style>
+
+        //     <div class="project-cards-container">
+        //         <table>
+        //         <br>
+        //             <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">PROJECT COUNT</h4>
+        //             <br>
+        //         </table>
+        //         <div class="project-cards-row">
+        //             <div class="dashboard-card project-card">
+        //                 <div class="card-top-line" style="background:#0096A6;"></div>
+        //                     <div class="card-body">
+        //                         <div class="card-icon">
+        //                             <i class="fa fa-folder" style="color:#0096A6;"></i>
+        //                         </div>
+        //                         <div class="card-title">
+        //                             Total
+        //                         </div>
+        //                         <div class="card-value" style="color:#0096A6;">
+        //                             ${total}
+        //                         </div>
+        //                     </div>
+        //             </div>`;
+
+        //                 projects.forEach((it, i) => {
+        //                     if (it.project_type === "Products") {
+        //                         return;
+        //                     }
+        //                     const color = projectColors[i % projectColors.length];
+        //                     const icon = projectIcons[it.project_type] || "fa fa-folder";
+
+        //                     html += `
+        //                     <div class="dashboard-card project-card" data-type="${it.project_type}">
+        //                         <div class="card-top-line" style="background:${color};"></div>
+
+        //                         <div class="card-body">
+        //                             <div class="card-icon">
+        //                                 <i class="${icon}" style="color:${color};"></i>
+        //                             </div>
+
+        //                             <div class="card-title">${it.project_type}</div>
+
+        //                             <div class="card-value" style="color:${color};">
+        //                                 ${it.count}
+        //                             </div>
+        //                         </div>
+        //                     </div>`;
+        //                 });
+
+        //                 html += `
+        //                     </div>
+        //                 </div>`;
+
+        //                 container.find('#project-summary-wrapper').html(html);
+        //             }
+
+        //             container.on('click', '.project-card', function () {
+
+        //                 const type = $(this).data('type');
+        //                 console.log("Project clicked:", type);
+        //                 if (!type || type === "Total") {
+        //                     renderPivotTable(pivotData);
+        //                     return;
+        //                 }
+
+        //                 const filtered = pivotData.filter(r =>
+        //                     r.project_type === type
+        //                 );
+
+        //                 renderPivotTable(filtered);
+        //             });
+
+
+        //             //  2. Task Summary
+        //             if (taskRes.message) {
+        //                 const tc = taskRes.message;
+        //                 const taskColors = {
+        //                     total: '#0096A6',
+        //                     open: '#2F8F46',
+        //                     working: '#C29100',
+        //                     pr: '#540D6E',
+        //                     cr: '#006D77'
+        //                 };
+
+        //                 let html = `
+        //     <style>
+        //     .task-cards-container {
+        //         border: 1px solid #ccc;
+        //         border-radius: 5px;
+        //         margin-top: 20px;
+        //     }
+
+        //     .task-cards-container table {
+        //         width: 100%;
+        //         border-collapse: collapse;
+        //     }
+
+        //     .task-cards-container th {
+        //         background-color: white;
+        //         text-align: center;
+        //         font-weight: bold;
+        //         font-size: 16px;
+        //         padding: 10px;
+        //         border-bottom: 1px solid #ccc;
+        //     }
+
+        //     .task-cards-row {
+        //         display: flex;
+        //         flex-wrap: wrap;
+        //         gap: 10px;
+        //         padding: 15px;
+        //         justify-content: flex-start;
+        //         align-items: stretch;
+        //         box-sizing: border-box;
+        //     }
+
+
+
+        //     .task-card span {
+        //         font-size: 18px;
+        //         display: block;
+        //         margin-top: 5px;
+        //     }
+        //     .dashboard-main-layout{
+        //             display: grid;
+        //             grid-template-columns: 70% 30%;
+        //             gap: 10px;
+        //             width: 100%;
+        //             align-items: start;
+        //         }
+        //         .dashboard-left{
+        //             width: 70%;
+        //         }
+        //         .dashboard-right{
+        //             width: 30%;
+        //             overflow-x: auto;
+        //         }
+        //         .project-cards-row{
+        //             display:flex;
+        //             gap:15px;
+        //             flex-wrap:nowrap;
+        //             justify-content:space-between;
+        //         }
+
+        //         .project-card{
+        //             min-width:0;
+        //             max-width:none;
+        //         }
+        //         .task-cards-row{
+        //             display:flex;
+        //             flex-wrap:wrap;
+        //             gap:10px;
+        //             justify-content:space-between;
+        //         }
+
+
+        //         .dashboard-card{
+        //             background:#fff;
+        //             border-radius:12px;
+        //             overflow:hidden;
+        //             border:1px solid #e5e7eb;
+        //             box-shadow:0 2px 8px rgba(0,0,0,.08);
+        //             padding:0 !important;
+        //         }
+        //         .project-card,
+        //         .task-card{
+        //             width:130px;
+        //             min-width:130px;
+        //             max-width:130px;
+        //         }
+        //         .card-body{
+        //             display:flex;
+        //             flex-direction:column;
+        //             align-items:center;
+        //             justify-content:center;
+        //             text-align:center;
+        //             padding:18px 10px;
+        //         }   
+        //         .card-icon{
+        //             width:35px;
+        //             height:35px;
+        //             border-radius:14px;
+        //             background:#F2F6FC;      /* Common background */
+        //             display:flex;
+        //             align-items:center;
+        //             justify-content:center;
+        //             margin-bottom:16px;
+        //         }
+
+        //         .card-icon i{
+        //             font-size:18px;
+        //         }
+
+        // </style>
+
+
+        //     <div class="task-cards-container">
+        //         <table>
+        //         <br>
+        //             <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">TASK COUNT</h4>
+        //         <br>
+        //             </table>
+        //         <div class="task-cards-row">`;
+
+        //                 ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
+        //                     let title = key.toUpperCase();
+        //                     if (key === 'total') title = 'Total';
+        //                     if (key === 'working') title = 'Working';
+        //                     if (key === 'pr') title = 'Internal Review';
+        //                     if (key === 'cr') title = 'Client Review';
+        //                     if (key === 'open') title = 'Open';
+
+        //                     const icon = taskIcons[title] || "fa fa-tasks";
+
+        //                     html += `
+        // <div class="dashboard-card task-card task-card-${key}">
+        //     <div class="card-top-line" style="background:${taskColors[key]};"></div>
+
+        //     <div class="card-body">
+        //         <div class="card-icon">
+        //             <i class="${icon}" style="color:${taskColors[key]};"></i>
+        //         </div>
+
+        //         <div class="card-title">${title}</div>
+
+        //         <div class="card-value" style="color:${taskColors[key]};">
+        //             ${tc[key] || 0}
+        //         </div>
+
+        //         <div style="font-size:12px;color:#666;">
+        //             ${(tc[`${key}_total_hours`] || 0).toFixed(2)} hr
+        //         </div>
+        //     </div>
+        // </div>`;
+
+        //                 });
+
+        //                 html += `
+        //         </div>
+        //     </div>`;
+
+        //                 container.find('#task-summary-wrapper').html(html);
+
+        //                 ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
+        //                     container.off('click', `.task-card-${key}`);
+        //                     container.on('click', `.task-card-${key}`, () => {
+        //                         frappe.call({
+        //                             method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_wise",
+        //                             args: { type: key },
+        //                             callback: (r) => {
+        //                                 const rows = r.message || [];
+        //                                 let tbl = `<div style="max-height:400px;overflow-y:auto;">
+        //                         <table style="width:100%; border-collapse: collapse; border: 1px solid black;">
+        //                             <thead><tr style="background-color: #0F1568; color: white;">
+        //                                 <th style="border: 1px solid black;">Project</th>
+        //                                 <th style="border: 1px solid black;">Tasks</th>
+        //                                 <th style="border: 1px solid black;">Hours</th>
+        //                                 <th style="border: 1px solid black;">SPOC</th>
+        //                             </tr></thead><tbody>`;
+        //                                 rows.forEach(p => {
+        //                                     tbl += `<tr>
+        //                             <td style="border: 1px solid black;">${p.project || 'No Project'}</td>
+        //                             <td style="border: 1px solid black;">${p.task_count}</td>
+        //                             <td style="border: 1px solid black;">${(p.total_hours || 0).toFixed(2)}</td>
+        //                             <td style="border: 1px solid black;text-align: left;">${p.spoc || 'No Spoc'}</td>
+        //                         </tr>`;
+        //                                 });
+        //                                 tbl += `</tbody></table></div>`;
+
+        //                                 let title = '';
+        //                                 if (key == 'open') title = 'Open';
+        //                                 else if (key == 'total') title = 'Total';
+        //                                 else if (key == 'working') title = 'Working';
+        //                                 else if (key == 'pr') title = 'Internal Review';
+        //                                 else if (key == 'cr') title = 'Client Review';
+
+        //                                 new frappe.ui.Dialog({
+        //                                     title: `${title}`,
+        //                                     fields: [{ fieldname: "html_table", fieldtype: "HTML", options: tbl }]
+        //                                 }).show();
+        //                             }
+        //                         });
+        //                     });
+        //                 });
+        //             }
+
+
+        //         });
 
         Promise.all([
             frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_project_counts" }),
             frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_task_summary" }),
             frappe.call({ method: "teampro.teampro.page.new_it_dashboard.new_it.get_sprint_counts" })
         ]).then(([projRes, taskRes, sprintRes]) => {
+
+            // ---------- PROJECT COUNT ----------
             if (projRes.message) {
                 const { projects = [], total = 0 } = projRes.message;
-
                 const projectColors = [
-                    "#2F8F46", "#C29100", "#540D6E",
-                    "#006D77", "#4169e1", "#8B0000",
-                    "#f9844a", "#bc5090", "#003f5c"
+                    "#0096A6", "#2F8F46", "#C29100", "#540D6E",
+                    "#006D77", "#4169e1", "#8B0000", "#f9844a", "#bc5090", "#003f5c"
                 ];
 
-                let html = `
-    <style>
-        .project-cards-container {
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-top: 10px;
-        }
-
-        .project-cards-container table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .project-cards-container th {
-            background-color: white;
-            text-align: center;
-            font-weight: bold;
-            font-size: 16px;
-            padding: 10px;
-            border-bottom: 20px solid #ccc;
-        }
-
-        .project-cards-row {
-			display: flex;
-			overflow-x: auto;
-			padding: 10px;
-			gap: 40px;
-			justify-content: center;
-		}
-
-       
-
-        .project-card span {
-            font-size: 18px;
-            display: block;
-            margin-top: 5px;
-        }
-
-        .card-top-line{
-            width:100%;
-            height:6px;
-            display:block;
-            margin:0;
-        }
-        .card-title{
-            font-size:13px;
-            font-weight:700 !important;   /* Bold */
-            color:#24344d;
-            text-align:center;
-            margin-top:8px;
-            margin-bottom:10px;
-        }
-          
-    </style>
-
-    <div class="project-cards-container">
-        <table>
-        <br>
-            <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">PROJECT COUNT</h4>
-            <br>
-        </table>
-        <div class="project-cards-row">
-            <div class="dashboard-card project-card">
-                <div class="card-top-line" style="background:#0096A6;"></div>
-                    <div class="card-body">
-                        <div class="card-icon">
-                            <i class="fa fa-folder" style="color:#0096A6;"></i>
-                        </div>
-                        <div class="card-title">
-                            Total
-                        </div>
-                        <div class="card-value" style="color:#0096A6;">
-                            ${total}
-                        </div>
-                    </div>
-            </div>`;
+                const projectCards = [
+                    { key: "Total", title: "Total", value: total, color: "#0096A6", icon: "fa fa-folder", subtitle: "All Projects" }
+                ];
 
                 projects.forEach((it, i) => {
-                    if (it.project_type === "Products") {
-                        return;
-                    }
-                    const color = projectColors[i % projectColors.length];
-                    const icon = projectIcons[it.project_type] || "fa fa-folder";
-
-                    html += `
-                    <div class="dashboard-card project-card" data-type="${it.project_type}">
-                        <div class="card-top-line" style="background:${color};"></div>
-
-                        <div class="card-body">
-                            <div class="card-icon">
-                                <i class="${icon}" style="color:${color};"></i>
-                            </div>
-
-                            <div class="card-title">${it.project_type}</div>
-
-                            <div class="card-value" style="color:${color};">
-                                ${it.count}
-                            </div>
-                        </div>
-                    </div>`;
+                    if (it.project_type === "Products") return;
+                    projectCards.push({
+                        key: it.project_type,
+                        title: it.project_type,
+                        value: it.count,
+                        color: projectColors[(i + 1) % projectColors.length],
+                        icon: projectIcons[it.project_type] || "fa fa-folder",
+                        subtitle: `${it.project_type} type projects`
+                    });
                 });
 
-                html += `
-                    </div>
-                </div>`;
-
-                container.find('#project-summary-wrapper').html(html);
+                renderCardGroup('#project-summary-wrapper', 'PROJECT COUNT', projectCards, (key) => {
+                    if (!key || key === "Total") {
+                        renderPivotTable(pivotData);
+                    } else {
+                        renderPivotTable(pivotData.filter(r => r.project_type === key));
+                    }
+                });
             }
 
-            container.on('click', '.project-card', function () {
-
-                const type = $(this).data('type');
-                console.log("Project clicked:", type);
-                if (!type || type === "Total") {
-                    renderPivotTable(pivotData);
-                    return;
-                }
-
-                const filtered = pivotData.filter(r =>
-                    r.project_type === type
-                );
-
-                renderPivotTable(filtered);
-            });
-
-
-            //  2. Task Summary
+            // ---------- TASK COUNT ----------
             if (taskRes.message) {
                 const tc = taskRes.message;
                 const taskColors = {
-                    total: '#0096A6',
-                    open: '#2F8F46',
-                    working: '#C29100',
-                    pr: '#540D6E',
-                    cr: '#006D77'
+                    total: '#0096A6', open: '#2F8F46', working: '#C29100',
+                    pr: '#540D6E', cr: '#006D77'
+                };
+                const taskTitles = {
+                    total: 'Total', open: 'Open', working: 'Working',
+                    pr: 'Internal Review', cr: 'Client Review'
+                };
+                const taskSubtitles = {
+                    total: 'Total tasks',
+                    open: 'Not yet started',
+                    working: 'In progress now',
+                    pr: 'Awaiting internal review',
+                    cr: 'Awaiting client review'
                 };
 
-                let html = `
-    <style>
-    .task-cards-container {
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        margin-top: 20px;
-    }
+                const taskCards = ['total', 'open', 'working', 'pr', 'cr'].map(key => ({
+                    key,
+                    title: taskTitles[key],
+                    value: tc[key] || 0,
+                    color: taskColors[key],
+                    icon: taskIcons[taskTitles[key]] || "fa fa-tasks",
+                    hours: tc[`${key}_total_hours`] || 0,
+                    subtitle: taskSubtitles[key]
+                }));
 
-    .task-cards-container table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-
-    .task-cards-container th {
-        background-color: white;
-        text-align: center;
-        font-weight: bold;
-        font-size: 16px;
-        padding: 10px;
-        border-bottom: 1px solid #ccc;
-    }
-
-    .task-cards-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        padding: 15px;
-        justify-content: flex-start;
-        align-items: stretch;
-        box-sizing: border-box;
-    }
-
-    
-
-    .task-card span {
-        font-size: 18px;
-        display: block;
-        margin-top: 5px;
-    }
-    .dashboard-main-layout{
-            display: grid;
-            grid-template-columns: 70% 30%;
-            gap: 10px;
-            width: 100%;
-            align-items: start;
-        }
-        .dashboard-left{
-            width: 70%;
-        }
-        .dashboard-right{
-            width: 30%;
-            overflow-x: auto;
-        }
-        .project-cards-row{
-            display:flex;
-            gap:15px;
-            flex-wrap:nowrap;
-            justify-content:space-between;
-        }
-
-        .project-card{
-            min-width:0;
-            max-width:none;
-        }
-        .task-cards-row{
-            display:flex;
-            flex-wrap:wrap;
-            gap:10px;
-            justify-content:space-between;
-        }
-
-        
-        .dashboard-card{
-            background:#fff;
-            border-radius:12px;
-            overflow:hidden;
-            border:1px solid #e5e7eb;
-            box-shadow:0 2px 8px rgba(0,0,0,.08);
-            padding:0 !important;
-        }
-        .project-card,
-        .task-card{
-            width:130px;
-            min-width:130px;
-            max-width:130px;
-        }
-        .card-body{
-            display:flex;
-            flex-direction:column;
-            align-items:center;
-            justify-content:center;
-            text-align:center;
-            padding:18px 10px;
-        }   
-        .card-icon{
-            width:35px;
-            height:35px;
-            border-radius:14px;
-            background:#F2F6FC;      /* Common background */
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            margin-bottom:16px;
-        }
-
-        .card-icon i{
-            font-size:18px;
-        }
-   
-</style>
-
-
-    <div class="task-cards-container">
-        <table>
-        <br>
-            <h4 class="sticky-top" style="margin: 0; padding: 0px 0; text-align:center; background: white;">TASK COUNT</h4>
-        <br>
-            </table>
-        <div class="task-cards-row">`;
-
-                ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
-                    let title = key.toUpperCase();
-                    if (key === 'total') title = 'Total';
-                    if (key === 'working') title = 'Working';
-                    if (key === 'pr') title = 'Internal Review';
-                    if (key === 'cr') title = 'Client Review';
-                    if (key === 'open') title = 'Open';
-
-                    const icon = taskIcons[title] || "fa fa-tasks";
-
-html += `
-<div class="dashboard-card task-card task-card-${key}">
-    <div class="card-top-line" style="background:${taskColors[key]};"></div>
-
-    <div class="card-body">
-        <div class="card-icon">
-            <i class="${icon}" style="color:${taskColors[key]};"></i>
-        </div>
-
-        <div class="card-title">${title}</div>
-
-        <div class="card-value" style="color:${taskColors[key]};">
-            ${tc[key] || 0}
-        </div>
-
-        <div style="font-size:12px;color:#666;">
-            ${(tc[`${key}_total_hours`] || 0).toFixed(2)} hr
-        </div>
-    </div>
-</div>`;
-
-                });
-
-                html += `
-        </div>
-    </div>`;
-
-                container.find('#task-summary-wrapper').html(html);
-
-                ['total', 'open', 'working', 'pr', 'cr'].forEach(key => {
-                    container.off('click', `.task-card-${key}`);
-                    container.on('click', `.task-card-${key}`, () => {
-                        frappe.call({
-                            method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_wise",
-                            args: { type: key },
-                            callback: (r) => {
-                                const rows = r.message || [];
-                                let tbl = `<div style="max-height:400px;overflow-y:auto;">
+                renderCardGroup('#task-summary-wrapper', 'TASK COUNT', taskCards, (key) => {
+                    frappe.call({
+                        method: "teampro.teampro.page.new_it_dashboard.new_it.get_tasks_project_wise",
+                        args: { type: key },
+                        callback: (r) => {
+                            const rows = r.message || [];
+                            let tbl = `<div style="max-height:400px;overflow-y:auto;">
                         <table style="width:100%; border-collapse: collapse; border: 1px solid black;">
                             <thead><tr style="background-color: #0F1568; color: white;">
                                 <th style="border: 1px solid black;">Project</th>
@@ -2369,33 +2808,24 @@ html += `
                                 <th style="border: 1px solid black;">Hours</th>
                                 <th style="border: 1px solid black;">SPOC</th>
                             </tr></thead><tbody>`;
-                                rows.forEach(p => {
-                                    tbl += `<tr>
+                            rows.forEach(p => {
+                                tbl += `<tr>
                             <td style="border: 1px solid black;">${p.project || 'No Project'}</td>
                             <td style="border: 1px solid black;">${p.task_count}</td>
                             <td style="border: 1px solid black;">${(p.total_hours || 0).toFixed(2)}</td>
                             <td style="border: 1px solid black;text-align: left;">${p.spoc || 'No Spoc'}</td>
                         </tr>`;
-                                });
-                                tbl += `</tbody></table></div>`;
+                            });
+                            tbl += `</tbody></table></div>`;
 
-                                let title = '';
-                                if (key == 'open') title = 'Open';
-                                else if (key == 'total') title = 'Total';
-                                else if (key == 'working') title = 'Working';
-                                else if (key == 'pr') title = 'Internal Review';
-                                else if (key == 'cr') title = 'Client Review';
-
-                                new frappe.ui.Dialog({
-                                    title: `${title}`,
-                                    fields: [{ fieldname: "html_table", fieldtype: "HTML", options: tbl }]
-                                }).show();
-                            }
-                        });
+                            new frappe.ui.Dialog({
+                                title: taskTitles[key],
+                                fields: [{ fieldname: "html_table", fieldtype: "HTML", options: tbl }]
+                            }).show();
+                        }
                     });
                 });
             }
-
 
         });
 
@@ -4543,7 +4973,7 @@ td {
     <th style="width:4%">CF</th>
     <th style="width:5%">ET</th>
     <th style="width:5%">AT</th>
-    <th style="width:5%">Today RT</th>
+    <th style="width:5%">RT</th>
     <th style="width:6%">Priority</th>
     <th colspan="2" style="width:12%">Current Status</th> <!-- progress wider -->
 </tr>
@@ -5851,11 +6281,29 @@ td {
                 -1
             );
 
-        window.open(
+        // Download DSR
+        download_file(
             `/api/method/teampro.teampro.page.new_it_dashboard.new_it.download_dsr_excel?date=${selected_date}`
         );
+        // Download DPR after a short delay
+        setTimeout(function () {
+            download_file(
+                `/api/method/teampro.teampro.page.new_it_dashboard.new_it.download_dpr_excel?date=${selected_date}`
+            );
+        }, 1500);
 
     });
+
+    function download_file(url) {
+        let a = document.createElement("a");
+        a.href = url;
+        a.style.display = "none";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+            if (a.parentNode) document.body.removeChild(a);
+        }, 5000);
+    }
 
 
     frappe.ui.form.make_control({
@@ -5867,6 +6315,7 @@ td {
             default: frappe.datetime.get_today(),
             change: function () {
                 load_dsr_table();
+                load_dpr_table();
             }
         },
         render_input: true
@@ -5907,10 +6356,614 @@ td {
         });
     }
 
+    function load_dpr_table() {
+
+        // Get displayed date (DPR uses same date as DSR)
+        let raw_date = $("#dsr_date_filter input").val();
+
+        // Convert DD-MM-YYYY -> YYYY-MM-DD
+        let selected_date = frappe.datetime.str_to_user(raw_date)
+            ? frappe.datetime.user_to_str(raw_date)
+            : raw_date;
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.dpr_table",
+            args: {
+                date: selected_date
+            },
+            callback: function (r) {
+
+                $("#dpr_table").html(
+                    r.message || `
+                    <div style="
+                        padding:20px;
+                        text-align:center;
+                        color:red;
+                    ">
+                        No Data Found
+                    </div>
+                `
+                );
+
+            }
+        });
+    }
+
     // Initial Load
     setTimeout(() => {
         load_dsr_table();
+        load_dpr_table();
     }, 500);
+
+
+    function reload_analytics() {
+        load_sprint_chart();
+        load_sprint_overall_summary();
+        load_rtat_exception();
+        load_nt_priority_any();
+        load_nt_priority_current();
+    }
+
+    // ---- Sprint Bar Chart ----
+    let sprint_team_ctrl = frappe.ui.form.make_control({
+        parent: document.querySelector("#sprint_team_filter"),
+        df: {
+            fieldtype: "Link",
+            fieldname: "sprint_team_filter",
+            options: "Dev Team",
+            placeholder: "Select Team",
+            onchange: function () {
+                reload_analytics();
+            }
+        },
+        render_input: true
+    });
+
+    let sprint_filter_ctrl = frappe.ui.form.make_control({
+        parent: document.querySelector("#sprint_filter"),
+        df: {
+            fieldtype: "Link",
+            fieldname: "sprint_filter",
+            options: "Task Sprint",
+            placeholder: "Select Sprint",
+            onchange: function () {
+                reload_analytics();
+            }
+        },
+        render_input: true
+    });
+
+    // Backup change handlers for Link field reliability
+    $(document).off("change", "#sprint_team_filter input").on("change", "#sprint_team_filter input", function () {
+        reload_analytics();
+    });
+    $(document).off("change", "#sprint_filter input").on("change", "#sprint_filter input", function () {
+        reload_analytics();
+    });
+
+    function get_sprint_filter_team() {
+        return (sprint_team_ctrl && sprint_team_ctrl.get_value && sprint_team_ctrl.get_value()) || $("#sprint_team_filter input").val() || "";
+    }
+    function get_sprint_filter_sprint() {
+        return (sprint_filter_ctrl && sprint_filter_ctrl.get_value && sprint_filter_ctrl.get_value()) || $("#sprint_filter input").val() || "";
+    }
+
+    function load_sprint_chart() {
+        let team = get_sprint_filter_team();
+        let sprint = get_sprint_filter_sprint();
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_sprint_chart_data",
+            args: {
+                team: team,
+                sprint: sprint
+            },
+            callback: function (r) {
+                if (!r.message || !r.message.labels || r.message.labels.length === 0) {
+                    $("#sprint_chart_container").html(`
+                        <div style="padding:20px;text-align:center;color:red;font-weight:bold;">
+                            No Sprint Data Found for Today
+                        </div>
+                    `);
+                    return;
+                }
+
+                render_sprint_progress_bars(r.message);
+            }
+        });
+    }
+
+    function render_sprint_progress_bars(message) {
+        let labels = message.labels;
+        let avl = message.available_hours;
+        let exp = message.expected_hours;
+        let rt = message.sprint_avl_time;
+        let teams = message.teams || [];
+        let sprintIds = message.sprint_ids || [];
+
+        // Group CBs by team (preserve first-seen order)
+        let teamOrder = [];
+        let teamMap = {};
+        labels.forEach(function (sc, i) {
+            let team = teams[i] || "Unassigned";
+            if (!teamMap[team]) {
+                teamMap[team] = { sprint_id: sprintIds[i] || "", cbs: [] };
+                teamOrder.push(team);
+            }
+            teamMap[team].cbs.push({
+                sc: sc,
+                a: parseFloat(avl[i] || 0),
+                e: parseFloat(exp[i] || 0),
+                rv: parseFloat(rt[i] || 0),
+            });
+        });
+
+        function statusDot(rt, aph) {
+            var ratio = aph ? rt / aph : 0;
+            var color;
+            if (ratio >= 0.9) color = '#4caf50';       // green — on track / full
+            else if (ratio >= 0.5) color = '#ff9800';   // orange — moderate
+            else color = '#f44336';                      // red — low
+            return '<span class="sprint-cb-status-dot" style="background:' + color + ';"></span>';
+        }
+
+        // Build a single combined bar: track=APH, fill=RT, marker=Lifespan
+        function combinedBar(c) {
+            var aph = c.a;
+            var lifespan = c.e;
+            var rtVal = c.rv;
+
+            var rtPct = aph ? (rtVal / aph) * 100 : 0;
+            var lifespanPct = aph ? (lifespan / aph) * 100 : 0;
+            rtPct = Math.max(rtPct, 0);
+            lifespanPct = Math.max(lifespanPct, 0);
+
+            // Cap at 100 for visual; values beyond APH still show in labels
+            var rtWidth = Math.min(rtPct, 100);
+            var markerLeft = Math.min(lifespanPct, 100);
+
+            var showRtPct = rtPct >= 15;
+
+            return '<div class="sprint-combined-bar">' +
+                // APH label on the left
+                '<div class="sprint-combined-aph-label">' +
+                    '<span class="sprint-combined-aph-val">' + aph.toFixed(1) + '</span>' +
+                    '<span class="sprint-combined-aph-tag">APH</span>' +
+                '</div>' +
+                // The single bar
+                '<div class="sprint-combined-track">' +
+                    // RT fill
+                    '<div class="sprint-combined-fill" style="width:0%;" data-target-width="' + rtWidth.toFixed(1) + '%">' +
+                        (showRtPct ? '<span class="sprint-combined-fill-pct">RT ' + rtPct.toFixed(0) + '%</span>' : '') +
+                    '</div>' +
+                    // Lifespan marker line
+                    '<div class="sprint-combined-marker" style="left:0%;" data-target-left="' + markerLeft.toFixed(1) + '%">' +
+                        '<div class="sprint-combined-marker-line"></div>' +
+                        '<div class="sprint-combined-marker-flag">L ' + lifespan.toFixed(1) + 'h</div>' +
+                    '</div>' +
+                '</div>' +
+                // RT value on the right
+                '<div class="sprint-combined-rt-label">' +
+                    '<span class="sprint-combined-rt-val">' + rtVal.toFixed(1) + '</span>' +
+                    '<span class="sprint-combined-rt-tag">RT</span>' +
+                '</div>' +
+            '</div>';
+        }
+
+        let teamBlocks = teamOrder.map(function (team) {
+            let info = teamMap[team];
+
+            let cards = info.cbs.map(function (c) {
+                var rtPct = c.a ? (c.rv / c.a) * 100 : 0;
+                var lifespanPct = c.a ? (c.e / c.a) * 100 : 0;
+                var balance = c.a - c.rv;
+
+                return '<div class="sprint-cb-card">' +
+                    '<div class="sprint-cb-card-header">' +
+                        '<span class="sprint-cb-name">' + c.sc + '</span>' +
+                        statusDot(c.rv, c.a) +
+                    '</div>' +
+                    combinedBar(c) +
+                    '<div class="sprint-cb-summary">' +
+                        '<div class="sprint-cb-summary-item">' +
+                            '<span class="label">RT / APH</span>' +
+                            '<span class="value">' + rtPct.toFixed(1) + '%</span>' +
+                        '</div>' +
+                        '<div class="sprint-cb-summary-item">' +
+                            '<span class="label">Lifespan</span>' +
+                            '<span class="value">' + lifespanPct.toFixed(1) + '%</span>' +
+                        '</div>' +
+                        '<div class="sprint-cb-summary-item">' +
+                            '<span class="label">Balance</span>' +
+                            '<span class="value">' + balance.toFixed(1) + 'h</span>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            });
+
+            return '<div class="sprint-team-block">' +
+                '<div class="sprint-team-header">' +
+                    '<h4>' + team + '</h4>' +
+                    '<span class="sprint-id-badge">' + (info.sprint_id || '-') + '</span>' +
+                '</div>' +
+                '<div class="sprint-cb-grid">' +
+                    cards.join('') +
+                '</div>' +
+            '</div>';
+        });
+
+        // Legend
+        var legend = '<div class="sprint-legend">' +
+            '<div class="sprint-legend-item"><span class="sprint-legend-dot" style="background:#e3f2fd;border:1px solid #90caf9;"></span> APH (full track)</div>' +
+            '<div class="sprint-legend-item"><span class="sprint-legend-dot" style="background:linear-gradient(135deg,#4bc0c0,#26a69a);"></span> RT (filled portion)</div>' +
+            '<div class="sprint-legend-item"><span class="sprint-legend-dot" style="background:#ffa726;"></span> Lifespan (marker line)</div>' +
+        '</div>';
+
+        $('#sprint_chart_container').html(
+            '<div style="padding:10px;">' + legend + teamBlocks.join('') + '</div>'
+        );
+
+        // Animate: RT fill grows, Lifespan marker slides into position
+        setTimeout(function () {
+            $('#sprint_chart_container .sprint-combined-fill').each(function () {
+                var target = $(this).data('target-width');
+                if (target !== undefined) {
+                    $(this).css('width', target);
+                }
+            });
+            $('#sprint_chart_container .sprint-combined-marker').each(function () {
+                var target = $(this).data('target-left');
+                if (target !== undefined) {
+                    $(this).css('left', target);
+                }
+            });
+        }, 50);
+    }
+
+    // Sprint tab content is lazy-loaded on first tab click
+
+    // ---- Sprint Overall Team Summary (with drill-down CB details) ----
+    function load_sprint_overall_summary() {
+        let team = get_sprint_filter_team();
+        let sprint = get_sprint_filter_sprint();
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_sprint_teamwise_summary",
+            args: { team: team, sprint: sprint },
+            callback: function (r) {
+                if (!r.message || !r.message.teams || r.message.teams.length === 0) {
+                    $("#sprint_overall_container").html(
+                        '<div style="padding:20px;text-align:center;color:red;font-weight:bold;">No Sprint Data Found for Today</div>'
+                    );
+                    return;
+                }
+                render_sprint_overall_summary(r.message.teams);
+            }
+        });
+    }
+
+    function render_sprint_overall_summary(teams) {
+        let html = '<table class="table table-bordered" style="width:100%; border-collapse:collapse; font-size:12px; min-width:1500px;">';
+        html += '<thead style="background:#0F1568; color:white; text-align:center;">' +
+            '<tr>' +
+                '<th rowspan="2" style="vertical-align:middle; width:30px;"></th>' +
+                '<th rowspan="2" style="vertical-align:middle;">S.No</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">Team</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">Sprint ID</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">APH</th>' +
+                '<th colspan="4" style="background:#1a237e;">PLAN</th>' +
+                '<th colspan="4" style="background:#00695c;">SPOT</th>' +
+                '<th colspan="9" style="background:#4a148c;">TOTAL</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">Biometric Hrs</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">NC RT</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">Reopen RT</th>' +
+                '<th rowspan="2" style="vertical-align:middle;">DE RT</th>' +
+            '</tr>' +
+            '<tr>' +
+                '<th>Planned RT</th><th>Comp RT</th><th>Work RT</th><th>NT RT</th>' +
+                '<th>Spot RT</th><th>Spot Comp RT</th><th>Spot Work RT</th><th>Spot NT RT</th>' +
+                '<th>Total RT</th><th>AT</th><th>Completed RT</th><th>Completed AT</th><th>Working RT</th><th>Working AT</th><th>Total NT RT</th><th>Productivity %</th><th>Efficiency %</th>' +
+            '</tr>' +
+        '</thead><tbody style="text-align:center;">';
+
+        let grand = {
+            aph: 0,
+            planned_rt: 0, comp_rt: 0, work_rt: 0, nt_rt: 0,
+            spot_rt: 0, spot_comp_rt: 0, spot_work_rt: 0, spot_nt_rt: 0,
+            total_rt: 0, at: 0, completed_rt: 0, completed_at: 0,
+            working_rt: 0, working_at: 0, total_nt_hours: 0,
+            biometric_hrs: 0, nc_rt: 0, reopen_rt: 0, de_rt: 0
+        };
+
+        teams.forEach(function (t, idx) {
+            let tot = t.totals || {};
+            let productivity = tot.aph ? (tot.completed_rt / tot.aph) * 100 : 0;
+            let efficiency = tot.completed_rt ? (tot.completed_at / tot.completed_rt) * 100 : 0;
+            let teamKey = 'team_' + idx;
+
+            // Team row with expand button (distinct blue background)
+            html += '<tr style="background:#d6e4ff; font-weight:bold; border-top:2px solid #0F1568;" id="row_' + teamKey + '">' +
+                '<td style="cursor:pointer; font-size:16px; color:#0F1568;" onclick="toggleTeamDetail(\'' + teamKey + '\')">' +
+                    '<span id="btn_' + teamKey + '">+</span>' +
+                '</td>' +
+                '<td>' + (idx + 1) + '</td>' +
+                '<td style="color:#0F1568;">' + t.team + '</td>' +
+                '<td>' + (t.sprint_id || '-') + '</td>' +
+                '<td>' + (tot.aph || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.planned_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.comp_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.work_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.nt_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.spot_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.spot_comp_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.spot_work_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.spot_nt_rt || 0).toFixed(2) + '</td>' +
+                '<td style="font-weight:600;">' + (tot.total_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.at || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.completed_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.completed_at || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.working_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.working_at || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.total_nt_hours || 0).toFixed(2) + '</td>' +
+                '<td>' + productivity.toFixed(2) + '%</td>' +
+                '<td>' + efficiency.toFixed(2) + '%</td>' +
+                '<td>' + (tot.biometric_hrs || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.nc_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.reopen_rt || 0).toFixed(2) + '</td>' +
+                '<td>' + (tot.de_rt || 0).toFixed(2) + '</td>' +
+            '</tr>';
+
+            // CB detail rows (hidden by default, light yellow tint to distinguish from team rows)
+            let cbs = t.cbs || [];
+            cbs.forEach(function (c, cbIdx) {
+                let cbProductivity = c.aph ? (c.completed_rt / c.aph) * 100 : 0;
+                let cbEfficiency = c.completed_rt ? (c.completed_at / c.completed_rt) * 100 : 0;
+                let cbBg = cbIdx % 2 === 0 ? '#fffde7' : '#fff9c4';
+                html += '<tr id="detail_' + teamKey + '_' + cbIdx + '" class="detail_' + teamKey + '" style="display:none; background:' + cbBg + ';">' +
+                    '<td></td>' +
+                    '<td></td>' +
+                    '<td style="padding-left:25px; font-style:italic; color:#555;">' + c.cb + '</td>' +
+                    '<td></td>' +
+                    '<td>' + (c.aph || 0).toFixed(2) + '</td>' +
+                    '<td>' + c.planned_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.comp_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.work_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.nt_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.spot_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.spot_comp_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.spot_work_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.spot_nt_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.total_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.at.toFixed(2) + '</td>' +
+                    '<td>' + c.completed_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.completed_at.toFixed(2) + '</td>' +
+                    '<td>' + c.working_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.working_at.toFixed(2) + '</td>' +
+                    '<td>' + c.total_nt_hours.toFixed(2) + '</td>' +
+                    '<td>' + cbProductivity.toFixed(2) + '%</td>' +
+                    '<td>' + cbEfficiency.toFixed(2) + '%</td>' +
+                    '<td>' + c.biometric_hrs.toFixed(2) + '</td>' +
+                    '<td>' + c.nc_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.reopen_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.de_rt.toFixed(2) + '</td>' +
+                '</tr>';
+            });
+
+            Object.keys(grand).forEach(function (k) { grand[k] += (tot[k] || 0); });
+        });
+
+        // Grand total row
+        let grand_productivity = grand.aph ? (grand.completed_rt / grand.aph) * 100 : 0;
+        let grand_efficiency = grand.completed_rt ? (grand.completed_at / grand.completed_rt) * 100 : 0;
+        html += '<tr style="background:#0F1568; color:white; font-weight:bold; border-top:2px solid #0F1568;">' +
+            '<td></td>' +
+            '<td colspan="3">GRAND TOTAL</td>' +
+            '<td>' + grand.aph.toFixed(2) + '</td>' +
+            '<td>' + grand.planned_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.comp_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.work_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.nt_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.spot_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.spot_comp_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.spot_work_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.spot_nt_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.total_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.at.toFixed(2) + '</td>' +
+            '<td>' + grand.completed_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.completed_at.toFixed(2) + '</td>' +
+            '<td>' + grand.working_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.working_at.toFixed(2) + '</td>' +
+            '<td>' + grand.total_nt_hours.toFixed(2) + '</td>' +
+            '<td>' + grand_productivity.toFixed(2) + '%</td>' +
+            '<td>' + grand_efficiency.toFixed(2) + '%</td>' +
+            '<td>' + grand.biometric_hrs.toFixed(2) + '</td>' +
+            '<td>' + grand.nc_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.reopen_rt.toFixed(2) + '</td>' +
+            '<td>' + grand.de_rt.toFixed(2) + '</td>' +
+        '</tr>';
+
+        html += '</tbody></table>';
+        $("#sprint_overall_container").html(html);
+    }
+
+    // Toggle function for drill-down team details
+    window.toggleTeamDetail = function (teamKey) {
+        let btn = $('#btn_' + teamKey);
+        let details = $('.detail_' + teamKey);
+        if (details.is(':visible')) {
+            details.hide();
+            btn.text('+');
+        } else {
+            details.show();
+            btn.text('-');
+        }
+    };
+
+    // Overall Summary is lazy-loaded with the Sprint tab
+
+    // ---- RT Vs AT % > 150% (Completed & Working) ----
+    function load_rtat_exception() {
+        let team = get_sprint_filter_team();
+        let sprint = get_sprint_filter_sprint();
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_rtat_exception_data",
+            args: { team: team, sprint: sprint },
+            callback: function (r) {
+                if (!r.message) {
+                    $("#rtat_completed_container").html('<div style="padding:20px;text-align:center;color:red;font-weight:bold;">No Data</div>');
+                    $("#rtat_working_container").html('<div style="padding:20px;text-align:center;color:red;font-weight:bold;">No Data</div>');
+                    return;
+                }
+                render_rtat_section("rtat_completed_container", r.message.completed, "Completed Tasks");
+                render_rtat_section("rtat_working_container", r.message.working, "Working Tasks");
+            }
+        });
+    }
+
+    function render_rtat_section(container_id, teams, label) {
+        if (!teams || teams.length === 0) {
+            $("#" + container_id).html('<div style="padding:20px;text-align:center;color:#888;font-weight:600;">No exceptions found</div>');
+            return;
+        }
+
+        let html = '<table class="table table-bordered" style="width:100%;border-collapse:collapse;font-size:12px;">';
+        html += '<thead style="background:#0F1568;color:white;text-align:center;">' +
+            '<tr><th>Team</th><th>Sum of RT</th><th>Sum of AT Period</th><th>Count of Task</th></tr>' +
+            '</thead><tbody style="text-align:center;">';
+
+        let grand_rt = 0, grand_at = 0, grand_count = 0;
+
+        teams.forEach(function (t) {
+            // Team row
+            html += '<tr style="background:#e8eaf6;font-weight:bold;">' +
+                '<td>' + t.team + '</td>' +
+                '<td>' + t.total_rt.toFixed(2) + '</td>' +
+                '<td>' + t.total_at.toFixed(2) + '</td>' +
+                '<td>' + t.total_count + '</td>' +
+            '</tr>';
+
+            // CB rows under team
+            t.cbs.forEach(function (c, idx) {
+                let bg = idx % 2 === 0 ? '#ffffff' : '#f5f5f5';
+                html += '<tr style="background:' + bg + ';">' +
+                    '<td style="padding-left:20px;">' + c.cb + '</td>' +
+                    '<td>' + c.sum_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.sum_at.toFixed(2) + '</td>' +
+                    '<td>' + c.task_count + '</td>' +
+                '</tr>';
+            });
+
+            grand_rt += t.total_rt;
+            grand_at += t.total_at;
+            grand_count += t.total_count;
+        });
+
+        // Grand total
+        html += '<tr style="background:#0F1568;color:white;font-weight:bold;">' +
+            '<td>Grand Total</td>' +
+            '<td>' + grand_rt.toFixed(2) + '</td>' +
+            '<td>' + grand_at.toFixed(2) + '</td>' +
+            '<td>' + grand_count + '</td>' +
+        '</tr>';
+
+        html += '</tbody></table>';
+        $("#" + container_id).html(html);
+    }
+
+    // ---- NT Tasks with Priority High/Urgent ----
+    function load_nt_priority_any() {
+        let team = get_sprint_filter_team();
+        let sprint = get_sprint_filter_sprint();
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_nt_priority_tasks",
+            args: { team: team, sprint: sprint, any_sprint: 1 },
+            callback: function (r) {
+                if (!r.message || !r.message.teams || r.message.teams.length === 0) {
+                    $("#nt_any_container").html('<div style="padding:20px;text-align:center;color:#888;font-weight:600;">No NT tasks with High/Urgent priority found</div>');
+                    return;
+                }
+                render_nt_priority("nt_any_container", r.message.teams);
+            }
+        });
+    }
+
+    function load_nt_priority_current() {
+        let team = get_sprint_filter_team();
+        let sprint = get_sprint_filter_sprint();
+
+        frappe.call({
+            method: "teampro.teampro.page.new_it_dashboard.new_it.get_nt_priority_tasks",
+            args: { team: team, sprint: sprint, any_sprint: 0 },
+            callback: function (r) {
+                if (!r.message || !r.message.teams || r.message.teams.length === 0) {
+                    $("#nt_current_container").html('<div style="padding:20px;text-align:center;color:#888;font-weight:600;">No NT tasks with High/Urgent priority found</div>');
+                    return;
+                }
+                render_nt_priority("nt_current_container", r.message.teams);
+            }
+        });
+    }
+
+    function render_nt_priority(container_id, teams) {
+        let html = '<table class="table table-bordered" style="width:100%;border-collapse:collapse;font-size:12px;">';
+        html += '<thead style="background:#0F1568;color:white;text-align:center;">' +
+            '<tr>' +
+                '<th rowspan="2">Team</th>' +
+                '<th colspan="2" style="background:#1a237e;">Sum of RT</th>' +
+                '<th colspan="2" style="background:#4a148c;">Count of Task</th>' +
+            '</tr>' +
+            '<tr>' +
+                '<th>High</th><th>Urgent</th>' +
+                '<th>High</th><th>Urgent</th>' +
+            '</tr>' +
+        '</thead><tbody style="text-align:center;">';
+
+        let g_high_rt = 0, g_high_count = 0, g_urgent_rt = 0, g_urgent_count = 0;
+
+        teams.forEach(function (t) {
+            // Team row
+            html += '<tr style="background:#e8eaf6;font-weight:bold;">' +
+                '<td>' + t.team + '</td>' +
+                '<td>' + t.high_rt.toFixed(2) + '</td>' +
+                '<td>' + t.urgent_rt.toFixed(2) + '</td>' +
+                '<td>' + t.high_count + '</td>' +
+                '<td>' + t.urgent_count + '</td>' +
+            '</tr>';
+
+            // CB rows under team
+            let cbs = t.cbs || [];
+            cbs.forEach(function (c, idx) {
+                let bg = idx % 2 === 0 ? '#ffffff' : '#f5f5f5';
+                html += '<tr style="background:' + bg + ';">' +
+                    '<td style="padding-left:20px;">' + c.cb + '</td>' +
+                    '<td>' + c.high_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.urgent_rt.toFixed(2) + '</td>' +
+                    '<td>' + c.high_count + '</td>' +
+                    '<td>' + c.urgent_count + '</td>' +
+                '</tr>';
+            });
+
+            g_high_rt += t.high_rt;
+            g_high_count += t.high_count;
+            g_urgent_rt += t.urgent_rt;
+            g_urgent_count += t.urgent_count;
+        });
+
+        html += '<tr style="background:#0F1568;color:white;font-weight:bold;">' +
+            '<td>Grand Total</td>' +
+            '<td>' + g_high_rt.toFixed(2) + '</td>' +
+            '<td>' + g_urgent_rt.toFixed(2) + '</td>' +
+            '<td>' + g_high_count + '</td>' +
+            '<td>' + g_urgent_count + '</td>' +
+        '</tr>';
+
+        html += '</tbody></table>';
+        $("#" + container_id).html(html);
+    }
+
+    // RT/NT sections are lazy-loaded with the Sprint tab
 
 
     function downloadCSV(filename, rows) {
@@ -5952,6 +7005,16 @@ td {
 
     //     downloadCSV("NonAllocatedTasks.csv", rows);
     // });
+
+    function ensureXLSX(callback) {
+        if (typeof XLSX !== 'undefined') {
+            callback();
+        } else {
+            frappe.require([
+                "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+            ], callback);
+        }
+    }
 
     $("#download-non-allocated_in_spr").off("click").on("click", function () {
 
@@ -6026,13 +7089,15 @@ td {
             ""
         ]);
 
-        // CREATE EXCEL
-        let ws = XLSX.utils.aoa_to_sheet(rows);
-        let wb = XLSX.utils.book_new();
+        // CREATE EXCEL (lazy-load XLSX if needed)
+        ensureXLSX(function () {
+            let ws = XLSX.utils.aoa_to_sheet(rows);
+            let wb = XLSX.utils.book_new();
 
-        XLSX.utils.book_append_sheet(wb, ws, "Non Allocated Tasks");
+            XLSX.utils.book_append_sheet(wb, ws, "Non Allocated Tasks");
 
-        XLSX.writeFile(wb, "NonAllocatedTasks.xlsx");
+            XLSX.writeFile(wb, "NonAllocatedTasks.xlsx");
+        });
     });
 
     $("#download-non-allocated").off("click").on("click", function () {
@@ -6415,7 +7480,7 @@ td {
             // Default state
             $(".current-col").hide();
             $(".overall-col").show();
-            
+
 
             $(document).off("click", ".psr-toggle");
 
@@ -6444,189 +7509,189 @@ td {
 
 
 
-//     function renderPivotTable(data) {
+    //     function renderPivotTable(data) {
 
-//         let pivot_html = `
-// <style>
-//     #pivot-summary {
-//         width: 100%;
-//         border-collapse: collapse;
-//         margin-top: 10px;
-//         font-family: Arial, sans-serif;
-//         font-size: 12px;
-//     }
-//     #pivot-summary th, #pivot-summary td {
-//         border: 1px solid #444;
-//         padding: 6px 10px;
-//         text-align: center;
-//         white-space: nowrap;
-//     }
-//     #pivot-summary thead th {
-//         background-color: #2a4d69;
-//         color: white;
-//     }
-//     #pivot-summary tbody tr:nth-child(odd) {
-//         background-color: #FFFFFF;   /* white */
-//         color: #000000;              /* black text */
-//     }
+    //         let pivot_html = `
+    // <style>
+    //     #pivot-summary {
+    //         width: 100%;
+    //         border-collapse: collapse;
+    //         margin-top: 10px;
+    //         font-family: Arial, sans-serif;
+    //         font-size: 12px;
+    //     }
+    //     #pivot-summary th, #pivot-summary td {
+    //         border: 1px solid #444;
+    //         padding: 6px 10px;
+    //         text-align: center;
+    //         white-space: nowrap;
+    //     }
+    //     #pivot-summary thead th {
+    //         background-color: #2a4d69;
+    //         color: white;
+    //     }
+    //     #pivot-summary tbody tr:nth-child(odd) {
+    //         background-color: #FFFFFF;   /* white */
+    //         color: #000000;              /* black text */
+    //     }
 
-//     #pivot-summary tbody tr:nth-child(even) {
-//         background-color: #e7e6ec;   /* light mild blue */
-//         color: #000000;              /* black text */
-//     }
-//     .left-align {
-//         text-align: left;
-//     }
-// </style>
+    //     #pivot-summary tbody tr:nth-child(even) {
+    //         background-color: #e7e6ec;   /* light mild blue */
+    //         color: #000000;              /* black text */
+    //     }
+    //     .left-align {
+    //         text-align: left;
+    //     }
+    // </style>
 
-// <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
-//     <div style="
-//     display:flex;
-//     justify-content:space-between;
-//     align-items:center;
-//     background:white;
-//     border-bottom:1px solid #ddd;
-//     padding:5px 10px;
-// ">
-    
-//     <h4 style="
-//         margin:0;
-        
-//     ">
-//         PROJECT STATUS REPORT(PSR)
-//     </h4>
-//  <div style="display:flex; gap:8px;">
-            
-//             <span class="filter-btn" data-group="priority" data-filter="Low">Overall</span>
-//             <span class="filter-btn" data-group="priority" data-filter="Medium">Current</span>
-//         </div>
-//     <button 
-//     id="download-psr-btn"
-//     style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
-//     <img 
-//         src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
-//         style="width:22px;height:22px;"
-//     >
-// </button>
+    // <div style="border: 1px solid #ddd; border-radius: 8px; padding: 10px; box-sizing: border-box;">
+    //     <div style="
+    //     display:flex;
+    //     justify-content:space-between;
+    //     align-items:center;
+    //     background:white;
+    //     border-bottom:1px solid #ddd;
+    //     padding:5px 10px;
+    // ">
 
-// </div>  
-//     <table id="pivot-summary">
-//         <thead>
-//             <tr class="sticky-top">
-//                 <th>S. No</th>
-//                 <th>Project Name</th>
-//                 <th>Project<br>Type</th>
-//                 <th>Open<br>(hr/ #)</th>
-//                 <th>TD Open<br>(hr/ #)</th>
-//                 <th>W<br>(hr/ #)</th>
-//                 <th>TD W<br>(hr/ #)</th>
-//                 <th>PR<br>(hr/ #)</th>
-//                 <th>TD PR<br>(hr/ #)</th>
-//                 <th>CR<br>(hr/ #)</th>
-//                 <th>TD CR<br>(hr/ #)</th>
-//             </tr>
-//         </thead>
-//         <tbody>
-// `;
-//         let total_open_hr = 0, total_open_task = 0;
-//         let total_open_td_hr = 0, total_open_td_task = 0;
+    //     <h4 style="
+    //         margin:0;
 
-//         let total_work_hr = 0, total_work_task = 0;
-//         let total_work_td_hr = 0, total_work_td_task = 0;
+    //     ">
+    //         PROJECT STATUS REPORT(PSR)
+    //     </h4>
+    //  <div style="display:flex; gap:8px;">
 
-//         let total_pr_hr = 0, total_pr_task = 0;
-//         let total_pr_td_hr = 0, total_pr_td_task = 0;
+    //             <span class="filter-btn" data-group="priority" data-filter="Low">Overall</span>
+    //             <span class="filter-btn" data-group="priority" data-filter="Medium">Current</span>
+    //         </div>
+    //     <button 
+    //     id="download-psr-btn"
+    //     style="border:none;background:none;outline:none;padding:0;cursor:pointer;">
+    //     <img 
+    //         src="https://cdn-icons-png.flaticon.com/128/724/724933.png"
+    //         style="width:22px;height:22px;"
+    //     >
+    // </button>
 
-//         let total_cr_hr = 0, total_cr_task = 0;
-//         let total_cr_td_hr = 0, total_cr_td_task = 0;
-//         data.forEach(row => {
-//             const [open_hr, open_task] = row.open.split("/").map(Number);
-//             const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
+    // </div>  
+    //     <table id="pivot-summary">
+    //         <thead>
+    //             <tr class="sticky-top">
+    //                 <th>S. No</th>
+    //                 <th>Project Name</th>
+    //                 <th>Project<br>Type</th>
+    //                 <th>Open<br>(hr/ #)</th>
+    //                 <th>TD Open<br>(hr/ #)</th>
+    //                 <th>W<br>(hr/ #)</th>
+    //                 <th>TD W<br>(hr/ #)</th>
+    //                 <th>PR<br>(hr/ #)</th>
+    //                 <th>TD PR<br>(hr/ #)</th>
+    //                 <th>CR<br>(hr/ #)</th>
+    //                 <th>TD CR<br>(hr/ #)</th>
+    //             </tr>
+    //         </thead>
+    //         <tbody>
+    // `;
+    //         let total_open_hr = 0, total_open_task = 0;
+    //         let total_open_td_hr = 0, total_open_td_task = 0;
 
-//             const [work_hr, work_task] = row.working.split("/").map(Number);
-//             const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
+    //         let total_work_hr = 0, total_work_task = 0;
+    //         let total_work_td_hr = 0, total_work_td_task = 0;
 
-//             const [pr_hr, pr_task] = row.pr.split("/").map(Number);
-//             const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
+    //         let total_pr_hr = 0, total_pr_task = 0;
+    //         let total_pr_td_hr = 0, total_pr_td_task = 0;
 
-//             const [cr_hr, cr_task] = row.cr.split("/").map(Number);
-//             const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
+    //         let total_cr_hr = 0, total_cr_task = 0;
+    //         let total_cr_td_hr = 0, total_cr_td_task = 0;
+    //         data.forEach(row => {
+    //             const [open_hr, open_task] = row.open.split("/").map(Number);
+    //             const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
 
-//             total_open_hr += open_hr;
-//             total_open_task += open_task;
+    //             const [work_hr, work_task] = row.working.split("/").map(Number);
+    //             const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
 
-//             total_open_td_hr += open_td_hr;
-//             total_open_td_task += open_td_task;
+    //             const [pr_hr, pr_task] = row.pr.split("/").map(Number);
+    //             const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
 
-//             total_work_hr += work_hr;
-//             total_work_task += work_task;
+    //             const [cr_hr, cr_task] = row.cr.split("/").map(Number);
+    //             const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
 
-//             total_work_td_hr += work_td_hr;
-//             total_work_td_task += work_td_task;
+    //             total_open_hr += open_hr;
+    //             total_open_task += open_task;
 
-//             total_pr_hr += pr_hr;
-//             total_pr_task += pr_task;
+    //             total_open_td_hr += open_td_hr;
+    //             total_open_td_task += open_td_task;
 
-//             total_pr_td_hr += pr_td_hr;
-//             total_pr_td_task += pr_td_task;
+    //             total_work_hr += work_hr;
+    //             total_work_task += work_task;
 
-//             total_cr_hr += cr_hr;
-//             total_cr_task += cr_task;
+    //             total_work_td_hr += work_td_hr;
+    //             total_work_td_task += work_td_task;
 
-//             total_cr_td_hr += cr_td_hr;
-//             total_cr_td_task += cr_td_task;
+    //             total_pr_hr += pr_hr;
+    //             total_pr_task += pr_task;
 
-//             pivot_html += `
-//         <tr>
-//             <td>${row.s_no}</td>
-//             <td class="left-align">
-//                 <a href="/app/project/${row.project}" target="_blank">
-//                     ${row.project}
-//                 </a>
-//             </td>
-//             <td class="left-align">${row.project_type}</td>
+    //             total_pr_td_hr += pr_td_hr;
+    //             total_pr_td_task += pr_td_task;
 
-//             <td>${open_hr.toFixed(2)}/${open_task}</td>
-//             <td style="color:">${open_td_hr.toFixed(2)}/${open_td_task}</td>
+    //             total_cr_hr += cr_hr;
+    //             total_cr_task += cr_task;
 
-//             <td>${work_hr.toFixed(2)}/${work_task}</td>
-//             <td style="color:">${work_td_hr.toFixed(2)}/${work_td_task}</td>
+    //             total_cr_td_hr += cr_td_hr;
+    //             total_cr_td_task += cr_td_task;
 
-//             <td>${pr_hr.toFixed(2)}/${pr_task}</td>
-//             <td style="color:">${pr_td_hr.toFixed(2)}/${pr_td_task}</td>
+    //             pivot_html += `
+    //         <tr>
+    //             <td>${row.s_no}</td>
+    //             <td class="left-align">
+    //                 <a href="/app/project/${row.project}" target="_blank">
+    //                     ${row.project}
+    //                 </a>
+    //             </td>
+    //             <td class="left-align">${row.project_type}</td>
 
-//             <td>${cr_hr.toFixed(2)}/${cr_task}</td>
-//             <td style="color:">${cr_td_hr.toFixed(2)}/${cr_td_task}</td>
-//         </tr>`;
-//         });
+    //             <td>${open_hr.toFixed(2)}/${open_task}</td>
+    //             <td style="color:">${open_td_hr.toFixed(2)}/${open_td_task}</td>
 
-//         pivot_html += `
-//             <tr style="font-weight:bold;background:#0F1568;color:white;">
-//                 <td colspan="3">Total</td>
+    //             <td>${work_hr.toFixed(2)}/${work_task}</td>
+    //             <td style="color:">${work_td_hr.toFixed(2)}/${work_td_task}</td>
 
-//                 <td>${total_open_hr.toFixed(2)}/${total_open_task}</td>
-//                 <td style="color:">${total_open_td_hr.toFixed(2)}/${total_open_td_task}</td>
+    //             <td>${pr_hr.toFixed(2)}/${pr_task}</td>
+    //             <td style="color:">${pr_td_hr.toFixed(2)}/${pr_td_task}</td>
 
-//                 <td>${total_work_hr.toFixed(2)}/${total_work_task}</td>
-//                 <td style="color:">${total_work_td_hr.toFixed(2)}/${total_work_td_task}</td>
+    //             <td>${cr_hr.toFixed(2)}/${cr_task}</td>
+    //             <td style="color:">${cr_td_hr.toFixed(2)}/${cr_td_task}</td>
+    //         </tr>`;
+    //         });
 
-//                 <td>${total_pr_hr.toFixed(2)}/${total_pr_task}</td>
-//                 <td style="color:">${total_pr_td_hr.toFixed(2)}/${total_pr_td_task}</td>
+    //         pivot_html += `
+    //             <tr style="font-weight:bold;background:#0F1568;color:white;">
+    //                 <td colspan="3">Total</td>
 
-//                 <td>${total_cr_hr.toFixed(2)}/${total_cr_task}</td>
-//             </tr>
+    //                 <td>${total_open_hr.toFixed(2)}/${total_open_task}</td>
+    //                 <td style="color:">${total_open_td_hr.toFixed(2)}/${total_open_td_task}</td>
 
-//             </tbody>
-//             </table>`;
+    //                 <td>${total_work_hr.toFixed(2)}/${total_work_task}</td>
+    //                 <td style="color:">${total_work_td_hr.toFixed(2)}/${total_work_td_task}</td>
 
-//         pivot_html += `</tbody></table>`;
-//         $("#pivot-project-summary-container").html(pivot_html);
-//     }
+    //                 <td>${total_pr_hr.toFixed(2)}/${total_pr_task}</td>
+    //                 <td style="color:">${total_pr_td_hr.toFixed(2)}/${total_pr_td_task}</td>
+
+    //                 <td>${total_cr_hr.toFixed(2)}/${total_cr_task}</td>
+    //             </tr>
+
+    //             </tbody>
+    //             </table>`;
+
+    //         pivot_html += `</tbody></table>`;
+    //         $("#pivot-project-summary-container").html(pivot_html);
+    //     }
 
 
     function renderPivotTable(data) {
 
-    let pivot_html = `
+        let pivot_html = `
 <style>
     #pivot-summary {
         width: 100%;
@@ -6702,56 +7767,56 @@ td {
         <tbody>
 `;
 
-    let total_open_hr = 0, total_open_task = 0;
-    let total_open_td_hr = 0, total_open_td_task = 0;
+        let total_open_hr = 0, total_open_task = 0;
+        let total_open_td_hr = 0, total_open_td_task = 0;
 
-    let total_work_hr = 0, total_work_task = 0;
-    let total_work_td_hr = 0, total_work_td_task = 0;
+        let total_work_hr = 0, total_work_task = 0;
+        let total_work_td_hr = 0, total_work_td_task = 0;
 
-    let total_pr_hr = 0, total_pr_task = 0;
-    let total_pr_td_hr = 0, total_pr_td_task = 0;
+        let total_pr_hr = 0, total_pr_task = 0;
+        let total_pr_td_hr = 0, total_pr_td_task = 0;
 
-    let total_cr_hr = 0, total_cr_task = 0;
-    let total_cr_td_hr = 0, total_cr_td_task = 0;
+        let total_cr_hr = 0, total_cr_task = 0;
+        let total_cr_td_hr = 0, total_cr_td_task = 0;
 
-    data.forEach((row, index) => {
-        const [open_hr, open_task] = row.open.split("/").map(Number);
-        const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
+        data.forEach((row, index) => {
+            const [open_hr, open_task] = row.open.split("/").map(Number);
+            const [open_td_hr, open_td_task] = row.open_td.split("/").map(Number);
 
-        const [work_hr, work_task] = row.working.split("/").map(Number);
-        const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
+            const [work_hr, work_task] = row.working.split("/").map(Number);
+            const [work_td_hr, work_td_task] = row.working_td.split("/").map(Number);
 
-        const [pr_hr, pr_task] = row.pr.split("/").map(Number);
-        const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
+            const [pr_hr, pr_task] = row.pr.split("/").map(Number);
+            const [pr_td_hr, pr_td_task] = row.pr_td.split("/").map(Number);
 
-        const [cr_hr, cr_task] = row.cr.split("/").map(Number);
-        const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
+            const [cr_hr, cr_task] = row.cr.split("/").map(Number);
+            const [cr_td_hr, cr_td_task] = row.cr_td.split("/").map(Number);
 
-        total_open_hr += open_hr;
-        total_open_task += open_task;
+            total_open_hr += open_hr;
+            total_open_task += open_task;
 
-        total_open_td_hr += open_td_hr;
-        total_open_td_task += open_td_task;
+            total_open_td_hr += open_td_hr;
+            total_open_td_task += open_td_task;
 
-        total_work_hr += work_hr;
-        total_work_task += work_task;
+            total_work_hr += work_hr;
+            total_work_task += work_task;
 
-        total_work_td_hr += work_td_hr;
-        total_work_td_task += work_td_task;
+            total_work_td_hr += work_td_hr;
+            total_work_td_task += work_td_task;
 
-        total_pr_hr += pr_hr;
-        total_pr_task += pr_task;
+            total_pr_hr += pr_hr;
+            total_pr_task += pr_task;
 
-        total_pr_td_hr += pr_td_hr;
-        total_pr_td_task += pr_td_task;
+            total_pr_td_hr += pr_td_hr;
+            total_pr_td_task += pr_td_task;
 
-        total_cr_hr += cr_hr;
-        total_cr_task += cr_task;
+            total_cr_hr += cr_hr;
+            total_cr_task += cr_task;
 
-        total_cr_td_hr += cr_td_hr;
-        total_cr_td_task += cr_td_task;
+            total_cr_td_hr += cr_td_hr;
+            total_cr_td_task += cr_td_task;
 
-        pivot_html += `
+            pivot_html += `
         <tr>
             <td>${index + 1}</td>
             <td class="left-align">
@@ -6784,9 +7849,9 @@ td {
                 </span>
             </td>
         </tr>`;
-    });
+        });
 
-    pivot_html += `
+        pivot_html += `
         <tr style="font-weight:bold;background:#0F1568;color:white;">
             <td colspan="3">Total</td>
 
@@ -6826,27 +7891,27 @@ td {
 </table>
 </div>`;
 
-    $("#pivot-project-summary-container").html(pivot_html);
-    
-    // Default visibility toggles
-    $(".current-col").hide();
-    $(".overall-col").show();
+        $("#pivot-project-summary-container").html(pivot_html);
 
-    $(document).off("click", ".psr-toggle");
-    $(document).on("click", ".psr-toggle", function () {
-        $(".psr-toggle").removeClass("active");
-        $(this).addClass("active");
+        // Default visibility toggles
+        $(".current-col").hide();
+        $(".overall-col").show();
 
-        let view = $(this).data("view");
-        if (view === "overall") {
-            $(".overall-col").show();
-            $(".current-col").hide();
-        } else {
-            $(".overall-col").hide();
-            $(".current-col").show();
-        }
-    });
-}
+        $(document).off("click", ".psr-toggle");
+        $(document).on("click", ".psr-toggle", function () {
+            $(".psr-toggle").removeClass("active");
+            $(this).addClass("active");
+
+            let view = $(this).data("view");
+            if (view === "overall") {
+                $(".overall-col").show();
+                $(".current-col").hide();
+            } else {
+                $(".overall-col").hide();
+                $(".current-col").show();
+            }
+        });
+    }
 
 
 

@@ -1,0 +1,129 @@
+{
+ "actions": [],
+ "creation": "2026-08-04 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "item_title",
+  "category",
+  "frequency",
+  "column_break_1",
+  "is_statutory",
+  "compliance_reference",
+  "priority",
+  "assignment_section",
+  "assigned_to_role",
+  "assigned_to_user",
+  "column_break_2",
+  "statutory_due_day",
+  "applicable_months",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "item_title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Item Title",
+   "reqd": 1,
+   "columns": 3
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Category",
+   "options": "Internal Accounts\nStatutory\nManagement MIS\nAudit Year-end",
+   "reqd": 1,
+   "columns": 2
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Frequency",
+   "options": "Daily\nWeekly\nMonthly\nQuarterly\nYearly",
+   "reqd": 1,
+   "columns": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_statutory",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Is Statutory",
+   "columns": 1
+  },
+  {
+   "fieldname": "compliance_reference",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Compliance Reference",
+   "columns": 2
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "High\nMedium\nLow",
+   "default": "Medium",
+   "columns": 1
+  },
+  {
+   "fieldname": "assignment_section",
+   "fieldtype": "Section Break",
+   "label": "Assignment & Due"
+  },
+  {
+   "fieldname": "assigned_to_role",
+   "fieldtype": "Link",
+   "label": "Assigned To Role",
+   "options": "Role"
+  },
+  {
+   "fieldname": "assigned_to_user",
+   "fieldtype": "Link",
+   "label": "Assigned To User",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "statutory_due_day",
+   "fieldtype": "Int",
+   "label": "Statutory Due Day",
+   "description": "Day of month/week when this item falls due (0 = use period end)"
+  },
+  {
+   "fieldname": "applicable_months",
+   "fieldtype": "Data",
+   "label": "Applicable Months",
+   "default": "All",
+   "description": "Comma-separated month abbreviations (e.g. Apr,Jun,Oct) or 'All'"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Teampro",
+ "name": "Accounts Checklist Template Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "track_changes": 1
+}

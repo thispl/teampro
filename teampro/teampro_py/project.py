@@ -109,6 +109,30 @@ def update_proj_positions_count_hourly():
         enqueue_after_commit=False,
     )
 
+@frappe.whitelist()
+def update_proj_positions_count_min1():
+    frappe.enqueue(
+        update_project_count_cron,
+        queue="long",
+        timeout=36000,
+        is_async=True,
+        now=False,
+        job_name='Project Update',
+        enqueue_after_commit=False,
+    )
+
+@frappe.whitelist()
+def update_pro_from_min1():
+    job = frappe.db.exists('Scheduled Job Type', 'update_proj_positions_count_min1')
+    if not job:
+        task = frappe.new_doc("Scheduled Job Type")
+        task.update({
+            "method": 'teampro.teampro_py.project.update_proj_positions_count_min1',
+            "frequency": 'Cron',
+            "cron_format": '*/5 * * * *'
+        })
+        task.save(ignore_permissions=True)
+
 
 @frappe.whitelist()
 def update_proj_position_value():
@@ -187,33 +211,34 @@ def update_count_proj():
     frappe.db.commit()
 
 @frappe.whitelist() 
-def update_project_count(doc,method):
-    if doc.project and doc.service in ['REC-D','REC-I']:
-        tot_fp=frappe.db.sql("""SELECT sum(fp) as fp from `tabTask` where project=%s """,(doc.project),as_dict=True)[0]
-        tot_psl=frappe.db.sql("""SELECT sum(psl) as psl from `tabTask` where project=%s """,(doc.project),as_dict=True)[0]
-        tot_sl=frappe.db.sql("""SELECT sum(sl) as sl from `tabTask` where project=%s """,(doc.project),as_dict=True)[0]
-        tot_sp=frappe.db.sql("""SELECT sum(sp) as sp from `tabTask` where project=%s """,(doc.project),as_dict=True)[0]
-        tot_lp=frappe.db.sql("""SELECT sum(custom_lp) as lp from `tabTask` where project=%s""",(doc.project),as_dict=True)[0]
-        tot_rp=frappe.db.sql("""SELECT sum(custom_rp) as rp from `tabTask` where project=%s""",(doc.project),as_dict=True)[0]
-        tot_vac=frappe.db.sql("""SELECT sum(vac) as vac from `tabTask` where project=%s""",(doc.project),as_dict=True)[0]
-        if tot_fp['fp'] is not None:
-            frappe.db.set_value("Project",doc.project,'tfp',tot_fp['fp'])
-        if tot_psl['psl'] is not None:
-            frappe.db.set_value("Project",doc.project,'tpsl',tot_psl['psl'])
-        if tot_sl['sl'] is not None:
-            frappe.db.set_value("Project",doc.project,'tsl',tot_sl['sl'])
-        if tot_sp['sp'] is not None:
-            frappe.db.set_value("Project",doc.project,'tsp',tot_sp['sp'])
-        if tot_lp['lp'] is not None:
-            frappe.db.set_value("Project",doc.project,'custom_t_lp',tot_lp['lp'])  
-        if tot_rp['rp'] is not None:
-            frappe.db.set_value("Project",doc.project,'custom_t_rp',tot_rp['rp'])              
-        if tot_vac['vac'] is not None:
-            frappe.db.set_value("Project",doc.project,'tvac',tot_vac['vac'])              
-        # frappe.db.set_value("Project", doc.project, 'tfp', tot_fp[0].get('fp', 0))
-        # frappe.db.set_value("Project", doc.project, 'tpsl', tot_psl[0].get('psl', 0))
-        # frappe.db.set_value("Project", doc.project, 'tsl', tot_sl[0].get('sl', 0))
-        # frappe.db.set_value("Project", doc.project, 'tsp', tot_sp[0].get('sp', 0))
+def update_project_count(doc, method):
+    if not (doc.project and doc.service in ['REC-D', 'REC-I']):
+        return
+    # Single query replaces 7 separate SUM queries
+    totals = frappe.db.sql(
+        """SELECT
+            SUM(fp)         AS fp,
+            SUM(psl)        AS psl,
+            SUM(sl)         AS sl,
+            SUM(sp)         AS sp,
+            SUM(custom_lp)  AS lp,
+            SUM(custom_rp)  AS rp,
+            SUM(vac)        AS vac
+        FROM `tabTask`
+        WHERE project = %s""",
+        doc.project,
+        as_dict=True,
+    )[0]
+    updates = {}
+    if totals.fp   is not None: updates['tfp']        = totals.fp
+    if totals.psl  is not None: updates['tpsl']       = totals.psl
+    if totals.sl   is not None: updates['tsl']        = totals.sl
+    if totals.sp   is not None: updates['tsp']        = totals.sp
+    if totals.lp   is not None: updates['custom_t_lp']= totals.lp
+    if totals.rp   is not None: updates['custom_t_rp']= totals.rp
+    if totals.vac  is not None: updates['tvac']       = totals.vac
+    if updates:
+        frappe.db.set_value("Project", doc.project, updates)
 
 @frappe.whitelist()
 def update_sa_details_in_task(doc,method):

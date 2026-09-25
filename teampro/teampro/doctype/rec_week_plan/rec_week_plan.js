@@ -2,13 +2,13 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("REC Week Plan", {
-    setup: function(frm) {
+    setup: function (frm) {
         // SP
         frm.set_query("task", function () {
 
             let filters = [
-                ["Task","service", "in", ["REC-I", "REC-D"]],
-              
+                ["Task", "service", "in", ["REC-I", "REC-D"]],
+
             ];
 
             if (frm.doc.project_filter) {
@@ -19,10 +19,10 @@ frappe.ui.form.on("REC Week Plan", {
                 filters: filters
             };
         });
-        frm.set_query("project_filter", function() {
+        frm.set_query("project_filter", function () {
             return {
                 filters: [
-                    ["Project", "status","=", ["Open"]],
+                    ["Project", "status", "=", ["Open"]],
                     ["Project", "service", "in", ["REC-I", "REC-D"]],
                 ]
             };
@@ -31,8 +31,8 @@ frappe.ui.form.on("REC Week Plan", {
         frm.set_query("sp_fp_task", function () {
 
             let filters = [
-                ["Task","service", "in", ["REC-I", "REC-D"]],
-                
+                ["Task", "service", "in", ["REC-I", "REC-D"]],
+
             ];
 
             if (frm.doc.sp_fp_project) {
@@ -43,10 +43,10 @@ frappe.ui.form.on("REC Week Plan", {
                 filters: filters
             };
         });
-        frm.set_query("sp_fp_project", function() {
+        frm.set_query("sp_fp_project", function () {
             return {
                 filters: [
-                    ["Project", "status","=", ["Open"]],
+                    ["Project", "status", "=", ["Open"]],
                     ["Project", "service", "in", ["REC-I", "REC-D"]],
                 ]
             };
@@ -55,8 +55,8 @@ frappe.ui.form.on("REC Week Plan", {
         frm.set_query("fp_task", function () {
 
             let filters = [
-                ["Task","service", "in", ["REC-I", "REC-D"]],
-            
+                ["Task", "service", "in", ["REC-I", "REC-D"]],
+
             ];
 
             if (frm.doc.fp_project) {
@@ -67,10 +67,10 @@ frappe.ui.form.on("REC Week Plan", {
                 filters: filters
             };
         });
-        frm.set_query("fp_project", function() {
+        frm.set_query("fp_project", function () {
             return {
                 filters: [
-                    ["Project", "status","=", ["Open"]],
+                    ["Project", "status", "=", ["Open"]],
                     ["Project", "service", "in", ["REC-I", "REC-D"]],
                 ]
             };
@@ -78,8 +78,8 @@ frappe.ui.form.on("REC Week Plan", {
         // PND
         frm.set_query("pnd_task", function () {
             let filters = [
-                ["Task","service", "in", ["REC-I", "REC-D"]],
-            
+                ["Task", "service", "in", ["REC-I", "REC-D"]],
+
             ];
             if (frm.doc.pnd_project) {
                 filters.push(["Task", "project", "=", frm.doc.pnd_project]);
@@ -88,10 +88,10 @@ frappe.ui.form.on("REC Week Plan", {
                 filters: filters
             };
         });
-        frm.set_query("pnd_project", function() {
+        frm.set_query("pnd_project", function () {
             return {
                 filters: [
-                    ["Project", "status","=", ["Open"]],
+                    ["Project", "status", "=", ["Open"]],
                     ["Project", "service", "in", ["REC-I", "REC-D"]],
                 ]
             };
@@ -99,8 +99,8 @@ frappe.ui.form.on("REC Week Plan", {
         // All Table
         frm.set_query("task_collapsible", function () {
             let filters = [
-                ["Task","service", "in", ["REC-I", "REC-D"]],
-            
+                ["Task", "service", "in", ["REC-I", "REC-D"]],
+
             ];
             if (frm.doc.project_collapsible) {
                 filters.push(["Task", "project", "=", frm.doc.project_collapsible]);
@@ -109,26 +109,26 @@ frappe.ui.form.on("REC Week Plan", {
                 filters: filters
             };
         });
-        frm.set_query("project_collapsible", function() {
+        frm.set_query("project_collapsible", function () {
             return {
                 filters: [
-                    ["Project", "status","=", ["Open"]],
+                    ["Project", "status", "=", "Open"],
                     ["Project", "service", "in", ["REC-I", "REC-D"]],
-                    ["Project","customer","=", frm.doc.customer]
+                    ["Project", "customer", "=", frm.doc.customer]
                 ]
             };
         });
     },
-    customer(frm){
+    customer(frm) {
         build_master_table(frm)
     },
-    project_collapsible(frm){
+    project_collapsible(frm) {
         build_master_table(frm)
     },
-    src_s(frm){
+    src_s(frm) {
         build_master_table(frm)
     },
-    task_collapsible(frm){
+    task_collapsible(frm) {
         build_master_table(frm)
     },
     // pnd_project: function(frm) {
@@ -288,13 +288,17 @@ frappe.ui.form.on("REC Week Plan", {
                             src_s: row.src_s,
                             sp: row.sp,
                             fp: row.fp,
-                            client:row.customer,
+                            client: row.customer,
                             sl: row.sl,
                             lp: row.lp,
                             psl: row.psl,
                             src: row.src,
                             moi: row.moi,
-                            cc: row.sp
+                            cc: row.sp,
+                            am: row.account_manager_short_code,
+                            pm: row.project_manager_short_code,
+                            status:row.status
+
                         });
                     });
 
@@ -337,12 +341,13 @@ frappe.ui.form.on("REC Week Plan", {
         });
         render_employee_strip(frm, null);
         update_day_labels(frm);
+        apply_team_date_filter(frm);
         // build_sp_html(frm);
         // build_spfp_html(frm);
         // build_fp_html(frm)
         // build_pnd_html(frm)
         build_master_table(frm)
-            let button_html = `
+        let button_html = `
                 <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
                     <button id="download_excel" 
                         style="
@@ -358,11 +363,11 @@ frappe.ui.form.on("REC Week Plan", {
                         Download
                     </button>
                 </div>`;
-            
 
-            frm.fields_dict.download_button.$wrapper.html(button_html);
 
-            $("#download_excel").off("click").on("click", function () {
+        frm.fields_dict.download_button.$wrapper.html(button_html);
+
+        $("#download_excel").off("click").on("click", function () {
 
             let url = "/api/method/teampro.teampro.doctype.rec_week_plan.rec_week_plan.download_dsr_excel"
                 + "?name=" + encodeURIComponent(cur_frm.doc.name)
@@ -373,8 +378,29 @@ frappe.ui.form.on("REC Week Plan", {
 
             window.open(url);
         });
-        
+
+        frm.fields_dict.download && frm.fields_dict.download.$input.on("click", function () {
+            trigger_download(frm);
+        });
+
+        if (frm.fields_dict.allocation && frm.fields_dict.allocation.grid) {
+            let $bulk = frm.fields_dict.allocation.grid.wrapper.find(".grid-bulk-actions");
+            if ($bulk.length && !$bulk.find(".allocation-excel-download").length) {
+                $bulk.find(".grid-download").before(`
+                    <button type="button" class="btn btn-xs btn-secondary allocation-excel-download" style="margin-right:5px;">
+                        ${__("Download Excel")}
+                    </button>
+                `);
+                $bulk.find(".allocation-excel-download").on("click", function () {
+                    window.open(
+                        `/api/method/teampro.teampro.doctype.rec_week_plan.rec_week_plan.download_allocation_internal_excel?docname=${encodeURIComponent(frm.doc.name)}`
+                    );
+                });
+            }
+        }
+
     },
+
     onload(frm) {
         if (!frm.is_new()) {
 
@@ -411,7 +437,7 @@ frappe.ui.form.on("REC Week Plan", {
                                 spoc: row.spoc_short_code,
                                 vac: row.vac,
                                 src_s: row.src_s,
-                                client:row.customer,
+                                client: row.customer,
                                 sp: row.sp,
                                 fp: row.fp,
                                 sl: row.sl,
@@ -419,7 +445,10 @@ frappe.ui.form.on("REC Week Plan", {
                                 psl: row.psl,
                                 src: row.src,
                                 moi: moi,
-                                cc: row.sp
+                                cc: row.sp,
+                                am: row.account_manager_short_code,
+                                pm: row.project_manager_short_code,
+                                status:row.status
                             });
                         });
 
@@ -558,7 +587,7 @@ frappe.ui.form.on("REC Week Plan", {
             });
 
             frm.refresh_field("allocation_agent");
-            
+
 
         }
 
@@ -575,6 +604,21 @@ frappe.ui.form.on("REC Week Plan", {
             update_day_labels(frm);
         }
     },
+
+    rec_team(frm) {
+        apply_team_date_filter(frm);
+    },
+    date(frm) {
+        apply_team_date_filter(frm);
+    },
+    date_to(frm) {
+        apply_team_date_filter(frm);
+    },
+    after_save(frm) {
+        apply_team_date_filter(frm);
+    },
+
+
     from_date: function (frm) {
         frm.trigger("options");
     },
@@ -780,12 +824,12 @@ frappe.ui.form.on("REC Week Plan", {
                     $wrapper.html(html);
                     $wrapper.find(".team-multi").each(function () {
 
-                    $(this).select2({
-                        width: "140px",
-                        placeholder: "Select Team"
-                    });
+                        $(this).select2({
+                            width: "140px",
+                            placeholder: "Select Team"
+                        });
 
-                });
+                    });
                     $wrapper.find('.parent-row').click(function () {
                         let groupId = $(this).data('group');
                         let icon = $(this).find('.toggle-icon');
@@ -1113,7 +1157,7 @@ function apply_grid_stripes(frm, fieldname) {
 }
 
 
-function render_employee_strip(frm,selected_team = null) {
+function render_employee_strip(frm, selected_team = null) {
     let source_rows = [];
 
     if (selected_team) {
@@ -1188,7 +1232,7 @@ function render_employee_strip(frm,selected_team = null) {
                 ["name", "in", employees],
                 ["department", "=", "Recruitment - THIS"]
             ],
-            fields: ["name", "employee_name", "image", "department","user_id"]
+            fields: ["name", "employee_name", "image", "department", "user_id"]
         },
         callback: function (r) {
             const data = r.message || [];
@@ -1257,54 +1301,54 @@ function render_employee_strip(frm,selected_team = null) {
                 </div>
             `);
             frm.get_field("employee").$wrapper
-    .find(".emp-circle")
-    .on("click", function () {
+                .find(".emp-circle")
+                .on("click", function () {
 
-        // let selected_employee = $(this).data("employee");
-        let selected_user = $(this).data("user");
-        frm.clear_table("task_allocation");
+                    // let selected_employee = $(this).data("employee");
+                    let selected_user = $(this).data("user");
+                    frm.clear_table("task_allocation");
 
-        const start_date = frm.doc.start_date;
-        const allocation = frm.doc.allocation || [];
-        const task_map = {};
-        const date_map = {};
+                    const start_date = frm.doc.start_date;
+                    const allocation = frm.doc.allocation || [];
+                    const task_map = {};
+                    const date_map = {};
 
-        // Create date map (same as your team logic)
-        for (let i = 0; i < 7; i++) {
-            date_map[
-                frappe.datetime.add_days(start_date, i)
-            ] = `day_${i + 1}`;
-        }
+                    // Create date map (same as your team logic)
+                    for (let i = 0; i < 7; i++) {
+                        date_map[
+                            frappe.datetime.add_days(start_date, i)
+                        ] = `day_${i + 1}`;
+                    }
 
-        allocation
-            .filter(r => r.exe  === selected_user)
-            .forEach(task => {
+                    allocation
+                        .filter(r => r.exe === selected_user)
+                        .forEach(task => {
 
-                const day_field = date_map[task.date];
-                if (!day_field) return;
+                            const day_field = date_map[task.date];
+                            if (!day_field) return;
 
-                const key = `${task.task}`;
+                            const key = `${task.task}`;
 
-                let row = task_map[key];
-                if (!row) {
-                    row = frm.add_child("task_allocation");
-                    row.task = task.task;
-                    row.subject = task.subject;
-                    row.employee = task.employee;
-                    row.rc = 0;
-                    task_map[key] = row;
-                }
+                            let row = task_map[key];
+                            if (!row) {
+                                row = frm.add_child("task_allocation");
+                                row.task = task.task;
+                                row.subject = task.subject;
+                                row.employee = task.employee;
+                                row.rc = 0;
+                                task_map[key] = row;
+                            }
 
-                row[day_field] =
-                    (row[day_field] || 0) + (task.rc || 0);
+                            row[day_field] =
+                                (row[day_field] || 0) + (task.rc || 0);
 
-                row.rc = Array.from({ length: 7 }, (_, i) =>
-                    row[`day_${i + 1}`] || 0
-                ).reduce((a, b) => a + b, 0);
-            });
+                            row.rc = Array.from({ length: 7 }, (_, i) =>
+                                row[`day_${i + 1}`] || 0
+                            ).reduce((a, b) => a + b, 0);
+                        });
 
-        frm.refresh_field("task_allocation");
-    });
+                    frm.refresh_field("task_allocation");
+                });
         }
     });
 }
@@ -1649,7 +1693,7 @@ async function build_sp_html(frm) {
 
     const teamOptions = teams.map(t => t.name);
 
-    const srcSOptions = ["", "SP", "FP", "SP/FP", "PND"];
+    const srcSOptions = ["", "SP", "FP", "SP/FP", "HLD", "JP"];
     const srcOptions = ["", "Portal", "Promo", "Agent", "PND"];
 
     const date_columns = get_date_range(
@@ -1787,7 +1831,7 @@ async function build_spfp_html(frm) {
     const teams = await frappe.db.get_list("Dev Team", { fields: ["name"] });
     const teamOptions = teams.map(t => t.name);
 
-    const srcSOptions = ["", "SP", "FP", "SP/FP", "PND"];
+    const srcSOptions = ["", "SP", "FP", "SP/FP", "HLD", "JP"];
     const srcOptions = ["", "Portal", "Promo", "Agent", "PND"];
 
     const date_columns = get_date_range(frm.doc.start_date, frm.doc.end_date);
@@ -1800,7 +1844,7 @@ async function build_spfp_html(frm) {
         html += `</select>`;
         return html;
     };
-   
+
     let html = `
         <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
             <b>SUBMISSION / FEEDBACK (SP/FP)</b>
@@ -1904,7 +1948,7 @@ async function build_fp_html(frm) {
     const teams = await frappe.db.get_list("Dev Team", { fields: ["name"] });
     const teamOptions = teams.map(t => t.name);
 
-    const srcSOptions = ["", "SP", "FP", "SP/FP", "PND"];
+    const srcSOptions = ["", "SP", "FP", "SP/FP", "HLD", "JP"];
     const srcOptions = ["", "Portal", "Promo", "Agent", "PND"];
 
     const date_columns = get_date_range(frm.doc.start_date, frm.doc.end_date);
@@ -1937,7 +1981,7 @@ async function build_fp_html(frm) {
     html += `</tr></thead><tbody>`;
 
     let idx = 0;
-     const selected_project = frm.doc.fp_project;
+    const selected_project = frm.doc.fp_project;
     const selected_task = frm.doc.fp_task;
     (frm.doc.rec_task_planner || []).forEach(row => {
 
@@ -1996,7 +2040,7 @@ async function build_pnd_html(frm) {
     const teams = await frappe.db.get_list("Dev Team", { fields: ["name"] });
     const teamOptions = teams.map(t => t.name);
 
-    const srcSOptions = ["", "SP", "FP", "SP/FP", "PND"];
+    const srcSOptions = ["", "SP", "FP", "SP/FP", "HLD", "JP"];
     const srcOptions = ["", "Portal", "Promo", "Agent", "PND"];
 
     const date_columns = get_date_range(frm.doc.start_date, frm.doc.end_date);
@@ -2029,11 +2073,11 @@ async function build_pnd_html(frm) {
     html += `</tr></thead><tbody>`;
 
     let idx = 0;
-     const selected_project = frm.doc.pnd_project;
+    const selected_project = frm.doc.pnd_project;
     const selected_task = frm.doc.pnd_task;
     (frm.doc.rec_task_planner || []).forEach(row => {
 
-        if (row.src_s !== "PND") return;
+        if (row.src_s !== "HLD") return;
         if (selected_project && row.project !== selected_project) return;
         if (selected_task && row.task_id !== selected_task) return;
 
@@ -2112,7 +2156,9 @@ window.update_sp_rows = async function () {
             task_updates.push({
                 task_id: child.task_id,
                 src: child.src,
-                src_s: child.src_s
+                src_s: child.src_s,
+                cc: child.cc,
+                efd: child.efd || ""
             });
             if (!team) return;
 
@@ -2210,7 +2256,9 @@ window.update_spfp_rows = async function () {
             task_updates.push({
                 task_id: child.task_id,
                 src: child.src,
-                src_s: child.src_s
+                src_s: child.src_s,
+                cc: child.cc,
+                efd: child.efd || ""
             });
             if (!team) return;
 
@@ -2304,7 +2352,9 @@ window.update_fp_rows = async function () {
             task_updates.push({
                 task_id: child.task_id,
                 src: child.src,
-                src_s: child.src_s
+                src_s: child.src_s,
+                cc: child.cc,
+                efd: child.efd || ""
             });
             if (!team) return;
 
@@ -2365,7 +2415,7 @@ window.update_pnd_rows = async function () {
 
             const rowName = tr.getAttribute("data-row-name");
             const child = frappe.model.get_doc("REC Task Planner", rowName);
-            if (!child || child.src_s !== "PND") return;
+            if (!child || child.src_s !== "HLD") return;
 
             tr.querySelectorAll("select, input").forEach(el => {
                 const field = el.getAttribute("data-field");
@@ -2396,13 +2446,15 @@ window.update_pnd_rows = async function () {
 
             const rowName = tr.getAttribute("data-row-name");
             const child = frappe.model.get_doc("REC Task Planner", rowName);
-            if (!child || child.src_s !== "PND") return;
+            if (!child || child.src_s !== "HLD") return;
 
             const team = tr.querySelector('select[data-field="team"]')?.value;
             task_updates.push({
                 task_id: child.task_id,
                 src: child.src,
-                src_s: child.src_s
+                src_s: child.src_s,
+                cc: child.cc,
+                efd: child.efd || ""
             });
             if (!team) return;
 
@@ -2450,7 +2502,7 @@ window.update_pnd_rows = async function () {
         build_pnd_html(frm);
 
         frappe.show_alert({
-            message: __("PND rows updated successfully"),
+            message: __("HLD rows updated successfully"),
             indicator: "green"
         });
     } finally {
@@ -2461,6 +2513,7 @@ window.update_pnd_rows = async function () {
 
 async function build_master_table(frm) {
 
+    console.log(frm.doc.rec_task_planner);
     if (!frm.doc.start_date || !frm.doc.end_date) {
         frm.get_field("client_html").$wrapper.html(
             "<b>Please select Start Date and End Date</b>"
@@ -2480,25 +2533,130 @@ async function build_master_table(frm) {
         { code: "D", name: "DELTA" }
     ];
 
-    const srcSOptions = ["", "SP", "FP", "SP/FP", "PND"];
+    const srcSOptions = ["", "SP", "FP", "SP/FP", "HLD", "JP"];
+    const statusOptions = ["", "Open", "Ready", "Working", "Code Review", "Pending Review", "Client Review", "Overdue", "Template", "Hold", "Completed", "Cancelled"];
+    const sourcingMethods = await frappe.db.get_list("Sourcing Method", { fields: ["name"], limit: 100 });
+    const sourcingMethodOptions = sourcingMethods.map(r => r.name);
 
+    const taskIds = (frm.doc.rec_task_planner || []).map(r => r.task_id).filter(Boolean);
+    const taskFields = {};
+    if (taskIds.length) {
+        const tasks = await frappe.db.get_list("Task", {
+            filters: { name: ["in", taskIds] },
+            fields: ["name", "status", "custom_task_sourcing_status"],
+            limit: taskIds.length
+        });
+        tasks.forEach(t => {
+            taskFields[t.name] = {
+                status: t.status || "",
+                src_s: t.custom_task_sourcing_status || "",
+                sources: ""
+            };
+        });
+        // custom_sourcing_method_multi is a Table MultiSelect on Task (Source Method
+        // Child). End users usually lack read permission on that child DocType, so
+        // fetch the values via the whitelisted server helper instead of querying the
+        // child table directly from the client.
+        const sourcesByTask = await frappe.call({
+            method: "teampro.teampro.doctype.rec_week_plan.rec_week_plan.get_task_sources",
+            args: { task_ids: taskIds },
+            freeze: false
+        }).then(r => (r.message || {}));
+        Object.keys(taskFields).forEach(name => {
+            taskFields[name].sources = sourcesByTask[name] || "";
+        });
+    }
+    (frm.doc.rec_task_planner || []).forEach(row => {
+        const tf = taskFields[row.task_id];
+        if (tf) {
+            row.status = tf.status;
+            // SRC_S must always reflect the value stored on the Task document
+            // (custom_task_sourcing_status), not the stale child-table copy.
+            row.src_s = tf.src_s;
+            row.sources = tf.sources;
+        }
+    });
+
+    const ROW_HEIGHT = "42px";
     const date_columns = get_date_range(frm.doc.start_date, frm.doc.end_date);
 
-    const td_left = "border:1px solid #ccc;padding:5px;text-align:left;";
-    const td_center = "border:1px solid #ccc;padding:5px;text-align:center;";
+
+    const td_left =
+        "border:1px solid #ccc;padding:2px 4px;height:26px;vertical-align:middle;text-align:left;";
+
+    const td_center =
+        "border:1px solid #ccc;padding:2px 4px;height:26px;vertical-align:middle;text-align:center;";
     const th_style = "border:1px solid #ccc;padding:5px;text-align:center;background:#2b177a;color:#fff;";
+    const sub_th_style = `border:1px solid #ccc;padding:5px;text-align:center;background:#ff8c1a !important;color:#fff !important;font-weight:600;`;
+    const ccStyle = (bg) => `height:30px;width:50px;min-height:20px;padding:1px 3px;text-align:center;background:${bg};border:1px solid #ffdab3;margin:auto;border-radius:6px;border: 2px solid orange !important;appearance:none;`;
 
-    const buildSrcSelect = (value) => {
+    const dateStyle = (bg) => `width:50px;height:30px;text-align:center;margin:auto;background:${bg};border:1px solid #ffdab3;border-radius:6px;padding:0 4px;border: 2px solid orange !important;appearance:none;`;
+    const buildStatusSelect = (value, bg) => {
+        let html = `
+    <select
+        class="form-control input-xs"
+        data-field="status"
+        style="
+            ${ccStyle(bg)}
+            border: 2px solid orange !important;
+            appearance:none;
+            text-align:left;
+        ">
+    `;
+        statusOptions.forEach(opt => {
+            html += `<option value="${opt}" ${opt == value ? "selected" : ""}>${opt}</option>`;
+        });
+        html += `</select>`;
+        return html;
+    };
 
-        let html = `<select class="form-control input-xs"
+    const buildSourcesMultiSelect = (row, bg) => {
+        const selectedValues = (row.sources || "").split(",").map(v => v.trim()).filter(Boolean);
+        let html = `<div class="sources-multi-box" data-row-name="${row.name}" style="position:relative;">`;
+        html += `<div class="sources-multi-display" style="height:30px;min-width:50px;max-width:180px;padding:1px 6px;text-align:center;background:${bg};border-radius:6px;border:2px solid orange !important;appearance:none;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;">`;
+        html += selectedValues.join(",") || "Select";
+        html += `</div>`;
+        html += `</div>`;
+        return html;
+    };
+
+    const buildSrcSelect = (value, bg) => {
+
+        // let html = `
+        // <select
+        //     class="form-control input-xs"
+        //     data-field="src_s"
+        //     style="
+        //         ${ccStyle(bg)}
+        //         appearance:none;
+        //     ">
+        // `;
+
+        // srcSOptions.forEach(opt => {
+        //     html += `<option value="${opt}" ${opt == value ? "selected" : ""}>${opt}</option>`;
+        // });
+
+
+        // html += `</select>`;
+
+        let html = `
+    <select
+        class="form-control input-xs"
         data-field="src_s"
-        style="height:22px;width:65px;background:#d9d9d9;text-align:center;">`;
+        style="
+            ${ccStyle(bg)}
+            border: 2px solid orange !important;
+            appearance:none;
+        ">
+    `;
 
         srcSOptions.forEach(opt => {
             html += `<option value="${opt}" ${opt == value ? "selected" : ""}>${opt}</option>`;
         });
 
+
         html += `</select>`;
+
         return html;
     };
 
@@ -2507,21 +2665,40 @@ async function build_master_table(frm) {
     (frm.doc.rec_task_planner || []).forEach(row => {
 
         if (selected_customer && row.client !== selected_customer) return;
-        if (selected_project && row.project_name !== selected_project) return;
-        if (selected_task && row.task !== selected_task) return;
+        if (selected_project && row.project !== selected_project) return;
+        if (selected_task && row.task_id !== selected_task) return;
         if (selected_src && row.src_s !== selected_src) return;
 
         const client = row.client || "No Client";
         const project = row.project_name || "No Project";
 
-        if (!grouped[client]) grouped[client] = {};
-        if (!grouped[client][project]) grouped[client][project] = [];
+        // if (!grouped[client]) grouped[client] = {};
+        if (!grouped[client]) {
+            grouped[client] = {
+                am: row.am || "",
+                pm: row.pm || "",
+                projects: {}
+            };
+        }
+        if (!grouped[client].projects[project]) {
+            grouped[client].projects[project] = [];
+        }
 
-        grouped[client][project].push(row);
+        grouped[client].projects[project].push(row);
     });
 
-    const headers = ["S.No", "Customer / Project", "VAC", "SP", "FP", "SL", "LP", "PSL"];
-
+    const headers = ["S.No", "Customer / Project", "AM/PM", "VAC", "SP", "FP", "SL", "LP", "PSL"];
+    const widths = [
+        "40px",   // S.No
+        "370px",  // Customer / Project
+        "70px",  // AM/PM
+        "50px",   // VAC
+        "50px",   // SP
+        "50px",   // FP
+        "50px",   // SL
+        "50px",   // LP
+        "50px"    // PSL
+    ];
     let html = `
 
 <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
@@ -2558,11 +2735,19 @@ background:#fff;
 
 <table style="border-collapse:collapse;width:100%;font-size:13px;">
 
-<thead style="position:sticky;top:0;background:#2b177a;z-index:2;">
+<thead style="background:#ff8c1a;">
 <tr>`;
 
-    headers.forEach(h => {
-        html += `<th style="${th_style}">${h}</th>`;
+    // headers.forEach(h => {
+    //     html += `<th style="${th_style}">${h}</th>`;
+    // });
+
+    headers.forEach((header, i) => {
+        html += `
+            <th style="${sub_th_style} width:${widths[i]}; min-width:${widths[i]};">
+                ${header}
+            </th>
+        `;
     });
 
     html += `</tr></thead><tbody>`;
@@ -2572,13 +2757,17 @@ background:#fff;
     Object.keys(grouped).forEach(client => {
 
         clientIdx++;
-
-        const clientColor = clientIdx % 2 === 0 ? "#f9fafb" : "#e3f2fd";
+        const amcode = grouped[client].am || "NO AM";
+        const pmcode = grouped[client].pm || "NO PM";
+        // const clientColor = clientIdx % 2 === 0 ? "#f9fafb" : "#e3f2fd";
+        // const clientColor = clientIdx % 2 === 0 ? "#ffffff" : "#fafafa";
+        // const clientColor = clientIdx % 2 === 0 ? "#ffffff" : "#f0f0f0";
+        const clientColor = clientIdx % 2 === 0 ? "#ffffff" : "#ffe6cc";
         let clientTotals = { vac: 0, sp: 0, fp: 0, sl: 0, lp: 0, psl: 0 };
 
-        Object.keys(grouped[client]).forEach(project => {
+        Object.keys(grouped[client].projects).forEach(project => {
 
-            grouped[client][project].forEach(r => {
+            grouped[client].projects[project].forEach(r => {
 
                 clientTotals.vac += cint(r.vac);
                 clientTotals.sp += cint(r.sp);
@@ -2597,8 +2786,18 @@ style="background:${clientColor};font-weight:bold;cursor:pointer;">
 
 <td style="${td_center}">${clientIdx}</td>
 
-<td style="${td_left}">➕ ${client}</td>
-
+<td style="${td_left}">
+    <div style="display:flex;align-items:center;justify-content:flex-start;">
+        <span class="toggle-icon"
+              style="color:#0b3d91;font-size:18px;font-weight:bold;width:14px;text-align:center;">
+            +
+        </span>
+        <span class="client-text" style="margin-left:6px;">
+            ${client}
+        </span>
+    </div>
+</td>
+<td style="${td_center}">${amcode}</td>
 <td style="${td_center}">${clientTotals.vac}</td>
 <td style="${td_center}">${clientTotals.sp}</td>
 <td style="${td_center}">${clientTotals.fp}</td>
@@ -2610,15 +2809,16 @@ style="background:${clientColor};font-weight:bold;cursor:pointer;">
 
         let projectIdx = 0;
 
-        Object.keys(grouped[client]).forEach(project => {
+        Object.keys(grouped[client].projects).forEach(project => {
 
             projectIdx++;
 
-            const projectColor = projectIdx % 2 === 0 ? "#d1c4e9" : "#ede7f6";
+            // const projectColor = projectIdx % 2 === 0 ? "#d1c4e9" : "#ede7f6";
+            // const projectColor = projectIdx % 2 === 0 ? "#e6f2ff" : "#e5ecff";
+            const projectColor = projectIdx % 2 === 0 ? "#ffffff" : "#fafafa";
+            let projectTotals = { vac: 0, sp: 0, fp: 0, sl: 0, lp: 0, psl: 0 };
 
-            let projectTotals = { vac: 0, sp: 0, fp: 0, sl: 0, lp: 0,psl:0};
-
-            grouped[client][project].forEach(r => {
+            grouped[client].projects[project].forEach(r => {
 
                 projectTotals.vac += cint(r.vac);
                 projectTotals.sp += cint(r.sp);
@@ -2637,7 +2837,18 @@ style="display:none;background:${projectColor};font-weight:bold;cursor:pointer;"
 
 <td style="${td_center}">${projectIdx}</td>
 
-<td style="${td_left};padding-left:20px;">➕ ${project}</td>
+<td style="${td_left};padding-left:20px;">
+    <div style="display:flex;align-items:center;justify-content:flex-start;">
+        <span class="toggle-icon"
+              style="color:#0b3d91;font-size:18px;font-weight:bold;width:14px;text-align:center;">
+            +
+        </span>
+        <span class="project-text" style="margin-left:6px;">
+            ${project}
+        </span>
+    </div>
+</td>
+<td style="${td_center}">${pmcode}</td>
 
 <td style="${td_center}">${projectTotals.vac}</td>
 <td style="${td_center}">${projectTotals.sp}</td>
@@ -2654,30 +2865,53 @@ data-client="${client}"
 data-project="${project}"
 style="display:none;">
 
-<td colspan="8" style="padding:0;">
+<td colspan="9" style="padding:0;">
 
 <div style="overflow-x:auto;width:100%;">
 
-<table style="border-collapse:collapse;min-width:1200px;width:max-content;font-size:12px;">
+<table
+    style="
+        border-collapse:collapse;
+        table-layout:fixed;
+        width:860px;
+        min-width:860px;
+        font-size:12px;
+    ">
 
 <thead>
 <tr>
 
-<th style="${th_style}width:40px;">S.No</th>
-<th style="${th_style}width:160px;text-align:left;">Task</th>
-<th style="${th_style}width:80px;">Territory</th>
+<th style="${sub_th_style}width:40px;">S.No</th>
+<th style="${sub_th_style}width:70px;">Task</th>
+<th style="${sub_th_style}width:210px;">Subject</th>
+<th style="${sub_th_style}width:70px;">Territory</th>
 
-<th style="${th_style}width:40px;">SRC_S</th>
+<th style="${sub_th_style}width:90px;">Status</th>
 
-<th style="${th_style}width:40px;">VAC</th>
-<th style="${th_style}width:40px;">FP</th>
-<th style="${th_style}width:40px;">SP</th>
-<th style="${th_style}width:40px;">SL</th>
-<th style="${th_style}width:40px;">LP</th>
-<th style="${th_style}width:40px;">PSL</th>
+<th style="${sub_th_style}width:150px;">Sources</th>
 
-<th style="${th_style}width:45px;">CC</th>
-<th style="${th_style}width:45px;">Team</th>
+<th style="${sub_th_style}width:70px;">SRC_S</th>
+
+<th style="${sub_th_style}width:40px;">VAC</th>
+<th style="${sub_th_style}width:40px;">FP</th>
+<th style="${sub_th_style}width:40px;">SP</th>
+<th style="${sub_th_style}width:40px;">SL</th>
+<th style="${sub_th_style}width:40px;">LP</th>
+<th style="${sub_th_style}width:40px;">PSL</th>
+
+<th style="${sub_th_style}width:100px;">CC/EFD</th>
+
+<th
+    class="bulk-team-allocation"
+    style="
+        ${sub_th_style}
+        width:80px;
+        cursor:pointer;
+        text-decoration:underline;
+        
+    ">
+    TEAM
+</th>
 `;
 
             // date_columns.forEach(d => {
@@ -2688,23 +2922,42 @@ style="display:none;">
 
             let taskIdx = 0;
 
-            grouped[client][project].forEach((row, i) => {
+            grouped[client].projects[project].forEach((row, i) => {
 
                 taskIdx++;
 
-                const rowColor = i % 2 === 0 ? "#f3f3f3" : "#e7d2bf";
+                // const rowColor = i % 2 === 0 ? "#f3f3f3" : "#e7d2bf";
+                // const rowColor = i % 2 === 0 ? "#e6e6e6" : "#dcdcdc";
+                const rowColor = i % 2 === 0 ? "#ffffff" : "#ffdab3";
+                const inputBg = i % 2 === 0 ? "#ffdab3" : "#ffffff";
+                const inputBorder = "#ffdab3";
+
 
                 html += `
 <tr data-row-name="${row.name}" style="background:${rowColor};">
 
 <td style="${td_center}">${taskIdx}</td>
 
+<td style="${td_center}">
+    <a href="/app/task/${encodeURIComponent(row.task_id)}" target="_blank">
+        ${row.task_id || ""}
+    </a>
+</td>
+
 <td style="${td_left}">${row.task || ""}</td>
 
 <td style="${td_center}">${row.territory || ""}</td>
 
 <td style="${td_center}">
-${buildSrcSelect(row.src_s)}
+${buildStatusSelect(row.status, inputBg)}
+</td>
+
+<td style="${td_center}">
+${buildSourcesMultiSelect(row, inputBg)}
+</td>
+
+<td style="${td_center}">
+${buildSrcSelect(row.src_s, inputBg)}
 </td>
 
 <td style="${td_center}">${row.vac || 0}</td>
@@ -2714,34 +2967,70 @@ ${buildSrcSelect(row.src_s)}
 <td style="${td_center}">${row.lp || 0}</td>
 <td style="${td_center}">${row.psl || 0}</td>
 
-<td style="border:1px solid #ccc;text-align:center;">
-<input class="form-control input-xs"
-style="height:20px;width:40px;text-align:center;background:#d9d9d9;"
-data-field="cc"
-value="${row.cc || ""}">
+<td style="
+    border:1px solid #ccc;
+    text-align:center;
+    vertical-align:middle;
+    padding:0;
+    height:32px;
+">
+
+${row.src_s === "FP"
+                        ? `<div class="fp-date"
+            data-value="${row.efd || ""}"
+            style="
+                height:${ROW_HEIGHT};
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                
+            ">
+       </div>`
+                        : `<input
+        type="text"
+        class="form-control input-xs"
+        data-field="cc"
+        value="${row.cc || ""}"
+        style="${ccStyle(inputBg)}">`
+                    }
+
 </td>
 
-<td style="border:1px solid #ccc;text-align:center;cursor:pointer;background:#d9d9d9;width:55px;font-size:11px;"
-class="team-select"
-data-row="${row.name}">
-${(row.team || "").split(",").map(t => teamOptions.find(o => o.name === t)?.code || "").join(",") || "Select"}
+
+<td
+    style="
+        border:1px solid #ccc;
+        text-align:center;
+        cursor:pointer;
+        width:80px;
+        font-size:11px;
+        
+    "
+    class="team-select"
+    data-row="${row.name}">
+
+    <div style="
+        width:60px;
+        height:30px;
+        line-height:30px;
+        margin:auto;
+        border:1px solid #ffdab3;
+        border-radius:6px;
+        background:${inputBg};
+        text-align:center;
+        border: 2px solid orange !important;
+        appearance:none;
+    ">
+        ${(row.team || "")
+                        .split(",")
+                        .map(t => teamOptions.find(o => o.name === t)?.code || "")
+                        .join(",") || "Select"
+                    }
+    </div>
+
 </td>
 `;
 
-//                 date_columns.forEach(d => {
-
-//                     const field = `day_${d.key}`;
-
-//                     html += `
-// <td style="border:1px solid #ccc;text-align:center;width:40px;">
-// <input type="text"
-// class="form-control input-xs int-only"
-// style="height:18px;width:38px;text-align:center;margin:auto;background:#d9d9d9;"
-// data-field="${field}"
-// value="${row[field] || ""}">
-// </td>
-// `;
-//                 });
 
                 html += `</tr>`;
             });
@@ -2756,192 +3045,921 @@ ${(row.team || "").split(",").map(t => teamOptions.find(o => o.name === t)?.code
     wrapper.attr("id", "client_html");
     wrapper.html(html);
 
+
+
+    // wrapper.find(".fp-date").each(function () {
+
+    //     const control = frappe.ui.form.make_control({
+    //         parent: this,
+    //         df: {
+    //             fieldtype: "Date",
+    //             fieldname: "efd"
+    //         },
+    //         render_input: true
+    //     });
+
+    //     control.set_value($(this).data("value"));
+
+    //     const rowName = $(this).closest("tr").data("row-name");
+    //     const child = frappe.model.get_doc("REC Task Planner", rowName);
+
+    //     control.$input.on("change", function () {
+    //         child.efd = control.get_value();
+    //         console.log("Page Load FP Date:", child.efd);
+    //     });
+    //     $(control.$wrapper).css({
+    //         "margin": "0",
+    //         "padding": "0"
+    //     });
+
+    //     $(control.$input).attr("style", dateStyle);
+
+    // });
+
+
+
+    wrapper.find(".fp-date").each(function () {
+
+        const control = frappe.ui.form.make_control({
+            parent: this,
+            df: {
+                fieldtype: "Date",
+                fieldname: "efd"
+            },
+            render_input: true
+        });
+
+        const rowName = $(this).closest("tr").data("row-name");
+        const child = frappe.model.get_doc("REC Task Planner", rowName);
+
+        control.set_value($(this).data("value"));
+
+        // Display DD-MM on page load
+        if (child.efd) {
+            setTimeout(() => {
+                const [year, month, day] = child.efd.split("-");
+                control.$input[0].value = `${day}-${month}`;
+            }, 0);
+        }
+
+        control.$input.on("change", function () {
+
+            child.efd = control.get_value();
+
+            console.log("Stored:", child.efd);
+
+            if (child.efd) {
+                setTimeout(() => {
+                    const [year, month, day] = child.efd.split("-");
+                    control.$input[0].value = `${day}-${month}`;
+                }, 0);
+            }
+
+        });
+
+        $(control.$wrapper).css({
+            display: "flex",
+            "align-items": "center",
+            "justify-content": "center",
+            height: "100%",
+            margin: "0",
+            padding: "0"
+        });
+
+        $(control.$wrapper).find(".frappe-control").css({
+            margin: "0",
+            padding: "0",
+            minHeight: "0",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+        });
+
+        $(control.$wrapper).find(".control-input-wrapper").css({
+            margin: "0",
+            padding: "0",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+        });
+
+        $(control.$wrapper).css({
+            display: "flex",
+            "align-items": "center",
+            "justify-content": "center",
+            height: "100%",
+            margin: "0",
+            padding: "0"
+        });
+
+        const tr = $(this).closest("tr");
+        const inputBg = tr.index() % 2 === 0 ? "#ffdab3" : "#ffffff";
+
+        $(control.$input).css({
+            width: "70px",
+            height: "30px",
+            margin: "0",
+            padding: "0 4px",
+            lineHeight: "30px",
+            textAlign: "center",
+            background: inputBg,
+            border: "1px solid #ffdab3",
+            borderRadius: "6px"
+        });
+        const td = $(this).closest("td");
+
+        td.css({
+            height: "42px",
+            minHeight: "42px",
+            padding: "0",
+            verticalAlign: "middle"
+        });
+
+
+
+
+        $(control.$input).attr("style", dateStyle(inputBg));
+
+    });
+
     wrapper.off("input", ".int-only").on("input", ".int-only", function () {
         this.value = this.value.replace(/[^0-9]/g, "");
     });
 
-    // wrapper.off("click", ".client-row").on("click", ".client-row", function () {
-    //     const client = $(this).data("client");
-    //     $(`.project-row[data-client="${client}"]`).toggle();
-    // });
+    wrapper.off("click", ".sources-multi-display").on("click", ".sources-multi-display", function (e) {
+        e.stopPropagation();
+        const box = $(this).closest(".sources-multi-box");
+        const rowName = box.data("row-name");
+        $(".sources-multi-dropdown").hide();
+        let dropdown = $("#sources-dropdown-global");
+        if (dropdown.length && dropdown.data("row-name") === rowName && dropdown.is(":visible")) {
+            dropdown.hide();
+            return;
+        }
+        if (!dropdown.length) {
+            dropdown = $('<div id="sources-dropdown-global" class="sources-multi-dropdown" style="display:none; position:fixed; z-index:99999; background:#fff; border:1px solid #ffdab3; border-radius:6px; padding:4px; max-height:150px; overflow-y:auto; min-width:120px; box-shadow:0 4px 12px rgba(0,0,0,0.3);"></div>');
+            $("body").append(dropdown);
+        }
+        const child = frappe.model.get_doc("REC Task Planner", rowName);
+        const selectedValues = (child && child.sources || "").split(",").map(v => v.trim()).filter(Boolean);
+        dropdown.empty();
+        dropdown.data("row-name", rowName);
+        sourcingMethodOptions.forEach(opt => {
+            const checked = selectedValues.includes(opt) ? "checked" : "";
+            dropdown.append(`<label style="display:block; padding:2px 4px; font-size:11px; white-space:nowrap;"><input type="checkbox" class="sources-multi-checkbox" value="${opt}" ${checked} style="margin-right:4px;">${opt}</label>`);
+        });
+        const rect = this.getBoundingClientRect();
+        dropdown.css({
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX
+        }).show();
+    });
+
+    $(document).off("change.sources-multi", ".sources-multi-checkbox").on("change.sources-multi", ".sources-multi-checkbox", function () {
+        const dropdown = $("#sources-dropdown-global");
+        const rowName = dropdown.data("row-name");
+        const checked = dropdown.find(".sources-multi-checkbox:checked");
+        const values = Array.from(checked).map(c => c.value);
+        const child = frappe.model.get_doc("REC Task Planner", rowName);
+        if (child) {
+            child.sources = values.join(",");
+        }
+        const box = $(`.sources-multi-box[data-row-name="${rowName}"]`);
+        const display = box.find(".sources-multi-display");
+        display.text(values.join(",") || "Select");
+    });
+
+    $(document).off("click.sources-multi").on("click.sources-multi", function (e) {
+        if (!$(e.target).closest(".sources-multi-box").length && !$(e.target).closest("#sources-dropdown-global").length) {
+            $("#sources-dropdown-global").hide();
+        }
+    });
+
+    wrapper.off("change", "select[data-field='src_s']")
+        .on("change", "select[data-field='src_s']", function () {
+
+            const src = $(this).val();
+
+            const tr = $(this).closest("tr");
+            const rowName = tr.data("row-name");
+            const child = frappe.model.get_doc("REC Task Planner", rowName);
+            const ccCell = tr.find("td").eq(13);
+            const efdCell = tr.find("td").eq(14);
+
+            if (src === "HLD" || src === "JP") {
+                ccCell.empty();
+                // ccCell.hide();
+                efdCell.hide();
+                // efdCell.empty();
+                ccCell.css({
+                    height: "42px",
+                    minHeight: "42px",
+                    padding: "0",
+                    verticalAlign: "middle",
+                    border: "1px solid #ccc"
+                });
+                efdCell.css({
+                    height: "42px",
+                    minHeight: "42px",
+                    padding: "0",
+                    verticalAlign: "middle",
+                    border: "1px solid #ccc"
+                });
+                return;
+            }
+
+            ccCell.show();
+            efdCell.show();
+            ccCell.empty();
+
+            if (src === "FP") {
+
+                efdCell.hide();
+                const div = $('<div style="margin:0;padding:0;"></div>').appendTo(ccCell);
+
+                const control = frappe.ui.form.make_control({
+                    parent: div,
+                    df: {
+                        fieldtype: "Date",
+                        fieldname: "efd"
+                    },
+                    render_input: true
+                });
+
+                control.refresh();
+
+                ccCell.css({
+                    height: "42px",
+                    minHeight: "42px",
+                    padding: "0",
+                    verticalAlign: "middle"
+                });
+
+                $(control.$wrapper).css({
+                    height: "42px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                });
+
+                // If value already exists, show DD-MM
+                if (child.efd) {
+                    control.set_value(child.efd);
+
+                    setTimeout(() => {
+                        const [year, month, day] = child.efd.split("-");
+                        control.$input[0].value = `${day}-${month}`;
+                    }, 0);
+                }
+
+                control.$input.on("change", function () {
+
+                    // Store full date
+                    child.efd = control.get_value();
+
+                    console.log("EFD :", child.efd);
+
+                    // Display only DD-MM
+                    if (child.efd) {
+                        setTimeout(() => {
+                            const [year, month, day] = child.efd.split("-");
+                            control.$input[0].value = `${day}-${month}`;
+                        }, 0);
+                    }
+
+                });
+
+                $(control.wrapper).css({
+                    margin: "0",
+                    padding: "0",
+                    "min-height": "20px"
+                });
+
+                $(control.wrapper).find(".control-input-wrapper").css({
+                    margin: "0",
+                    padding: "0"
+                });
+
+                const tr = $(this).closest("tr");
+                const inputBg = tr.index() % 2 === 0 ? "#ffdab3" : "#ffffff";
+
+                $(control.$input).css({
+                    width: "70px",
+                    height: "30px",
+                    margin: "0",
+                    padding: "0 4px",
+                    lineHeight: "30px",
+                    textAlign: "center",
+                    background: inputBg,
+                    border: "1px solid #ffdab3",
+                    borderRadius: "6px"
+                });
+
+                // $(control.$input).attr("style", dateStyle);
+                $(control.$input).attr("style", dateStyle(inputBg));
+
+            } else {
+
+                const tr = $(this).closest("tr");
+                const inputBg = tr.index() % 2 === 0 ? "#ffdab3" : "#ffffff";
+
+                ccCell.html(`
+                    <input
+                        type="text"
+                        class="form-control input-xs"
+                        data-field="cc"
+                        value="${child.cc || ""}"
+                        style="${ccStyle(inputBg)}">
+                `);
+
+                // Fixed row height
+                ccCell.css({
+                    height: "42px",
+                    minHeight: "42px",
+                    padding: "0",
+                    verticalAlign: "middle"
+                });
+
+            }
+
+        });
+
+
     wrapper.off("click", ".client-row").on("click", ".client-row", function () {
 
-    const client = $(this).data("client");
-    const rows = $(`.project-row[data-client="${client}"]`);
+        const client = $(this).data("client");
 
-    rows.toggle();
+        const projectRows = $(`.project-row[data-client="${client}"]`);
+        const taskRows = $(`.task-table-row[data-client="${client}"]`);
 
-    const labelCell = $(this).find("td").eq(1);
+        const icon = $(this).find(".toggle-icon");
 
-    if(rows.is(":visible")){
-        labelCell.html(labelCell.text().replace("➕","➖"));
-    }else{
-        labelCell.html(labelCell.text().replace("➖","➕"));
-    }
+        if (projectRows.is(":visible")) {
 
-});
+            projectRows.hide();
+            taskRows.hide();
 
-    // wrapper.off("click", ".project-row").on("click", ".project-row", function () {
-    //     const client = $(this).data("client");
-    //     const project = $(this).data("project");
-    //     $(`.task-table-row[data-client="${client}"][data-project="${project}"]`).toggle();
-    // });
+            // Reset all project icons
+            projectRows.each(function () {
+                $(this).find(".toggle-icon").text("+");
+            });
+
+            icon.text("+");
+
+        } else {
+
+            projectRows.show();
+            icon.text("−");
+
+        }
+
+    });
+
     wrapper.off("click", ".project-row").on("click", ".project-row", function () {
 
-    const client = $(this).data("client");
-    const project = $(this).data("project");
+        const client = $(this).data("client");
+        const project = $(this).data("project");
 
-    const rows = $(`.task-table-row[data-client="${client}"][data-project="${project}"]`);
+        const rows = $(`.task-table-row[data-client="${client}"][data-project="${project}"]`);
 
-    rows.toggle();
+        rows.toggle();
 
-    const labelCell = $(this).find("td").eq(1);
+        const icon = $(this).find(".toggle-icon");
 
-    if(rows.is(":visible")){
-        labelCell.html(labelCell.text().replace("➕","➖"));
-    }else{
-        labelCell.html(labelCell.text().replace("➖","➕"));
-    }
+        if (rows.is(":visible")) {
+            icon.text("−");
+        } else {
+            icon.text("+");
+        }
 
-});
+    });
+    wrapper.off("click", ".team-select").on("click", ".team-select", async function () {
 
-   wrapper.off("click",".team-select").on("click",".team-select",function(){
+        const rowname = $(this).data("row");
+        const child = frappe.model.get_doc("REC Task Planner", rowname);
 
-    const rowname = $(this).data("row");
-    const child = frappe.model.get_doc("REC Task Planner", rowname);
+        const existing = (child.team || "").split(",");
 
-    const existing = (child.team || "").split(",");
+        let fields = [];
+        const r = await frappe.call({
+            method: "teampro.teampro.doctype.rec_week_plan.rec_week_plan.get_holidays",
+            args: {
+                start_date: frm.doc.start_date,
+                end_date: frm.doc.end_date
+            }
+        });
+
+        const holidaySet = new Set(
+            (r.message || []).map(d => d.holiday_date)
+        );
+        /* Show Selected Position */
+
+        fields.push({
+            fieldtype: "HTML",
+            fieldname: "position_html"
+        });
+
+        fields.push({ fieldtype: "Section Break" });
+
+        /* Team Selection */
+
+        fields.push({
+            fieldtype: "MultiCheck",
+            fieldname: "teams",
+            label: "Select Teams",
+            columns: 4,
+            options: teamOptions.map(t => ({
+                label: t.name,
+                value: t.name,
+                checked: existing.includes(t.name)
+            }))
+        });
+
+        fields.push({ fieldtype: "Section Break" });
+
+
+        date_columns.forEach((d, i) => {
+
+            const date = frappe.datetime.add_days(frm.doc.start_date, i);
+
+            const label = holidaySet.has(date)
+                ? `${d.label} (H)`
+                : d.label;
+
+            fields.push({
+                fieldtype: "Int",
+                label: label,
+                fieldname: `rc_${i}`,
+                default: 0
+            });
+
+            if ((i + 1) % 6 === 0 && i !== date_columns.length - 1) {
+                fields.push({ fieldtype: "Section Break" });
+            } else {
+                fields.push({ fieldtype: "Column Break" });
+            }
+
+        });
+
+
+        const dialog = new frappe.ui.Dialog({
+
+            title: "RC Allocation",
+            size: "large",
+            fields: fields,
+            primary_action_label: "Add Allocation",
+
+            async primary_action(values) {
+
+                frappe.dom.freeze("Creating Team Allocation...");
+
+                try {
+
+                    const teams = values.teams || [];
+                    // ---------------- Holiday RC Validation ----------------
+
+                    const ccValue = cint(child.cc || 0);
+
+                    if (ccValue > 0) {
+
+                        // let totalRC = 0;
+
+                        // date_columns.forEach((d, i) => {
+
+                        //     const rc = cint(dialog.get_value(`rc_${i}`) || 0);
+
+                        //     console.log(
+                        //         frappe.datetime.add_days(frm.doc.start_date, i),
+                        //         rc
+                        //     );
+
+                        //     totalRC += rc;
+                        // });
+
+                        // Existing RC from team_wise
+                        let existingRC = 0;
+
+                        (frm.doc.team_wise || []).forEach(r => {
+
+                            // Current task-க்கு மட்டும்
+                            if (r.task === child.task_id) {
+                                existingRC += cint(r.rc || 0);
+                            }
+
+                        });
+
+                        // New RC entered in dialog
+                        let newRC = 0;
+
+                        date_columns.forEach((d, i) => {
+                            newRC += cint(dialog.get_value(`rc_${i}`) || 0);
+                        });
+
+                        // Existing + New
+                        const totalRC = existingRC + newRC;
+
+                        console.log("Existing RC :", existingRC);
+                        console.log("New RC :", newRC);
+                        console.log("Total RC :", totalRC);
+                        console.log("CC :", ccValue);
+
+                        // const isCEO = frappe.user_roles.includes("CEO");
+                        // if (!isCEO && newRC < ccValue) {
+
+                        //     frappe.msgprint({
+                        //         title: __("Validation Error"),
+                        //         indicator: "red",
+                        //         message: __(
+                        //             `Total RC Allocation (${newRC}) cannot be less than CC (${ccValue}).`
+                        //         )
+                        //     });
+
+                        //     return;
+                        // }
+                        const allowedUsers = [
+                            "sangeetha.s@groupteampro.com",
+                            "aruna.g@groupteampro.com",
+                            "lokeshkumar.a@groupteampro.com",
+                            "mercy@groupteampro.com"
+                        ];
+
+                        const hasAccess = allowedUsers.includes(frappe.session.user);
+
+                        if (!hasAccess && newRC < ccValue) {
+                            frappe.msgprint({
+                                title: __("Validation Error"),
+                                indicator: "red",
+                                message: __(
+                                    `Total RC Allocation (${newRC}) cannot be less than CC (${ccValue}).`
+                                )
+                            });
+
+                            return;
+                        }
+                    }
+
+                    if (!teams.length) {
+                        frappe.msgprint("Please select at least one team");
+                        return;
+                    }
+
+                    child.team = teams.join(",");
+
+                    /* existing allocation set */
+
+                    const existing = new Set();
+
+                    (frm.doc.team_wise || []).forEach(r => {
+                        existing.add(`${r.task}::${r.team}::${r.date}`);
+                    });
+
+                    date_columns.forEach((d, i) => {
+
+                        const rc = cint(values[`rc_${i}`]);
+                        if (!rc) return;
+
+                        const date = frappe.datetime.add_days(frm.doc.start_date, i);
+
+                        teams.forEach(team => {
+
+                            const key = `${child.task_id}::${team}::${date}`;
+
+
+                            const existingRow = (frm.doc.team_wise || []).find(r =>
+                                r.task === child.task_id &&
+                                r.team === team &&
+                                r.date === date
+                            );
+
+                            if (existingRow) {
+                                existingRow.rc = cint(existingRow.rc || 0) + rc;
+                                existingRow.allocated = 1;
+
+                                return;
+                            }
+
+                            const alloc = frm.add_child("team_wise");
+
+                            alloc.task = child.task_id;
+                            alloc.subject = child.task;
+                            alloc.team = team;
+                            alloc.date = date;
+                            alloc.rc = rc;
+                            alloc.allocated = 1;
+
+                            existing.add(key);
+
+                        });
+
+                    });
+
+                    frm.refresh_field("team_wise");
+
+                    frappe.show_alert({
+                        message: "Team allocation created",
+                        indicator: "green"
+                    });
+
+                    dialog.hide();
+
+                }
+                finally {
+
+                    frappe.dom.unfreeze();
+
+                }
+
+            }
+
+        });
+
+        dialog.show();
+        dialog.$wrapper.find(".control-label").each(function () {
+
+            const txt = $(this).text();
+
+            if (txt.includes("(H)")) {
+
+                $(this).html(
+                    txt.replace(
+                        "(H)",
+                        '<span style="color:#ff0000;font-weight:bold;">(H)</span>'
+                    )
+                );
+
+            }
+
+        });
+
+        dialog.fields_dict.position_html.$wrapper.html(
+            `<div style="
+            font-size:15px;
+            font-weight:600;
+            margin-bottom:10px;
+            color:#2b177a;">
+            Position : ${child.task || ""}
+        </div>`
+        );
+
+    });
+
+
+
+    wrapper.off("click", ".bulk-team-allocation")
+        .on("click", ".bulk-team-allocation", async function () {
+            const children = [];
+
+            const table = $(this).closest("table");
+
+            table.find("tbody tr[data-row-name]").each(function () {
+
+                const child = frappe.model.get_doc(
+                    "REC Task Planner",
+                    $(this).data("row-name")
+                );
+
+                if (child) {
+                    children.push(child);
+                }
+
+            });
+
+            console.log(children.length);
+            if (!children.length) {
+
+                frappe.msgprint("No Tasks Found");
+                return;
+
+            }
+            open_bulk_team_allocation(frm, children);
+        });
+
+
+}
+
+
+async function open_bulk_team_allocation(frm, children) {
+
+    const existing = (children[0]?.team || "").split(",");
 
     let fields = [];
 
-    /* Show Selected Position */
-
-    fields.push({
-        fieldtype:"HTML",
-        fieldname:"position_html"
+    const r = await frappe.call({
+        method: "teampro.teampro.doctype.rec_week_plan.rec_week_plan.get_holidays",
+        args: {
+            start_date: frm.doc.start_date,
+            end_date: frm.doc.end_date
+        }
     });
 
-    fields.push({fieldtype:"Section Break"});
+    const holidaySet = new Set(
+        (r.message || []).map(d => d.holiday_date)
+    );
+
+    const date_columns = get_date_range(
+        frm.doc.start_date,
+        frm.doc.end_date
+    );
+
+    const teamOptions = [
+        { code: "A", name: "ALPHA" },
+        { code: "B", name: "BRAVO" },
+        { code: "C", name: "CHARLIE" },
+        { code: "D", name: "DELTA" }
+    ];
+
+    /* Position */
+
+    fields.push({
+        fieldtype: "HTML",
+        fieldname: "position_html"
+    });
+
+    fields.push({ fieldtype: "Section Break" });
 
     /* Team Selection */
 
     fields.push({
-        fieldtype:"MultiCheck",
-        fieldname:"teams",
-        label:"Select Teams",
-        columns:4,
-        options: teamOptions.map(t=>({
-            label:t.name,
-            value:t.name,
+        fieldtype: "MultiCheck",
+        fieldname: "teams",
+        label: "Select Teams",
+        columns: 4,
+        options: teamOptions.map(t => ({
+            label: t.name,
+            value: t.name,
             checked: existing.includes(t.name)
         }))
     });
 
-    fields.push({fieldtype:"Section Break"});
+    fields.push({ fieldtype: "Section Break" });
 
-    /* Date Fields - Max 6 per row */
+    /* Date Fields */
 
-    date_columns.forEach((d,i)=>{
+    date_columns.forEach((d, i) => {
+
+        const date = frappe.datetime.add_days(frm.doc.start_date, i);
+
+        const label = holidaySet.has(date)
+            ? `${d.label} (H)`
+            : d.label;
 
         fields.push({
-            fieldtype:"Int",
-            label:d.label,
-            fieldname:`rc_${i}`,
-            default:0
+            fieldtype: "Int",
+            label: label,
+            fieldname: `rc_${i}`,
+            default: 0
         });
 
-        if((i+1)%6===0 && i !== date_columns.length-1){
-            fields.push({fieldtype:"Section Break"});
-        }else{
-            fields.push({fieldtype:"Column Break"});
+        if ((i + 1) % 6 === 0 && i !== date_columns.length - 1) {
+            fields.push({ fieldtype: "Section Break" });
+        } else {
+            fields.push({ fieldtype: "Column Break" });
         }
 
     });
 
     const dialog = new frappe.ui.Dialog({
 
-        title:"RC Allocation",
-        size:"large",
-        fields:fields,
-        primary_action_label:"Add Allocation",
+        title: "RC Allocation",
+        size: "large",
+        fields: fields,
+        primary_action_label: "Add Allocation",
 
-        async primary_action(values){
+        async primary_action(values) {
 
-    frappe.dom.freeze("Creating Team Allocation...");
+            frappe.dom.freeze("Creating Team Allocation...");
 
-    try{
+            try {
 
-        const teams = values.teams || [];
+                const teams = values.teams || [];
 
-        if(!teams.length){
-            frappe.msgprint("Please select at least one team");
-            return;
-        }
+                // ---------- Bulk CC Validation ----------
 
-        child.team = teams.join(",");
+                const totalCC = children
+                    .filter(r => (r.src_s || "").trim() !== "FP")
+                    .reduce((total, r) => {
+                        return total + cint(r.cc || 0);
+                    }, 0);
 
-        /* existing allocation set */
+                let totalRC = 0;
 
-        const existing = new Set();
+                date_columns.forEach((d, i) => {
+                    totalRC += cint(dialog.get_value(`rc_${i}`) || 0);
+                });
 
-        (frm.doc.team_wise || []).forEach(r=>{
-            existing.add(`${r.task}::${r.team}::${r.date}`);
-        });
+                console.log("Total CC :", totalCC);
+                console.log("Total RC :", totalRC);
+                const isCEO = frappe.user_roles.includes("CEO");
+                if (!isCEO && totalRC < totalCC) {
 
-        date_columns.forEach((d,i)=>{
+                    frappe.msgprint({
+                        title: __("Validation Error"),
+                        indicator: "red",
+                        message: __(
+                            `Total RC Allocation (${totalRC}) cannot be less than Total CC (${totalCC}).`
+                        )
+                    });
 
-            const rc = cint(values[`rc_${i}`]);
-            if(!rc) return;
-
-            const date = frappe.datetime.add_days(frm.doc.start_date,i);
-
-            teams.forEach(team=>{
-
-                const key = `${child.task_id}::${team}::${date}`;
-
-                /* check duplicate */
-
-                if(existing.has(key)){
-                    console.log("Already exists:",key);
                     return;
                 }
 
-                const alloc = frm.add_child("team_wise");
+                if (!teams.length) {
+                    frappe.msgprint("Please select at least one team");
+                    return;
+                }
 
-                alloc.task = child.task_id;
-                alloc.subject = child.task;
-                alloc.team = team;
-                alloc.date = date;
-                alloc.rc = rc;
-                alloc.allocated = 1;
+                children.forEach(child => {
+                    child.team = teams.join(",");
+                    console.log(r.task, r.src_s, r.cc);
+                });
 
-                existing.add(key);
+                // const existing = new Set();
 
-            });
+                // (frm.doc.team_wise || []).forEach(r => {
+                //     existing.add(`${r.task}::${r.team}::${r.date}`);
+                // });
 
-        });
+                children.forEach(child => {
 
-        frm.refresh_field("team_wise");
+                    date_columns.forEach((d, i) => {
 
-        frappe.show_alert({
-            message:"Team allocation created",
-            indicator:"green"
-        });
+                        const rc = cint(values[`rc_${i}`]);
+                        if (!rc) return;
 
-        dialog.hide();
+                        const date = frappe.datetime.add_days(frm.doc.start_date, i);
 
-    }
-    finally{
+                        teams.forEach(team => {
 
-        frappe.dom.unfreeze();
+                            const key = `${child.task_id}::${team}::${date}`;
 
-    }
+                            const existingRow = (frm.doc.team_wise || []).find(r =>
+                                r.task === child.task_id &&
+                                r.team === team &&
+                                r.date === date
+                            );
 
-}
+                            if (existingRow) {
+
+                                // Already exists -> Add the new RC to existing RC
+                                existingRow.rc = cint(existingRow.rc || 0) + rc;
+                                existingRow.allocated = 1;
+
+                            } else {
+
+                                const alloc = frm.add_child("team_wise");
+
+                                alloc.task = child.task_id;
+                                alloc.subject = child.task;
+                                alloc.team = team;
+                                alloc.date = date;
+                                alloc.rc = rc;
+                                alloc.allocated = 1;
+
+                            }
+
+                        });
+
+                    });
+
+                });
+
+                frm.refresh_field("team_wise");
+
+                frappe.show_alert({
+                    message: "Team Allocation Created",
+                    indicator: "green"
+                });
+
+                dialog.hide();
+
+            }
+            finally {
+                frappe.dom.unfreeze();
+            }
+
+        }
 
     });
 
     dialog.show();
+
+    dialog.$wrapper.find(".control-label").each(function () {
+
+        const txt = $(this).text();
+
+        if (txt.includes("(H)")) {
+
+            $(this).html(
+                txt.replace(
+                    "(H)",
+                    '<span style="color:#ff0000;font-weight:bold;">(H)</span>'
+                )
+            );
+
+        }
+
+    });
 
     dialog.fields_dict.position_html.$wrapper.html(
         `<div style="
@@ -2949,11 +3967,12 @@ ${(row.team || "").split(",").map(t => teamOptions.find(o => o.name === t)?.code
             font-weight:600;
             margin-bottom:10px;
             color:#2b177a;">
-            Position : ${child.task || ""}
+            Position : ${children.length} Tasks
         </div>`
     );
 
-});
+
+
 }
 
 window.toggle_expand_all = function () {
@@ -3007,7 +4026,7 @@ window.update_master_table = async function () {
                     const values = Array.from(checked).map(c => c.value);
                     child[field] = values.join(",");
 
-                }else {
+                } else {
 
                     child[field] = el.value;
 
@@ -3043,11 +4062,16 @@ window.update_master_table = async function () {
             const rowName = tr.getAttribute("data-row-name");
             const child = frappe.model.get_doc("REC Task Planner", rowName);
 
-
+            console.log("Child EFD:", child.efd);
+            console.log(task_updates.length);
             task_updates.push({
                 task_id: child.task_id,
                 src: child.src,
-                src_s: child.src_s
+                src_s: child.src_s,
+                cc: child.cc,
+                efd: child.efd || "",
+                status: child.status || "",
+                custom_sourcing_method_multi: child.sources || ""
             });
 
         });
@@ -3058,12 +4082,12 @@ window.update_master_table = async function () {
         frm.refresh_field("team_wise");
         console.log("Task Updates:", task_updates);
         if (task_updates.length) {
-            // await frappe.call({
-            //     method: "teampro.teampro.doctype.rec_week_plan.rec_week_plan.update_task_src",
-            //     args: {
-            //         tasks: task_updates
-            //     }
-            // });
+            await frappe.call({
+                method: "teampro.teampro.doctype.rec_week_plan.rec_week_plan.update_task_src",
+                args: {
+                    tasks: task_updates
+                }
+            });
 
         }
 
@@ -3095,3 +4119,135 @@ window.export_master_excel = function () {
     );
 
 };
+
+
+// function apply_team_date_filter(frm) {
+//     const grid = frm.fields_dict["team_wise"].grid;
+//     if (!grid) return;
+
+//     const total_rows = (frm.doc.team_wise || []).length;
+//     grid.grid_pagination.page_length = total_rows || 20;
+//     grid.refresh();
+
+//     setTimeout(() => {
+//         if (!grid.grid_rows) return;
+
+//         let visible_count = 0;
+
+//         grid.grid_rows.forEach(row => {
+//             const d = row.doc;
+//             let show = true;
+
+//             if (frm.doc.rec_team && d.team !== frm.doc.rec_team) {
+//                 show = false;
+//             }
+//             if (frm.doc.date && d.date !== frm.doc.date) {
+//                 show = false;
+//             }
+
+//             if (row.wrapper) {
+//                 row.wrapper.toggle(show);
+//             }
+
+//             // Renumber the "No." column for visible rows only
+//             if (show && row.wrapper) {
+//                 visible_count++;
+//                 const index_cell = row.wrapper.find(".row-index, .row-check + .row-index");
+//                 if (index_cell.length) {
+//                     index_cell.find("span").text(visible_count);
+//                 }
+//             }
+//         });
+
+//         if (grid.wrapper) {
+//             grid.wrapper.find(".grid-pagination, .grid-footer .btn-group").hide();
+//         }
+//     }, 100);
+// }
+
+function apply_team_date_filter(frm) {
+    const grid = frm.fields_dict["team_wise"].grid;
+    if (!grid) return;
+
+    const total_rows = (frm.doc.team_wise || []).length;
+    grid.grid_pagination.page_length = total_rows || 20;
+    grid.refresh();
+
+    setTimeout(() => {
+        if (!grid.grid_rows) return;
+
+        const from_date = frm.doc.date ? frappe.datetime.str_to_obj(frm.doc.date) : null;
+        const to_date = frm.doc.date_to ? frappe.datetime.str_to_obj(frm.doc.date_to) : null;
+
+        let visible_count = 0;
+
+        grid.grid_rows.forEach(row => {
+            const d = row.doc;
+            let show = true;
+
+            if (frm.doc.rec_team && d.team !== frm.doc.rec_team) {
+                show = false;
+            }
+
+            if (show && (from_date || to_date)) {
+                const row_date = d.date ? frappe.datetime.str_to_obj(d.date) : null;
+
+                if (!row_date) {
+                    show = false;
+                } else if (from_date && to_date) {
+                    if (row_date < from_date || row_date > to_date) {
+                        show = false;
+                    }
+                } else if (from_date) {
+                    if (row_date < from_date) {
+                        show = false;
+                    }
+                } else if (to_date) {
+                    if (row_date > to_date) {
+                        show = false;
+                    }
+                }
+            }
+
+            if (row.wrapper) {
+                row.wrapper.toggle(show);
+            }
+
+            if (show && row.wrapper) {
+                visible_count++;
+                const index_cell = row.wrapper.find(".row-index, .row-check + .row-index");
+                if (index_cell.length) {
+                    index_cell.find("span").text(visible_count);
+                }
+            }
+        });
+
+        if (grid.wrapper) {
+            grid.wrapper.find(".grid-pagination, .grid-footer .btn-group").hide();
+        }
+    }, 100);
+}
+
+
+function trigger_download(frm) {
+    const proceed = () => {
+        const params = new URLSearchParams({
+            docname: frm.doc.name,
+            team: frm.doc.rec_team || "",
+            date: frm.doc.date || "",
+            date_to: frm.doc.date_to || ""
+        });
+
+        window.open(
+            `/api/method/teampro.teampro.doctype.rec_week_plan.rec_week_plan.download_team_wise_excel?${params.toString()}`
+        );
+    };
+
+    if (frm.is_dirty()) {
+        frm.save().then(() => proceed());
+    } else {
+        proceed();
+    }
+}
+
+

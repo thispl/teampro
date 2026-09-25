@@ -149,6 +149,14 @@ def vm_stock_import_excel(docname):
 def create_re_filling_stock_entries(doc_name):
     doc = frappe.get_doc("VM Stock Register",doc_name)
 
+    existing = frappe.db.exists("Stock Entry", {
+        "custom_vm_stock_register": doc_name,
+        "stock_entry_type": "Material Transfer",
+        "docstatus": ["<", 2]
+    })
+    if existing:
+        return f"Re-filling Stock Entry {existing} already exists for this VM."
+
     stock_entry = frappe.new_doc("Stock Entry")
     stock_entry.stock_entry_type = "Material Transfer"
     stock_entry.posting_date = frappe.utils.nowdate()
@@ -183,6 +191,14 @@ from frappe.utils import flt
 @frappe.whitelist()
 def create_packing_stock_entries(doc_name):
     doc = frappe.get_doc("VM Stock Register", doc_name)
+
+    existing = frappe.db.exists("Stock Entry", {
+        "custom_vm_stock_register": doc_name,
+        "stock_entry_type": "Material Issue",
+        "docstatus": ["<", 2]
+    })
+    if existing:
+        return f"Packing Stock Entry {existing} already exists for this VM."
 
     stock_entry = frappe.new_doc("Stock Entry")
     stock_entry.stock_entry_type = "Material Issue"

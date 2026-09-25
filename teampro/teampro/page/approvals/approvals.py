@@ -1,6 +1,7 @@
 
 import frappe
 from frappe import _
+from frappe.utils import flt
 
 @frappe.whitelist()
 def get_leave_applications():
@@ -39,10 +40,11 @@ def get_leave_applications():
 @frappe.whitelist()
 def approve_leave(docname):
 
+    from frappe.model.workflow import apply_workflow
+
     doc = frappe.get_doc("Leave Application", docname)
 
-    doc.workflow_state = "Approved"
-    doc.save(ignore_permissions=True)
+    apply_workflow(doc, "Submit")
 
     frappe.db.commit()
 
@@ -52,10 +54,11 @@ def approve_leave(docname):
 @frappe.whitelist()
 def reject_leave(docname):
 
+    from frappe.model.workflow import apply_workflow
+
     doc = frappe.get_doc("Leave Application", docname)
 
-    doc.workflow_state = "Rejected"
-    doc.save(ignore_permissions=True)
+    apply_workflow(doc, "Reject")
 
     frappe.db.commit()
 
@@ -100,7 +103,7 @@ def bulk_approve(docs):
             docname
         )
 
-        apply_workflow(doc, "Approve")
+        apply_workflow(doc, "Submit")
 
     frappe.db.commit()
 
@@ -431,6 +434,8 @@ def get_pur_applications():
             "total_qty",
             "workflow_state",
             "total",
+            "base_grand_total",
+            "custom_attach_bill",
             "status"
         ],
         order_by="creation desc"
@@ -513,8 +518,9 @@ def get_pur_details(docname):
         "workflow_state": doc.workflow_state,
         "status": doc.status,
         "total": doc.total,
+        "custom_attach_bill": doc.get("custom_attach_bill"),
         "items": items,
-        "attachments": attachments  
+        "attachments": attachments
     }
 
 
@@ -592,6 +598,8 @@ def get_pur_inv_applications():
             "services",
             "bill_no",
             "total",
+            "base_grand_total",
+            "custom_attach_bill",
             "workflow_state"
         ],
         order_by="creation desc"
@@ -624,6 +632,18 @@ def get_pur_inv_details(docname):
             "amount": row.amount
         })
 
+    taxes = []
+    for row in doc.taxes:
+        taxes.append({
+            "charge_type": row.charge_type,
+            "account_head": row.account_head,
+            "description": row.description,
+            "rate": row.rate,
+            "tax_amount": row.tax_amount,
+            "base_tax_amount": row.base_tax_amount,
+            "total": row.total
+        })
+
     # ✅ Attachments fetch
     attachments = frappe.get_all(
         "File",
@@ -643,8 +663,15 @@ def get_pur_inv_details(docname):
         "services": doc.services if hasattr(doc, 'services') else None,
         "bill_no": doc.bill_no if hasattr(doc, 'bill_no') else None,
         "total": doc.total,
+        "base_total": doc.base_total,
+        "base_net_total": doc.base_net_total,
+        "base_total_taxes_and_charges": doc.base_total_taxes_and_charges,
+        "base_grand_total": doc.base_grand_total,
+        "currency": doc.currency,
         "workflow_state": doc.workflow_state,
+        "custom_attach_bill": doc.get("custom_attach_bill"),
         "items": items,
+        "taxes": taxes,
         "attachments": attachments
     }
 
@@ -678,6 +705,7 @@ def get_sal_inv_applications():
             "company",
             "total_qty",
             "total",
+            "base_grand_total",
             "workflow_state"
         ],
         order_by="creation desc"
@@ -780,9 +808,657 @@ def get_sal_inv_details(docname):
         "workflow_state": doc.workflow_state,
         "items": items,
         "taxes": taxes,
-        "attachments": attachments  
+        "attachments": attachments
     }
 
 
+# ============================================================
+# Payment button support — fetch outstanding & create payment
+# ============================================================
+
+_STANDARD_PARTY_TYPES = (
+    "Customer", "Supplier", "Employee"
+)
 
 
+@frappe.whitelist()
+def get_outstanding_documents(company, party_type, party):
+    """Return outstanding bills / claims for a party to allocate a payment against."""
+
+    out = []
+
+    if party_type in ("Customer", "Supplier", "Shareholder", "Donor", "Member", "Student"):
+        from erpnext.accounts.doctype.payment_entry.payment_entry import (
+            get_party_details, get_outstanding_reference_documents
+        )
+        pd = get_party_details(company, party_type, party, frappe.utils.today())
+        args = {
+            "posting_date": frappe.utils.today(),
+            "company": company,
+            "party_type": party_type,
+            "party": party,
+            "party_account": pd.get("party_account"),
+            "get_outstanding_invoices": True,
+            "get_orders_to_be_billed": False,
+        }
+        for d in get_outstanding_reference_documents(args) or []:
+            out.append({
+                "reference_doctype": d.get("voucher_type"),
+                "reference_name": d.get("voucher_no"),
+                "posting_date": str(d.get("posting_date")) if d.get("posting_date") else None,
+                "due_date": str(d.get("due_date")) if d.get("due_date") else None,
+                "total_amount": d.get("invoice_amount"),
+                "outstanding_amount": d.get("outstanding_amount"),
+            })
+
+    if party_type == "Employee":
+        claims = frappe.db.sql(
+            """
+            select name, posting_date, grand_total, total_amount_reimbursed
+            from `tabExpense Claim`
+            where employee = %s and docstatus = 1
+              and status in ('Unpaid', 'Partly Paid')
+              and (grand_total - ifnull(total_amount_reimbursed, 0)) > 0.5
+            order by posting_date asc
+            """,
+            (party,),
+            as_dict=True,
+        )
+        for c in claims:
+            out.append({
+                "reference_doctype": "Expense Claim",
+                "reference_name": c.name,
+                "posting_date": str(c.posting_date) if c.posting_date else None,
+                "due_date": None,
+                "total_amount": c.grand_total,
+                "outstanding_amount": c.grand_total - flt(c.total_amount_reimbursed),
+            })
+
+    return out
+
+
+@frappe.whitelist()
+def get_adjustment_defaults(company):
+    """Default ledger accounts for the Round Off / TDS adjustment rows of a payment."""
+
+    from erpnext.accounts.doctype.payment_entry.payment_entry import get_company_defaults
+
+    defaults = get_company_defaults(company) or {}
+
+    def first_account(**filters):
+        filters.update({"company": company, "is_group": 0, "disabled": 0})
+        return frappe.db.get_value("Account", filters, "name")
+
+    # TDS withheld by a customer is our asset — never default to a TDS payable account
+    tds_account = (
+        first_account(name=["like", "TDS Receivable%"])
+        or first_account(name=["like", "%TDS Receivable%"])
+        or first_account(name=["like", "%TDS%"], root_type="Asset")
+    )
+
+    return {
+        "cost_center": defaults.get("cost_center"),
+        "Round Off": frappe.db.get_value("Company", company, "round_off_account")
+            or first_account(name=["like", "%Round%Off%"]),
+        "TDS": tds_account,
+        "Write Off": defaults.get("write_off_account") or first_account(account_type="Write Off"),
+        "Exchange Gain/Loss": defaults.get("exchange_gain_loss_account")
+            or first_account(name=["like", "%Exchange Gain%"]),
+    }
+
+
+@frappe.whitelist()
+def make_payment(company, payment_type, party_type, party, payment_for, mode, paid_from, amount, references=None, reference_no=None, reference_date=None, balance_action=None, deductions=None):
+    """Create & submit a Payment Entry (standard party) or Journal Entry (fallback).
+
+    payment_type: 'Pay' (money out) or 'Receive' (money in)
+    paid_from: the bank/cash account (paid from for Pay, received into for Receive)
+    deductions: list of {account, amount, description} booked in the Payment Entry
+        "Deductions or Loss" table (Round Off / TDS / Write Off ...). These add to
+        the amount that can be allocated against the references, so the invoice can
+        be knocked off in full even when less cash was received. Anything neither
+        received nor adjusted simply stays outstanding on the invoice.
+    """
+
+    import json
+    from erpnext.accounts.party import get_party_account
+    from erpnext.accounts.doctype.payment_entry.payment_entry import get_company_defaults
+
+    if isinstance(references, str):
+        references = json.loads(references)
+    references = references or []
+    amount = flt(amount)
+
+    if isinstance(deductions, str):
+        deductions = json.loads(deductions or "[]")
+    deductions = deductions or []
+
+    bal_action = None
+    if isinstance(balance_action, str) and balance_action:
+        bal_action = json.loads(balance_action)
+
+    if party_type in _STANDARD_PARTY_TYPES:
+        pe = frappe.new_doc("Payment Entry")
+        pe.payment_type = payment_type  # Pay or Receive
+        pe.company = company
+        pe.party_type = party_type
+        pe.party = party
+        pe.posting_date = frappe.utils.today()
+        pe.paid_amount = amount
+        pe.received_amount = amount
+        if reference_no:
+            pe.reference_no = reference_no
+        if reference_date:
+            pe.reference_date = reference_date
+
+        # Set paid_from / paid_to based on payment type
+        # paid_from arg is the bank/cash account chosen by user
+        if payment_type == "Pay":
+            pe.paid_from = paid_from
+        else:
+            pe.paid_to = paid_from
+
+        if mode == "Cash":
+            pe.mode_of_payment = "Cash"
+        else:
+            bank_mop = frappe.db.get_value("Mode of Payment", {"type": "Bank", "enabled": 1}, "name")
+            if bank_mop:
+                pe.mode_of_payment = bank_mop
+
+        if payment_for == "Against Bill/Claim":
+            for r in references:
+                pe.append("references", {
+                    "reference_doctype": r.get("reference_doctype"),
+                    "reference_name": r.get("reference_name"),
+                    "allocated_amount": flt(r.get("allocated_amount")),
+                })
+
+        # Round Off / TDS / Write Off adjustments entered in the dialog
+        if deductions:
+            company_defaults = get_company_defaults(company)
+            default_cc = company_defaults.get("cost_center")
+            for d in deductions:
+                account = d.get("account")
+                ded_amt = flt(d.get("amount"))
+                if not account or not ded_amt:
+                    continue
+                acc = frappe.db.get_value(
+                    "Account", account, ["company", "is_group"], as_dict=True
+                )
+                if not acc or acc.company != company or acc.is_group:
+                    frappe.throw(
+                        _("{0} is not a valid ledger account for {1}").format(account, company)
+                    )
+                pe.append("deductions", {
+                    "account": account,
+                    "cost_center": d.get("cost_center") or default_cc,
+                    "amount": ded_amt,
+                    "description": d.get("description") or "",
+                })
+
+        # Handle unallocated balance via deductions table (legacy balance_action flow)
+        if bal_action and bal_action.get("action") and bal_action.get("action") != "Keep as Unallocated":
+            bal_amt = flt(bal_action.get("amount", 0))
+            action = bal_action.get("action")
+            remark = bal_action.get("remark", "")
+            company_defaults = get_company_defaults(company)
+            cost_center = company_defaults.get("cost_center")
+            ded_account = None
+
+            if action == "Write Off":
+                ded_account = company_defaults.get("write_off_account") or frappe.db.get_value("Account",
+                    {"company": company, "is_group": 0, "account_type": "Write Off"}, "name")
+
+            elif action == "Foreign Exchange Gain/Loss":
+                ded_account = company_defaults.get("exchange_gain_loss_account") or frappe.db.get_value("Account",
+                    {"company": company, "is_group": 0, "name": ["like", "%Exchange%"]}, "name")
+
+            elif action == "TDS Receivable":
+                ded_account = frappe.db.get_value("Account",
+                    {"company": company, "is_group": 0, "name": ["like", "%TDS%"]}, "name")
+
+            if ded_account:
+                pe.append("deductions", {
+                    "account": ded_account,
+                    "cost_center": cost_center,
+                    "amount": bal_amt,
+                    "description": action + ((": " + remark) if remark else ""),
+                })
+
+        pe.insert(ignore_permissions=True)
+        pe.submit()
+        return {"doctype": "Payment Entry", "name": pe.name}
+
+    # Fallback — Journal Entry for non-standard party types
+    if deductions:
+        frappe.throw(_("Round Off / TDS adjustments are not supported for party type {0}").format(party_type))
+
+    party_account = get_party_account(party_type, party, company)
+    je = frappe.new_doc("Journal Entry")
+    je.voucher_type = "Bank Entry" if mode == "Bank" else "Cash Entry"
+    je.company = company
+    je.posting_date = frappe.utils.today()
+    je.user_remark = "{0} {1} {2}".format(payment_type, party_type, party)
+    if mode == "Bank":
+        je.cheque_no = reference_no or "NA"
+        je.cheque_date = reference_date or frappe.utils.today()
+
+    if payment_type == "Pay":
+        # Debit party (give), Credit bank/cash (take from)
+        party_row = je.append("accounts", {
+            "account": party_account,
+            "party_type": party_type,
+            "party": party,
+            "debit_in_account_currency": amount,
+            "is_advance": "Yes" if payment_for == "Advance" else "No",
+        })
+        je.append("accounts", {
+            "account": paid_from,
+            "credit_in_account_currency": amount,
+        })
+    else:
+        # Receive: Credit party (take), Debit bank/cash (put into)
+        party_row = je.append("accounts", {
+            "account": party_account,
+            "party_type": party_type,
+            "party": party,
+            "credit_in_account_currency": amount,
+            "is_advance": "Yes" if payment_for == "Advance" else "No",
+        })
+        je.append("accounts", {
+            "account": paid_from,
+            "debit_in_account_currency": amount,
+        })
+
+    if payment_for == "Against Bill/Claim" and references:
+        r0 = references[0]
+        party_row.reference_type = r0.get("reference_doctype")
+        party_row.reference_name = r0.get("reference_name")
+
+    je.insert(ignore_permissions=True)
+    je.submit()
+    return {"doctype": "Journal Entry", "name": je.name}
+
+@frappe.whitelist()
+def get_transactions(from_date=None, to_date=None, company=None, party_type=None, party=None, payment_type=None, mode=None):
+    """Fetch Payment Entries AND Journal Entries (Bank/Cash) with filters."""
+
+    result = []
+
+    # Build date filter
+    date_filter = {}
+    if from_date and to_date:
+        date_filter["posting_date"] = ["between", [from_date, to_date]]
+    elif from_date:
+        date_filter["posting_date"] = [">=", from_date]
+    elif to_date:
+        date_filter["posting_date"] = ["<=", to_date]
+
+    # --- 1. Payment Entries ---
+    pe_filters = {"docstatus": 1}
+    pe_filters.update(date_filter)
+    if company:
+        pe_filters["company"] = company
+    if party_type:
+        pe_filters["party_type"] = party_type
+    if party:
+        pe_filters["party"] = party
+    if payment_type:
+        pe_filters["payment_type"] = payment_type
+
+    pe_list = frappe.get_all(
+        "Payment Entry",
+        filters=pe_filters,
+        fields=[
+            "name", "posting_date", "payment_type", "party_type", "party",
+            "party_name", "company", "paid_amount", "mode_of_payment",
+            "reference_no", "reference_date", "paid_from", "paid_to"
+        ],
+        order_by="posting_date desc, creation desc",
+        limit=500
+    )
+
+    # Enrich PE with mode_of_payment_type
+    mop_type_map = {}
+    mop_names = list(set([d.get("mode_of_payment") for d in pe_list if d.get("mode_of_payment")]))
+    for mop in mop_names:
+        mop_type_map[mop] = frappe.db.get_value("Mode of Payment", mop, "type") or "General"
+
+    for d in pe_list:
+        d["doctype_source"] = "Payment Entry"
+        d["mode_of_payment_type"] = mop_type_map.get(d.get("mode_of_payment"), "General")
+        d["amount"] = d["paid_amount"]
+
+    result.extend(pe_list)
+
+    # --- 2. Journal Entries (Bank Entry / Cash Entry) ---
+    je_filters = {"docstatus": 1, "voucher_type": ["in", ["Bank Entry", "Cash Entry"]]}
+    je_filters.update(date_filter)
+    if company:
+        je_filters["company"] = company
+
+    je_list = frappe.get_all(
+        "Journal Entry",
+        filters=je_filters,
+        fields=[
+            "name", "posting_date", "voucher_type", "company",
+            "total_debit", "total_credit", "cheque_no", "cheque_date",
+            "user_remark", "pay_to_recd_from"
+        ],
+        order_by="posting_date desc, creation desc",
+        limit=500
+    )
+
+    # For each JE, get the party info from the accounts table
+    for d in je_list:
+        d["doctype_source"] = "Journal Entry"
+        d["payment_type"] = "Pay"  # Default; JEs created by our payment button are Pay
+        d["mode_of_payment"] = d.get("voucher_type", "")
+        d["mode_of_payment_type"] = "Bank" if d.get("voucher_type") == "Bank Entry" else "Cash"
+        d["paid_amount"] = d.get("total_debit") or d.get("total_credit") or 0
+        d["amount"] = d["paid_amount"]
+        d["reference_no"] = d.get("cheque_no") or ""
+        d["reference_date"] = d.get("cheque_date")
+
+        # Get party from JE accounts table
+        je_accounts = frappe.get_all(
+            "Journal Entry Account",
+            filters={"parent": d["name"], "party_type": ["!=", ""]},
+            fields=["party_type", "party", "account"],
+            limit=1
+        )
+        if je_accounts:
+            d["party_type"] = je_accounts[0].get("party_type") or ""
+            d["party"] = je_accounts[0].get("party") or ""
+            # Get party name
+            if d["party_type"] and d["party"]:
+                name_field = d["party_type"].lower() + "_name" if d["party_type"] != "Shareholder" else "title"
+                d["party_name"] = frappe.db.get_value(d["party_type"], d["party"], name_field) or d["party"]
+            else:
+                d["party_name"] = d.get("pay_to_recd_from") or ""
+        else:
+            d["party_type"] = ""
+            d["party"] = ""
+            d["party_name"] = d.get("pay_to_recd_from") or d.get("user_remark") or ""
+
+    # Apply party filters to JE list
+    if party_type:
+        je_list = [d for d in je_list if d.get("party_type") == party_type]
+    if party:
+        je_list = [d for d in je_list if d.get("party") == party]
+    if payment_type:
+        je_list = [d for d in je_list if d.get("payment_type") == payment_type]
+
+    result.extend(je_list)
+
+    # Apply mode filter (Bank/Cash) to combined list
+    if mode:
+        result = [d for d in result if d.get("mode_of_payment_type") == mode]
+
+    # Sort by posting_date desc
+    result.sort(key=lambda x: x.get("posting_date", ""), reverse=True)
+
+    return result
+
+
+# ============================================================
+# Request Payment — outstanding bills, create, list
+# ============================================================
+
+@frappe.whitelist()
+def get_request_payment_outstanding(company):
+    """Return outstanding Purchase Orders, Purchase Invoices and Expense Claims for a company,
+    to be used as references when creating a Request Payment."""
+
+    out = []
+
+    # Purchase Orders (to bill or to receive)
+    po_list = frappe.get_all(
+        "Purchase Order",
+        filters={"company": company, "docstatus": 1, "status": ["in", ["To Bill", "To Receive and Bill"]]},
+        fields=["name", "supplier", "supplier_name", "transaction_date", "grand_total", "per_billed"],
+        order_by="transaction_date desc",
+        limit=200
+    )
+    for d in po_list:
+        outstanding = flt(d.grand_total) - flt(d.grand_total) * flt(d.per_billed) / 100.0
+        if outstanding > 0.01:
+            out.append({
+                "reference_doctype": "Purchase Order",
+                "reference_name": d.name,
+                "party_type": "Supplier",
+                "party": d.supplier,
+                "party_name": d.supplier_name,
+                "posting_date": d.transaction_date,
+                "total_amount": d.grand_total,
+                "outstanding_amount": outstanding
+            })
+
+    # Purchase Invoices (outstanding > 0)
+    pi_list = frappe.get_all(
+        "Purchase Invoice",
+        filters={"company": company, "docstatus": 1, "outstanding_amount": [">", 0]},
+        fields=["name", "supplier", "supplier_name", "posting_date", "total", "outstanding_amount"],
+        order_by="posting_date desc",
+        limit=200
+    )
+    for d in pi_list:
+        out.append({
+            "reference_doctype": "Purchase Invoice",
+            "reference_name": d.name,
+            "party_type": "Supplier",
+            "party": d.supplier,
+            "party_name": d.supplier_name,
+            "posting_date": d.posting_date,
+            "total_amount": d.total,
+            "outstanding_amount": d.outstanding_amount
+        })
+
+    # Expense Claims (approved/pending, unpaid)
+    ec_list = frappe.get_all(
+        "Expense Claim",
+        filters={"company": company, "docstatus": 1, "status": ["in", ["Unpaid", "Partly Reimbursed"]]},
+        fields=["name", "employee", "employee_name", "posting_date", "total_claimed_amount", "total_amount_reimbursed"],
+        order_by="posting_date desc",
+        limit=200
+    )
+    for d in ec_list:
+        outstanding = flt(d.total_claimed_amount) - flt(d.total_amount_reimbursed)
+        if outstanding > 0:
+            out.append({
+                "reference_doctype": "Expense Claim",
+                "reference_name": d.name,
+                "party_type": "Employee",
+                "party": d.employee,
+                "party_name": d.employee_name,
+                "posting_date": d.posting_date,
+                "total_amount": d.total_claimed_amount,
+                "outstanding_amount": outstanding
+            })
+
+    return out
+
+
+@frappe.whitelist()
+def get_reference_outstanding(reference_type, reference_name):
+    """Get outstanding amount and party info for a specific reference document."""
+
+    out = {"outstanding_amount": 0, "party": "", "party_type": ""}
+
+    if reference_type == "Purchase Invoice":
+        d = frappe.db.get_value("Purchase Invoice", reference_name,
+            ["supplier", "outstanding_amount"], as_dict=True)
+        if d:
+            out["party"] = d.supplier
+            out["party_type"] = "Supplier"
+            out["outstanding_amount"] = flt(d.outstanding_amount)
+
+    elif reference_type == "Purchase Order":
+        d = frappe.db.get_value("Purchase Order", reference_name,
+            ["supplier", "grand_total", "per_billed"], as_dict=True)
+        if d:
+            out["party"] = d.supplier
+            out["party_type"] = "Supplier"
+            outstanding = flt(d.grand_total) - flt(d.grand_total) * flt(d.per_billed) / 100.0
+            out["outstanding_amount"] = outstanding
+
+    elif reference_type == "Expense Claim":
+        d = frappe.db.get_value("Expense Claim", reference_name,
+            ["employee", "total_claimed_amount", "total_amount_reimbursed"], as_dict=True)
+        if d:
+            out["party"] = d.employee
+            out["party_type"] = "Employee"
+            out["outstanding_amount"] = flt(d.total_claimed_amount) - flt(d.total_amount_reimbursed)
+
+    return out
+
+
+@frappe.whitelist()
+def create_request_payment(company, request_date, requested_by, required_by_date=None,
+                            payment_mode=None, currency=None, remarks=None, references=None):
+    """Create a Request Payment document with references and submit it."""
+
+    import json
+
+    if isinstance(references, str):
+        references = json.loads(references)
+
+    if not references:
+        frappe.throw(_("Please add at least one reference or advance."))
+
+    rp = frappe.new_doc("Request Payment")
+    rp.company = company
+    rp.request_date = request_date
+    rp.requested_by = requested_by
+    if required_by_date:
+        rp.required_by_date = required_by_date
+    if payment_mode:
+        rp.payment_mode = payment_mode
+    if currency:
+        rp.currency = currency
+    else:
+        rp.currency = frappe.db.get_default("currency") or "INR"
+    if remarks:
+        rp.remarks = remarks
+
+    # Get default payment account for company
+    default_account = frappe.db.get_value("Company", company, "default_bank_account") or \
+        frappe.db.get_value("Account", {"company": company, "account_type": "Bank", "is_group": 0}, "name")
+
+    total_against_bills = 0
+    total_advance = 0
+
+    for ref in references:
+        row = rp.append("references", {})
+        row.reference_type = ref.get("reference_type")
+        if ref.get("reference_type") == "Advance":
+            row.amount = flt(ref.get("amount", 0))
+            total_advance += flt(ref.get("amount", 0))
+        else:
+            row.reference_name = ref.get("reference_name")
+            row.party_type = ref.get("party_type")
+            row.party = ref.get("party")
+            row.outstanding_amount = flt(ref.get("outstanding_amount", 0))
+            row.amount = flt(ref.get("amount", 0))
+            row.allocated_amount = flt(ref.get("allocated_amount", 0))
+            total_against_bills += flt(ref.get("allocated_amount", 0))
+        # Payment account — use row-specific or default
+        if ref.get("payment_account"):
+            row.payment_account = ref.get("payment_account")
+        elif default_account:
+            row.payment_account = default_account
+        # Description
+        if ref.get("description"):
+            row.description = ref.get("description")
+
+    rp.total_against_bills = total_against_bills
+    rp.total_advance = total_advance
+    rp.total_amount = total_against_bills + total_advance
+    rp.total_allocated_amount = total_against_bills + total_advance
+
+    rp.insert(ignore_permissions=True)
+
+    return {"doctype": "Request Payment", "name": rp.name}
+
+
+@frappe.whitelist()
+def get_request_payment_list(from_date=None, to_date=None, company=None, status=None, requested_by=None):
+    """Fetch Request Payment records with filters."""
+
+    filters = {}
+    if from_date and to_date:
+        filters["request_date"] = ["between", [from_date, to_date]]
+    elif from_date:
+        filters["request_date"] = [">=", from_date]
+    elif to_date:
+        filters["request_date"] = ["<=", to_date]
+    if company:
+        filters["company"] = company
+    if status:
+        filters["status"] = status
+    if requested_by:
+        filters["requested_by"] = requested_by
+
+    result = frappe.get_all(
+        "Request Payment",
+        filters=filters,
+        fields=[
+            "name", "company", "request_date", "required_by_date",
+            "requested_by", "requested_by_name", "department",
+            "payment_mode", "currency", "status",
+            "total_against_bills", "total_advance",
+            "total_amount", "total_allocated_amount", "remarks"
+        ],
+        order_by="request_date desc, creation desc",
+        limit=500
+    )
+
+    return result
+
+
+@frappe.whitelist()
+def get_receive_payment_list(from_date=None, to_date=None, company=None, party_type=None, party=None, mode=None):
+    """Fetch Receive-type Payment Entries with filters."""
+
+    filters = {"docstatus": 1, "payment_type": "Receive"}
+    if from_date and to_date:
+        filters["posting_date"] = ["between", [from_date, to_date]]
+    elif from_date:
+        filters["posting_date"] = [">=", from_date]
+    elif to_date:
+        filters["posting_date"] = ["<=", to_date]
+    if company:
+        filters["company"] = company
+    if party_type:
+        filters["party_type"] = party_type
+    if party:
+        filters["party"] = party
+
+    pe_list = frappe.get_all(
+        "Payment Entry",
+        filters=filters,
+        fields=[
+            "name", "posting_date", "payment_type", "party_type", "party",
+            "party_name", "company", "paid_amount", "mode_of_payment",
+            "reference_no", "reference_date", "paid_from", "paid_to"
+        ],
+        order_by="posting_date desc, creation desc",
+        limit=500
+    )
+
+    # Enrich with mode_of_payment_type
+    mop_type_map = {}
+    mop_names = list(set([d.get("mode_of_payment") for d in pe_list if d.get("mode_of_payment")]))
+    for mop in mop_names:
+        mop_type_map[mop] = frappe.db.get_value("Mode of Payment", mop, "type") or "General"
+
+    for d in pe_list:
+        d["doctype_source"] = "Payment Entry"
+        d["mode_of_payment_type"] = mop_type_map.get(d.get("mode_of_payment"), "General")
+        d["amount"] = d["paid_amount"]
+
+    # Apply mode filter (Bank/Cash)
+    if mode:
+        pe_list = [d for d in pe_list if d.get("mode_of_payment_type") == mode]
+
+    return pe_list

@@ -1,0 +1,165 @@
+{
+ "actions": [
+  {"action": "Test Formula", "action_type": "Server Action", "function": "tpe.api.test_kpi_formula"}
+ ],
+ "autoname": "field:kpi_name",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "kpi_name",
+  "department",
+  "role",
+  "frequency",
+  "column_break_1",
+  "active",
+  "auto_calculation",
+  "manual_calculation",
+  "weightage",
+  "max_score",
+  "formula_section",
+  "formula",
+  "formula_help",
+  "variables_section",
+  "variables",
+  "data_source_section",
+  "data_source"
+ ],
+ "fields": [
+  {
+   "fieldname": "kpi_name",
+   "fieldtype": "Data",
+   "label": "KPI Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "role",
+   "fieldtype": "Link",
+   "label": "Role / Designation",
+   "options": "Designation",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "description": "Optional. Leave blank to apply to all designations in the department."
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "\nMonthly\nQuarterly\nHalf Yearly\nYearly",
+   "default": "Monthly",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "auto_calculation",
+   "fieldtype": "Check",
+   "label": "Auto Calculation",
+   "in_list_view": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "manual_calculation",
+   "fieldtype": "Check",
+   "label": "Manual Calculation",
+   "description": "Allow manual override of the calculated score."
+  },
+  {
+   "fieldname": "weightage",
+   "fieldtype": "Float",
+   "label": "Default Weightage",
+   "default": "10",
+   "description": "Default weight inside a KRA; can be overridden in the KRA KPI Mapping."
+  },
+  {
+   "fieldname": "max_score",
+   "fieldtype": "Float",
+   "label": "Maximum Score",
+   "default": "100",
+   "reqd": 1
+  },
+  {
+   "fieldname": "formula_section",
+   "fieldtype": "Section Break",
+   "label": "Formula"
+  },
+  {
+   "fieldname": "formula",
+   "fieldtype": "Code",
+   "label": "Formula",
+   "options": "PythonExpression",
+   "description": "Arithmetic expression using variable aliases. e.g. (completed_rt / completed_at) * 100"
+  },
+  {
+   "fieldname": "formula_help",
+   "fieldtype": "HTML",
+   "options": "<div class='text-muted small'>Allowed: + - * / % **, comparisons, and functions avg(), wavg(), pct(), ratio(), days(), count(), sum(), min(), max(), round(), abs(), if(cond, then, else). Variables must be declared below.</div>"
+  },
+  {
+   "fieldname": "variables_section",
+   "fieldtype": "Section Break",
+   "label": "Variables"
+  },
+  {
+   "fieldname": "variables",
+   "fieldtype": "Table",
+   "label": "Formula Variables",
+   "options": "KPI Formula Variable",
+   "reqd": 1
+  },
+  {
+   "fieldname": "data_source_section",
+   "fieldtype": "Section Break",
+   "label": "Data Source"
+  },
+  {
+   "fieldname": "data_source",
+   "fieldtype": "Small Text",
+   "label": "Data Source (notes)",
+   "description": "Human-readable description of the operational data feeding this KPI."
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "KPI Master",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "import": 1, "export": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "import": 1, "export": 1, "share": 1},
+  {"role": "HR User", "read": 1, "write": 0, "create": 0, "delete": 0, "print": 1, "email": 1, "report": 1, "export": 1},
+  {"role": "Director", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 1},
+  {"role": "Employee", "read": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

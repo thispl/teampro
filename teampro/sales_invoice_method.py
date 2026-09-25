@@ -95,15 +95,15 @@ def calc_cut_off_prize(doc,method):
 					if f.rate < p.price_list_rate:
 						frappe.throw(_(' %s Rate is lesser than Cut Off Price')%(f.item_name))
 
-import frappe
-@frappe.whitelist()
-def calculate_advances_invoice(doc, method):
-	total_advance_doc_currency = 0
-	for d in doc.advances:
-		total_advance_doc_currency += d.custom_advance_amount_doc_currency or 0
+# import frappe
+# @frappe.whitelist()
+# def calculate_advances_invoice(doc, method):
+# 	total_advance_doc_currency = 0
+# 	for d in doc.advances:
+# 		total_advance_doc_currency += d.custom_advance_amount_doc_currency or 0
 
-	doc.custom_total_advance_doc_currency = total_advance_doc_currency
-	doc.custom_outstanding_amount_doc_currency = (doc.grand_total or 0) - total_advance_doc_currency
+# 	doc.custom_total_advance_doc_currency = total_advance_doc_currency
+# 	doc.custom_outstanding_amount_doc_currency = (doc.grand_total or 0) - total_advance_doc_currency
 
 @frappe.whitelist()
 def validate_maintain_stok_si(doc,method):

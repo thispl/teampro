@@ -2,3 +2,178 @@
     background-color: #0F1568;
     color: white;
 }
+
+/* =====================================================
+   Sprint Progress Bars
+   ===================================================== */
+.sprint-team-block {
+    margin-bottom: 28px;
+}
+
+.sprint-team-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: linear-gradient(135deg, #0F1568 0%, #1a237e 100%);
+    padding: 12px 18px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 12px rgba(15, 21, 104, 0.25);
+}
+
+.sprint-team-header h4 {
+    margin: 0;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+}
+
+.sprint-team-header .sprint-id-badge {
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 4px 12px;
+    border-radius: 20px;
+    backdrop-filter: blur(4px);
+}
+
+.sprint-cb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.sprint-cb-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 18px 18px;
+    border: 1px solid #e8eaf0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sprint-cb-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.sprint-cb-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f0f1f5;
+}
+
+.sprint-cb-name {
+    margin: 0;
+    font-weight: 700;
+    font-size: 15px;
+    color: #1a237e;
+    letter-spacing: 0.5px;
+}
+
+.sprint-cb-status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.sprint-bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 10px;
+}
+
+.sprint-bar-label {
+    width: 64px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    flex-shrink: 0;
+}
+
+.sprint-bar-track {
+    flex: 1;
+    height: 22px;
+    background: #eef0f4;
+    border-radius: 11px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.sprint-bar-fill {
+    height: 100%;
+    border-radius: 11px;
+    position: relative;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.sprint-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 100%);
+    border-radius: 11px 11px 0 0;
+}
+
+.sprint-bar-pct {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+.sprint-bar-value {
+    width: 56px;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    flex-shrink: 0;
+}
+
+.sprint-cb-summary {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #f0f1f5;
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+}
+
+.sprint-cb-summary-item {
+    text-align: center;
+    flex: 1;
+}
+
+.sprint-cb-summary-item .label {
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-size: 9px;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.sprint-cb-summary-item .value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a237e;
+}

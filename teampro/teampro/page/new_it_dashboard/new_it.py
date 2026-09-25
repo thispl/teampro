@@ -1,5 +1,5 @@
 import frappe
-from frappe.utils import getdate, nowdate, formatdate
+from frappe.utils import getdate, nowdate, formatdate, add_days, flt
 from datetime import datetime, date
 from frappe.utils import today
 from io import BytesIO
@@ -38,7 +38,7 @@ def get_project_counts():
 
 @frappe.whitelist()
 def get_sprint_counts():
-    dev_teams = frappe.db.get_all('Dev Team',{"team_name": ["!=", "Others"]},["team_name"],order_by='team_name')
+    dev_teams = frappe.db.get_all('Dev Team',{"team_name": ["!=", "Others"]},["team_name"],order_by='order_for_it_dashboard')
     sprint_data = []
 
     for team in dev_teams:
@@ -237,6 +237,116 @@ def get_task_summary():
 
     return summary
 
+
+
+@frappe.whitelist()
+def get_dashboard_summary():
+    # ---------------- PROJECT COUNTS ----------------
+    total_filters = {
+        "status": ["not in", ["Hold", "Completed", "Cancelled"]],
+        "service": "IT-SW",
+        "project_type": ["is", "set"]
+    }
+    project_total = frappe.db.count("Project", filters=total_filters)
+
+    project_types = frappe.db.get_all(
+        'Project Type',
+        {'sequence_number': ['!=', 0]},
+        ['name'],
+        order_by='sequence_number'
+    )
+
+    projects = []
+    for project_type in project_types:
+        filters = {
+            "status": ["not in", ["Hold", "Completed", "Cancelled"]],
+            "service": "IT-SW",
+            "project_type": project_type.name
+        }
+        count = frappe.db.count("Project", filters=filters)
+        projects.append({
+            "project_type": project_type.name,
+            "count": count
+        })
+
+    # ---------------- TASK SUMMARY ----------------
+    from frappe.utils import nowdate
+    today = nowdate()
+
+    status_map = {
+        "Open": "open",
+        "Working": "working",
+        "Overdue": "working",
+        "Code Review": "working",
+        "Pending Review": "pr",
+        "Client Review": "cr"
+    }
+
+    task_summary = {
+        "total": 0, "open": 0, "working": 0, "pr": 0, "cr": 0,
+        "total_total_hours": 0, "open_total_hours": 0, "working_total_hours": 0,
+        "pr_total_hours": 0, "cr_total_hours": 0,
+        "total_today_count": 0, "open_today_count": 0, "working_today_count": 0,
+        "pr_today_count": 0, "cr_today_count": 0,
+        "total_today_hours": 0, "open_today_hours": 0, "working_today_hours": 0,
+        "pr_today_hours": 0, "cr_today_hours": 0,
+    }
+
+    total_data = frappe.db.sql("""
+        SELECT COUNT(*) AS count, COALESCE(SUM(rt),0) AS total_hours
+        FROM `tabTask`
+        WHERE status NOT IN ('Completed', 'Cancelled','Hold')
+        AND service = 'IT-SW'
+    """, as_dict=True)[0]
+
+    task_summary["total"] = total_data.count or 0
+    task_summary["total_total_hours"] = float(total_data.total_hours or 0)
+
+    today_total_data = frappe.db.sql("""
+        SELECT COUNT(*) AS count, COALESCE(SUM(rt),0) AS total_hours
+        FROM `tabTask`
+        WHERE status NOT IN ('Completed', 'Cancelled','Hold')
+        AND service = 'IT-SW'
+        AND DATE(custom_production_date) = %s
+    """, today, as_dict=True)[0]
+
+    task_summary["total_today_count"] = today_total_data.count or 0
+    task_summary["total_today_hours"] = float(today_total_data.total_hours or 0)
+
+    grouped_data = frappe.db.sql("""
+        SELECT status, COUNT(*) AS count, COALESCE(SUM(rt),0) AS total_hours
+        FROM `tabTask`
+        WHERE status NOT IN ('Completed', 'Cancelled','Hold')
+        AND service = 'IT-SW'
+        GROUP BY status
+    """, as_dict=True)
+
+    for row in grouped_data:
+        key = status_map.get(row.status)
+        if key:
+            task_summary[key] += row.count or 0
+            task_summary[f"{key}_total_hours"] += float(row.total_hours or 0)
+
+    today_grouped_data = frappe.db.sql("""
+        SELECT status, COUNT(*) AS count, COALESCE(SUM(rt),0) AS total_hours
+        FROM `tabTask`
+        WHERE status NOT IN ('Completed', 'Cancelled','Hold')
+        AND service = 'IT-SW'
+        AND DATE(custom_production_date) = %s
+        GROUP BY status
+    """, today, as_dict=True)
+
+    for row in today_grouped_data:
+        key = status_map.get(row.status)
+        if key:
+            task_summary[f"{key}_today_count"] += row.count or 0
+            task_summary[f"{key}_today_hours"] += float(row.total_hours or 0)
+
+    return {
+        "project_total": project_total,
+        "projects": projects,
+        "tasks": task_summary
+    }
 
 @frappe.whitelist()
 def get_tasks_project_wise(type=None):
@@ -697,7 +807,7 @@ def get_today_task_data():
 
 
 @frappe.whitelist()
-def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_date=None):
+def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_date=None, team=None):
 
     import frappe
     from frappe.utils import nowdate
@@ -750,6 +860,10 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
     elif ro == "no":
         conditions += " AND c.revisions < 1"
 
+    if team:
+        conditions += " AND m.dev_team = %s"
+        values.append(team)
+
     # ------------------------------
     # Employee
     # ------------------------------
@@ -765,7 +879,7 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
             "custom_order_for_it_dashboard"
         ],
         filters={
-            "custom_order_for_it_dashboard": [">", 0]
+            "custom_order_for_it_dashboard": [">=", 0]
         },
         order_by="custom_order_for_it_dashboard asc"
     )
@@ -778,7 +892,8 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
     teams = frappe.get_all(
         "Dev Team",
         filters={
-            "order_for_it_dashboard": [">", 0]
+            "order_for_it_dashboard": [">=", 0],
+            "name": ["!=", "Others"]
         },
         fields=[
             "name",
@@ -810,11 +925,12 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
             c.allocated_to as custom_allocated_to,
 
             c.et as expected_time,
-            c.today_rt,
+            c.rt,
 
             c.priority,
             c.spot_task,
             c.current_status,
+            c.remark,
 
             c.kt_confirmed,
             c.is_confirmed,
@@ -844,73 +960,53 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
     """, tuple(values), as_dict=True)
 
     # ------------------------------
-    # Timesheet Actual Time
-    # KEEP SAME
+    # Timesheet Actual Time (submitted) and Today AT (all non-cancelled)
+    # Optimized: filter Timesheet parents by start/end date first, then join
+    # to Timesheet Detail. This avoids a full scan of the large child table.
     # ------------------------------
-    actual_times = frappe.db.sql("""
-        SELECT
-            d.task,
-            t.employee,
-            SUM(d.hours) as hours
+    relevant_parents = frappe.db.sql(
+        """
+        SELECT name
+        FROM `tabTimesheet`
+        WHERE docstatus != 2
+        AND start_date <= %s
+        AND end_date >= %s
+        """,
+        (to_date, from_date),
+        as_list=True,
+    )
+    parent_names = [p[0] for p in relevant_parents]
 
-        FROM `tabTimesheet Detail` d
+    actual_map = {}
+    today_at_map = {}
 
-        JOIN `tabTimesheet` t
-            ON d.parent = t.name
+    if parent_names:
+        timesheet_hours = frappe.db.sql(
+            """
+            SELECT
+                d.task,
+                t.employee,
+                SUM(CASE WHEN t.docstatus = 1 THEN d.hours ELSE 0 END) as submitted_hours,
+                SUM(CASE WHEN t.docstatus != 2 THEN
+                    CASE
+                        WHEN d.to_time IS NOT NULL THEN d.hours
+                        ELSE TIMESTAMPDIFF(SECOND, d.from_time, NOW()) / 3600
+                    END
+                    ELSE 0 END) as total_hours
+            FROM `tabTimesheet Detail` d
+            JOIN `tabTimesheet` t ON d.parent = t.name
+            WHERE d.parent IN %s
+            AND d.from_time BETWEEN %s AND DATE_ADD(%s, INTERVAL 1 DAY)
+            GROUP BY d.task, t.employee
+            """,
+            (tuple(parent_names), from_date, to_date),
+            as_dict=True,
+        )
 
-        WHERE t.docstatus = 1
-
-        AND d.from_time BETWEEN %s
-        AND DATE_ADD(%s, INTERVAL 1 DAY)
-
-        GROUP BY
-            d.task,
-            t.employee
-
-    """, (from_date, to_date), as_dict=True)
-
-    actual_map = {
-        (a.task, a.employee): a.hours
-        for a in actual_times
-    }
-
-    # ------------------------------
-    # Today AT
-    # KEEP SAME
-    # ------------------------------
-    today_at_data = frappe.db.sql("""
-        SELECT
-            d.task,
-            t.employee,
-
-            SUM(
-                TIMESTAMPDIFF(
-                    SECOND,
-                    d.from_time,
-                    IFNULL(d.to_time, NOW())
-                )
-            ) / 3600 as hours
-
-        FROM `tabTimesheet Detail` d
-
-        JOIN `tabTimesheet` t
-            ON d.parent = t.name
-
-        WHERE t.docstatus != 2
-
-        AND d.from_time BETWEEN %s
-        AND DATE_ADD(%s, INTERVAL 1 DAY)
-
-        GROUP BY
-            d.task,
-            t.employee
-
-    """, (from_date, to_date), as_dict=True)
-
-    today_at_map = {
-        (a.task, a.employee): a.hours
-        for a in today_at_data
-    }
+        for a in timesheet_hours:
+            key = (a.task, a.employee)
+            actual_map[key] = a.submitted_hours or 0
+            today_at_map[key] = a.total_hours or 0
 
     # ------------------------------
     # Main Loop
@@ -952,7 +1048,7 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
         # ------------------------------
         # Today RT from Daily Monitor
         # ------------------------------
-        today_rt = task.today_rt or 0
+        today_rt = task.rt or 0
 
         data.append([
 
@@ -990,7 +1086,7 @@ def get_today_task_data1(priority=None, sp=None, ro=None, from_date=None, to_dat
             task.current_status,
 
             # 11 Remarks
-            "",
+            task.remark or "",
 
             # 12 Team
             task.dev_team,
@@ -1062,7 +1158,7 @@ def get_today_task_data11(from_date=None, to_date=None):
             "custom_emp_image", "custom_is_tl",
             "custom_dev_team", "custom_order_for_it_dashboard"
         ],
-        filters={"custom_order_for_it_dashboard": [">", 0]},
+        filters={"custom_order_for_it_dashboard": [">=", 0]},
         order_by="custom_order_for_it_dashboard asc"
     )
 
@@ -1073,7 +1169,7 @@ def get_today_task_data11(from_date=None, to_date=None):
     # ------------------------------
     teams = frappe.get_all(
         "Dev Team",
-        filters={"order_for_it_dashboard": [">", 0]},
+        filters={"order_for_it_dashboard": [">=", 0], "name": ["!=", "Others"]},
         fields=["name", "logo", "order_for_it_dashboard"],
         order_by="order_for_it_dashboard asc"
     )
@@ -1095,6 +1191,7 @@ def get_today_task_data11(from_date=None, to_date=None):
         JOIN `tabSprint Avl Time` c ON c.parent = m.name
         WHERE m.date BETWEEN %s AND %s
         AND m.docstatus != 2
+        AND m.service = 'IT-SW'
     """, (from_date, to_date), as_dict=True)
 
     # ------------------------------
@@ -1306,7 +1403,7 @@ def confirm_task(task):
 def get_retro_summary_html_test(name= None):
 
     all_tables = []
-    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='team_name')
+    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='order_for_it_dashboard')
     sprint_name = frappe.db.get_value(
     'Sprint',
     {'team': 'ALPHA', 'status': 'In Progress'},
@@ -1321,7 +1418,6 @@ def get_retro_summary_html_test(name= None):
         previous_sprint_id = None  
 
     if name:
-        frappe.errprint(f"name {name}")
         previous_sprint_id = name
     for team_name in dev_teams:
         sprint_name = frappe.db.get_value(
@@ -1358,13 +1454,7 @@ def build_retro_table_for_sprint(name):
             tl_list.append(cb)
         else:
             non_tl_list.append(cb)
-    frappe.errprint("tl_list")
-    frappe.errprint(tl_list)
-    frappe.errprint("non_tl_list")
-    frappe.errprint(non_tl_list)
     cb_list = tl_list + non_tl_list
-    frappe.errprint("cb_list")
-    frappe.errprint(cb_list)
     table = f"""
     <div style="overflow-x: auto; margin-top: 20px;">
     <table border="1" cellpadding="5" cellspacing="0" width="100%" style="border-collapse: collapse; text-align: center; min-width: 1200px;">
@@ -1438,11 +1528,8 @@ def build_retro_table_for_sprint(name):
     sr_no = 1
     for cb in cb_list:
         emp = frappe.db.get_value('Employee', {'short_code': cb}, ['name'])
-        frappe.errprint(emp)
         aph = frappe.db.get_value('Employee', {'short_code': cb , "department": "IT. Development - THIS" ,"status": "Active" }, ['custom_aph'])
-        frappe.errprint(aph)
         user_id = frappe.db.get_value('Employee', {'short_code': cb}, ['user_id'])
-        frappe.errprint(user_id)
         result = frappe.db.sql("""
             SELECT
                 SUM(CASE WHEN spot_task = 0 THEN rt ELSE 0 END),
@@ -1726,13 +1813,7 @@ def build_retro_table_for_sprint_hrs_col(name):
             tl_list.append(cb)
         else:
             non_tl_list.append(cb)
-    frappe.errprint("tl_list")
-    frappe.errprint(tl_list)
-    frappe.errprint("non_tl_list")
-    frappe.errprint(non_tl_list)
     cb_list = tl_list + non_tl_list
-    frappe.errprint("cb_list")
-    frappe.errprint(cb_list)
     table = f"""
     <div style="overflow-x: auto; margin-top: 20px;">
     <table border="1" cellpadding="5" cellspacing="0" width="100%" style="border-collapse: collapse; text-align: center; min-width: 1200px;">
@@ -1806,11 +1887,8 @@ def build_retro_table_for_sprint_hrs_col(name):
     sr_no = 1
     for cb in cb_list:
         emp = frappe.db.get_value('Employee', {'short_code': cb}, ['name'])
-        frappe.errprint(emp)
         aph = frappe.db.get_value('Employee', {'short_code': cb , "department": "IT. Development - THIS" ,"status": "Active" }, ['custom_aph'])
-        frappe.errprint(aph)
         user_id = frappe.db.get_value('Employee', {'short_code': cb}, ['user_id'])
-        frappe.errprint(user_id)
         result = frappe.db.sql("""
             SELECT
                 SUM(CASE WHEN spot_task = 0 THEN rt ELSE 0 END),
@@ -2608,7 +2686,7 @@ def get_retro_summary_html(name= None,dev_team= None):
     if dev_team:
         dev_teams = [dev_team]
     else:
-        dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='team_name')
+        dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='order_for_it_dashboard')
 
     sprint_name = frappe.db.get_value(
     'Sprint',
@@ -2624,7 +2702,6 @@ def get_retro_summary_html(name= None,dev_team= None):
         previous_sprint_id = None  
 
     if name:
-        frappe.errprint(f"name {name}")
         previous_sprint_id = name
     for team_name in dev_teams:
         sprint_name = frappe.db.get_value(
@@ -2694,29 +2771,19 @@ def get_retro_summary_html(name= None,dev_team= None):
 
 @frappe.whitelist()
 def update_sprint_filter():
+    # Return the last/most recent sprint ID (default for filters)
     sprint_name = frappe.db.get_value(
         'Sprint',
-        {'team': 'ALPHA', 'status': 'In Progress'},
+        {'status': 'In Progress'},
         'sprint_id',
         order_by='creation desc'
     )
-
-    previous_sprint_id = None
-    today = datetime.today()
-
-    if today.strftime('%A') == 'Monday':
-        previous_sprint_id =sprint_name
-    else:
-        if sprint_name and sprint_name.startswith("SPRINT"):
-            current_number = int(sprint_name.replace("SPRINT", "").strip())
-            previous_sprint_id = f"SPRINT {current_number - 1}"
-
-    return previous_sprint_id
+    return sprint_name
 
 
 @frappe.whitelist()
 def get_retro_summary_overall(name=None):
-    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='team_name')
+    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='order_for_it_dashboard')
 
     # Determine the previous sprint ID to fetch
     if name:
@@ -3501,7 +3568,7 @@ def summary_total(name):
     # name ='SPRINT 21'
     all_tables = []
 
-    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='team_name')
+    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='order_for_it_dashboard')
 
     sprint_name = frappe.db.get_value(
     'Sprint',
@@ -3616,12 +3683,6 @@ def summary_total(name):
             emp_list = frappe.db.get_all('Employee', {'custom_dev_team': team_name, 'status':'Active','department':'IT. Development - THIS'}, pluck='name')
             # print(team_list)
             # print(sprint.name)
-            frappe.errprint("team_list")
-            frappe.errprint(team_list)
-            frappe.errprint("emp_list")
-            frappe.errprint(emp_list)
-            frappe.errprint("aph")
-            frappe.errprint(aph)
             result = frappe.db.sql("""
                 SELECT
                     SUM(CASE WHEN spot_task = 0 THEN rt ELSE 0 END),
@@ -3684,8 +3745,6 @@ def summary_total(name):
             # """, (emp_list, sprint.from_date, sprint.to_date))[0][0]
             # ts_hours = round(ts_hours or 0, 2)
             tot_aph = flt(aph)
-            frappe.errprint("tot_aph")
-            frappe.errprint(tot_aph)
             used_percent = (ts_hours / bt_hours) * 100 if ts_hours and bt_hours else 0
             comp_percent = (completed_hrs / ts_hours) * 100 if ts_hours and completed_hrs else 0
             ncomp_percent = (ncompleted_hrs / ts_hours) * 100 if ts_hours and ncompleted_hrs else 0
@@ -3915,7 +3974,7 @@ def summary_total_hrs_cols(name):
     # name ='SPRINT 21'
     all_tables = []
 
-    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='team_name')
+    dev_teams = frappe.get_all('Dev Team', filters={"team_name": ["!=", "Others"]}, pluck="team_name", order_by='order_for_it_dashboard')
 
     sprint_name = frappe.db.get_value(
     'Sprint',
@@ -4030,12 +4089,6 @@ def summary_total_hrs_cols(name):
             emp_list = frappe.db.get_all('Employee', {'custom_dev_team': team_name, 'status':'Active','department':'IT. Development - THIS'}, pluck='name')
             # print(team_list)
             # print(sprint.name)
-            frappe.errprint("team_list")
-            frappe.errprint(team_list)
-            frappe.errprint("emp_list")
-            frappe.errprint(emp_list)
-            frappe.errprint("aph")
-            frappe.errprint(aph)
             result = frappe.db.sql("""
                 SELECT
                     SUM(CASE WHEN spot_task = 0 THEN rt ELSE 0 END),
@@ -4098,8 +4151,6 @@ def summary_total_hrs_cols(name):
             # """, (emp_list, sprint.from_date, sprint.to_date))[0][0]
             # ts_hours = round(ts_hours or 0, 2)
             tot_aph = flt(aph)
-            frappe.errprint("tot_aph")
-            frappe.errprint(tot_aph)
             used_percent = (ts_hours / bt_hours) * 100 if ts_hours and bt_hours else 0
             comp_percent = (completed_hrs / ts_hours) * 100 if ts_hours and completed_hrs else 0
             ncomp_percent = (ncompleted_hrs / ts_hours) * 100 if ts_hours and ncompleted_hrs else 0
@@ -4882,7 +4933,7 @@ from datetime import datetime, timedelta
 import frappe
 
 @frappe.whitelist()
-def dsr_table(date=None):
+def dsr_table(date=None, team=None):
 
     from collections import defaultdict
     from datetime import datetime, timedelta
@@ -4890,881 +4941,930 @@ def dsr_table(date=None):
     if not date:
         date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
 
+    # Format date for title (e.g. "18/8")
+    dt = getdate(date)
+    date_label = f"{dt.day}/{dt.month}"
+
+    # =====================================================
+    # Orders
+    # =====================================================
     dev_team_order = {}
-
-    dev_teams = frappe.get_all(
-        "Dev Team",
-        fields=["name", "order_for_it_dashboard"]
-    )
-
+    dev_teams = frappe.get_all("Dev Team", fields=["name", "order_for_it_dashboard"])
     for d in dev_teams:
-        dev_team_order[d.name] = d.order_for_it_dashboard or 999
+        dev_team_order[d.name] = d.order_for_it_dashboard if d.order_for_it_dashboard is not None else 999
 
     cb_order = {}
-
+    cb_aph_map = {}  # cb -> aph (from Employee MIS)
     employees = frappe.get_all(
         "Employee",
-        {
-            "status": "Active",
-            "department": "IT. Development - THIS"
-        },
-        ["short_code", "custom_order_for_it_dashboard"]
+        {"status": "Active", "department": "IT. Development - THIS"},
+        ["short_code", "custom_order_for_it_dashboard", "custom_aph"]
     )
-
     for e in employees:
-
         short_code = (e.short_code or "").strip().upper()
+        cb_order[short_code] = e.custom_order_for_it_dashboard if e.custom_order_for_it_dashboard is not None else 999
+        if short_code and e.custom_aph is not None:
+            cb_aph_map[short_code] = float(e.custom_aph or 0)
 
-        cb_order[short_code] = e.custom_order_for_it_dashboard or 999
-
+    # =====================================================
+    # Daily Monitor Data
+    # =====================================================
+    dm_filters = {"date": date, "service": "IT-SW"}
+    if team:
+        dm_filters["dev_team"] = team
     daily_monitors = frappe.get_all(
         "Daily Monitor",
-        {
-            "date": date,
-            "service": "IT-SW",
-            "dsr_check": 1
-        },
-        ["name", "dev_team"]
+        dm_filters,
+        ["name", "dev_team", "sprint"]
     )
 
     all_tasks = []
-
     for dm in daily_monitors:
-
         doc = frappe.get_doc("Daily Monitor", dm.name)
-
         for row in doc.task_details:
-
             row.dev_team = dm.dev_team
-
             all_tasks.append(row)
 
     if not all_tasks:
-
         return """
-        <div style="
-            padding:20px;
-            text-align:center;
-            color:red;
-            font-weight:bold;
-        ">
+        <div style="padding:20px;text-align:center;color:red;font-weight:bold;">
             No Data Found
         </div>
         """
 
+    # Status priority order for sorting
+    status_order = {
+        "Working": 0, "Open": 1, "Pending Review": 2,
+        "Client Review": 3, "Completed": 4,
+    }
+    # Sort by team order, status, CB order, CB name, project, priority
     sorted_tasks = sorted(
         all_tasks,
         key=lambda x: (
             dev_team_order.get(x.dev_team, 999),
+            status_order.get((x.current_status or "").strip(), 5),
             cb_order.get((x.cb or "").strip().upper(), 999),
+            (x.cb or "").strip().upper(),
             x.project_name or "",
             x.priority or ""
         )
     )
 
-    cb_summary = defaultdict(lambda: {
-        "rt": 0,
-        "at": 0
-    })
+    # =====================================================
+    # Group by team
+    # =====================================================
+    team_order_list = []
+    team_map = {}
+    for t in sorted_tasks:
+        team = t.dev_team or "Unassigned"
+        if team not in team_map:
+            team_map[team] = []
+            team_order_list.append(team)
+        team_map[team].append(t)
 
-    for i in sorted_tasks:
+    completed_statuses = ("Completed", "Pending Review", "Client Review")
 
-        # cb = i.cb or "Not Set"
-        cb = (i.cb or "Not Set").strip().upper()
+    # =====================================================
+    # Build HTML per team
+    # =====================================================
+    final_html = ""
 
-        cb_summary[cb]["rt"] += float(i.today_rt or 0)
-        cb_summary[cb]["at"] += float(i.at_taken or 0)
+    for team in team_order_list:
+        tasks = team_map[team]
+        team_title = f"{team.upper()} - DSR - {date_label}"
 
-    summary_table = """
-    <table border="1" width="100%" style="
-        border-collapse:collapse;
-        background:white;
-        font-size:13px;
-        text-align:center;
-    ">
+        # Calculate P% and E% per CB, and total RT per CB group
+        cb_stats = defaultdict(lambda: {"total_rt": 0, "completed_rt": 0, "completed_at": 0})
+        for t in tasks:
+            cb = (t.cb or "").strip().upper()
+            rt = float(t.rt or 0)
+            at = float(t.at_taken or 0)
+            cb_stats[cb]["total_rt"] += rt
+            if (t.current_status or "") in completed_statuses:
+                cb_stats[cb]["completed_rt"] += rt
+                cb_stats[cb]["completed_at"] += at
 
-        <tr style="
-            background:#0f1568;
-            color:white;
-            height:35px;
-            position:sticky;
-            top:0;
-            z-index:2;
-        ">
-            <th>CB</th>
-            <th>APH</th>
-            <th>RT</th>
-            <th>AT</th>
-            <th>RT Vs AT%</th>
-        </tr>
-    """
+        # Determine CB group boundaries for P%/E%/Total RT merged cells
+        # Track which rows belong to which CB
+        cb_groups = []  # list of (cb_name, start_idx, end_idx, total_rt)
+        prev_cb = None
+        group_start = 0
+        group_rt = 0.0
+        for i, t in enumerate(tasks):
+            cb = (t.cb or "").strip().upper()
+            rt = float(t.rt or 0)
+            if cb != prev_cb:
+                if prev_cb is not None:
+                    cb_groups.append((prev_cb, group_start, i - 1, round(group_rt, 2)))
+                prev_cb = cb
+                group_start = i
+                group_rt = rt
+            else:
+                group_rt += rt
+        if prev_cb is not None:
+            cb_groups.append((prev_cb, group_start, len(tasks) - 1, round(group_rt, 2)))
 
-    grand_aph = 0
-    grand_rt = 0
-    grand_at = 0
+        # Build collapsible table
+        team_id = "itm-dsr-team-" + team.replace(" ", "_").replace("&", "_")
+        team_et = sum(float(t.et or 0) for t in tasks)
+        team_rt = sum(float(t.rt or 0) for t in tasks)
 
+        # Group tasks by CB (ordered)
+        cb_task_map = defaultdict(list)
+        for t in tasks:
+            cb = (t.cb or "").strip().upper()
+            cb_task_map[cb].append(t)
+        sorted_cbs = sorted(cb_task_map.keys(), key=lambda c: (cb_order.get(c, 999), c))
 
-    summary_sorted = sorted(
-        cb_summary.items(),
-        key=lambda x: cb_order.get(
-            str(x[0]).strip().upper(),
-            999
+        html = f"""
+        <div style="margin-bottom:30px;">
+            <div style="background:#0F1568;padding:10px 15px;border-radius:8px;margin-bottom:10px;text-align:center;">
+                <h4 style="margin:0;font-weight:600;color:white;">{team_title}</h4>
+            </div>
+            <table border="1" width="100%" style="border-collapse:collapse;font-size:11px;background:white;table-layout:fixed;">
+                <tr style="background:#0F1568;color:white;text-align:center;position:sticky;top:0;z-index:2;">
+                    <th style="width:4%;padding:6px;">S.No</th>
+                    <th style="width:7%;padding:6px;">Team</th>
+                    <th style="width:8%;padding:6px;">ID</th>
+                    <th style="width:15%;padding:6px;">Project Name</th>
+                    <th style="width:25%;padding:6px;">Subject</th>
+                    <th style="width:5%;padding:6px;">CB</th>
+                    <th style="width:5%;padding:6px;">ET</th>
+                    <th style="width:5%;padding:6px;">RT</th>
+                    <th style="width:7%;padding:6px;">Total RT</th>
+                    <th style="width:7%;padding:6px;">Priority</th>
+                    <th style="width:10%;padding:6px;">Current status</th>
+                    <th style="width:6%;padding:6px;">AT taken</th>
+                    <th style="width:5%;padding:6px;">AT%</th>
+                    <th style="width:5%;padding:6px;">P%</th>
+                    <th style="width:5%;padding:6px;">E%</th>
+                </tr>
+        """
+
+        # Team header row — always visible
+        html += (
+            f'<tr style="background:#d0d8f5;text-align:center;font-weight:bold;">'
+            f'<td><span class="itm-dsr-team-btn" data-team="{team_id}" style="cursor:pointer;font-size:14px;">+</span></td>'
+            f'<td colspan="5" style="text-align:left;padding:4px;">{team}</td>'
+            f'<td>{team_et:.2f}</td>'
+            f'<td>{team_rt:.2f}</td>'
+            f'<td>{team_rt:.2f}</td>'
+            f'<td colspan="7"></td>'
+            f'</tr>'
         )
-    )
 
-    for idx, (cb, v) in enumerate(summary_sorted, start=1):
+        for cb in sorted_cbs:
+            cb_tasks = cb_task_map[cb]
+            cb_id = "itm-dsr-cb-" + team_id + "-" + cb.replace(" ", "_").replace("&", "_")
+            stats = cb_stats.get(cb, {"total_rt": 0, "completed_rt": 0, "completed_at": 0})
+            cb_et = sum(float(t.et or 0) for t in cb_tasks)
+            cb_rt = sum(float(t.rt or 0) for t in cb_tasks)
+            aph = cb_aph_map.get(cb, 0)
+            p_pct = round((stats["completed_rt"] / aph) * 100, 2) if aph else 0
+            e_pct = round((stats["completed_at"] / stats["completed_rt"]) * 100, 2) if stats["completed_rt"] else 0
 
-        bg = "#ffffff" if idx % 2 else "#e7e6ec"
+            # CB header row — hidden, toggled by team
+            html += (
+                f'<tr class="itm-dsr-cb-row {team_id}" data-cb="{cb_id}" style="display:none;background:#e8eaf6;text-align:center;font-weight:bold;">'
+                f'<td><span class="itm-dsr-cb-btn" data-cb="{cb_id}" style="cursor:pointer;font-size:14px;">+</span></td>'
+                f'<td colspan="5" style="text-align:left;padding:4px;">{cb}</td>'
+                f'<td>{cb_et:.2f}</td>'
+                f'<td>{cb_rt:.2f}</td>'
+                f'<td>{cb_rt:.2f}</td>'
+                f'<td colspan="3"></td>'
+                f'<td>{p_pct}%</td>'
+                f'<td>{e_pct}%</td>'
+                f'</tr>'
+            )
 
-        aph = 6 if frappe.db.get_value(
-            "Employee",
-            {
-                "short_code": cb,
-                "custom_is_tl": 1,
-                "custom_is_sub_tl": 0
-            },
-            "name"
-        ) else 8
+            for idx, t in enumerate(cb_tasks, start=1):
+                bg = "#ffffff" if idx % 2 else "#f2f2f7"
+                et = float(t.et or 0)
+                rt = float(t.rt or 0)
+                at_taken = float(t.at_taken or 0)
+                at_pct = round((at_taken / rt) * 100, 2) if rt else 0
 
-        rt = min(v["rt"], aph)
+                # Progress bar for Current Status
+                prog = round((at_taken / rt) * 100, 0) if rt and at_taken > 0 else 0
+                prog = min(prog, 100)
+                bar_color = '#77e6dc'
+                if prog > 100:
+                    bar_color = '#ff6b6b'
+                elif prog > 75:
+                    bar_color = '#ffa726'
+                elif prog > 0:
+                    bar_color = '#4dabf7'
 
-        at = v["at"]
+                status = (t.current_status or "").strip()
+                status_display = ''
+                if status == 'Working': status_display = 'W'
+                elif status == 'Pending Review': status_display = 'PR'
+                elif status == 'Client Review': status_display = 'CR'
+                elif status == 'Completed': status_display = '&#10003;'
+                else: status_display = status[:4] if status else '-'
 
-        ratio = round((at / rt) * 100, 2) if rt else 0
+                status_cell = (
+                    f'<div style="display:flex;align-items:center;gap:6px;justify-content:center;">'
+                    f'<div style="flex:1;max-width:80px;">'
+                    f'<div style="height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;">'
+                    f'<div style="width:{prog}%;background:{bar_color};height:100%;border-radius:3px;"></div>'
+                    f'</div></div>'
+                    f'<span style="font-size:11px;white-space:nowrap;">{status_display} {prog}%</span>'
+                    f'</div>'
+                )
 
-        grand_aph += aph
-        grand_rt += rt
-        grand_at += at
+                html += f"""
+                <tr class="itm-dsr-task-row {cb_id} {team_id}" style="display:none;background:{bg};text-align:center;color:black;">
+                    <td style="padding:4px;">{idx}</td>
+                    <td style="padding:4px;">{team}</td>
+                    <td style="padding:4px;white-space:nowrap;">
+                        <div style="display:inline-flex;align-items:center;gap:6px;">
+                            <span class="itm-task-info-btn" data-task="{t.id}" style="cursor:pointer;font-size:14px;color:#333;">&#128065;</span>
+                            <a href="/app/task/{t.id}" target="_blank" style="text-decoration:none;color:black;">{t.id or '-'}</a>
+                        </div>
+                    </td>
+                    <td style="padding:4px;word-break:break-word;text-align:left;">{t.project_name or '-'}</td>
+                    <td style="padding:4px;word-break:break-word;text-align:left;">{t.subject or '-'}</td>
+                    <td style="padding:4px;">{t.cb or '-'}</td>
+                    <td style="padding:4px;">{et}</td>
+                    <td style="padding:4px;">{rt}</td>
+                    <td style="padding:4px;"></td>
+                    <td style="padding:4px;">{t.priority or '-'}</td>
+                    <td style="padding:4px;">{status_cell}</td>
+                    <td style="padding:4px;">{round(at_taken, 2)}</td>
+                    <td style="padding:4px;">{at_pct}%</td>
+                    <td style="padding:4px;"></td>
+                    <td style="padding:4px;"></td>
+                </tr>
+                """
 
-        ratio_color = "#f54545" if ratio < 75 else "#000"
-
-        summary_table += f"""
-        <tr style="height:32px;color:black">
-
-            <td>{cb}</td>
-
-            <td>{aph}</td>
-
-            <td>{round(rt,2)}</td>
-
-            <td>{round(at,2)}</td>
-
-            <td style="
-                color:{ratio_color};
-                font-weight:bold;
-            ">
-                {ratio}
-            </td>
-
-        </tr>
-        """
-
-    grand_ratio = round((grand_at / grand_rt) * 100, 2) if grand_rt else 0
-
-    grand_ratio_color = "#f54545" if grand_ratio < 75 else "#000"
-
-    summary_table += f"""
-        <tr style="
-            background:#e7e7e7;
-            font-weight:bold;
-            height:40px;
-            color:black
-        ">
-
-            <td>Grand Total</td>
-
-            <td>{grand_aph}</td>
-
-            <td>{round(grand_rt,2)}</td>
-
-            <td>{round(grand_at,2)}</td>
-
-            <td style="color:{grand_ratio_color};">
-                {grand_ratio}
-            </td>
-
-        </tr>
-
-    </table>
-    """
-
-    data = """
-    <table border="1" width="100%" style="
-        border-collapse:collapse;
-        font-size:12px;
-        background:white;
-        table-layout:fixed;
-    ">
-
-        <tr style="
-            background:#0f1568;
-            color:white;
-            text-align:center;
-            position:sticky;
-            top:0;
-            z-index:2;
-        ">
-
-            <th style="width:6%;padding:8px;">SI NO</th>
-            <th style="width:10%;padding:8px;">Dev Team</th>
-            <th style="width:10%;padding:8px;">Task ID</th>
-            <th style="width:15%;padding:8px;">Project Name</th>
-            <th style="width:22%;padding:8px;">Subject</th>
-            <th style="width:7%;padding:8px;">CB</th>
-            <th style="width:15%;padding:8px;">Status</th>
-            <th style="width:6%;padding:8px;">ET</th>
-            <th style="width:6%;padding:8px;">RT</th>
-            <th style="width:8%;padding:8px;">AT Total</th>
-            <th style="width:9%;padding:8px;">AT Period</th>
-            <th style="width:10%;padding:8px;">Priority</th>
-            <th style="width:20%;padding:8px;">Working Remarks</th>
-            <th style="width:15%;padding:8px;">ET vs AT Remarks</th>
-            <th style="width:10%;padding:8px;">TL Remarks</th>
-
-        </tr>
-    """
-
-    for idx, i in enumerate(sorted_tasks, start=1):
-
-        bg = "#ffffff" if idx % 2 else "#e7e6ec"
-
-        data += f"""
-        <tr style="
-            background:{bg};
-            text-align:center;
-            color:black
-        ">
-
-            <td style="padding:6px;">
-                {idx}
-            </td>
-
-            <td style="padding:6px;">
-                {i.dev_team or '-'}
-            </td>
-
-            <td style="padding:6px;color:black">
-
-                <a href="/app/task/{i.id}"
-                   target="_blank"
-                   style="
-                        text-decoration:none;
-                   ">
-
-                    {i.id or '-'}
-
-                </a>
-
-            </td>
-
-            <td style="padding:6px;word-break:break-word;">
-                {i.project_name or '-'}
-            </td>
-
-            <td style="padding:6px;word-break:break-word;">
-                {i.subject or '-'}
-            </td>
-
-            <td style="padding:6px;">
-                {i.cb or '-'}
-            </td>
-
-            <td style="padding:6px;">
-                {i.current_status or '-'}
-            </td>
-
-            <td style="padding:6px;">
-                {i.et or 0}
-            </td>
-
-            <td style="padding:6px;">
-                {i.rt or 0}
-            </td>
-
-            <td style="padding:6px;">
-                {round(float(i.at or 0), 2)}
-            </td>
-
-            <td style="padding:6px;">
-                {round(float(i.at_taken or 0), 2)}
-            </td>
-
-            <td style="padding:6px;">
-                {i.priority or '-'}
-            </td>
-
-            <td style="padding:6px;word-break:break-word;">
-                {i.remark or '-'}
-            </td>
-
-            <td style="padding:6px;word-break:break-word;">
-                {i.et_vs_at_remark or '-'}
-            </td>
-
-            <td style="padding:6px;word-break:break-word;">
-                {i.remarks or '-'}
-            </td>
-
-        </tr>
-        """
-
-    data += "</table>"
-
-    final_html = f"""
-    <div style="
-        display:flex;
-        gap:15px;
-        align-items:flex-start;
-    ">
-
-        <!-- LEFT SUMMARY -->
-
-        <div style="
-            width:30%;
-            flex:0 0 30%;
-            height:500px;
-            overflow:auto;
-            position:sticky;
-            top:10px;
-        ">
-
-            {summary_table}
-
-        </div>
-
-        <!-- RIGHT TABLE -->
-
-        <div style="
-            width:100%;
-            flex:0 0 100%;
-            overflow:auto;
-            max-height:500px;
-        ">
-
-            {data}
-
-        </div>
-
-    </div>
-    """
+        html += "</table></div>"
+        final_html += html
 
     return final_html
 
 
 @frappe.whitelist()
-def download_dsr_excel(date=None):
-
-    import io
-    import frappe
+def dpr_table(date=None, team=None):
 
     from collections import defaultdict
     from datetime import datetime, timedelta
 
-    from openpyxl import Workbook
-    from openpyxl.styles import (
-        Font,
-        PatternFill,
-        Border,
-        Side,
-        Alignment
-    )
-
-    from openpyxl.utils import get_column_letter
-
     if not date:
         date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # DPR is for the NEXT day (next day's allocation)
+    dpr_date = add_days(date, 1)
+
+    # Format date for title (e.g. "19/8")
+    dt = getdate(dpr_date)
+    date_label = f"{dt.day}/{dt.month}"
 
     # =====================================================
     # Orders
     # =====================================================
-
     dev_team_order = {}
-
-    dev_teams = frappe.get_all(
-        "Dev Team",
-        fields=["name", "order_for_it_dashboard"]
-    )
-
+    dev_teams = frappe.get_all("Dev Team", fields=["name", "order_for_it_dashboard"])
     for d in dev_teams:
-        dev_team_order[d.name] = d.order_for_it_dashboard or 999
+        dev_team_order[d.name] = d.order_for_it_dashboard if d.order_for_it_dashboard is not None else 999
 
     cb_order = {}
-
     employees = frappe.get_all(
         "Employee",
-        {
-            "status": "Active",
-            "department": "IT. Development - THIS"
-        },
+        {"status": "Active", "department": "IT. Development - THIS"},
         ["short_code", "custom_order_for_it_dashboard"]
     )
-
     for e in employees:
-
         short_code = (e.short_code or "").strip().upper()
-
-        cb_order[short_code] = (
-            e.custom_order_for_it_dashboard or 999
-        )
+        cb_order[short_code] = e.custom_order_for_it_dashboard if e.custom_order_for_it_dashboard is not None else 999
 
     # =====================================================
-    # Daily Monitor Data
+    # Daily Monitor Data — same records as DSR (dsr_check = 1)
+    # DPR shows the allocation view (no AT/P%/E% columns)
     # =====================================================
-
+    dm_filters = {"date": dpr_date, "service": "IT-SW"}
+    if team:
+        dm_filters["dev_team"] = team
     daily_monitors = frappe.get_all(
         "Daily Monitor",
-        {
-            "date": date,
-            "service": "IT-SW",
-            "dsr_check": 1
-        },
+        dm_filters,
         ["name", "dev_team"]
     )
 
     all_tasks = []
-
     for dm in daily_monitors:
-
-        doc = frappe.get_doc(
-            "Daily Monitor",
-            dm.name
-        )
-
+        doc = frappe.get_doc("Daily Monitor", dm.name)
         for row in doc.task_details:
-
             row.dev_team = dm.dev_team
-
             all_tasks.append(row)
 
-    # =====================================================
-    # Sorting
-    # =====================================================
+    if not all_tasks:
+        return """
+        <div style="padding:20px;text-align:center;color:red;font-weight:bold;">
+            No Data Found
+        </div>
+        """
 
+    # Sort by team order, CB order, CB name, project, priority
     sorted_tasks = sorted(
         all_tasks,
         key=lambda x: (
             dev_team_order.get(x.dev_team, 999),
-            cb_order.get(
-                (x.cb or "").strip().upper(),
-                999
-            ),
+            cb_order.get((x.cb or "").strip().upper(), 999),
+            (x.cb or "").strip().upper(),
             x.project_name or "",
             x.priority or ""
         )
     )
 
     # =====================================================
-    # Workbook
+    # Total RT per contiguous CB group (per team, since sorted by team then CB)
     # =====================================================
+    # Determine CB group boundaries and total RT per group
+    cb_groups = []  # list of (cb_name, start, end, total_rt)
+    prev_cb = None
+    group_start = 0
+    group_rt = 0.0
+    for i, t in enumerate(sorted_tasks):
+        cb = (t.cb or "").strip().upper()
+        rt = float(t.rt or 0)
+        if cb != prev_cb:
+            if prev_cb is not None:
+                cb_groups.append((prev_cb, group_start, i - 1, round(group_rt, 2)))
+            prev_cb = cb
+            group_start = i
+            group_rt = rt
+        else:
+            group_rt += rt
+    if prev_cb is not None:
+        cb_groups.append((prev_cb, group_start, len(sorted_tasks) - 1, round(group_rt, 2)))
 
-    wb = Workbook()
+    # Map each row index to its group info
+    row_group = {}  # row_idx -> (is_first, rowspan, total_rt)
+    for cb_name, start, end, total_rt in cb_groups:
+        rowspan = end - start + 1
+        row_group[start] = (True, rowspan, total_rt)
 
-    ws = wb.active
+    # =====================================================
+    # Build single HTML table — all teams, continuous S.No
+    # =====================================================
+    html = f"""
+    <div style="margin-bottom:30px;">
+        <div style="background:#0F1568;padding:10px 15px;border-radius:8px;margin-bottom:10px;text-align:center;">
+            <h4 style="margin:0;font-weight:600;color:white;">DPR - {date_label}</h4>
+        </div>
+        <table border="1" width="100%" style="border-collapse:collapse;font-size:11px;background:white;table-layout:fixed;">
+            <tr style="background:#0F1568;color:white;text-align:center;position:sticky;top:0;z-index:2;">
+                <th style="width:4%;padding:6px;">S.No</th>
+                <th style="width:7%;padding:6px;">Team</th>
+                <th style="width:8%;padding:6px;">ID</th>
+                <th style="width:15%;padding:6px;">Project Name</th>
+                <th style="width:25%;padding:6px;">Subject</th>
+                <th style="width:5%;padding:6px;">CB</th>
+                <th style="width:10%;padding:6px;">Status</th>
+                <th style="width:5%;padding:6px;">RT</th>
+                <th style="width:7%;padding:6px;">Total RT</th>
+                <th style="width:7%;padding:6px;">Priority</th>
+            </tr>
+    """
 
-    ws.title = "DSR Report"
+    for idx, t in enumerate(sorted_tasks, start=1):
+        bg = "#ffffff" if idx % 2 else "#e7e6ec"
+        team = t.dev_team or "Unassigned"
+        rt = float(t.rt or 0)
+        status = t.status or t.current_status or "-"
+
+        row_idx = idx - 1
+        group_info = row_group.get(row_idx)
+        total_rt_cell = ""
+        if group_info:
+            _, rowspan, total_rt = group_info
+            total_rt_cell = f'<td rowspan="{rowspan}" style="padding:6px;text-align:center;font-weight:bold;">{total_rt}</td>'
+
+        html += f"""
+            <tr style="background:{bg};text-align:center;color:black;">
+                <td style="padding:4px;">{idx}</td>
+                <td style="padding:4px;">{team}</td>
+                <td style="padding:4px;">
+                    <a href="/app/task/{t.id}" target="_blank" style="text-decoration:none;color:black;">{t.id or '-'}</a>
+                </td>
+                <td style="padding:4px;word-break:break-word;text-align:left;">{t.project_name or '-'}</td>
+                <td style="padding:4px;word-break:break-word;text-align:left;">{t.subject or '-'}</td>
+                <td style="padding:4px;">{t.cb or '-'}</td>
+                <td style="padding:4px;">{status}</td>
+                <td style="padding:4px;">{rt}</td>
+                {total_rt_cell}
+                <td style="padding:4px;">{t.priority or '-'}</td>
+            </tr>
+        """
+
+    html += "</table></div>"
+    return html
+
+
+@frappe.whitelist()
+def download_dsr_excel(date=None, team=None):
+
+    import io
+    from collections import defaultdict
+    from datetime import datetime, timedelta
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    from openpyxl.utils import get_column_letter
+
+    if not date:
+        date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    dt = getdate(date)
+    date_label = f"{dt.day}/{dt.month}"
+
+    # =====================================================
+    # Orders
+    # =====================================================
+    dev_team_order = {}
+    dev_teams = frappe.get_all("Dev Team", fields=["name", "order_for_it_dashboard"])
+    for d in dev_teams:
+        dev_team_order[d.name] = d.order_for_it_dashboard if d.order_for_it_dashboard is not None else 999
+
+    cb_order = {}
+    cb_aph_map = {}  # cb -> aph (from Employee MIS)
+    employees = frappe.get_all(
+        "Employee",
+        {"status": "Active", "department": "IT. Development - THIS"},
+        ["short_code", "custom_order_for_it_dashboard", "custom_aph"]
+    )
+    for e in employees:
+        short_code = (e.short_code or "").strip().upper()
+        cb_order[short_code] = e.custom_order_for_it_dashboard if e.custom_order_for_it_dashboard is not None else 999
+        if short_code and e.custom_aph is not None:
+            cb_aph_map[short_code] = float(e.custom_aph or 0)
+
+    # =====================================================
+    # Daily Monitor Data
+    # =====================================================
+    dm_filters = {"date": date, "service": "IT-SW", "dsr_check": 1}
+    if team:
+        dm_filters["dev_team"] = team
+    daily_monitors = frappe.get_all(
+        "Daily Monitor",
+        dm_filters,
+        ["name", "dev_team", "sprint"]
+    )
+
+    all_tasks = []
+    for dm in daily_monitors:
+        doc = frappe.get_doc("Daily Monitor", dm.name)
+        for row in doc.task_details:
+            row.dev_team = dm.dev_team
+            all_tasks.append(row)
+
+    if not all_tasks:
+        # Return empty workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "No Data"
+        ws.cell(row=1, column=1, value="No Data Found")
+        output = io.BytesIO()
+        wb.save(output)
+        frappe.response.filename = f"DSR_Report_{date}.xlsx"
+        frappe.response.filecontent = output.getvalue()
+        frappe.response.type = "binary"
+        return
+
+    # Sort by team order, CB order, CB name, project, priority
+    sorted_tasks = sorted(
+        all_tasks,
+        key=lambda x: (
+            dev_team_order.get(x.dev_team, 999),
+            cb_order.get((x.cb or "").strip().upper(), 999),
+            (x.cb or "").strip().upper(),
+            x.project_name or "",
+            x.priority or ""
+        )
+    )
+
+    completed_statuses = ("Completed", "Pending Review", "Client Review")
 
     # =====================================================
     # Styles
     # =====================================================
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    odd_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    even_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    title_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
 
-    header_fill = PatternFill(
-        start_color="0F1568",
-        end_color="0F1568",
-        fill_type="solid"
-    )
+    thin = Side(style="thin", color="CCCCCC")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
 
-    odd_fill = PatternFill(
-        start_color="FFFFFF",
-        end_color="FFFFFF",
-        fill_type="solid"
-    )
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    title_font = Font(bold=True, color="FFFFFF", size=14)
+    normal_font = Font(color="000000", size=10)
+    bold_font = Font(bold=True, color="000000", size=10)
 
-    even_fill = PatternFill(
-        start_color="E7E6EC",
-        end_color="E7E6EC",
-        fill_type="solid"
-    )
-
-    grand_fill = PatternFill(
-        start_color="E7E7E7",
-        end_color="E7E7E7",
-        fill_type="solid"
-    )
-
-    thin = Side(
-        style="thin",
-        color="CCCCCC"
-    )
-
-    border = Border(
-        left=thin,
-        right=thin,
-        top=thin,
-        bottom=thin
-    )
-
-    header_font = Font(
-        bold=True,
-        color="FFFFFF"
-    )
-
-    normal_font = Font(
-        color="000000"
-    )
-
-    bold_font = Font(
-        bold=True,
-        color="000000"
-    )
-
-    center_align = Alignment(
-        horizontal="center",
-        vertical="center",
-        wrap_text=True
-    )
-
-    left_align = Alignment(
-        horizontal="left",
-        vertical="top",
-        wrap_text=True
-    )
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="top", wrap_text=True)
 
     # =====================================================
-    # LEFT SUMMARY TABLE
+    # Workbook — single sheet, all teams in one continuous table
     # =====================================================
-
-    cb_summary = defaultdict(lambda: {
-        "rt": 0,
-        "at": 0
-    })
-
-    for i in sorted_tasks:
-
-        cb = (i.cb or "Not Set").strip().upper()
-
-        cb_summary[cb]["rt"] += float(
-            i.today_rt or 0
-        )
-
-        cb_summary[cb]["at"] += float(
-            i.at_taken or 0
-        )
-
-    summary_headers = [
-        "CB",
-        "APH",
-        "RT",
-        "AT",
-        "RT Vs AT%"
-    ]
-
-    summary_start_col = 1
-
-    # Summary Headers
-    for col_num, header in enumerate(
-        summary_headers,
-        summary_start_col
-    ):
-
-        cell = ws.cell(
-            row=1,
-            column=col_num,
-            value=header
-        )
-
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.border = border
-        cell.alignment = center_align
-
-    grand_aph = 0
-    grand_rt = 0
-    grand_at = 0
-
-    summary_sorted = sorted(
-        cb_summary.items(),
-        key=lambda x: cb_order.get(
-            str(x[0]).strip().upper(),
-            999
-        )
-    )
-
-    summary_row = 2
-
-    for idx, (cb, v) in enumerate(
-        summary_sorted,
-        start=1
-    ):
-
-        fill = (
-            odd_fill
-            if idx % 2 == 0
-            else even_fill
-        )
-
-        aph = 6 if frappe.db.get_value(
-            "Employee",
-            {
-                "short_code": cb,
-                "custom_is_tl": 1,
-                "custom_is_sub_tl": 0
-            },
-            "name"
-        ) else 8
-
-        rt = min(v["rt"], aph)
-
-        at = v["at"]
-
-        ratio = round(
-            (at / rt) * 100,
-            2
-        ) if rt else 0
-
-        grand_aph += aph
-        grand_rt += rt
-        grand_at += at
-
-        values = [
-            cb,
-            aph,
-            round(rt, 2),
-            round(at, 2),
-            ratio
-        ]
-
-        for col_num, value in enumerate(
-            values,
-            summary_start_col
-        ):
-
-            cell = ws.cell(
-                row=summary_row,
-                column=col_num,
-                value=value
-            )
-
-            cell.fill = fill
-            cell.border = border
-            cell.font = normal_font
-            cell.alignment = center_align
-
-        summary_row += 1
-
-    # =====================================================
-    # Grand Total
-    # =====================================================
-
-    grand_ratio = round(
-        (grand_at / grand_rt) * 100,
-        2
-    ) if grand_rt else 0
-
-    grand_values = [
-        "Grand Total",
-        grand_aph,
-        round(grand_rt, 2),
-        round(grand_at, 2),
-        grand_ratio
-    ]
-
-    for col_num, value in enumerate(
-        grand_values,
-        summary_start_col
-    ):
-
-        cell = ws.cell(
-            row=summary_row,
-            column=col_num,
-            value=value
-        )
-
-        cell.fill = grand_fill
-        cell.border = border
-        cell.font = bold_font
-        cell.alignment = center_align
-
-    # =====================================================
-    # MAIN TABLE
-    # =====================================================
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "DSR"
 
     headers = [
-        "SI NO",
-        "Dev Team",
-        "Task ID",
-        "Project Name",
-        "Subject",
-        "CB",
-        "Status",
-        "ET",
-        "RT",
-        "AT Total",
-        "AT Period",
-        "Priority",
-        "Working Remarks",
-        "ET vs AT Remarks",
-        "TL Remarks"
+        "S.No", "Team", "ID", "Project Name", "Subject", "CB",
+        "ET", "RT", "Total RT", "Priority", "Current status", "AT taken", "AT%",
+        "P%", "E%", "Working Remarks"
     ]
 
-    main_start_col = 8
+    col_widths = [6, 10, 12, 25, 35, 8, 8, 8, 10, 10, 15, 10, 8, 10, 10, 30]
 
-    # Main Headers
-    for col_num, header in enumerate(
-        headers,
-        main_start_col
-    ):
+    # Use the full sorted task list (already ordered by team, CB, project, priority)
+    # Calculate P% and E% per CB across all teams
+    cb_stats = defaultdict(lambda: {"total_rt": 0, "completed_rt": 0, "completed_at": 0})
+    for t in sorted_tasks:
+        cb = (t.cb or "").strip().upper()
+        rt = float(t.rt or 0)
+        at = float(t.at_taken or 0)
+        cb_stats[cb]["total_rt"] += rt
+        if (t.current_status or "") in completed_statuses:
+            cb_stats[cb]["completed_rt"] += rt
+            cb_stats[cb]["completed_at"] += at
 
-        cell = ws.cell(
-            row=1,
-            column=col_num,
-            value=header
-        )
+    # Determine CB group boundaries across the full sorted list
+    cb_groups = []
+    prev_cb = None
+    group_start = 0
+    group_rt = 0.0
+    for i, t in enumerate(sorted_tasks):
+        cb = (t.cb or "").strip().upper()
+        rt = float(t.rt or 0)
+        if cb != prev_cb:
+            if prev_cb is not None:
+                cb_groups.append((prev_cb, group_start, i - 1, round(group_rt, 2)))
+            prev_cb = cb
+            group_start = i
+            group_rt = rt
+        else:
+            group_rt += rt
+    if prev_cb is not None:
+        cb_groups.append((prev_cb, group_start, len(sorted_tasks) - 1, round(group_rt, 2)))
 
+    cb_group_map = {}
+    for cb_name, start, end, total_rt in cb_groups:
+        cb_group_map[cb_name] = (start, end, total_rt)
+
+    # Row 1: Title (merged A1:O1 — 15 columns)
+    title_text = f"DSR - {date_label}"
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=16)
+    title_cell = ws.cell(row=1, column=1, value=title_text)
+    title_cell.fill = title_fill
+    title_cell.font = title_font
+    title_cell.alignment = center_align
+    ws.row_dimensions[1].height = 30
+
+    # Row 2: Headers
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=2, column=col_num, value=header)
         cell.fill = header_fill
         cell.font = header_font
         cell.border = border
         cell.alignment = center_align
+    ws.row_dimensions[2].height = 25
 
-    # =====================================================
-    # Main Data Rows
-    # =====================================================
+    # Data rows (starting row 3) — continuous S.No across all teams
+    for idx, t in enumerate(sorted_tasks, start=1):
+        row_num = idx + 2  # row 1=title, row 2=header
+        fill = odd_fill if idx % 2 == 0 else even_fill
+        team = t.dev_team or "Unassigned"
 
-    for idx, i in enumerate(
-        sorted_tasks,
-        start=2
-    ):
+        et = float(t.et or 0)
+        rt = float(t.rt or 0)
+        at_taken = float(t.at_taken or 0)
+        at_pct = round((at_taken / rt) * 100, 2) if rt else 0
 
-        fill = (
-            odd_fill
-            if idx % 2 == 0
-            else even_fill
-        )
+        cb = (t.cb or "").strip().upper()
+        stats = cb_stats.get(cb, {"total_rt": 0, "completed_rt": 0, "completed_at": 0})
+        aph = cb_aph_map.get(cb, 0)
+        p_pct = round((stats["completed_rt"] / aph) * 100, 2) if aph else 0
+        e_pct = round((stats["completed_at"] / stats["completed_rt"]) * 100, 2) if stats["completed_rt"] else 0
 
+        status_val = (t.current_status or "").strip()
+        remarks_val = (t.remark or "").strip() if status_val == "Working" else ""
         row_data = [
-            idx - 1,
-            i.dev_team or "-",
-            i.id or "-",
-            i.project_name or "-",
-            i.subject or "-",
-            i.cb or "-",
-            i.current_status or "-",
-            i.et or 0,
-            i.rt or 0,
-            round(float(i.at or 0), 2),
-            round(float(i.at_taken or 0), 2),
-            i.priority or "-",
-            i.remark or "-",
-            i.et_vs_at_remark or "-",
-            i.remarks or "-"
+            idx,
+            team,
+            t.id or "-",
+            t.project_name or "-",
+            t.subject or "-",
+            t.cb or "-",
+            et,
+            rt,
+            None,  # Total RT — will be set with merge
+            t.priority or "-",
+            status_val or "-",
+            round(at_taken, 2),
+            at_pct,
+            None,  # P% — will be set with merge
+            None,  # E% — will be set with merge
+            remarks_val,
         ]
 
-        for col_num, value in enumerate(
-            row_data,
-            main_start_col
-        ):
-
-            cell = ws.cell(
-                row=idx,
-                column=col_num,
-                value=value
-            )
-
+        for col_num, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
             cell.fill = fill
             cell.border = border
             cell.font = normal_font
-
-            actual_col = col_num - main_start_col + 1
-
-            if actual_col in [
-                2,3,4,5,7,12,13,14,15
-            ]:
+            if col_num in (4, 5):  # Project Name, Subject
                 cell.alignment = left_align
             else:
                 cell.alignment = center_align
 
-    # =====================================================
-    # Summary Widths
-    # =====================================================
+        # Total RT, P% and E% — merged cells per CB group
+        group_info = cb_group_map.get(cb)
+        if group_info and group_info[0] == (idx - 1):
+            # First row of CB group — set value and merge
+            pe_start_row = group_info[0] + 3  # +3 because data starts at row 3
+            pe_end_row = group_info[1] + 3
+            total_rt_val = group_info[2]
 
-    summary_widths = {
-        1: 12,
-        2: 10,
-        3: 10,
-        4: 10,
-        5: 15
-    }
+            trt_cell = ws.cell(row=pe_start_row, column=9, value=total_rt_val)
+            trt_cell.fill = fill
+            trt_cell.border = border
+            trt_cell.font = bold_font
+            trt_cell.alignment = center_align
 
-    for col_num, width in summary_widths.items():
+            p_cell = ws.cell(row=pe_start_row, column=14, value=p_pct)
+            p_cell.fill = fill
+            p_cell.border = border
+            p_cell.font = bold_font
+            p_cell.alignment = center_align
 
-        ws.column_dimensions[
-            get_column_letter(col_num)
-        ].width = width
+            e_cell = ws.cell(row=pe_start_row, column=15, value=e_pct)
+            e_cell.fill = fill
+            e_cell.border = border
+            e_cell.font = bold_font
+            e_cell.alignment = center_align
 
-    # =====================================================
-    # Main Widths
-    # =====================================================
+            if pe_end_row > pe_start_row:
+                ws.merge_cells(
+                    start_row=pe_start_row, start_column=9,
+                    end_row=pe_end_row, end_column=9
+                )
+                ws.merge_cells(
+                    start_row=pe_start_row, start_column=14,
+                    end_row=pe_end_row, end_column=14
+                )
+                ws.merge_cells(
+                    start_row=pe_start_row, start_column=15,
+                    end_row=pe_end_row, end_column=15
+                )
 
-    widths = {
-        1: 10,
-        2: 18,
-        3: 15,
-        4: 25,
-        5: 40,
-        6: 10,
-        7: 20,
-        8: 10,
-        9: 10,
-        10: 12,
-        11: 12,
-        12: 15,
-        13: 35,
-        14: 35,
-        15: 35
-    }
+        ws.row_dimensions[row_num].height = 30
 
-    for col_num, width in widths.items():
+    # Column widths
+    for col_num, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(col_num)].width = width
 
-        actual_col = col_num + 7
-
-        ws.column_dimensions[
-            get_column_letter(actual_col)
-        ].width = width
-
-    # =====================================================
-    # Row Height
-    # =====================================================
-
-    for row in ws.iter_rows():
-
-        ws.row_dimensions[
-            row[0].row
-        ].height = 30
+    # Freeze panes (freeze header row)
+    ws.freeze_panes = "A3"
 
     # =====================================================
-    # Freeze
+    # Save and return
     # =====================================================
-
-    ws.freeze_panes = "H2"
-
-    # =====================================================
-    # Download
-    # =====================================================
-
     output = io.BytesIO()
-
     wb.save(output)
-
-    frappe.response.filename = (
-        f"DSR_Report_{date}.xlsx"
-    )
-
-    frappe.response.filecontent = (
-        output.getvalue()
-    )
-
+    frappe.response.filename = f"DSR_Report_{date}.xlsx"
+    frappe.response.filecontent = output.getvalue()
     frappe.response.type = "binary"
 
 
+@frappe.whitelist()
+def download_dpr_excel(date=None):
+
+    import io
+    from datetime import datetime, timedelta
+
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
+    from openpyxl.utils import get_column_letter
+
+    if not date:
+        date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # DPR is for the NEXT day (next day's allocation)
+    dpr_date = add_days(date, 1)
+
+    dt = getdate(dpr_date)
+    date_label = f"{dt.day}/{dt.month}"
+
+    # =====================================================
+    # Orders
+    # =====================================================
+    dev_team_order = {}
+    dev_teams = frappe.get_all("Dev Team", fields=["name", "order_for_it_dashboard"])
+    for d in dev_teams:
+        dev_team_order[d.name] = d.order_for_it_dashboard if d.order_for_it_dashboard is not None else 999
+
+    cb_order = {}
+    employees = frappe.get_all(
+        "Employee",
+        {"status": "Active", "department": "IT. Development - THIS"},
+        ["short_code", "custom_order_for_it_dashboard"]
+    )
+    for e in employees:
+        short_code = (e.short_code or "").strip().upper()
+        cb_order[short_code] = e.custom_order_for_it_dashboard if e.custom_order_for_it_dashboard is not None else 999
+
+    # =====================================================
+    # Daily Monitor Data — same records as DSR (dsr_check = 1)
+    # DPR shows the allocation view (no AT/P%/E% columns)
+    # =====================================================
+    daily_monitors = frappe.get_all(
+        "Daily Monitor",
+        {"date": dpr_date, "service": "IT-SW"},
+        ["name", "dev_team"]
+    )
+
+    all_tasks = []
+    for dm in daily_monitors:
+        doc = frappe.get_doc("Daily Monitor", dm.name)
+        for row in doc.task_details:
+            row.dev_team = dm.dev_team
+            all_tasks.append(row)
+
+    if not all_tasks:
+        # Return empty workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "No Data"
+        ws.cell(row=1, column=1, value="No Data Found")
+        output = io.BytesIO()
+        wb.save(output)
+        frappe.response.filename = f"DPR_Report_{dpr_date}.xlsx"
+        frappe.response.filecontent = output.getvalue()
+        frappe.response.type = "binary"
+        return
+
+    # Sort by team order, CB order, CB name, project, priority
+    sorted_tasks = sorted(
+        all_tasks,
+        key=lambda x: (
+            dev_team_order.get(x.dev_team, 999),
+            cb_order.get((x.cb or "").strip().upper(), 999),
+            (x.cb or "").strip().upper(),
+            x.project_name or "",
+            x.priority or ""
+        )
+    )
+
+    # =====================================================
+    # Styles
+    # =====================================================
+    header_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+    odd_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    even_fill = PatternFill(start_color="E7E6EC", end_color="E7E6EC", fill_type="solid")
+    title_fill = PatternFill(start_color="0F1568", end_color="0F1568", fill_type="solid")
+
+    thin = Side(style="thin", color="CCCCCC")
+    border = Border(left=thin, right=thin, top=thin, bottom=thin)
+
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    title_font = Font(bold=True, color="FFFFFF", size=14)
+    normal_font = Font(color="000000", size=10)
+    bold_font = Font(bold=True, color="000000", size=10)
+
+    center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    left_align = Alignment(horizontal="left", vertical="top", wrap_text=True)
+
+    # =====================================================
+    # Total RT per contiguous CB group (per team, since sorted by team then CB)
+    # =====================================================
+    # Determine CB group boundaries and total RT per group
+    cb_groups = []  # list of (cb_name, start, end, total_rt)
+    prev_cb = None
+    group_start = 0
+    group_rt = 0.0
+    for i, t in enumerate(sorted_tasks):
+        cb = (t.cb or "").strip().upper()
+        rt = float(t.rt or 0)
+        if cb != prev_cb:
+            if prev_cb is not None:
+                cb_groups.append((prev_cb, group_start, i - 1, round(group_rt, 2)))
+            prev_cb = cb
+            group_start = i
+            group_rt = rt
+        else:
+            group_rt += rt
+    if prev_cb is not None:
+        cb_groups.append((prev_cb, group_start, len(sorted_tasks) - 1, round(group_rt, 2)))
+
+    # Map each row index to its group info
+    row_group = {}  # row_idx -> (start, end, total_rt)
+    for cb_name, start, end, total_rt in cb_groups:
+        row_group[start] = (start, end, total_rt)
+
+    # =====================================================
+    # Workbook — single sheet, all teams in one continuous table
+    # =====================================================
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "DPR"
+
+    headers = [
+        "S.No", "Team", "ID", "Project Name", "Subject", "CB",
+        "Status", "RT", "Total RT", "Priority"
+    ]
+
+    col_widths = [6, 10, 12, 25, 40, 8, 15, 8, 10, 10]
+
+    # Row 1: Title (merged A1:J1)
+    title_text = f"DPR - {date_label}"
+    ws.merge_cells(start_row=1, start_column=1, end_row=1, end_column=10)
+    title_cell = ws.cell(row=1, column=1, value=title_text)
+    title_cell.fill = title_fill
+    title_cell.font = title_font
+    title_cell.alignment = center_align
+    ws.row_dimensions[1].height = 30
+
+    # Row 2: Headers
+    for col_num, header in enumerate(headers, start=1):
+        cell = ws.cell(row=2, column=col_num, value=header)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.border = border
+        cell.alignment = center_align
+    ws.row_dimensions[2].height = 25
+
+    # Data rows (starting row 3) — continuous S.No across all teams
+    for idx, t in enumerate(sorted_tasks, start=1):
+        row_num = idx + 2  # row 1=title, row 2=header
+        fill = odd_fill if idx % 2 == 0 else even_fill
+        team = t.dev_team or "Unassigned"
+
+        rt = float(t.rt or 0)
+
+        row_data = [
+            idx,
+            team,
+            t.id or "-",
+            t.project_name or "-",
+            t.subject or "-",
+            t.cb or "-",
+            t.status or t.current_status or "-",
+            rt,
+            None,  # Total RT — will be set with merge
+            t.priority or "-",
+        ]
+
+        for col_num, value in enumerate(row_data, start=1):
+            cell = ws.cell(row=row_num, column=col_num, value=value)
+            cell.fill = fill
+            cell.border = border
+            cell.font = normal_font
+            if col_num in (4, 5):  # Project Name, Subject
+                cell.alignment = left_align
+            else:
+                cell.alignment = center_align
+
+        # Total RT — merged cells per CB group (per contiguous group)
+        row_idx = idx - 1
+        group_info = row_group.get(row_idx)
+        if group_info:
+            start, end, total_rt = group_info
+            trt_start_row = start + 3  # +3 because data starts at row 3
+            trt_end_row = end + 3
+
+            trt_cell = ws.cell(row=trt_start_row, column=9, value=total_rt)
+            trt_cell.fill = fill
+            trt_cell.border = border
+            trt_cell.font = bold_font
+            trt_cell.alignment = center_align
+
+            if trt_end_row > trt_start_row:
+                ws.merge_cells(
+                    start_row=trt_start_row, start_column=9,
+                    end_row=trt_end_row, end_column=9
+                )
+
+        ws.row_dimensions[row_num].height = 30
+
+    # Column widths
+    for col_num, width in enumerate(col_widths, start=1):
+        ws.column_dimensions[get_column_letter(col_num)].width = width
+
+    # Freeze panes (freeze header row)
+    ws.freeze_panes = "A3"
+
+    # =====================================================
+    # Save and return
+    # =====================================================
+    output = io.BytesIO()
+    wb.save(output)
+    frappe.response.filename = f"DPR_Report_{dpr_date}.xlsx"
+    frappe.response.filecontent = output.getvalue()
+    frappe.response.type = "binary"
 
 
 
@@ -6116,3 +6216,1427 @@ def get_non_allocated_tasks_test(view="overall", kt_confirmed=""):
     )
 
     return {"data": tasks}
+
+
+@frappe.whitelist()
+def get_sprint_chart_data(team=None, sprint=None):
+    from frappe.utils import nowdate, getdate, date_diff, add_days
+    from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
+
+    today = getdate(nowdate())
+    holiday_list_name = "TEAMPRO-2025"
+
+    if sprint:
+        sprint_filters = {
+            "sprint_id": sprint,
+            "docstatus": ["!=", 2],
+        }
+        if team:
+            sprint_filters["team"] = team
+    else:
+        # No sprint selected — use last sprint ID
+        sprint = _get_last_sprint_id()
+        if sprint:
+            sprint_filters = {
+                "sprint_id": sprint,
+                "docstatus": ["!=", 2],
+            }
+            if team:
+                sprint_filters["team"] = team
+        else:
+            sprint_filters = {
+                "from_date": ["<=", today],
+                "to_date": [">=", today],
+                "docstatus": ["!=", 2],
+            }
+            if team:
+                sprint_filters["team"] = team
+
+    sprints = frappe.get_all(
+        "Sprint",
+        filters=sprint_filters,
+        fields=["name", "sprint_id", "from_date", "to_date", "team", "sprint_hours", "allocated_hours"],
+    )
+
+    if not sprints:
+        return {
+            "labels": [],
+            "available_hours": [],
+            "expected_hours": [],
+            "sprint_avl_time": [],
+        }
+
+    sprint_names = [sp.name for sp in sprints]
+
+    # Batch: fetch all sprint_avl_time rows for all sprints in one query
+    avl_rows = frappe.db.sql(
+        """
+        SELECT parent, short_code, available_hours, allocated_hours
+        FROM `tabSprint Avl Time`
+        WHERE parent IN %s
+        """,
+        (tuple(sprint_names),),
+        as_dict=True,
+    )
+
+    # Pre-compute working days per sprint (batch holiday check)
+    sprint_working_days = {}
+    for sp in sprints:
+        sp_from = getdate(sp.from_date)
+        sp_to = getdate(sp.to_date)
+        total_days = date_diff(sp_to, sp_from) + 1
+        total_working_days = 0
+        working_days_till_today = 0
+        for i in range(total_days):
+            current_date = add_days(sp_from, i)
+            if not is_holiday(holiday_list_name, current_date):
+                total_working_days += 1
+                if current_date <= today:
+                    working_days_till_today += 1
+        sprint_working_days[sp.name] = (total_working_days, working_days_till_today)
+
+    # Group avl rows by sprint
+    sprint_avl_map = {}
+    for r in avl_rows:
+        sprint_avl_map.setdefault(r.parent, []).append(r)
+
+    # Fetch Dev Team logos
+    team_names = list({sp.team for sp in sprints if sp.team})
+    dev_team_logos = {}
+    if team_names:
+        for dt in frappe.get_all("Dev Team", {"name": ["in", team_names]}, ["name", "logo"]):
+            dev_team_logos[dt.name] = dt.logo or ""
+
+    # Team-level sprint totals
+    team_sprint_totals = {}
+
+    cb_data = {}
+
+    for sp in sprints:
+        sp_from = getdate(sp.from_date)
+        sp_to = getdate(sp.to_date)
+        total_working_days, working_days_till_today = sprint_working_days[sp.name]
+
+        # Team-level sprint totals (against the Sprint)
+        team_sprint_totals[sp.team or "Unassigned"] = {
+            "aph": float(sp.sprint_hours or 0),
+            "rt": float(sp.allocated_hours or 0),
+            "logo": dev_team_logos.get(sp.team, ""),
+        }
+
+        rows = sprint_avl_map.get(sp.name, [])
+        for row in rows:
+            sc = (row.short_code or "").strip().upper()
+            if not sc:
+                continue
+
+            avl_hrs = float(row.available_hours or 0)
+            alloc_hrs = float(row.allocated_hours or 0)
+
+            if total_working_days > 0:
+                daily_avl = avl_hrs / total_working_days
+                expected_hrs = daily_avl * working_days_till_today
+            else:
+                expected_hrs = 0
+
+            cb_data[sc] = {
+                "available_hours": round(avl_hrs, 2),
+                "expected_hours": round(expected_hrs, 2),
+                "sprint_avl_time": round(alloc_hrs, 2),
+                "team": sp.team or "",
+                "sprint_id": sp.sprint_id or sp.name or "",
+            }
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={
+            "status": "Active",
+            "department": "IT. Development - THIS",
+        },
+        fields=["name", "short_code", "custom_order_for_it_dashboard", "custom_dev_team", "image"],
+    )
+
+    emp_order = {}
+    emp_team = {}
+    emp_image = {}
+    emp_name = {}
+    for emp in employees:
+        sc = (emp.short_code or "").strip().upper()
+        if sc:
+            emp_order[sc] = emp.custom_order_for_it_dashboard if emp.custom_order_for_it_dashboard is not None else 999
+            emp_team[sc] = emp.custom_dev_team or ""
+            emp_image[sc] = emp.image or ""
+            emp_name[sc] = emp.name
+
+    # Timesheet hours per employee across the sprint period(s)
+    min_from = min([getdate(sp.from_date) for sp in sprints])
+    max_to = max([getdate(sp.to_date) for sp in sprints])
+    timesheet_data = frappe.db.sql("""
+        SELECT t.employee, SUM(t.total_hours) as hours
+        FROM `tabTimesheet` t
+        WHERE t.docstatus != 2
+        AND DATE(t.creation) BETWEEN %s AND %s
+        GROUP BY t.employee
+    """, (min_from, max_to), as_dict=True)
+    ts_hours_by_emp = {t.employee: (t.hours or 0) for t in timesheet_data}
+
+    dev_teams = frappe.get_all(
+        "Dev Team", fields=["name", "order_for_it_dashboard"]
+    )
+    team_order = {}
+    for dt in dev_teams:
+        team_order[dt.name] = dt.order_for_it_dashboard if dt.order_for_it_dashboard is not None else 999
+
+    ordered_cbs = sorted(
+        cb_data.keys(),
+        key=lambda sc: (
+            team_order.get(emp_team.get(sc, ""), 999),
+            emp_order.get(sc, 999),
+        ),
+    )
+
+    # Order team-level totals by first-seen team order
+    ordered_teams = []
+    for sc in ordered_cbs:
+        team = cb_data[sc]["team"]
+        if team not in ordered_teams:
+            ordered_teams.append(team)
+    team_totals_list = []
+    for t in ordered_teams:
+        tinfo = team_sprint_totals.get(t, {"aph": 0, "rt": 0, "logo": ""})
+        team_totals_list.append({"team": t, "aph": tinfo["aph"], "rt": tinfo["rt"], "logo": tinfo["logo"]})
+
+    return {
+        "labels": ordered_cbs,
+        "available_hours": [cb_data[sc]["available_hours"] for sc in ordered_cbs],
+        "expected_hours": [cb_data[sc]["expected_hours"] for sc in ordered_cbs],
+        "sprint_avl_time": [cb_data[sc]["sprint_avl_time"] for sc in ordered_cbs],
+        "teams": [cb_data[sc]["team"] for sc in ordered_cbs],
+        "sprint_ids": [cb_data[sc]["sprint_id"] for sc in ordered_cbs],
+        "images": [emp_image.get(sc, "") for sc in ordered_cbs],
+        "team_totals": team_totals_list,
+        "timesheet_hours": [ts_hours_by_emp.get(emp_name.get(sc, ""), 0) for sc in ordered_cbs],
+    }
+
+
+@frappe.whitelist()
+def get_sprint_teamwise_summary(team=None, sprint=None):
+    """Teamwise CB-level sprint summary for the Analytics tab.
+
+    Definitions (per user):
+      Planned RT  = RT of planned (spot_task=0) tasks in the sprint
+      Comp RT     = RT of planned tasks with cr_status in (Completed, Pending Review, Client Review)
+      Work RT     = RT of planned tasks with cr_status in (Working, Open) AND at_period > 0
+      NT RT       = RT of planned tasks with cr_status in (Working, Open) AND at_period = 0
+      Spot RT / Spot Comp RT / Spot Work RT / Spot NT RT = same logic for spot_task=1
+      AT          = at_period (timesheet hours during sprint period)
+      Biometric Hrs = bt_difference from Attendance during sprint period
+      NC RT       = RT of tasks linked to Energy Point And Non Conformity
+      Reopen RT   = RT of tasks with revisions > 0
+      DE RT       = RT of tasks with issue_type = 'Developer Error'
+    """
+    from frappe.utils import nowdate, getdate
+
+    today = getdate(nowdate())
+
+    if sprint:
+        sprint_filters = {
+            "sprint_id": sprint,
+            "docstatus": ["!=", 2],
+        }
+        if team:
+            sprint_filters["team"] = team
+    else:
+        # No sprint selected — use last sprint ID
+        sprint = _get_last_sprint_id()
+        if sprint:
+            sprint_filters = {
+                "sprint_id": sprint,
+                "docstatus": ["!=", 2],
+            }
+            if team:
+                sprint_filters["team"] = team
+        else:
+            sprint_filters = {
+                "from_date": ["<=", today],
+                "to_date": [">=", today],
+                "docstatus": ["!=", 2],
+            }
+            if team:
+                sprint_filters["team"] = team
+
+    sprints = frappe.get_all(
+        "Sprint",
+        filters=sprint_filters,
+        fields=["name", "sprint_id", "from_date", "to_date", "team"],
+        order_by="team asc",
+    )
+
+    if not sprints:
+        return {"teams": []}
+
+    sprint_names = [sp.name for sp in sprints]
+
+    # Employee short_code -> employee name (for NC/biometric lookup)
+    # Also short_code -> custom_order for CB sorting
+    emp_map = {}
+    emp_order_map = {}
+    employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active", "department": "IT. Development - THIS"},
+        fields=["name", "short_code", "custom_order_for_it_dashboard", "custom_dev_team"],
+    )
+    for emp in employees:
+        sc = (emp.short_code or "").strip().upper()
+        if sc:
+            emp_map[sc] = emp.name
+            emp_order_map[sc] = emp.custom_order_for_it_dashboard if emp.custom_order_for_it_dashboard is not None else 999
+
+    # Dev Team ordering
+    dev_teams = frappe.get_all("Dev Team", fields=["name", "order_for_it_dashboard"])
+    team_order = {}
+    for dt in dev_teams:
+        team_order[dt.name] = dt.order_for_it_dashboard if dt.order_for_it_dashboard is not None else 999
+
+    completed_statuses = ("Completed", "Pending Review", "Client Review")
+    working_statuses = ("Working", "Open")
+
+    # ---- Batch: APH per CB per sprint (from sprint_avl_time child table) ----
+    avl_rows = frappe.db.sql(
+        """
+        SELECT parent, short_code, available_hours
+        FROM `tabSprint Avl Time`
+        WHERE parent IN %s
+        """,
+        (tuple(sprint_names),),
+        as_dict=True,
+    )
+    # sprint_name -> {cb: aph}
+    sprint_aph_map = {}
+    for r in avl_rows:
+        sc = (r.short_code or "").strip().upper()
+        if sc:
+            sprint_aph_map.setdefault(r.parent, {})[sc] = float(r.available_hours or 0)
+
+    # ---- Batch: Main metrics grouped by sprint + cb (single query) ----
+    metric_rows = frappe.db.sql(
+        """
+        SELECT
+            parent,
+            cb,
+            SUM(CASE WHEN spot_task = 0 THEN rt ELSE 0 END) AS planned_rt,
+            SUM(CASE WHEN spot_task = 0 AND cr_status IN %s AND IFNULL(at_period,0) > 0 THEN rt ELSE 0 END) AS comp_rt,
+            SUM(CASE WHEN spot_task = 0 AND cr_status IN %s AND IFNULL(at_period,0) > 0 THEN rt ELSE 0 END) AS work_rt,
+            SUM(CASE WHEN spot_task = 0 AND cr_status IN %s AND IFNULL(at_period,0) = 0 AND IFNULL(kt_confirmed,0) = 1 THEN rt ELSE 0 END) AS nt_rt,
+            SUM(CASE WHEN spot_task = 1 THEN rt ELSE 0 END) AS spot_rt,
+            SUM(CASE WHEN spot_task = 1 AND cr_status IN %s AND IFNULL(at_period,0) > 0 THEN rt ELSE 0 END) AS spot_comp_rt,
+            SUM(CASE WHEN spot_task = 1 AND cr_status IN %s AND IFNULL(at_period,0) > 0 THEN rt ELSE 0 END) AS spot_work_rt,
+            SUM(CASE WHEN spot_task = 1 AND cr_status IN %s AND IFNULL(at_period,0) = 0 AND IFNULL(kt_confirmed,0) = 1 THEN rt ELSE 0 END) AS spot_nt_rt,
+            SUM(CASE WHEN cr_status IN %s AND IFNULL(at_period,0) > 0 THEN at_period ELSE 0 END) AS completed_at,
+            SUM(CASE WHEN cr_status IN %s AND IFNULL(at_period,0) > 0 THEN at_period ELSE 0 END) AS working_at,
+            SUM(IFNULL(at_period, 0)) AS total_at,
+            SUM(CASE WHEN revisions > 0 THEN rt ELSE 0 END) AS reopen_rt,
+            SUM(CASE WHEN issue_type = 'Developer\u00a0Error' THEN rt ELSE 0 END) AS de_rt
+        FROM `tabSprint Task`
+        WHERE parent IN %s AND IFNULL(cb, '') != ''
+        GROUP BY parent, cb
+        """,
+        (
+            completed_statuses, working_statuses, working_statuses,
+            completed_statuses, working_statuses, working_statuses,
+            completed_statuses, working_statuses,
+            tuple(sprint_names),
+        ),
+        as_dict=True,
+    )
+    # sprint_name -> {cb -> metric dict}
+    sprint_metrics_map = {}
+    for r in metric_rows:
+        sprint_metrics_map.setdefault(r.parent, {})[r.cb] = r
+
+    # ---- Batch: NC RT grouped by sprint + cb (single query) ----
+    # Build emp_name -> short_code reverse map for matching
+    nc_rows = frappe.db.sql(
+        """
+        SELECT st.parent, st.cb, e.emp, IFNULL(SUM(st.rt), 0) AS nc_rt
+        FROM `tabSprint Task` st
+        JOIN `tabEnergy Point And Non Conformity` e ON e.task = st.task
+        WHERE st.parent IN %s AND e.docstatus != 2
+        GROUP BY st.parent, st.cb, e.emp
+        """,
+        (tuple(sprint_names),),
+        as_dict=True,
+    )
+    # sprint_name -> {cb -> nc_rt} (only for matching emp)
+    sprint_nc_map = {}
+    for r in nc_rows:
+        # Only count if the emp matches the CB's employee
+        sc = None
+        for short_code, emp_name in emp_map.items():
+            if emp_name == r.emp:
+                sc = short_code
+                break
+        if sc and sc == (r.cb or "").strip().upper():
+            sprint_nc_map.setdefault(r.parent, {})[r.cb] = float(r.nc_rt or 0)
+
+    # ---- Batch: Biometric hours from Attendance (single query per sprint date range) ----
+    # Collect all emp_names and their sprint date ranges
+    sprint_bt_map = {}  # sprint_name -> {cb -> bt_hours}
+    for sp in sprints:
+        sp_from = getdate(sp.from_date)
+        sp_to = getdate(sp.to_date)
+        emp_names = [emp_map[cb] for cb in emp_map if emp_map[cb]]
+        if not emp_names:
+            continue
+        bt_rows = frappe.db.sql(
+            """
+            SELECT employee, IFNULL(SUM(bt_difference), 0) AS bt_hours
+            FROM `tabAttendance`
+            WHERE employee IN %s AND docstatus != 2
+            AND attendance_date BETWEEN %s AND %s
+            GROUP BY employee
+            """,
+            (tuple(emp_names), sp_from, sp_to),
+            as_dict=True,
+        )
+        # Reverse map: emp_name -> short_code
+        emp_to_sc = {emp_name: sc for sc, emp_name in emp_map.items()}
+        bt_by_cb = {}
+        for r in bt_rows:
+            sc = emp_to_sc.get(r.employee)
+            if sc:
+                bt_by_cb[sc] = round(float(r.bt_hours or 0), 2)
+        sprint_bt_map[sp.name] = bt_by_cb
+
+    result_teams = []
+
+    for sp in sprints:
+        sprint_name = sp.name
+        sprint_id_label = sp.sprint_id or sp.name
+        team_name = sp.team or "Unassigned"
+        sp_from = getdate(sp.from_date)
+        sp_to = getdate(sp.to_date)
+
+        cb_aph_map = sprint_aph_map.get(sprint_name, {})
+        metrics_map = sprint_metrics_map.get(sprint_name, {})
+        nc_map = sprint_nc_map.get(sprint_name, {})
+        bt_map = sprint_bt_map.get(sprint_name, {})
+
+        # Get all CBs for this sprint, sorted by employee order
+        cb_list = sorted(
+            metrics_map.keys(),
+            key=lambda c: emp_order_map.get((c or "").strip().upper(), 999),
+        )
+
+        cb_data_list = []
+
+        for cb in cb_list:
+            m = metrics_map.get(cb)
+            if not m:
+                continue
+
+            planned_rt = float(m.planned_rt or 0)
+            comp_rt = float(m.comp_rt or 0)
+            work_rt = float(m.work_rt or 0)
+            nt_rt = float(m.nt_rt or 0)
+            spot_rt = float(m.spot_rt or 0)
+            spot_comp_rt = float(m.spot_comp_rt or 0)
+            spot_work_rt = float(m.spot_work_rt or 0)
+            spot_nt_rt = float(m.spot_nt_rt or 0)
+            completed_at = float(m.completed_at or 0)
+            working_at = float(m.working_at or 0)
+            total_at = float(m.total_at or 0)
+            reopen_rt = float(m.reopen_rt or 0)
+            de_rt = float(m.de_rt or 0)
+
+            total_rt = planned_rt + spot_rt
+            total_comp_rt = comp_rt + spot_comp_rt
+            total_work_rt = work_rt + spot_work_rt
+            total_nt_hours = nt_rt + spot_nt_rt
+
+            nc_rt = nc_map.get(cb, 0.0)
+            bt_hours = bt_map.get((cb or "").strip().upper(), 0.0)
+            aph = cb_aph_map.get((cb or "").strip().upper(), 0.0)
+
+            cb_data_list.append({
+                "cb": cb,
+                "aph": round(aph, 2),
+                "planned_rt": round(planned_rt, 2),
+                "comp_rt": round(comp_rt, 2),
+                "work_rt": round(work_rt, 2),
+                "nt_rt": round(nt_rt, 2),
+                "spot_rt": round(spot_rt, 2),
+                "spot_comp_rt": round(spot_comp_rt, 2),
+                "spot_work_rt": round(spot_work_rt, 2),
+                "spot_nt_rt": round(spot_nt_rt, 2),
+                "total_rt": round(total_rt, 2),
+                "biometric_hrs": bt_hours,
+                "at": round(total_at, 2),
+                "completed_rt": round(total_comp_rt, 2),
+                "completed_at": round(completed_at, 2),
+                "working_rt": round(total_work_rt, 2),
+                "working_at": round(working_at, 2),
+                "total_nt_hours": round(total_nt_hours, 2),
+                "nc_rt": round(nc_rt, 2),
+                "reopen_rt": round(reopen_rt, 2),
+                "de_rt": round(de_rt, 2),
+            })
+
+        # Compute team-level totals (same columns as CB-level)
+        team_totals = {
+            "aph": 0,
+            "planned_rt": 0, "comp_rt": 0, "work_rt": 0, "nt_rt": 0,
+            "spot_rt": 0, "spot_comp_rt": 0, "spot_work_rt": 0, "spot_nt_rt": 0,
+            "total_rt": 0, "at": 0, "completed_rt": 0, "completed_at": 0,
+            "working_rt": 0, "working_at": 0, "total_nt_hours": 0,
+            "biometric_hrs": 0, "nc_rt": 0, "reopen_rt": 0, "de_rt": 0,
+        }
+        for c in cb_data_list:
+            for k in team_totals:
+                team_totals[k] += c[k]
+
+        # Round team totals
+        for k in team_totals:
+            team_totals[k] = round(team_totals[k], 2)
+
+        result_teams.append({
+            "team": team_name,
+            "sprint_id": sprint_id_label,
+            "sprint_name": sprint_name,
+            "from_date": str(sp_from),
+            "to_date": str(sp_to),
+            "cbs": cb_data_list,
+            "totals": team_totals,
+            "order": team_order.get(team_name, 999),
+        })
+
+    result_teams.sort(key=lambda x: x["order"])
+    return {"teams": result_teams}
+
+
+def _get_last_sprint_id():
+    """Get the last sprint ID (previous sprint) using same logic as update_sprint_filter."""
+    sprint_name = frappe.db.get_value(
+        'Sprint',
+        {'team': 'ALPHA', 'status': 'In Progress'},
+        'sprint_id',
+        order_by='creation desc'
+    )
+
+    previous_sprint_id = None
+    today = datetime.today()
+
+    if today.strftime('%A') == 'Monday':
+        previous_sprint_id = sprint_name
+    else:
+        if sprint_name and sprint_name.startswith("SPRINT"):
+            current_number = int(sprint_name.replace("SPRINT", "").strip())
+            previous_sprint_id = f"SPRINT {current_number}"
+
+    return previous_sprint_id
+
+
+@frappe.whitelist()
+def get_reopen_de_summary(team=None, sprint=None):
+    """Fetch Re-Open and Developer Error tasks for a sprint, with linked
+    Energy Point & Non Conformity (EP&NC) records.
+
+    Re-Open      = Sprint Task rows with revisions > 0
+    Developer Error = Sprint Task rows with issue_type = 'Developer\\xa0Error'
+
+    Returns a dict:
+      {
+        "reopen":  [ {task, subject, cb, rt, revisions, cr_status, epnc: [{name, action, ...}]}, ... ],
+        "de":      [ {task, subject, cb, rt, revisions, cr_status, epnc: [{name, action, ...}]}, ... ],
+        "reopen_count": N, "de_count": N,
+        "reopen_rt": X, "de_rt": Y
+      }
+    """
+    from frappe.utils import nowdate, getdate
+
+    today = getdate(nowdate())
+
+    # ---- Resolve sprint filter (same logic as get_sprint_teamwise_summary) ----
+    if sprint:
+        sprint_filters = {"sprint_id": sprint, "docstatus": ["!=", 2]}
+        if team:
+            sprint_filters["team"] = team
+    else:
+        sprint = _get_last_sprint_id()
+        if sprint:
+            sprint_filters = {"sprint_id": sprint, "docstatus": ["!=", 2]}
+            if team:
+                sprint_filters["team"] = team
+        else:
+            sprint_filters = {
+                "from_date": ["<=", today],
+                "to_date": [">=", today],
+                "docstatus": ["!=", 2],
+            }
+            if team:
+                sprint_filters["team"] = team
+
+    sprints = frappe.get_all(
+        "Sprint",
+        filters=sprint_filters,
+        fields=["name"],
+        order_by="team asc",
+    )
+
+    if not sprints:
+        return {"reopen": [], "de": [], "reopen_count": 0, "de_count": 0,
+                "reopen_rt": 0, "de_rt": 0}
+
+    sprint_names = [sp.name for sp in sprints]
+
+    # Developer Error issue_type uses a non-breaking space (\\xa0) in stored data
+    DE_ISSUE_TYPE = "Developer\u00a0Error"
+
+    # ---- Fetch Sprint Task rows that are Re-Open or Developer Error ----
+    rows = frappe.db.sql(
+        """
+        SELECT parent, name, task, subject, cb, rt, revisions, cr_status,
+               issue_type, spot_task, project
+        FROM `tabSprint Task`
+        WHERE parent IN %s
+          AND (revisions > 0 OR issue_type = %s)
+        ORDER BY parent, cb, task
+        """,
+        (tuple(sprint_names), DE_ISSUE_TYPE),
+        as_dict=True,
+    )
+
+    if not rows:
+        return {"reopen": [], "de": [], "reopen_count": 0, "de_count": 0,
+                "reopen_rt": 0, "de_rt": 0}
+
+    # ---- Collect all task ids for EP&NC batch lookup ----
+    task_ids = list({r.task for r in rows if r.task})
+
+    # Batch fetch EP&NC records linked to these tasks.
+    # EP&NC records may link via the `task` field OR only mention the task ID
+    # inside `reason_of_ep` (e.g. "TS23712 - Developer Error"), so we match both.
+    epnc_map = {}  # task -> [ {name, action, emp_name, class_proposed, ...}, ... ]
+    if task_ids:
+        # 1) Records linked via the `task` link field
+        epnc_rows = frappe.db.sql(
+            """
+            SELECT name, task, action, emp, emp_name,
+                   class_proposed, ep_class_proposed,
+                   nc_score, energy_score, total, total_nc,
+                   reason_of_ep, docstatus
+            FROM `tabEnergy Point And Non Conformity`
+            WHERE task IN %s AND docstatus != 2
+            """,
+            (tuple(task_ids),),
+            as_dict=True,
+        )
+        for e in epnc_rows:
+            epnc_map.setdefault(e.task, []).append({
+                "name": e.name,
+                "action": e.action or "",
+                "emp": e.emp or "",
+                "emp_name": e.emp_name or "",
+                "class_proposed": e.class_proposed or "",
+                "ep_class_proposed": e.ep_class_proposed or "",
+                "nc_score": e.nc_score or "",
+                "energy_score": e.energy_score or "",
+                "total": e.total or 0,
+                "total_nc": e.total_nc or 0,
+                "reason_of_ep": e.reason_of_ep or "",
+                "docstatus": e.docstatus,
+            })
+
+        # 2) Records where the task ID appears in reason_of_ep (task link empty)
+        #    Use a single query with OR LIKE conditions per task id.
+        like_clauses = " OR ".join(
+            ["reason_of_ep LIKE %s"] * len(task_ids)
+        )
+        like_params = ["%" + tid + "%" for tid in task_ids]
+        epnc_like_rows = frappe.db.sql(
+            """
+            SELECT name, task, action, emp, emp_name,
+                   class_proposed, ep_class_proposed,
+                   nc_score, energy_score, total, total_nc,
+                   reason_of_ep, docstatus
+            FROM `tabEnergy Point And Non Conformity`
+            WHERE (task IS NULL OR task = '') AND docstatus != 2
+              AND ({clauses})
+            """.format(clauses=like_clauses),
+            tuple(like_params),
+            as_dict=True,
+        )
+        for e in epnc_like_rows:
+            # Match the reason text back to the specific task id(s)
+            reason = (e.reason_of_ep or "")
+            for tid in task_ids:
+                if tid in reason:
+                    # Avoid duplicate if already matched via task field
+                    existing_names = {x["name"] for x in epnc_map.get(tid, [])}
+                    if e.name not in existing_names:
+                        epnc_map.setdefault(tid, []).append({
+                            "name": e.name,
+                            "action": e.action or "",
+                            "emp": e.emp or "",
+                            "emp_name": e.emp_name or "",
+                            "class_proposed": e.class_proposed or "",
+                            "ep_class_proposed": e.ep_class_proposed or "",
+                            "nc_score": e.nc_score or "",
+                            "energy_score": e.energy_score or "",
+                            "total": e.total or 0,
+                            "total_nc": e.total_nc or 0,
+                            "reason_of_ep": e.reason_of_ep or "",
+                            "docstatus": e.docstatus,
+                        })
+
+    # ---- Split into Re-Open and Developer Error lists ----
+    reopen_list = []
+    de_list = []
+    reopen_rt = 0.0
+    de_rt = 0.0
+
+    seen_reopen = set()
+    seen_de = set()
+
+    for r in rows:
+        rt = float(r.rt or 0)
+        is_reopen = (r.revisions or 0) > 0
+        is_de = (r.issue_type or "") == DE_ISSUE_TYPE
+
+        entry = {
+            "task": r.task or "",
+            "subject": r.subject or "",
+            "cb": r.cb or "",
+            "rt": round(rt, 2),
+            "revisions": r.revisions or 0,
+            "cr_status": r.cr_status or "",
+            "spot_task": r.spot_task or 0,
+            "project": r.project or "",
+            "epnc": epnc_map.get(r.task, []),
+        }
+
+        if is_reopen:
+            key = (r.task, r.cb)
+            if key not in seen_reopen:
+                seen_reopen.add(key)
+                reopen_list.append(entry)
+                reopen_rt += rt
+
+        if is_de:
+            key = (r.task, r.cb)
+            if key not in seen_de:
+                seen_de.add(key)
+                de_list.append(entry)
+                de_rt += rt
+
+    return {
+        "reopen": reopen_list,
+        "de": de_list,
+        "reopen_count": len(reopen_list),
+        "de_count": len(de_list),
+        "reopen_rt": round(reopen_rt, 2),
+        "de_rt": round(de_rt, 2),
+    }
+
+
+@frappe.whitelist()
+def get_rtat_exception_data(team=None, sprint=None):
+    """RT Vs AT % > 150% for Completed and Working tasks.
+
+    Section 1: Completed Tasks (cr_status in Completed/Pending Review/Client Review) where at_period/rt*100 > 150
+    Section 2: Working Tasks (cr_status in Open/Working) where at_period/rt*100 > 150
+    Grouped by Team -> CB, with Sum of RT, Sum of AT Period, Count of Task.
+    """
+    from frappe.utils import nowdate, getdate
+
+    today = getdate(nowdate())
+
+    if sprint:
+        sprint_filters = {"sprint_id": sprint, "docstatus": ["!=", 2]}
+        if team:
+            sprint_filters["team"] = team
+    else:
+        # No sprint selected — use last sprint ID
+        sprint = _get_last_sprint_id()
+        if sprint:
+            sprint_filters = {"sprint_id": sprint, "docstatus": ["!=", 2]}
+            if team:
+                sprint_filters["team"] = team
+        else:
+            sprint_filters = {
+                "from_date": ["<=", today],
+                "to_date": [">=", today],
+                "docstatus": ["!=", 2],
+            }
+            if team:
+                sprint_filters["team"] = team
+
+    sprints = frappe.get_all(
+        "Sprint",
+        filters=sprint_filters,
+        fields=["name", "team"],
+    )
+
+    if not sprints:
+        return {"completed": [], "working": []}
+
+    sprint_names = [sp.name for sp in sprints]
+    sprint_team_map = {sp.name: sp.team or "Unassigned" for sp in sprints}
+
+    completed_statuses = ("Completed", "Pending Review", "Client Review")
+    working_statuses = ("Open", "Working")
+
+    # Dev Team ordering
+    dev_teams = frappe.get_all("Dev Team", fields=["name", "order_for_it_dashboard"])
+    team_order = {dt.name: dt.order_for_it_dashboard if dt.order_for_it_dashboard is not None else 999 for dt in dev_teams}
+
+    def build_section(statuses):
+        rows = frappe.db.sql(
+            """
+            SELECT
+                st.parent,
+                st.cb,
+                SUM(st.rt) AS sum_rt,
+                SUM(st.at_period) AS sum_at,
+                COUNT(st.task) AS task_count
+            FROM `tabSprint Task` st
+            WHERE st.parent IN %s
+              AND st.cr_status IN %s
+              AND IFNULL(st.rt, 0) > 0
+              AND IFNULL(st.at_period, 0) > 0
+              AND (st.at_period / st.rt) * 100 > 150
+            GROUP BY st.parent, st.cb
+            """,
+            (tuple(sprint_names), statuses),
+            as_dict=True,
+        )
+
+        # Group by team -> cb
+        team_map = {}
+        for r in rows:
+            t = sprint_team_map.get(r.parent, "Unassigned")
+            if t not in team_map:
+                team_map[t] = []
+            team_map[t].append({
+                "cb": r.cb or "",
+                "sum_rt": round(float(r.sum_rt or 0), 2),
+                "sum_at": round(float(r.sum_at or 0), 2),
+                "task_count": int(r.task_count or 0),
+            })
+
+        # Sort teams by order, sort CBs within team
+        result = []
+        for t in sorted(team_map.keys(), key=lambda x: team_order.get(x, 999)):
+            cbs = sorted(team_map[t], key=lambda c: c["cb"])
+            tot_rt = sum(c["sum_rt"] for c in cbs)
+            tot_at = sum(c["sum_at"] for c in cbs)
+            tot_count = sum(c["task_count"] for c in cbs)
+            result.append({
+                "team": t,
+                "cbs": cbs,
+                "total_rt": round(tot_rt, 2),
+                "total_at": round(tot_at, 2),
+                "total_count": tot_count,
+            })
+
+        return result
+
+    return {
+        "completed": build_section(completed_statuses),
+        "working": build_section(working_statuses),
+    }
+
+
+@frappe.whitelist()
+def get_nt_priority_tasks(team=None, sprint=None, any_sprint=False):
+    """
+    Get NT (Not Taken) Tasks with High/Urgent priority.
+
+    Uses the selected sprint (same as previous sections).
+
+    any_sprint=True (AT Zero):
+        - Sprint Task.at = 0 (no AT ever logged)
+
+    any_sprint=False (AT Period Zero, Previous AT Exists):
+        - Sprint Task.at > 0 (AT logged in previous sprints)
+        - Sprint Task.at_period = 0 (no AT in this sprint period)
+
+    Both:
+        - Sprint Task.cr_status in (Open, Working)
+        - Sprint Task.kt_confirmed = 1
+        - Sprint Task.priority in (High, Urgent)
+
+    Results grouped by Team -> CB.
+    """
+    from frappe.utils import nowdate, getdate
+
+    # Convert string to bool (frappe passes "0"/"1" from frontend)
+    if isinstance(any_sprint, str):
+        any_sprint = any_sprint.strip().lower() in ("1", "true", "yes")
+
+    today = getdate(nowdate())
+
+    # ---------------------------------------------------------
+    # Get Dev Team ordering
+    # ---------------------------------------------------------
+
+    dev_teams = frappe.get_all(
+        "Dev Team",
+        fields=["name", "order_for_it_dashboard"]
+    )
+
+    team_order = {
+        dt.name: dt.order_for_it_dashboard if dt.order_for_it_dashboard is not None else 999
+        for dt in dev_teams
+    }
+
+    # ---------------------------------------------------------
+    # Get Sprints — always use the selected sprint (same as previous sections)
+    # ---------------------------------------------------------
+
+    if sprint:
+        sprint_filters = {
+            "sprint_id": sprint,
+            "docstatus": ["!=", 2]
+        }
+
+        if team:
+            sprint_filters["team"] = team
+    else:
+        # No sprint selected — use last sprint ID
+        sprint = _get_last_sprint_id()
+        if sprint:
+            sprint_filters = {
+                "sprint_id": sprint,
+                "docstatus": ["!=", 2]
+            }
+
+            if team:
+                sprint_filters["team"] = team
+        else:
+            # Fallback to current sprint
+            sprint_filters = {
+                "from_date": ["<=", today],
+                "to_date": [">=", today],
+                "docstatus": ["!=", 2]
+            }
+
+            if team:
+                sprint_filters["team"] = team
+
+    sprints = frappe.get_all(
+        "Sprint",
+        filters=sprint_filters,
+        fields=["name", "sprint_id", "team"]
+    )
+
+    if not sprints:
+        return {"teams": []}
+
+    sprint_names = [sp.name for sp in sprints]
+
+    sprint_team_map = {
+        sp.name: sp.team or "Unassigned"
+        for sp in sprints
+    }
+
+    sprint_id_map = {
+        sp.name: sp.sprint_id or sp.name
+        for sp in sprints
+    }
+
+    # ---------------------------------------------------------
+    # NT TASK CONDITION
+    # ---------------------------------------------------------
+    #
+    # Any Sprint:
+    #     Sprint Task.at = 0
+    #
+    # In Sprint:
+    #     Sprint Task.at > 0
+    #     AND Sprint Task.at_period = 0
+    #
+    # ---------------------------------------------------------
+
+    if any_sprint:
+
+        nt_condition = """
+            IFNULL(st.at, 0) = 0
+        """
+
+    else:
+
+        nt_condition = """
+            IFNULL(st.at, 0) > 0
+            AND IFNULL(st.at_period, 0) = 0
+        """
+
+    # ---------------------------------------------------------
+    # Get NT Tasks (grouped by parent sprint + CB + priority)
+    # ---------------------------------------------------------
+
+    rows = frappe.db.sql(
+        f"""
+        SELECT
+            st.parent,
+            st.cb,
+            st.priority,
+            SUM(st.rt) AS sum_rt,
+            COUNT(st.task) AS task_count
+
+        FROM `tabSprint Task` st
+
+        WHERE st.parent IN %s
+
+          AND {nt_condition}
+
+          AND st.cr_status IN ('Open', 'Working')
+
+          AND st.kt_confirmed = 1
+
+          AND st.priority IN ('High', 'Urgent')
+
+        GROUP BY
+            st.parent,
+            st.cb,
+            st.priority
+        """,
+        (tuple(sprint_names),),
+        as_dict=True,
+    )
+
+    # ---------------------------------------------------------
+    # Group by Team -> CB
+    # ---------------------------------------------------------
+
+    team_data = {}
+
+    for row in rows:
+
+        team_name = sprint_team_map.get(
+            row.parent,
+            "Unassigned"
+        )
+
+        # st.parent -> Sprint ID
+        sprint_id = sprint_id_map.get(
+            row.parent,
+            ""
+        )
+
+        if team_name not in team_data:
+            team_data[team_name] = {
+                "parent": sprint_id,
+                "high_rt": 0,
+                "urgent_rt": 0,
+                "high_count": 0,
+                "urgent_count": 0,
+                "cbs": {}
+            }
+
+        cb = row.cb or "?"
+
+        if cb not in team_data[team_name]["cbs"]:
+            team_data[team_name]["cbs"][cb] = {
+                "high_rt": 0,
+                "urgent_rt": 0,
+                "high_count": 0,
+                "urgent_count": 0
+            }
+
+        if row.priority == "High":
+
+            team_data[team_name]["high_rt"] += float(
+                row.sum_rt or 0
+            )
+
+            team_data[team_name]["high_count"] += int(
+                row.task_count or 0
+            )
+
+            team_data[team_name]["cbs"][cb]["high_rt"] += float(
+                row.sum_rt or 0
+            )
+
+            team_data[team_name]["cbs"][cb]["high_count"] += int(
+                row.task_count or 0
+            )
+
+        elif row.priority == "Urgent":
+
+            team_data[team_name]["urgent_rt"] += float(
+                row.sum_rt or 0
+            )
+
+            team_data[team_name]["urgent_count"] += int(
+                row.task_count or 0
+            )
+
+            team_data[team_name]["cbs"][cb]["urgent_rt"] += float(
+                row.sum_rt or 0
+            )
+
+            team_data[team_name]["cbs"][cb]["urgent_count"] += int(
+                row.task_count or 0
+            )
+
+    # ---------------------------------------------------------
+    # Sort Teams
+    # ---------------------------------------------------------
+
+    result = []
+
+    for team_name in sorted(
+        team_data.keys(),
+        key=lambda x: team_order.get(x, 999)
+    ):
+
+        data = team_data[team_name]
+
+        # Convert cbs dict to sorted list
+        cbs_list = []
+        for cb_name in sorted(data["cbs"].keys()):
+            cb_data = data["cbs"][cb_name]
+            cbs_list.append({
+                "cb": cb_name,
+                "high_rt": round(cb_data["high_rt"], 2),
+                "urgent_rt": round(cb_data["urgent_rt"], 2),
+                "high_count": cb_data["high_count"],
+                "urgent_count": cb_data["urgent_count"],
+            })
+
+        result.append({
+            "team": team_name,
+
+            # st.parent represented as Sprint ID
+            "parent": data["parent"],
+
+            "high_rt": round(data["high_rt"], 2),
+            "urgent_rt": round(data["urgent_rt"], 2),
+            "high_count": data["high_count"],
+            "urgent_count": data["urgent_count"],
+
+            "cbs": cbs_list,
+        })
+
+    return {
+        "teams": result
+    }
+
+
+@frappe.whitelist()
+def get_live_status(date=None):
+    """Plan vs actual: the day's Daily Monitor plan compared with that day's
+    timesheet activity — flags planned tasks with no work logged and
+    unplanned work logged outside the DM. Defaults to today; `date` selects
+    another day.
+    """
+    from frappe.utils import flt, now
+
+    today = getdate(date) if date else nowdate()
+
+    dev_teams = frappe.get_all(
+        "Dev Team",
+        filters={"team_name": ["!=", "Others"], "order_for_it_dashboard": [">=", 0]},
+        fields=["name", "logo"],
+        order_by="order_for_it_dashboard",
+    )
+    team_order = [t.name for t in dev_teams]
+    team_logo = {t.name: t.logo for t in dev_teams}
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={"status": "Active", "department": "IT. Development - THIS"},
+        fields=["name", "short_code", "employee_name", "custom_emp_image",
+                "custom_dev_team", "custom_order_for_it_dashboard", "custom_is_tl"],
+    )
+    emp_by_cb = {}
+    for e in employees:
+        cb = (e.short_code or "").strip().upper()
+        if cb:
+            emp_by_cb[cb] = e
+    emp_name_by_cb = {cb: e.name for cb, e in emp_by_cb.items()}
+
+    def cb_order(cb):
+        e = emp_by_cb.get(cb)
+        return e.custom_order_for_it_dashboard if e and e.custom_order_for_it_dashboard is not None else 999
+
+    status_order = {"Working": 0, "Open": 1, "Pending Review": 2,
+                    "Client Review": 3, "Hold": 4}
+
+    def member_entry(cb):
+        emp = emp_by_cb.get(cb)
+        return {
+            "cb": cb,
+            "employee": emp.employee_name if emp else cb,
+            "image": emp.custom_emp_image if emp else "",
+            "is_tl": emp.custom_is_tl if emp else 0,
+            "today_hours": 0,
+            "aph": 0,
+            "planned": 0,
+            "worked": 0,
+            "tasks": [],
+            "unplanned": [],
+        }
+
+    # ---- today's timesheet activity: (employee, task) -> hours ----
+    ts_rows = frappe.db.sql("""
+        SELECT c.employee, cs.task, SUM(cs.hours) AS hours
+        FROM `tabTimesheet` c
+        JOIN `tabTimesheet Detail` cs ON cs.parent = c.name
+        WHERE c.docstatus != 2 AND DATE(cs.from_time) = %s
+        GROUP BY c.employee, cs.task
+    """, today, as_dict=True)
+
+    emp_today = {}
+    task_today = {}   # (emp_name, task) -> hours
+    for r in ts_rows:
+        h = r.hours or 0
+        emp_today[r.employee] = emp_today.get(r.employee, 0) + h
+        if r.task:
+            task_today[(r.employee, r.task)] = task_today.get((r.employee, r.task), 0) + h
+
+    dms = frappe.get_all(
+        "Daily Monitor",
+        filters={"date": today, "service": "IT-SW", "docstatus": ["!=", 2]},
+        fields=["name", "dev_team", "sprint"],
+    )
+
+    grouped = {}  # team -> cb -> member dict
+    planned_keys = set()  # (emp_name, task) pairs covered by a DM
+
+    if dms:
+        task_at = {}
+        for dm in dms:
+            doc = frappe.get_doc("Daily Monitor", dm.name)
+            team = dm.dev_team or "Unassigned"
+            members = grouped.setdefault(team, {})
+
+            for avl in doc.sprint_avl_time or []:
+                cb = (avl.short_code or "").strip().upper()
+                if not cb:
+                    continue
+                m = members.setdefault(cb, member_entry(cb))
+                m["aph"] = round(flt(avl.available_hours), 2)
+
+            for row in doc.task_details or []:
+                cb = (row.cb or "").strip().upper()
+                if not cb:
+                    continue
+                m = members.setdefault(cb, member_entry(cb))
+                task_id = row.id
+                emp_name = emp_name_by_cb.get(cb)
+                if task_id and task_id not in task_at:
+                    task_at[task_id] = flt(frappe.db.get_value("Task", task_id, "actual_time"))
+                t_hrs = task_today.get((emp_name, task_id), 0) if emp_name else 0
+                planned_keys.add((emp_name, task_id))
+                m["planned"] += 1
+                if t_hrs:
+                    m["worked"] += 1
+                m["tasks"].append({
+                    "name": task_id,
+                    "subject": row.subject,
+                    "project": row.project_name,
+                    "status": row.current_status or row.status,
+                    "priority": row.priority,
+                    "sprint": dm.sprint,
+                    "et": flt(row.et),
+                    "at": task_at.get(task_id, 0),
+                    "rt": flt(row.rt),
+                    "today": round(t_hrs, 2),
+                })
+    else:
+        tasks = frappe.get_all(
+            "Task",
+            filters={
+                "service": "IT-SW",
+                "status": ["not in", ["Completed", "Cancelled"]],
+            },
+            or_filters=[
+                ["status", "=", "Working"],
+                ["custom_production_date", "=", today],
+            ],
+            fields=["name", "subject", "cb", "custom_dev_team", "status", "priority",
+                    "project", "expected_time", "actual_time", "rt",
+                    "custom_sprint", "custom_production_date"],
+        )
+        for t in tasks:
+            cb = (t.cb or "").strip().upper()
+            emp = emp_by_cb.get(cb)
+            team = t.custom_dev_team or (emp.custom_dev_team if emp else "") or "Unassigned"
+            m = grouped.setdefault(team, {}).setdefault(cb, member_entry(cb))
+            planned_keys.add((emp.name if emp else None, t.name))
+            m["planned"] += 1
+            t_hrs = task_today.get((emp.name, t.name), 0) if emp else 0
+            if t_hrs:
+                m["worked"] += 1
+            m["tasks"].append({
+                "name": t.name,
+                "subject": t.subject,
+                "project": t.project,
+                "status": t.status,
+                "priority": t.priority,
+                "sprint": t.custom_sprint,
+                "et": flt(t.expected_time),
+                "at": flt(t.actual_time),
+                "rt": flt(t.rt),
+                "today": round(t_hrs, 2),
+            })
+
+    # ---- unplanned work: timesheet rows today on tasks not in the DM plan ----
+    unplanned_task_ids = {task for (emp, task) in task_today if (emp, task) not in planned_keys}
+    if unplanned_task_ids:
+        meta = {t.name: t for t in frappe.get_all(
+            "Task",
+            filters={"name": ["in", list(unplanned_task_ids)]},
+            fields=["name", "subject", "project", "status", "priority", "cb", "custom_dev_team"],
+        )}
+        for (emp_name, task_id), hrs in task_today.items():
+            if (emp_name, task_id) in planned_keys:
+                continue
+            t = meta.get(task_id)
+            cb = (t.cb or "").strip().upper() if t else ""
+            emp = emp_by_cb.get(cb) or frappe._dict(name=emp_name, short_code=cb,
+                                                    employee_name=cb, custom_emp_image="",
+                                                    custom_dev_team="", custom_order_for_it_dashboard=999,
+                                                    custom_is_tl=0)
+            cb = (emp.short_code or "").strip().upper()
+            team = (t.custom_dev_team if t and t.custom_dev_team else "") or emp.custom_dev_team or "Unassigned"
+            m = grouped.setdefault(team, {}).setdefault(cb, member_entry(cb))
+            m["unplanned"].append({
+                "name": task_id,
+                "subject": t.subject if t else task_id,
+                "project": t.project if t else "",
+                "status": t.status if t else "",
+                "today": round(hrs, 2),
+            })
+
+    result = []
+    ordered = [t for t in team_order if t in grouped]
+    ordered += [t for t in grouped if t not in team_order]
+
+    for team in ordered:
+        members = []
+        for cb, m in sorted(grouped[team].items(), key=lambda kv: (cb_order(kv[0]), kv[0])):
+            emp = emp_by_cb.get(cb)
+            m["today_hours"] = round(emp_today.get(emp.name, 0), 2) if emp else 0
+            m["tasks"] = sorted(
+                m["tasks"],
+                key=lambda t: (status_order.get(t["status"], 5), t["priority"] or "", t["name"] or ""),
+            )
+            members.append(m)
+        result.append({
+            "team": team,
+            "logo": team_logo.get(team, ""),
+            "members": members,
+        })
+
+    return {
+        "generated_at": now(),
+        "date": today,
+        "from_dm": bool(dms),
+        "teams": result,
+    }
+
+
+@frappe.whitelist()
+def get_project_wip(project=None, project_type=None):
+    """Per-project WIP rollup for the IT-SW dashboard 'Project WIP' tab.
+
+    Filters: project (Link or comma-separated list), project_type.
+    SLA window for AMC projects comes from the customer's SLA Details row.
+    """
+    from teampro.teampro_py.project_monitoring import _get_amc_sla
+
+    pf = {"service": "IT-SW"}
+    if project:
+        plist = [p.strip() for p in str(project).split(",") if p.strip()]
+        if plist:
+            pf["name"] = ["in", plist]
+    if project_type:
+        pf["project_type"] = project_type
+
+    projects = frappe.get_all(
+        "Project",
+        filters=pf,
+        fields=["name", "project_name", "project_type", "customer", "status",
+                "spoc", "sales_order", "total_sales_amount", "total_billed_amount",
+                "expected_start_date", "expected_end_date"],
+        order_by="project_name",
+        limit_page_length=0,
+    )
+    if not projects:
+        return {"rows": [], "types": []}
+
+    names = [p.name for p in projects]
+    today_d = getdate(nowdate())
+
+    task_map = {r.project: r for r in frappe.db.sql(
+        """
+        SELECT project,
+            COUNT(*) AS total,
+            SUM(CASE WHEN status = 'Open' THEN 1 ELSE 0 END) AS open_ct,
+            SUM(CASE WHEN status = 'Working' THEN 1 ELSE 0 END) AS working,
+            SUM(CASE WHEN status IN ('Pending Review','Code Review','Client Review')
+                THEN 1 ELSE 0 END) AS review,
+            SUM(CASE WHEN status = 'Hold' THEN 1 ELSE 0 END) AS hold,
+            SUM(CASE WHEN status = 'Completed' THEN 1 ELSE 0 END) AS completed,
+            SUM(CASE WHEN status NOT IN ('Completed','Cancelled','Template')
+                     AND exp_end_date IS NOT NULL AND exp_end_date < %(today)s
+                THEN 1 ELSE 0 END) AS overdue,
+            COALESCE(SUM(expected_time), 0) AS et,
+            COALESCE(SUM(actual_time), 0) AS act
+        FROM `tabTask`
+        WHERE project IN %(ps)s AND is_template = 0
+        GROUP BY project
+        """,
+        {"today": today_d, "ps": names},
+        as_dict=True,
+    )}
+
+    meeting_map = {}
+    if frappe.db.table_exists("Meeting"):
+        meeting_map = {r.project: r for r in frappe.db.sql(
+            """
+            SELECT project, COUNT(*) AS total,
+                SUM(CASE WHEN status IN ('Completed','Closed') THEN 1 ELSE 0 END) AS done
+            FROM `tabMeeting`
+            WHERE project IN %(ps)s
+            GROUP BY project
+            """,
+            {"ps": names},
+            as_dict=True,
+        )}
+
+    rows = []
+    for p in projects:
+        t = task_map.get(p.name) or {}
+        m = meeting_map.get(p.name) or {}
+        sla = _get_amc_sla(p) if p.project_type == "AMC" else {}
+        rows.append({
+            "name": p.name,
+            "project_name": p.project_name or p.name,
+            "project_type": p.project_type,
+            "customer": p.customer,
+            "status": p.status,
+            "spoc": p.spoc,
+            "expected_end_date": p.expected_end_date,
+            "sla_from": sla.get("sla_from_date"),
+            "sla_to": sla.get("sla_to_date"),
+            "total": t.get("total") or 0,
+            "open": t.get("open_ct") or 0,
+            "working": t.get("working") or 0,
+            "review": t.get("review") or 0,
+            "hold": t.get("hold") or 0,
+            "completed": t.get("completed") or 0,
+            "overdue": t.get("overdue") or 0,
+            "et": flt(t.get("et")),
+            "at": flt(t.get("act")),
+            "meetings": m.get("total") or 0,
+            "meetings_done": m.get("done") or 0,
+            "so_value": flt(p.total_sales_amount),
+            "billed": flt(p.total_billed_amount),
+        })
+
+    types = sorted({r["project_type"] for r in rows if r["project_type"]})
+    return {"rows": rows, "types": types}

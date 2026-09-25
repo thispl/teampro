@@ -1,0 +1,25 @@
+{
+ "actions": [],
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": ["kra", "kra_name", "score", "weightage"],
+ "fields": [
+  {"fieldname": "kra", "fieldtype": "Link", "label": "KRA", "options": "KRA Master", "in_list_view": 1, "reqd": 1},
+  {"fieldname": "kra_name", "fieldtype": "Data", "label": "KRA Name", "read_only": 1, "in_list_view": 1},
+  {"fieldname": "score", "fieldtype": "Float", "label": "Score", "in_list_view": 1, "read_only": 1},
+  {"fieldname": "weightage", "fieldtype": "Float", "label": "Weightage", "in_list_view": 1, "read_only": 1}
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "KRA Score",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

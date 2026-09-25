@@ -1,0 +1,35 @@
+{
+ "app": "teampro",
+ "charts": [],
+ "content": "[{\"id\": \"gsmheader1\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Gulf Salary Matrix</b></span>\", \"col\": 12}}, {\"id\": \"gsmcustom1\", \"type\": \"custom_block\", \"data\": {\"custom_block_name\": \"Gulf Salary Matrix Search\", \"col\": 12}}]",
+ "creation": "2026-08-01 01:05:45.630493",
+ "custom_blocks": [
+  {
+   "custom_block_name": "Gulf Salary Matrix Search",
+   "label": "Gulf Salary Matrix Search"
+  }
+ ],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "hide_custom": 0,
+ "icon": "users",
+ "idx": 0,
+ "indicator_color": "blue",
+ "is_hidden": 0,
+ "label": "Gulf Salary Matrix Tool",
+ "link_type": "DocType",
+ "links": [],
+ "modified": "2026-08-01 11:01:45.553671",
+ "modified_by": "dineshbabu.k@groupteampro.com",
+ "module": "Teampro",
+ "name": "Gulf Salary Matrix Tool",
+ "number_cards": [],
+ "owner": "dineshbabu.k@groupteampro.com",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 0.0,
+ "shortcuts": [],
+ "title": "Gulf Salary Matrix Tool",
+ "type": "Workspace"
+}

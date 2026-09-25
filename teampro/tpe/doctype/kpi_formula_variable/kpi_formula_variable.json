@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "kpi_variable",
+  "alias",
+  "column_break",
+  "description"
+ ],
+ "fields": [
+  {
+   "fieldname": "kpi_variable",
+   "fieldtype": "Link",
+   "label": "KPI Variable",
+   "options": "KPI Variable",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "alias",
+   "fieldtype": "Data",
+   "label": "Alias (in formula)",
+   "in_list_view": 1,
+   "description": "Defaults to the variable name. Use this name inside the formula."
+  },
+  {
+   "fieldname": "column_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description",
+   "in_list_view": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "KPI Formula Variable",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

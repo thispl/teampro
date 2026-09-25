@@ -1,7 +1,7 @@
 import frappe
 from frappe.model.document import Document
 from datetime import datetime
-from frappe.utils.data import date_diff, now_datetime, nowdate, today, add_days
+from frappe.utils.data import date_diff, now_datetime, nowdate, today, add_days, flt
 from teampro.teampro.doctype.sprint.sprint import get_retro_summary_html_test
 
 @frappe.whitelist()
@@ -110,7 +110,7 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
             grand_total_at=0
             for i in task_data.task_details:
                 cb = i.cb or "Not Set"
-                cb_summary[cb]['rt'] += i.today_rt or 0
+                cb_summary[cb]['rt'] += i.rt or 0
                 cb_summary[cb]['at_taken'] += float(i.at_taken or 0)
             summary = '''
             <table border="1" width="40%" style="border-collapse: collapse; margin-bottom: 10px;">
@@ -170,7 +170,7 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
                     sender=tl_email,
                     recipients=recievers,
                     # recipients='pavithra.s@groupteampro.com',
-                    # recipients='divya.p@groupteampro.com',
+                    # recipients='jeniba.a@groupteampro.com',
                     # subject = f'{service} - {dev_team} DSR {formatted_date} -Reg',
                     subject = f'DSR - {dev_team} ({team_type} )-{formatted_date} -Reg',
                     message = """
@@ -202,7 +202,6 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
                 <td style='width:10%;text-align:center; vertical-align:middle;'><b>Status</b></td>
                 <td style='width:5%;text-align:center; vertical-align:middle;'><b>ET</b></td>
                 <td style='width:5%;text-align:center; vertical-align:middle;'><b>RT</b></td>
-                <td style='width:5%;text-align:center; vertical-align:middle;'><b>Today RT</b></td>
                 <td style='width:7%;text-align:center; vertical-align:middle;'><b>Priority</b></td>
             </b></tr>
             '''
@@ -267,7 +266,6 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
                     <td style="{base_style} text-align: center;">{i.status}</td>
                     <td style="{base_style} text-align: center;">{i.et}</td>
                     <td style="{base_style} text-align: center;">{i.rt}</td>
-                    <td style="{base_style} text-align: center;">{i.today_rt}</td>
                     <td style="{base_style} text-align: center;">{i.priority}</td>
                 </tr>
                 '''
@@ -282,7 +280,7 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
             # Group RT by CB
             for i in task_data.task_details:
                 cb = i.cb or "Not Set"
-                cb_summary[cb]['rt'] += i.today_rt or 0
+                cb_summary[cb]['rt'] += i.rt or 0
 
 
             # Generate summary HTML table
@@ -335,7 +333,7 @@ def dpr_task_mail_it_dev(date,name,service,dev_team,sprint):
             frappe.sendmail(
                     sender=tl_email,
                     recipients=recievers,
-                    # recipients='divya.p@groupteampro.com',
+                    # recipients='jeniba.a@groupteampro.com',
                     subject = f'DPR - {dev_team} ({team_type} )-{formatted_date} -Reg',
                     # subject = f'{service} - {dev_team} DPR {formatted_date} -Reg',
                     message = """
@@ -873,6 +871,8 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                         for k, v in data.items():
                             if k == "today_rt":
                                 continue
+                            if k == "rt" and flt(row.rt) >= flt(v):
+                                continue
                             row.set(k, v)
                     else:
                         tasks.append(data)
@@ -884,7 +884,7 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                     key = (log.id, short_code)
                     if key in appended_tasks:
                         continue
-                    status = frappe.db.get_value("Task", log.task, "status")
+                    status = frappe.db.get_value("Task", log.id, "status")
                     sum_task_result = frappe.db.sql("""
                         SELECT cs.tu as total 
                         FROM `tabTimesheet` c
@@ -915,8 +915,8 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                             "cb": short_code,
                             "current_status": status,
                             "status": status,
-                            "rt": frappe.db.get_value("Task", log.task, "rt"),
-                            "today_rt": frappe.db.get_value("Task", log.task, "rt"),
+                            "rt": frappe.db.get_value("Task", log.id, "rt"),
+                            "today_rt": frappe.db.get_value("Task", log.id, "rt"),
                             }
                     else:
                         data = {
@@ -925,13 +925,15 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                             "cb": short_code,
                             "current_status": status,
                             "status": status,
-                            "rt": frappe.db.get_value("Task", log.task, "rt"),
-                            "today_rt": frappe.db.get_value("Task", log.task, "rt"),
+                            "rt": frappe.db.get_value("Task", log.id, "rt"),
+                            "today_rt": frappe.db.get_value("Task", log.id, "rt"),
                         }
                     if key in existing_task_ids:
                         row = existing_task_ids[key]
                         for k, v in data.items():
                             if k == "today_rt":
+                                continue
+                            if k == "rt" and flt(row.rt) >= flt(v):
                                 continue
                             row.set(k, v)
                     else:
@@ -1019,6 +1021,8 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                     existing_entry.at_period = total_period
                     existing_entry.at = round(total_hours,2)
                     existing_entry.cr_status = task_status
+                    if flt(existing_entry.rt) < flt(d.rt):
+                        existing_entry.rt = d.rt
                     if alloc!=allocated_to:
                         existing_entry.rt=0.5
             else:
@@ -1051,6 +1055,7 @@ def update_allocated_task_at_dev(date, name, service, type, dev_team, sprint):
                             "cr_status": task_status,
                             'status':task_status,
                             'spot_task':1,
+                            "rt": d.rt,
                         })
                 elif frappe.db.exists('Issue',{'name':task_id}):
                     issue_doc=frappe.get_doc('Issue',{'name':task_id})
@@ -1101,18 +1106,23 @@ def run_daily_monitor_updates():
             )
             task_details = frappe.get_all("Allocated Tasks", 
                 filters={"parent": dm.name, "current_status": "Working"},
-                fields=["id"])
+                fields=["id", "rt"])
 
             if task_details and dm.sprint and dm.dev_team:
                 sprint_doc = frappe.get_doc("Sprint",{"team":dm.dev_team,"sprint_id":dm.sprint})
-                existing_task_ids = {row.task for row in sprint_doc.table_cusg}
+                existing_rows = {row.task: row for row in sprint_doc.table_cusg}
 
                 for task in task_details:
-                    # if task.id not in existing_task_ids:
-                    sprint_doc.append("table_cusg", {
-                        "task": task.id,
-                        "date":today
-                    })
+                    if task.id in existing_rows:
+                        existing_row = existing_rows[task.id]
+                        if flt(existing_row.rt) < flt(task.rt):
+                            existing_row.rt = task.rt
+                    else:
+                        sprint_doc.append("table_cusg", {
+                            "task": task.id,
+                            "date": today,
+                            "rt": task.rt
+                        })
 
                 sprint_doc.save()
         except Exception as e:
@@ -1358,7 +1368,7 @@ def dpr_task_mail_for_cmn_service(date,name,service):
         # Group RT by CB
         for i in task_data.task_details:
             cb = i.cb or "Not Set"
-            cb_summary[cb]['rt'] += i.today_rt or 0
+            cb_summary[cb]['rt'] += i.rt or 0
 
 
         # Generate summary HTML table
@@ -1700,17 +1710,23 @@ def run_daily_monitor_update_team(date,name,dev_team,sprint,service,task_type):
         )
         task_details = frappe.get_all("Allocated Tasks", 
             filters={"parent":name, "current_status": "Working"},
-            fields=["id"])
+            fields=["id", "rt"])
 
         if task_details and sprint and dev_team:
             sprint_doc = frappe.get_doc("Sprint",{"team":dev_team,"sprint_id":sprint})
-            existing_task_ids = {row.task for row in sprint_doc.table_cusg}
+            existing_rows = {row.task: row for row in sprint_doc.table_cusg}
 
             for task in task_details:
-                sprint_doc.append("table_cusg", {
-                    "task": task.id,
-                    "date":today
-                })
+                if task.id in existing_rows:
+                    existing_row = existing_rows[task.id]
+                    if flt(existing_row.rt) < flt(task.rt):
+                        existing_row.rt = task.rt
+                else:
+                    sprint_doc.append("table_cusg", {
+                        "task": task.id,
+                        "date": today,
+                        "rt": task.rt
+                    })
 
             sprint_doc.save()
     except Exception as e:
@@ -1812,7 +1828,6 @@ def dpr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
             <td style='width:10%;text-align:center; vertical-align:middle;'><b>Status</b></td>
             <td style='width:5%;text-align:center; vertical-align:middle;'><b>ET</b></td>
             <td style='width:5%;text-align:center; vertical-align:middle;'><b>RT</b></td>
-            <td style='width:5%;text-align:center; vertical-align:middle;'><b>Today RT</b></td>
             <td style='width:7%;text-align:center; vertical-align:middle;'><b>Priority</b></td>
         </b></tr>
         '''
@@ -1875,7 +1890,6 @@ def dpr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
                 <td style="{base_style} text-align: center;">{i.status}</td>
                 <td style="{base_style} text-align: center;">{i.et}</td>
                 <td style="{base_style} text-align: center;">{i.rt}</td>
-                <td style="{base_style} text-align: center;">{i.today_rt}</td>
                 <td style="{base_style} text-align: center;">{i.priority}</td>
             </tr>
             '''
@@ -1890,7 +1904,7 @@ def dpr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
         # Group RT by CB
         for i in task_data.task_details:
             cb = i.cb or "Not Set"
-            cb_summary[cb]['rt'] += i.today_rt or 0
+            cb_summary[cb]['rt'] += i.rt or 0
 
 
         # Generate summary HTML table
@@ -1944,7 +1958,7 @@ def dpr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
                 sender=tl_email,
                 recipients='abdulla.pi@groupteampro.com',
                 cc=tl_email,
-                # recipients="divya.p@groupteampro.com",
+                # recipients="jeniba.a@groupteampro.com",
                 subject = f'DPR - {dev_team} ({team_type} )-{formatted_date} -Reg',
                 # subject = f'{service} - {dev_team} DPR {formatted_date} -Reg',
                 message = """
@@ -1998,7 +2012,7 @@ def dpr_task_mail_it_dev_md(date,name,service,dev_team,sprint):
             <td style='width:10%;text-align:center; vertical-align:middle;'><b>Status</b></td>
             <td style='width:5%;text-align:center; vertical-align:middle;'><b>ET</b></td>
             <td style='width:5%;text-align:center; vertical-align:middle;'><b>RT</b></td>
-            <td style='width:5%;text-align:center; vertical-align:middle;'><b>Today RT</b></td>
+            
             <td style='width:7%;text-align:center; vertical-align:middle;'><b>Priority</b></td>
         </b></tr>
         '''
@@ -2063,7 +2077,7 @@ def dpr_task_mail_it_dev_md(date,name,service,dev_team,sprint):
                 <td style="{base_style} text-align: center;">{i.status}</td>
                 <td style="{base_style} text-align: center;">{i.et}</td>
                 <td style="{base_style} text-align: center;">{i.rt}</td>
-                <td style="{base_style} text-align: center;">{i.today_rt}</td>
+                
                 <td style="{base_style} text-align: center;">{i.priority}</td>
             </tr>
             '''
@@ -2078,7 +2092,7 @@ def dpr_task_mail_it_dev_md(date,name,service,dev_team,sprint):
         # Group RT by CB
         for i in task_data.task_details:
             cb = i.cb or "Not Set"
-            cb_summary[cb]['rt'] += i.today_rt or 0
+            cb_summary[cb]['rt'] += i.rt or 0
 
 
         # Generate summary HTML table
@@ -2131,7 +2145,7 @@ def dpr_task_mail_it_dev_md(date,name,service,dev_team,sprint):
         frappe.sendmail(
                 sender=tl_email,
                 recipients='dineshbabu.k@groupteampro.com',
-                # recipients="divya.p@groupteampro.com",
+                # recipients="jeniba.a@groupteampro.com",
                 subject = f'DPR - {dev_team} ({team_type} )-{formatted_date} -Reg',
                 # subject = f'{service} - {dev_team} DPR {formatted_date} -Reg',
                 message = """
@@ -2233,7 +2247,7 @@ def dsr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
             grand_total_at=0
             for i in task_data.task_details:
                 cb = i.cb or "Not Set"
-                cb_summary[cb]['rt'] += i.today_rt or 0
+                cb_summary[cb]['rt'] += i.rt or 0
                 cb_summary[cb]['at_taken'] += float(i.at_taken or 0)
             summary = '''
             <table border="1" width="40%" style="border-collapse: collapse; margin-bottom: 10px;">
@@ -2294,6 +2308,7 @@ def dsr_task_mail_it_dev_hod(date,name,service,dev_team,sprint):
                     # recipients=recievers,
                     cc=tl_email,
                     recipients='abdulla.pi@groupteampro.com',
+                    # recipients='jeniba.a@groupteampro.com',
                     subject = f'DSR - {dev_team} ({team_type} )-{formatted_date} -Reg',
                     message = """
                         <b>Dear Sir,</b><br>

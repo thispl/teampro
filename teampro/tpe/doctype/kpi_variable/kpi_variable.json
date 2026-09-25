@@ -1,0 +1,139 @@
+{
+ "actions": [],
+ "autoname": "field:variable_name",
+ "creation": "2026-08-02 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "variable_name",
+  "description",
+  "column_break_1",
+  "active",
+  "data_source_section",
+  "target_doctype",
+  "employee_link_field",
+  "employee_field_type",
+  "date_field",
+  "column_break_2",
+  "aggregation_type",
+  "value_field",
+  "filter_json",
+  "help_section",
+  "help_html"
+ ],
+ "fields": [
+  {
+   "fieldname": "variable_name",
+   "fieldtype": "Data",
+   "label": "Variable Name",
+   "reqd": 1,
+   "unique": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Small Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "active",
+   "fieldtype": "Check",
+   "label": "Active",
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "data_source_section",
+   "fieldtype": "Section Break",
+   "label": "Data Source"
+  },
+  {
+   "fieldname": "target_doctype",
+   "fieldtype": "Link",
+   "label": "Target DocType",
+   "options": "DocType",
+   "reqd": 1,
+   "in_standard_filter": 1,
+   "description": "ERP doctype that holds the operational data (e.g. Task, Sales Order, Customer Feedback)."
+  },
+  {
+   "fieldname": "employee_link_field",
+   "fieldtype": "Data",
+   "label": "Employee Link Field",
+   "description": "Fieldname on the target doctype that links to the employee (or user)."
+  },
+  {
+   "fieldname": "employee_field_type",
+   "fieldtype": "Select",
+   "label": "Employee Field Type",
+   "options": "\nEmployee\nUser",
+   "default": "Employee"
+  },
+  {
+   "fieldname": "date_field",
+   "fieldtype": "Data",
+   "label": "Date Field",
+   "description": "Fieldname used to filter records within the calculation period."
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "aggregation_type",
+   "fieldtype": "Select",
+   "label": "Aggregation Type",
+   "options": "Count\nSum\nAverage\nMin\nMax\nDate Difference",
+   "default": "Count",
+   "reqd": 1
+  },
+  {
+   "fieldname": "value_field",
+   "fieldtype": "Data",
+   "label": "Value Field",
+   "description": "Fieldname to aggregate. For Date Difference use 'start_field,end_field'."
+  },
+  {
+   "fieldname": "filter_json",
+   "fieldtype": "Code",
+   "label": "Additional Filters (JSON)",
+   "options": "JSON",
+   "description": "Extra Frappe filter dict, e.g. {\"status\":\"Completed\"}."
+  },
+  {
+   "fieldname": "help_section",
+   "fieldtype": "Section Break",
+   "label": "Help"
+  },
+  {
+   "fieldname": "help_html",
+   "fieldtype": "HTML",
+   "options": "<div class='text-muted small'>A KPI Variable binds a named placeholder (used inside KPI formulas) to a live ERP data source. The Performance Engine resolves each variable for an employee and date window at calculation time, then evaluates the KPI formula.</div>"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-02 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "TPE",
+ "name": "KPI Variable",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {"role": "System Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "import": 1, "export": 1, "share": 1},
+  {"role": "HR Manager", "read": 1, "write": 1, "create": 1, "delete": 1, "print": 1, "email": 1, "report": 1, "import": 1, "export": 1, "share": 1},
+  {"role": "HR User", "read": 1, "write": 0, "create": 0, "delete": 0, "print": 1, "email": 1, "report": 1, "export": 1},
+  {"role": "Director", "read": 1, "write": 0, "create": 0, "delete": 0, "report": 1, "export": 1},
+  {"role": "Employee", "read": 0}
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}

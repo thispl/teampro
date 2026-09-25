@@ -599,32 +599,32 @@ def get_tasks(additional_filters=None, candidate=None, start=0, page_length=12):
 
 @frappe.whitelist(allow_guest=1)
 def get_filter_values():
-    return {
-        "positions": frappe.db.sql("""
-            SELECT DISTINCT subject
-            FROM `tabTask`
-            WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
-            AND service IN ('REC-I', 'REC-D')
-            ORDER BY subject
-        """, pluck="subject"),
+	return {
+		"positions": frappe.db.sql("""
+			SELECT DISTINCT subject
+			FROM `tabTask`
+			WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
+			AND service IN ('REC-I', 'REC-D')
+			ORDER BY subject
+		""", pluck="subject"),
 
-        "locations": frappe.db.sql("""
-            SELECT DISTINCT territory
-            FROM `tabTask`
-            WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
-            AND service IN ('REC-I', 'REC-D')
-            ORDER BY territory
-        """, pluck="territory"),
+		"locations": frappe.db.sql("""
+			SELECT DISTINCT territory
+			FROM `tabTask`
+			WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
+			AND service IN ('REC-I', 'REC-D')
+			ORDER BY territory
+		""", pluck="territory"),
 
-        "currencies": frappe.db.sql("""
-            SELECT DISTINCT currency
-            FROM `tabTask`
-            WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
-            AND service IN ('REC-I', 'REC-D')
-            ORDER BY currency
-        """, pluck="currency")
-    }
-    
+		"currencies": frappe.db.sql("""
+			SELECT DISTINCT currency
+			FROM `tabTask`
+			WHERE status IN ('Open', 'Overdue', 'Pending Review', 'Working')
+			AND service IN ('REC-I', 'REC-D')
+			ORDER BY currency
+		""", pluck="currency")
+	}
+	
 @frappe.whitelist()
 def create_candidate(
 	given_name=None,
@@ -691,18 +691,23 @@ def test_check():
 	return get_filter_values()
 
 @frappe.whitelist()
-def closure_data(limit=0, name=None):
+def get_closure_data(limit=0, name=None):
 	if not limit:
 		limit = 20
 
 	if name:
-		closure_data = frappe.db.get_all("Closure", {"migrated": 0}, ["*"])
+		closure_data = frappe.db.get_all("Closure", {"migrated": 0, "name": name}, ["*"], order_by="creation desc")
 	else:
-		closure_data = frappe.db.get_all("Closure", {"migrated": 0}, ["*"], limit=limit)
+		closure_data = frappe.db.get_all("Closure", {"migrated": 0}, ["*"], limit=limit, order_by="creation desc")
 
 	return closure_data
 
 @frappe.whitelist()
 def closure_migrated(name):
 	frappe.db.set_value("Closure", name, "migrated", 1)
+
+def test():
+	cl = frappe.db.get_all("Closure", {"migrated": 1}, "name")
+	for row in cl:
+		frappe.db.set_value("Closure", row.name, "migrated", 0)
 	

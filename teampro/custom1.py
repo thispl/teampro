@@ -1047,21 +1047,7 @@ def update_custodian(doc,method):
             cust.department = ''
             cust.save(ignore_permissions = True)
 
-@frappe.whitelist()
-def create_food_count():
-    from erpnext.setup.doctype.holiday_list.holiday_list import is_holiday
-    holiday_list_name = 'TEAMPRO 2023'
-    start_date = getdate(today())
-    if not is_holiday(holiday_list_name, start_date):
-        emp = ["TI00149","TC00042"]
-        for i in emp:
-            if not frappe.db.exists("Food Count",{'employee':i,'date':nowdate()}):
-                doc = frappe.new_doc("Food Count")
-                doc.employee = i
-                doc.department="IT"
-                doc.food_type="Veg"
-                doc.date = nowdate()
-                doc.save(ignore_permissions=True)
+
     
 @frappe.whitelist()
 def delete_document(name,checks_list):
